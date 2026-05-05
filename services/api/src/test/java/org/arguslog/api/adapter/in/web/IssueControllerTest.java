@@ -10,6 +10,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.arguslog.api.application.CursorCodec.InvalidCursorException;
 import org.arguslog.api.application.GetIssueUseCase;
 import org.arguslog.api.application.ListIssueEventsUseCase;
@@ -20,10 +24,6 @@ import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.ProjectRepository;
 import org.arguslog.api.domain.Event;
 import org.arguslog.api.domain.Issue;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

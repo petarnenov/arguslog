@@ -1,12 +1,12 @@
 package org.arguslog.api.security;
 
-import org.arguslog.api.application.port.MembershipRepository;
-import org.arguslog.api.application.port.ProjectRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.UUID;
+import org.arguslog.api.application.port.MembershipRepository;
+import org.arguslog.api.application.port.ProjectRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;

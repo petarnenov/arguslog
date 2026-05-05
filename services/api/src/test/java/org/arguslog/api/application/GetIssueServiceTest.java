@@ -3,10 +3,10 @@ package org.arguslog.api.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import org.arguslog.api.application.port.IssueRepository;
-import org.arguslog.api.domain.Issue;
 import java.time.Instant;
 import java.util.Optional;
+import org.arguslog.api.application.port.IssueRepository;
+import org.arguslog.api.domain.Issue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

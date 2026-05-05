@@ -4,12 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import org.arguslog.api.application.port.MembershipRepository;
-import org.arguslog.api.application.port.ProjectRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.UUID;
+import org.arguslog.api.application.port.MembershipRepository;
+import org.arguslog.api.application.port.ProjectRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,8 +1,8 @@
 package org.arguslog.api.adapter.in.web.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.arguslog.api.domain.Issue;
 import java.time.Instant;
+import org.arguslog.api.domain.Issue;
 
 public record IssueResponse(
     long id,

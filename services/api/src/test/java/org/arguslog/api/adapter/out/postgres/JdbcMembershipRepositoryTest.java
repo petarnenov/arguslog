@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.arguslog.api.application.port.MembershipRepository;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.UUID;
 import javax.sql.DataSource;
+import org.arguslog.api.application.port.MembershipRepository;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

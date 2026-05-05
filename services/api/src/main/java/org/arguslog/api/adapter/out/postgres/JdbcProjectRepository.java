@@ -1,8 +1,8 @@
 package org.arguslog.api.adapter.out.postgres;
 
-import org.arguslog.api.application.port.ProjectRepository;
 import java.util.OptionalLong;
 import javax.sql.DataSource;
+import org.arguslog.api.application.port.ProjectRepository;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;

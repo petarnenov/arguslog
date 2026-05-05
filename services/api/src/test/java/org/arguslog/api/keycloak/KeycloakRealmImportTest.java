@@ -1,0 +1,183 @@
+package org.arguslog.api.keycloak;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dasniko.testcontainers.keycloak.KeycloakContainer;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Locks the {@code services/keycloak/realm/argus-realm.json} export as a contract.
+ *
+ * <p>Two layers of validation:
+ *
+ * <ol>
+ *   <li><b>Static JSON checks</b> — enforce the structural invariants the rest of the system relies
+ *       on (PKCE on argus-web, bearer-only argus-api, demo user pre-verified, etc.). Fast and runs
+ *       always.
+ *   <li><b>Live import smoke</b> — boots a real Keycloak with the realm imported and hits {@code
+ *       /.well-known/openid-configuration}. Catches "Keycloak refused the import" regressions that
+ *       JSON shape can't see (e.g. references to nonexistent roles).
+ * </ol>
+ *
+ * <p>Live token issuance + admin-API assertions need bootstrap-admin auth, which is brittle across
+ * Keycloak 25's KC_BOOTSTRAP_ADMIN_* migration; deferred to the JWT-aware integration test that
+ * lands when api gains its first JWT-secured endpoint.
+ */
+class KeycloakRealmImportTest {
+
+  private static final ObjectMapper mapper = new ObjectMapper();
+  private static final HttpClient http = HttpClient.newHttpClient();
+  private static JsonNode realmJson;
+
+  private static KeycloakContainer keycloak;
+
+  @BeforeAll
+  static void readRealm() throws Exception {
+    realmJson = mapper.readTree(Files.readString(resolveRealmJson()));
+  }
+
+  @AfterAll
+  static void stopContainer() {
+    if (keycloak != null) keycloak.stop();
+  }
+
+  // ── static JSON contract ────────────────────────────────────────────────
+
+  @Test
+  void realmHasStableIdAndDevSettings() {
+    assertThat(realmJson.path("realm").asText()).isEqualTo("argus");
+    assertThat(realmJson.path("enabled").asBoolean()).isTrue();
+    assertThat(realmJson.path("registrationAllowed").asBoolean()).isTrue();
+    assertThat(realmJson.path("loginWithEmailAllowed").asBoolean()).isTrue();
+    assertThat(realmJson.path("resetPasswordAllowed").asBoolean()).isTrue();
+  }
+
+  @Test
+  void argusWebClientIsPublicPkceWithLocalDevRedirects() {
+    JsonNode client = findClient("argus-web");
+    assertThat(client.path("publicClient").asBoolean()).isTrue();
+    assertThat(client.path("standardFlowEnabled").asBoolean()).isTrue();
+    // PKCE pin: prevents the auth code being usable without the verifier.
+    assertThat(client.path("attributes").path("pkce.code.challenge.method").asText())
+        .isEqualTo("S256");
+    assertThat(asTextList(client.path("redirectUris"))).contains("http://localhost:5173/*");
+    assertThat(asTextList(client.path("webOrigins"))).contains("http://localhost:5173");
+  }
+
+  @Test
+  void argusApiClientIsBearerOnlyWithNoFlows() {
+    JsonNode client = findClient("argus-api");
+    assertThat(client.path("bearerOnly").asBoolean()).isTrue();
+    assertThat(client.path("publicClient").asBoolean()).isFalse();
+    assertThat(client.path("standardFlowEnabled").asBoolean()).isFalse();
+    assertThat(client.path("directAccessGrantsEnabled").asBoolean()).isFalse();
+  }
+
+  @Test
+  void demoUserIsPreVerifiedAndCarriesTheDefaultRealmRole() {
+    JsonNode user = findUser("demo@argus.local");
+    assertThat(user.path("email").asText()).isEqualTo("demo@argus.local");
+    assertThat(user.path("emailVerified").asBoolean()).isTrue();
+    assertThat(user.path("enabled").asBoolean()).isTrue();
+    assertThat(asTextList(user.path("realmRoles"))).contains("argus:user");
+  }
+
+  @Test
+  void realmRolesIncludeUserAndStaff() {
+    List<String> roles = asTextList(realmJson.path("roles").path("realm"), "name");
+    assertThat(roles).contains("argus:user", "argus:staff");
+  }
+
+  // ── live import smoke ───────────────────────────────────────────────────
+
+  @Test
+  void keycloakAcceptsTheImportAndExposesTheExpectedDiscoveryShape() throws Exception {
+    keycloak =
+        new KeycloakContainer("quay.io/keycloak/keycloak:25.0")
+            .withRealmImportFile("argus-realm.json");
+    keycloak.start();
+
+    String baseUrl = keycloak.getAuthServerUrl();
+    JsonNode discovery = getJson(baseUrl + "/realms/argus/.well-known/openid-configuration");
+
+    assertThat(discovery.path("issuer").asText()).isEqualTo(baseUrl + "/realms/argus");
+    assertThat(discovery.path("token_endpoint").asText())
+        .startsWith(baseUrl + "/realms/argus/protocol/openid-connect/token");
+    assertThat(discovery.path("jwks_uri").asText()).contains("/protocol/openid-connect/certs");
+    // PKCE must be advertised — the browser SDK depends on it.
+    assertThat(discovery.path("code_challenge_methods_supported").toString()).contains("S256");
+    assertThat(asTextList(discovery.path("response_types_supported"))).contains("code");
+  }
+
+  // ── helpers ─────────────────────────────────────────────────────────────
+
+  private static JsonNode findClient(String clientId) {
+    JsonNode clients = realmJson.path("clients");
+    assertThat(clients.isArray()).isTrue();
+    for (JsonNode client : clients) {
+      if (clientId.equals(client.path("clientId").asText())) {
+        return client;
+      }
+    }
+    throw new AssertionError("client not found in realm: " + clientId);
+  }
+
+  private static JsonNode findUser(String username) {
+    JsonNode users = realmJson.path("users");
+    assertThat(users.isArray()).isTrue();
+    for (JsonNode user : users) {
+      if (username.equals(user.path("username").asText())) {
+        return user;
+      }
+    }
+    throw new AssertionError("user not found in realm: " + username);
+  }
+
+  private static List<String> asTextList(JsonNode array) {
+    List<String> out = new java.util.ArrayList<>();
+    if (!array.isArray()) return out;
+    array.forEach(n -> out.add(n.asText()));
+    return out;
+  }
+
+  private static List<String> asTextList(JsonNode array, String field) {
+    List<String> out = new java.util.ArrayList<>();
+    if (!array.isArray()) return out;
+    array.forEach(n -> out.add(n.path(field).asText()));
+    return out;
+  }
+
+  private static JsonNode getJson(String url) throws Exception {
+    HttpRequest req =
+        HttpRequest.newBuilder(URI.create(url)).header("Accept", "application/json").GET().build();
+    HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+    if (res.statusCode() / 100 != 2) {
+      throw new IllegalStateException(
+          "HTTP " + res.statusCode() + " for " + url + ": " + res.body());
+    }
+    return mapper.readTree(res.body());
+  }
+
+  private static Path resolveRealmJson() {
+    List<Path> candidates =
+        List.of(
+            Path.of("../keycloak/realm/argus-realm.json"),
+            Path.of("services/keycloak/realm/argus-realm.json"));
+    return candidates.stream()
+        .map(Path::toAbsolutePath)
+        .filter(Files::isRegularFile)
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("Cannot locate argus-realm.json"));
+  }
+}

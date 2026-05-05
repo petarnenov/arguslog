@@ -1,9 +1,5 @@
 package org.arguslog.api.adapter.out.postgres;
 
-import org.arguslog.api.application.CursorCodec;
-import org.arguslog.api.application.port.IssueRepository;
-import org.arguslog.api.domain.Issue;
-import org.arguslog.api.security.OrgContext;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -11,6 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
+import org.arguslog.api.application.CursorCodec;
+import org.arguslog.api.application.port.IssueRepository;
+import org.arguslog.api.domain.Issue;
+import org.arguslog.api.security.OrgContext;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
