@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
 import org.arguslog.api.application.CursorCodec.InvalidCursorException;
 import org.arguslog.api.application.GetIssueUseCase;
 import org.arguslog.api.application.ListIssueEventsUseCase;
@@ -61,6 +62,7 @@ class IssueControllerTest {
   @MockitoBean EventRepository eventRepository;
   @MockitoBean ProjectRepository projectRepository;
   @MockitoBean MembershipRepository membershipRepository;
+  @MockitoBean AlertDestinationRepository alertDestinationRepository;
 
   // ── list ─────────────────────────────────────────────────────────────────
 
