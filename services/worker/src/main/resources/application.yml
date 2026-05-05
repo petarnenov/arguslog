@@ -8,12 +8,6 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/argus}
     username: ${DATABASE_USER:argus}
     password: ${DATABASE_PASSWORD:argus}
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate.jdbc.time_zone: UTC
-      hibernate.default_schema: public
   data:
     redis:
       url: ${REDIS_URL:redis://localhost:6379}
