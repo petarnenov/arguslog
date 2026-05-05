@@ -3,7 +3,8 @@ plugins {
 }
 
 allprojects {
-    group = "dev.argus"
+    // Reverse-DNS of project domain arguslog.org. Java packages live under org.arguslog.*.
+    group = "org.arguslog"
     version = "0.0.1-SNAPSHOT"
 }
 

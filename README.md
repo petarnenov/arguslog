@@ -22,7 +22,7 @@ packages/sdk-browser/          # @argus/sdk-browser
 packages/sdk-react/            # @argus/sdk-react (ErrorBoundary + hook)
 packages/eslint-config/        # shared ESLint config
 packages/tsconfig/             # shared tsconfig presets
-java-sdk/                      # dev.argus:argus-java-sdk (Spring Boot autoconfig)
+java-sdk/                      # org.arguslog:argus-java-sdk (Spring Boot autoconfig)
 cli/                           # @argus/cli — releases + sourcemap upload (stub, real in P3)
 e2e/                           # Playwright suites (real flows in P2)
 infra/docker/                  # docker-compose for local dev
@@ -31,6 +31,13 @@ infra/docker/                  # docker-compose for local dev
 Flyway migrations are owned by `services/api` and live in
 `services/api/src/main/resources/db/migration/`. Other services run with
 `flyway.enabled=false`.
+
+### Naming
+
+Java packages and Maven `groupId` use `org.arguslog.*` — reverse-DNS of
+the project domain `arguslog.org`. The product name is still **Argus**;
+`arguslog` only appears in coordinates and the public domain (the short
+domain `argus.org` was unavailable at registration time).
 
 ## Local dev
 

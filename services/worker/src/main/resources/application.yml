@@ -46,9 +46,9 @@ argus:
     bot-token: ${TELEGRAM_BOT_TOKEN:}
   resend:
     api-key: ${RESEND_API_KEY:}
-    from: ${RESEND_FROM:alerts@argus.dev}
+    from: ${RESEND_FROM:alerts@arguslog.org}
 
 logging:
   level:
     root: INFO
-    dev.argus: INFO
+    org.arguslog: INFO
