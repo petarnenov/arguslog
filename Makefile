@@ -36,6 +36,7 @@ dev: up ## Start the full stack (infra + 3× JVM services + web) via mprocs
 
 up: ## Start Postgres/Redis/Keycloak/MinIO/MailHog and wait until healthy
 	@$(COMPOSE) up -d --wait
+	@$(COMPOSE) --profile init run --rm minio-bucket-init
 
 down: ## Stop and remove infra containers (volumes preserved)
 	@$(COMPOSE) down

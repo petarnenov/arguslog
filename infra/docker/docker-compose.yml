@@ -79,6 +79,7 @@ services:
   minio-bucket-init:
     image: minio/mc:latest
     container_name: argus-minio-init
+    profiles: ['init']
     depends_on:
       minio:
         condition: service_healthy
