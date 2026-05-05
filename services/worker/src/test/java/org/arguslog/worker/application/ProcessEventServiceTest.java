@@ -2,6 +2,7 @@ package org.arguslog.worker.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -10,11 +11,14 @@ import java.util.UUID;
 import org.arguslog.worker.application.ProcessEventUseCase.Result;
 import org.arguslog.worker.application.port.EventStore;
 import org.arguslog.worker.application.port.Fingerprinter;
+import org.arguslog.worker.application.port.PersistedEventPublisher;
 import org.arguslog.worker.domain.Fingerprint;
 import org.arguslog.worker.domain.IncomingEvent;
+import org.arguslog.worker.domain.PersistedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.TransientDataAccessResourceException;
@@ -24,36 +28,61 @@ class ProcessEventServiceTest {
 
   @Mock Fingerprinter fingerprinter;
   @Mock EventStore store;
+  @Mock PersistedEventPublisher publisher;
 
   ProcessEventService service;
 
   IncomingEvent event;
   Fingerprint fingerprint;
+  EventStore.PersistResult sampleResult;
 
   @BeforeEach
   void setUp() {
-    service = new ProcessEventService(fingerprinter, store);
+    service = new ProcessEventService(fingerprinter, store, publisher);
     event =
         new IncomingEvent(
             UUID.randomUUID(), 101L, "pk", Instant.parse("2026-05-05T12:00:00Z"), "{}", "ip", "ua");
     fingerprint = new Fingerprint("abc123", "TypeError: x", null, Fingerprint.Level.ERROR);
+    sampleResult =
+        new EventStore.PersistResult(
+            7L,
+            true,
+            "error",
+            Instant.parse("2026-05-05T12:00:00Z"),
+            Instant.parse("2026-05-05T12:00:00Z"),
+            1L);
   }
 
   @Test
-  void persistsAndReportsNewIssueOnFirstEncounter() {
+  void persistsAndPublishesPersistedEventOnFirstEncounter() {
     when(fingerprinter.compute(event.rawPayload())).thenReturn(fingerprint);
-    when(store.persist(event, fingerprint)).thenReturn(new EventStore.PersistResult(7L, true));
+    when(store.persist(event, fingerprint)).thenReturn(sampleResult);
 
     Result result = service.process(event);
 
     assertThat(result).isEqualTo(new Result.Persisted(7L, true));
-    verify(store).persist(event, fingerprint);
+    ArgumentCaptor<PersistedEvent> captor = ArgumentCaptor.forClass(PersistedEvent.class);
+    verify(publisher).publish(captor.capture());
+    PersistedEvent published = captor.getValue();
+    assertThat(published.issueId()).isEqualTo(7L);
+    assertThat(published.projectId()).isEqualTo(101L);
+    assertThat(published.level()).isEqualTo("error");
+    assertThat(published.newIssue()).isTrue();
+    assertThat(published.occurrenceCount()).isEqualTo(1L);
   }
 
   @Test
   void reportsExistingIssueOnRepeatEncounter() {
     when(fingerprinter.compute(event.rawPayload())).thenReturn(fingerprint);
-    when(store.persist(event, fingerprint)).thenReturn(new EventStore.PersistResult(7L, false));
+    when(store.persist(event, fingerprint))
+        .thenReturn(
+            new EventStore.PersistResult(
+                7L,
+                false,
+                "error",
+                Instant.parse("2026-05-05T10:00:00Z"),
+                Instant.parse("2026-05-05T12:00:00Z"),
+                42L));
 
     Result result = service.process(event);
 
@@ -65,15 +94,24 @@ class ProcessEventServiceTest {
     Fingerprint unknown =
         new Fingerprint("unknown", "Unparseable event", null, Fingerprint.Level.ERROR);
     when(fingerprinter.compute(event.rawPayload())).thenReturn(unknown);
-    when(store.persist(event, unknown)).thenReturn(new EventStore.PersistResult(99L, true));
+    when(store.persist(event, unknown))
+        .thenReturn(
+            new EventStore.PersistResult(
+                99L,
+                true,
+                "error",
+                Instant.parse("2026-05-05T12:00:00Z"),
+                Instant.parse("2026-05-05T12:00:00Z"),
+                1L));
 
     Result result = service.process(event);
 
     assertThat(result).isEqualTo(new Result.SalvagedAsUnknown(99L));
+    verify(publisher).publish(any()); // even unparseable events feed alerts
   }
 
   @Test
-  void transientDbFailureMarksEventRetryable() {
+  void transientDbFailureMarksEventRetryableAndDoesNotPublish() {
     when(fingerprinter.compute(event.rawPayload())).thenReturn(fingerprint);
     when(store.persist(any(), any()))
         .thenThrow(new TransientDataAccessResourceException("connection lost"));
@@ -82,5 +120,19 @@ class ProcessEventServiceTest {
 
     assertThat(result).isInstanceOf(Result.Retryable.class);
     assertThat(((Result.Retryable) result).reason()).contains("connection lost");
+    verify(publisher, never()).publish(any());
+  }
+
+  @Test
+  void publisherFailureDoesNotFailThePersist() {
+    // The persist already committed; an alerts-pipeline hiccup must not surface as Retryable
+    // (which would re-deliver and double-count occurrence_count on the next run).
+    when(fingerprinter.compute(event.rawPayload())).thenReturn(fingerprint);
+    when(store.persist(event, fingerprint)).thenReturn(sampleResult);
+    org.mockito.Mockito.doThrow(new RuntimeException("redis down")).when(publisher).publish(any());
+
+    Result result = service.process(event);
+
+    assertThat(result).isEqualTo(new Result.Persisted(7L, true));
   }
 }

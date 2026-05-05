@@ -106,8 +106,10 @@ class IngestToPostgresEndToEndTest {
     // Worker side --------------------------------------------------------
     JdbcEventStore rawStore = new JdbcEventStore(dataSource);
     TransactionTemplate tx = new TransactionTemplate(new JdbcTransactionManager(dataSource));
+    // Alerts pipeline is exercised in its own tests; here we only care about the persist path.
     ProcessEventService unwrapped =
-        new ProcessEventService(new PayloadFingerprinter(new ObjectMapper()), rawStore);
+        new ProcessEventService(
+            new PayloadFingerprinter(new ObjectMapper()), rawStore, persisted -> {});
     ProcessEventUseCase wrapped = event -> tx.execute(status -> unwrapped.process(event));
 
     RedisStreamProperties props =

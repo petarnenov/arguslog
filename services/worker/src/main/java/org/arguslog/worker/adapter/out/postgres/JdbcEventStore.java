@@ -26,7 +26,8 @@ public class JdbcEventStore implements EventStore {
       ON CONFLICT (project_id, environment_id, fingerprint)
         DO UPDATE SET last_seen_at     = GREATEST(issues.last_seen_at, EXCLUDED.last_seen_at),
                       occurrence_count = issues.occurrence_count + 1
-        RETURNING id, (xmax = 0) AS is_insert
+        RETURNING id, (xmax = 0) AS is_insert,
+                  level::text AS level_text, first_seen_at, last_seen_at, occurrence_count
       """;
 
   private static final String INSERT_EVENT_SQL =
@@ -48,16 +49,23 @@ public class JdbcEventStore implements EventStore {
   @Override
   @Transactional
   public PersistResult persist(IncomingEvent event, Fingerprint fingerprint) {
-    UpsertRow row = upsertIssue(event, fingerprint);
-    insertEvent(event, row.issueId);
-    return new PersistResult(row.issueId, row.isInsert);
+    PersistResult row = upsertIssue(event, fingerprint);
+    insertEvent(event, row.issueId());
+    return row;
   }
 
-  private UpsertRow upsertIssue(IncomingEvent event, Fingerprint fingerprint) {
+  private PersistResult upsertIssue(IncomingEvent event, Fingerprint fingerprint) {
     try {
       return jdbc.queryForObject(
           UPSERT_ISSUE_SQL,
-          (rs, rowNum) -> new UpsertRow(rs.getLong("id"), rs.getBoolean("is_insert")),
+          (rs, rowNum) ->
+              new PersistResult(
+                  rs.getLong("id"),
+                  rs.getBoolean("is_insert"),
+                  rs.getString("level_text"),
+                  rs.getTimestamp("first_seen_at").toInstant(),
+                  rs.getTimestamp("last_seen_at").toInstant(),
+                  rs.getLong("occurrence_count")),
           event.projectId(),
           fingerprint.hash(),
           fingerprint.level().dbValue(),
@@ -82,6 +90,4 @@ public class JdbcEventStore implements EventStore {
         },
         new int[] {Types.OTHER, Types.BIGINT, Types.BIGINT, Types.TIMESTAMP, Types.OTHER});
   }
-
-  private record UpsertRow(long issueId, boolean isInsert) {}
 }

@@ -1,5 +1,6 @@
 package org.arguslog.worker.application.port;
 
+import java.time.Instant;
 import org.arguslog.worker.domain.Fingerprint;
 import org.arguslog.worker.domain.IncomingEvent;
 
@@ -12,9 +13,16 @@ public interface EventStore {
   /**
    * Atomically: (1) upsert the issue keyed by (projectId, environmentId=NULL, fingerprint), (2)
    * bump occurrence_count + last_seen_at, (3) insert the event payload into the events hypertable.
-   * Returns the issue id and whether this call created the issue (vs. bumped an existing one).
+   * Returns the post-upsert issue snapshot the rule evaluator needs (level / first_seen /
+   * occurrence_count) so we don't pay a re-SELECT per event.
    */
   PersistResult persist(IncomingEvent event, Fingerprint fingerprint);
 
-  record PersistResult(long issueId, boolean newIssue) {}
+  record PersistResult(
+      long issueId,
+      boolean newIssue,
+      String level,
+      Instant firstSeenAt,
+      Instant lastSeenAt,
+      long occurrenceCount) {}
 }
