@@ -1,0 +1,4 @@
+{
+  "extends": "@argus/tsconfig/node.json",
+  "include": ["src/**/*"]
+}
