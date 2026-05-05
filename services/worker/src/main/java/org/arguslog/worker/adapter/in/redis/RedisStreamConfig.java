@@ -43,7 +43,7 @@ public class RedisStreamConfig {
           .createGroup(props.streamKey(), ReadOffset.from("0"), props.consumerGroup());
       log.info("created consumer group {} on stream {}", props.consumerGroup(), props.streamKey());
     } catch (Exception e) {
-      if (e.getMessage() != null && e.getMessage().contains("BUSYGROUP")) {
+      if (isBusyGroup(e)) {
         log.debug(
             "consumer group {} on stream {} already exists",
             props.consumerGroup(),
@@ -52,6 +52,16 @@ public class RedisStreamConfig {
         throw e;
       }
     }
+  }
+
+  private static boolean isBusyGroup(Throwable t) {
+    for (Throwable c = t; c != null; c = c.getCause()) {
+      String msg = c.getMessage();
+      if (msg != null && msg.contains("BUSYGROUP")) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Bean
