@@ -21,7 +21,7 @@ import { Link, Navigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
 import { createProject } from '../api/projects';
-import { useMyOrgs, useProjects, queryKeys } from '../api/queries';
+import { queryKeys, useMyOrgs, useProjects } from '../api/queries';
 
 export function ProjectsPage() {
   const { orgSlug } = useParams();
@@ -68,11 +68,30 @@ export function ProjectsPage() {
     );
   }
 
+  if (orgsQuery.isError) {
+    return (
+      <Stack>
+        <Title order={3}>{t('projects.title')}</Title>
+        <Alert color="red" variant="light">
+          {orgsQuery.error instanceof ApiError
+            ? (orgsQuery.error.problem.detail ?? orgsQuery.error.problem.title)
+            : String(orgsQuery.error)}
+        </Alert>
+      </Stack>
+    );
+  }
+
   if (orgsQuery.data && orgsQuery.data.length === 0) {
     return <Navigate to="/onboarding" replace />;
   }
 
   if (!org) {
+    // Slug in the URL does not match any org the user belongs to. Steer them to a real one
+    // (their first) instead of leaving them on a dead page with no recovery path.
+    const firstSlug = orgsQuery.data?.[0]?.slug;
+    if (firstSlug && firstSlug !== orgSlug) {
+      return <Navigate to={`/orgs/${firstSlug}/projects`} replace />;
+    }
     return (
       <Stack>
         <Title order={3}>{t('projects.title')}</Title>
