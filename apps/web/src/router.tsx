@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from 'react-router';
 import { RequireAuth } from './auth/RequireAuth';
 import { AppShellLayout } from './layouts/AppShellLayout';
 import { AdminPage } from './pages/AdminPage';
+import { AlertDestinationsPage } from './pages/AlertDestinationsPage';
+import { AlertRulesPage } from './pages/AlertRulesPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { IssueDetailPage } from './pages/IssueDetailPage';
 import { IssuesPage } from './pages/IssuesPage';
@@ -36,7 +38,9 @@ export const router = createBrowserRouter([
       },
       { path: '/orgs/:orgSlug/projects/:projectId/settings', element: <ProjectSettingsPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/settings/keys', element: <ProjectKeysPage /> },
+      { path: '/orgs/:orgSlug/projects/:projectId/alert-rules', element: <AlertRulesPage /> },
       { path: '/orgs/:orgSlug/settings', element: <OrgSettingsPage /> },
+      { path: '/orgs/:orgSlug/settings/destinations', element: <AlertDestinationsPage /> },
       { path: '/admin', element: <AdminPage /> },
     ],
   },

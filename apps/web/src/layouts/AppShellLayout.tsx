@@ -12,8 +12,10 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import {
   IconAlertTriangle,
+  IconBell,
   IconHome,
   IconLogout,
+  IconSend,
   IconSettings,
   IconShieldLock,
   IconUser,
@@ -72,6 +74,12 @@ export function AppShellLayout() {
             label={t('nav.issues')}
             leftSection={<IconHome size={16} />}
           />
+          <NavLink
+            component={Link}
+            to={`/orgs/${orgSlug}/settings/destinations`}
+            label={t('nav.destinations')}
+            leftSection={<IconSend size={16} />}
+          />
           {projectId && (
             <>
               <NavLink
@@ -79,6 +87,12 @@ export function AppShellLayout() {
                 to={`/orgs/${orgSlug}/projects/${projectId}/issues`}
                 label={t('issues.title')}
                 leftSection={<IconAlertTriangle size={16} />}
+              />
+              <NavLink
+                component={Link}
+                to={`/orgs/${orgSlug}/projects/${projectId}/alert-rules`}
+                label={t('nav.alertRules')}
+                leftSection={<IconBell size={16} />}
               />
               <NavLink
                 component={Link}
