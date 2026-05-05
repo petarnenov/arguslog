@@ -55,4 +55,4 @@ argus:
 logging:
   level:
     root: INFO
-    dev.argus: INFO
+    org.arguslog: INFO

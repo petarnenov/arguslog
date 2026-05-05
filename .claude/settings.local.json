@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make up *)",
+      "Bash(git pull *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(make help *)",
+      "Bash(make stop *)",
+      "Bash(gh repo *)",
+      "Bash(command -v gh)",
+      "Bash(gh --version)",
+      "Bash(./gradlew test *)",
+      "Bash(grep -E --line-buffered \"BUILD SUCCESSFUL|BUILD FAILED|FAILED$|FAILURE:|tests completed|tests failed\")",
+      "Bash(DOCKER_HOST=unix:///Users/petarnenov/.docker/run/docker.sock TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock ./gradlew :services:api:test --tests \"*FlywayMigrationTest*\" --info --console=plain)",
+      "Bash(docker info *)",
+      "Read(//Users/petarnenov/Library/Containers/com.docker.docker/**)",
+      "Read(//Users/petarnenov/.docker/**)",
+      "Bash(DOCKER_HOST=unix:///Users/petarnenov/Library/Containers/com.docker.docker/Data/docker.raw.sock ./gradlew :services:api:test --tests \"*FlywayMigrationTest*\" --console=plain)",
+      "Bash(DOCKER_HOST=unix:///Users/petarnenov/Library/Containers/com.docker.docker/Data/docker.raw.sock ./gradlew :services:api:test --tests \"*FlywayMigrationTest*\" --info --console=plain)",
+      "Bash(DOCKER_HOST=unix:///Users/petarnenov/Library/Containers/com.docker.docker/Data/docker.raw.sock DOCKER_API_VERSION=1.45 ./gradlew :services:api:test --tests \"*FlywayMigrationTest*\" --console=plain)",
+      "Bash(DOCKER_HOST=unix:///Users/petarnenov/Library/Containers/com.docker.docker/Data/docker.raw.sock DOCKER_API_VERSION=1.45 ./gradlew :services:api:test --tests \"*FlywayMigrationTest*\" --info --console=plain)",
+      "WebFetch(domain:central.sonatype.com)",
+      "WebSearch",
+      "Bash(./gradlew :services:api:test --tests \"*FlywayMigrationTest*\" --refresh-dependencies --console=plain)",
+      "Bash(grep -E --line-buffered \"BUILD SUCCESSFUL|BUILD FAILED|FAILED$|FAILURE:|tests completed|PASSED|client version .* is too old|Could not find a valid Docker\")",
+      "Bash(grep -E --line-buffered \"BUILD SUCCESSFUL|BUILD FAILED|FAILED$|FAILURE:|tests completed|client version .* is too old\")",
+      "Bash(grep -E \"BUILD SUCCESSFUL|BUILD FAILED|tests completed|FAILED$\" /private/tmp/claude-503/-Users-petarnenov-argus/67541fea-7141-4e63-8edd-37f3f316c52b/tasks/bg5cd30lk.output)",
+      "Bash(grep -cE \" PASSED$| FAILED$| SKIPPED$\" /private/tmp/claude-503/-Users-petarnenov-argus/67541fea-7141-4e63-8edd-37f3f316c52b/tasks/bg5cd30lk.output)",
+      "Bash(grep -E \" FAILED$\" /private/tmp/claude-503/-Users-petarnenov-argus/67541fea-7141-4e63-8edd-37f3f316c52b/tasks/bg5cd30lk.output)",
+      "Bash(git -C /Users/petarnenov/argus status --short)",
+      "Bash(git -C /Users/petarnenov/argus log --oneline -5)",
+      "Bash(git restore *)"
+    ]
+  }
+}
