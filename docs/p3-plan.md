@@ -17,8 +17,8 @@
 | --- | ----------------------------------------------------------------------------------------------------------- | ------- | --------- |
 | 1   | API: `alert_destinations` CRUD (Telegram / Slack / email / webhook). Config is per-org encrypted at rest.   | ✅ done | `2af4e18` |
 | 2   | API: `alert_rules` CRUD (project-scoped, JSONB conditions, throttle_seconds, enabled flag).                 | ✅ done | `f83851f` |
-| 3   | Worker: rule evaluator — on issue persisted, find matching enabled rules, enqueue for dispatch.             | ⏳ next | —         |
-| 4   | Worker: dispatch fan-out — Telegram first (smallest blast radius), then email (Resend), then Slack/webhook. | pending | —         |
+| 3   | Worker: rule evaluator — on issue persisted, find matching enabled rules, enqueue for dispatch.             | ✅ done | `5d81669` |
+| 4   | Worker: dispatch fan-out — Telegram first (smallest blast radius), then email (Resend), then Slack/webhook. | ⏳ next | —         |
 | 5   | Worker: throttling — Redis-backed `last_fired_at` per rule, skip if within `throttle_seconds`.              | pending | —         |
 | 6   | Web: AlertRulesPage + AlertDestinationsPage under project / org settings.                                   | pending | —         |
 | 7   | CLI: `argus releases new <version>` — POST a release row.                                                   | pending | —         |
