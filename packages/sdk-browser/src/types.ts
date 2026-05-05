@@ -45,7 +45,9 @@ export interface EventPayload {
   request?: { url?: string; userAgent?: string };
 }
 
-export type BeforeSend = (event: EventPayload) => EventPayload | null | Promise<EventPayload | null>;
+export type BeforeSend = (
+  event: EventPayload,
+) => EventPayload | null | Promise<EventPayload | null>;
 
 export interface ArgusOptions {
   dsn: string;

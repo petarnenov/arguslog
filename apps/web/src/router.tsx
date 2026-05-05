@@ -22,7 +22,10 @@ export const router = createBrowserRouter([
       { path: '/orgs', element: <Navigate to="/login" replace /> },
       { path: '/orgs/:orgSlug/projects', element: <ProjectsPage /> },
       { path: '/orgs/:orgSlug/projects/:projectSlug/issues', element: <IssuesPage /> },
-      { path: '/orgs/:orgSlug/projects/:projectSlug/issues/:issueId', element: <IssueDetailPage /> },
+      {
+        path: '/orgs/:orgSlug/projects/:projectSlug/issues/:issueId',
+        element: <IssueDetailPage />,
+      },
       { path: '/orgs/:orgSlug/projects/:projectSlug/settings', element: <ProjectSettingsPage /> },
       { path: '/orgs/:orgSlug/projects/:projectSlug/settings/keys', element: <ProjectKeysPage /> },
       { path: '/orgs/:orgSlug/settings', element: <OrgSettingsPage /> },

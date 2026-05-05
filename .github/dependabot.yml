@@ -7,11 +7,11 @@ updates:
     open-pull-requests-limit: 10
     groups:
       mantine:
-        patterns: ["@mantine/*"]
+        patterns: ['@mantine/*']
       tanstack:
-        patterns: ["@tanstack/*"]
+        patterns: ['@tanstack/*']
       types:
-        patterns: ["@types/*"]
+        patterns: ['@types/*']
 
   - package-ecosystem: gradle
     directory: /
@@ -21,8 +21,8 @@ updates:
     groups:
       spring:
         patterns:
-          - "org.springframework*"
-          - "org.springframework.boot:*"
+          - 'org.springframework*'
+          - 'org.springframework.boot:*'
 
   - package-ecosystem: github-actions
     directory: /

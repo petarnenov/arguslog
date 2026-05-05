@@ -6,7 +6,8 @@ const DEFAULT_PATTERNS: { name: string; re: RegExp }[] = [
   { name: 'bearer', re: /\bBearer\s+[A-Za-z0-9-_.~+/=]+/gi },
 ];
 
-const SENSITIVE_KEYS = /^(password|passwd|secret|authorization|cookie|api[_-]?key|token|x-api-key)$/i;
+const SENSITIVE_KEYS =
+  /^(password|passwd|secret|authorization|cookie|api[_-]?key|token|x-api-key)$/i;
 
 const REDACTED = '[Filtered]';
 

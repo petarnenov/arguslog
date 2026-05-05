@@ -3,14 +3,7 @@ import { parseDsn } from './dsn.js';
 import { Scrubber } from './scrubber.js';
 import { parseStack } from './stack-parser.js';
 import { Transport } from './transport.js';
-import type {
-  ArgusOptions,
-  Breadcrumb,
-  EventPayload,
-  Level,
-  ParsedDsn,
-  User,
-} from './types.js';
+import type { ArgusOptions, Breadcrumb, EventPayload, Level, ParsedDsn, User } from './types.js';
 
 const SDK_NAME = 'argus.javascript';
 const SDK_VERSION = '0.0.0';
@@ -38,7 +31,10 @@ export class ArgusClient {
     });
   }
 
-  captureException(error: unknown, hint?: { level?: Level; tags?: Record<string, string> }): string {
+  captureException(
+    error: unknown,
+    hint?: { level?: Level; tags?: Record<string, string> },
+  ): string {
     const err = toError(error);
     const event = this.baseEvent(hint?.level ?? 'error');
     event.exception = {

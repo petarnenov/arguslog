@@ -3,7 +3,8 @@ package dev.argus.sdk;
 import java.net.URI;
 import java.util.Objects;
 
-public record Dsn(String publicKey, String host, String scheme, String projectId, String ingestUrl) {
+public record Dsn(
+    String publicKey, String host, String scheme, String projectId, String ingestUrl) {
 
   public static Dsn parse(String raw) {
     Objects.requireNonNull(raw, "dsn");

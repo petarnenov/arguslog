@@ -20,7 +20,10 @@ class JsonEncoderTest {
   void encodesNestedStructure() {
     String json =
         JsonEncoder.encode(Map.of("a", 1, "b", List.of("x", "y"), "c", Map.of("nested", true)));
-    assertThat(json).contains("\"a\":1").contains("\"b\":[\"x\",\"y\"]").contains("\"nested\":true");
+    assertThat(json)
+        .contains("\"a\":1")
+        .contains("\"b\":[\"x\",\"y\"]")
+        .contains("\"nested\":true");
   }
 
   @Test

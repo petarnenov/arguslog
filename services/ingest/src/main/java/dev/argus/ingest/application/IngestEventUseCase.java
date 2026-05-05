@@ -8,11 +8,7 @@ public interface IngestEventUseCase {
   Result ingest(Command command);
 
   record Command(
-      long projectId,
-      String dsnPublicKey,
-      String rawPayload,
-      String clientIp,
-      String userAgent) {}
+      long projectId, String dsnPublicKey, String rawPayload, String clientIp, String userAgent) {}
 
   sealed interface Result {
     record Accepted(EventEnvelope envelope) implements Result {}

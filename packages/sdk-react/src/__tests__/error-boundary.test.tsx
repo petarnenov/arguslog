@@ -13,7 +13,9 @@ describe('ArgusErrorBoundary', () => {
     __resetForTests();
     init({
       dsn: 'http://k@localhost:8080/1',
-      transport: { fetch: vi.fn(async () => new Response(null, { status: 202 })) as unknown as typeof fetch },
+      transport: {
+        fetch: vi.fn(async () => new Response(null, { status: 202 })) as unknown as typeof fetch,
+      },
     });
     // suppress React's expected error log for thrown components
     vi.spyOn(console, 'error').mockImplementation(() => undefined);

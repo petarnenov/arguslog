@@ -1,14 +1,7 @@
 import { ArgusClient } from './client.js';
 import type { ArgusOptions, Breadcrumb, Level, User } from './types.js';
 
-export type {
-  ArgusOptions,
-  Breadcrumb,
-  EventPayload,
-  Level,
-  StackFrame,
-  User,
-} from './types.js';
+export type { ArgusOptions, Breadcrumb, EventPayload, Level, StackFrame, User } from './types.js';
 export { ArgusClient } from './client.js';
 export { parseDsn, InvalidDsnError } from './dsn.js';
 

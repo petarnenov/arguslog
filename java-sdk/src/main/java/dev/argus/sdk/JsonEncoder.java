@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Minimal dependency-free JSON encoder for the SDK transport. We avoid pulling Jackson into the
- * SDK to keep its footprint tiny and to play nicely with classpath-conflict-prone host apps.
+ * Minimal dependency-free JSON encoder for the SDK transport. We avoid pulling Jackson into the SDK
+ * to keep its footprint tiny and to play nicely with classpath-conflict-prone host apps.
  */
 final class JsonEncoder {
 

@@ -7,7 +7,8 @@ export function IssuesPage() {
   const { orgSlug, projectSlug } = useParams();
 
   // Placeholder data — will be replaced by useQuery on api-client
-  const issues: { id: string; title: string; level: string; lastSeen: string; count: number }[] = [];
+  const issues: { id: string; title: string; level: string; lastSeen: string; count: number }[] =
+    [];
 
   if (issues.length === 0) {
     return (
