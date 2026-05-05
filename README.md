@@ -55,20 +55,20 @@ running across mprocs sessions; tear it down with `make down`.
 
 ### Make targets
 
-| | |
-|---|---|
-| `make dev`            | full stack (infra + JVM services + web) |
-| `make up` / `down`    | infra only (compose up `--wait` / down) |
-| `make logs` / `ps`    | tail / inspect infra |
-| `make api`            | `argus-api` foreground (`:8081`) |
-| `make ingest`         | `argus-ingest` foreground (`:8080`) |
-| `make worker`         | `argus-worker` foreground (`:8082`) |
-| `make web`            | Vite dev server (`:5173`) |
-| `make build`          | Gradle + Turbo full build |
-| `make lint` / `typecheck` / `test` / `e2e` | quality gates |
-| `make clean` / `reset` | drop build artifacts / nuke containers + volumes + node\_modules |
-| `make doctor`         | check prerequisites |
-| `make help`           | list all targets |
+|                                            |                                                                 |
+| ------------------------------------------ | --------------------------------------------------------------- |
+| `make dev`                                 | full stack (infra + JVM services + web)                         |
+| `make up` / `down`                         | infra only (compose up `--wait` / down)                         |
+| `make logs` / `ps`                         | tail / inspect infra                                            |
+| `make api`                                 | `argus-api` foreground (`:8081`)                                |
+| `make ingest`                              | `argus-ingest` foreground (`:8080`)                             |
+| `make worker`                              | `argus-worker` foreground (`:8082`)                             |
+| `make web`                                 | Vite dev server (`:5173`)                                       |
+| `make build`                               | Gradle + Turbo full build                                       |
+| `make lint` / `typecheck` / `test` / `e2e` | quality gates                                                   |
+| `make clean` / `reset`                     | drop build artifacts / nuke containers + volumes + node_modules |
+| `make doctor`                              | check prerequisites                                             |
+| `make help`                                | list all targets                                                |
 
 ### Manual route (without `make` / `mprocs`)
 

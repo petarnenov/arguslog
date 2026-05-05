@@ -7,21 +7,21 @@
 
 procs:
   ingest:
-    shell: "./gradlew --console=plain :services:ingest:bootRun"
+    shell: './gradlew --console=plain :services:ingest:bootRun'
     autostart: true
 
   api:
-    shell: "./gradlew --console=plain :services:api:bootRun"
+    shell: './gradlew --console=plain :services:api:bootRun'
     autostart: true
 
   worker:
-    shell: "./gradlew --console=plain :services:worker:bootRun"
+    shell: './gradlew --console=plain :services:worker:bootRun'
     autostart: true
 
   web:
-    shell: "pnpm --filter @argus/web dev"
+    shell: 'pnpm --filter @argus/web dev'
     autostart: true
 
   infra-logs:
-    shell: "docker compose -f infra/docker/docker-compose.yml logs -f --tail=50"
+    shell: 'docker compose -f infra/docker/docker-compose.yml logs -f --tail=50'
     autostart: false
