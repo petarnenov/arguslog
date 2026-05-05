@@ -17,7 +17,7 @@ bucket4j = "8.14.0"
 stripeJava = "29.0.0"
 telegramBot = "7.10.0"
 resend = "4.0.1"
-argon2 = "2.11"
+argon2 = "2.12"
 mockito = "5.15.2"
 pact = "4.6.16"
 
