@@ -19,7 +19,7 @@
 | 5   | Web IssuesPage wired to real API via TanStack Query + Mantine table; status / level filters; pagination.             | ✅ done | `6cca436` |
 | 6   | Web IssueDetailPage — title / culprit / chart from `issue_stats_5m`, recent events panel.                            | ✅ done | `ad1cd26` |
 | 7   | Keycloak realm verification — confirm `argus-api` + `argus-web` clients, pwa scopes, default test users.             | ✅ done | `2b7c814` |
-| 8   | OpenAPI artifact emit + the openapi-diff CI job lights up (was a placeholder under PR workflow).                     | ⏳ next | —         |
+| 8   | OpenAPI artifact emit + the openapi-diff CI job lights up (was a placeholder under PR workflow).                     | ✅ done | `73aa76c` |
 
 ## Architecture decisions to lock in
 
