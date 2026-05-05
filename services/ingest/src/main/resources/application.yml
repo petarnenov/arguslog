@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: argus-ingest
+  threads:
+    virtual:
+      enabled: true
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+  servlet:
+    encoding:
+      charset: UTF-8
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
+argus:
+  ingest:
+    stream-key: events:incoming
+    max-payload-bytes: 204800
+  rate-limit:
+    requests-per-second: 50
+    burst: 100
+
+logging:
+  level:
+    root: INFO
+    dev.argus: INFO

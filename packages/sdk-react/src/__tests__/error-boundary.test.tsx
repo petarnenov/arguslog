@@ -1,0 +1,63 @@
+import { __resetForTests, init } from '@argus/sdk-browser';
+import { render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { ArgusErrorBoundary } from '../error-boundary.js';
+
+const Boom = ({ msg }: { msg: string }): never => {
+  throw new Error(msg);
+};
+
+describe('ArgusErrorBoundary', () => {
+  beforeEach(() => {
+    __resetForTests();
+    init({
+      dsn: 'http://k@localhost:8080/1',
+      transport: { fetch: vi.fn(async () => new Response(null, { status: 202 })) as unknown as typeof fetch },
+    });
+    // suppress React's expected error log for thrown components
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    __resetForTests();
+    vi.restoreAllMocks();
+  });
+
+  it('renders children when no error', () => {
+    render(
+      <ArgusErrorBoundary fallback={<div>fallback</div>}>
+        <div>ok</div>
+      </ArgusErrorBoundary>,
+    );
+    expect(screen.getByText('ok')).toBeDefined();
+  });
+
+  it('renders fallback when child throws', () => {
+    render(
+      <ArgusErrorBoundary fallback={<div>fallback</div>}>
+        <Boom msg="boom" />
+      </ArgusErrorBoundary>,
+    );
+    expect(screen.getByText('fallback')).toBeDefined();
+  });
+
+  it('supports a render-prop fallback', () => {
+    render(
+      <ArgusErrorBoundary fallback={({ error }) => <div>{error.message}</div>}>
+        <Boom msg="custom" />
+      </ArgusErrorBoundary>,
+    );
+    expect(screen.getByText('custom')).toBeDefined();
+  });
+
+  it('calls onError prop', () => {
+    const onError = vi.fn();
+    render(
+      <ArgusErrorBoundary fallback={<div>x</div>} onError={onError}>
+        <Boom msg="cb" />
+      </ArgusErrorBoundary>,
+    );
+    expect(onError).toHaveBeenCalled();
+  });
+});

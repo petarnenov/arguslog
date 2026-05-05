@@ -1,0 +1,65 @@
+# Node
+node_modules/
+.pnpm-store/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+out/
+.turbo/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Java / Gradle
+.gradle/
+build/
+!gradle-wrapper.jar
+!**/src/**/build/
+bin/
+*.class
+*.jar
+!gradle/wrapper/*.jar
+hs_err_pid*
+replay_pid*
+
+# IDE
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.recommended.json
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets/
+
+# Docker volumes (local dev)
+infra/docker/volumes/
+
+# Test artifacts
+playwright-report/
+test-results/
+.playwright/
+
+# Misc
+*.tmp
+*.bak

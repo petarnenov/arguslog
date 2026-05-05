@@ -1,0 +1,37 @@
+{
+  "app": {
+    "name": "Argus",
+    "tagline": "Error tracking for modern teams"
+  },
+  "nav": {
+    "issues": "Issues",
+    "alerts": "Alerts",
+    "settings": "Settings",
+    "members": "Members",
+    "billing": "Billing",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Sign in",
+    "loginHint": "Sign in with your organization account",
+    "signup": "Create account"
+  },
+  "onboarding": {
+    "title": "Create your first project",
+    "orgName": "Organization name",
+    "projectName": "Project name",
+    "platform": "Platform",
+    "create": "Create project"
+  },
+  "issues": {
+    "title": "Issues",
+    "empty": "No issues — your code is healthy.",
+    "level": "Level",
+    "lastSeen": "Last seen",
+    "occurrences": "Occurrences"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "tryAgain": "Try again"
+  }
+}

@@ -1,0 +1,12 @@
+# Default owner — adjust once team is staffed
+*       @argus/core-team
+
+# Service-specific
+/services/api/        @argus/api-owners
+/services/ingest/     @argus/ingest-owners
+/services/worker/     @argus/worker-owners
+/apps/web/            @argus/web-owners
+/packages/sdk-*       @argus/sdk-owners
+/java-sdk/            @argus/sdk-owners
+/.github/             @argus/platform-owners
+/infra/               @argus/platform-owners

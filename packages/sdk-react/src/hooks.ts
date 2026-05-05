@@ -1,0 +1,25 @@
+import {
+  addBreadcrumb,
+  captureException,
+  captureMessage,
+  getClient,
+  setContext,
+  setTag,
+  setUser,
+} from '@argus/sdk-browser';
+import { useMemo } from 'react';
+
+export function useArgus() {
+  return useMemo(
+    () => ({
+      captureException,
+      captureMessage,
+      addBreadcrumb,
+      setUser,
+      setTag,
+      setContext,
+      isInitialized: () => Boolean(getClient()),
+    }),
+    [],
+  );
+}
