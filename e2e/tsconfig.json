@@ -1,0 +1,7 @@
+{
+  "extends": "@argus/tsconfig/node.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["tests/**/*", "playwright.config.ts"]
+}
