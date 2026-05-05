@@ -6,6 +6,13 @@ description = "Argus API — REST API, Stripe webhooks, admin, Flyway owner"
 
 val libs = the<org.gradle.accessors.dm.LibrariesForLibs>()
 
+// KeycloakRealmImportTest uses KeycloakContainer.withRealmImportFile, which expects the realm
+// JSON on the test classpath. Copy it from the canonical location (services/keycloak/realm) at
+// processTestResources time so the test never silently runs against a stale duplicate.
+tasks.named<Copy>("processTestResources") {
+    from("../keycloak/realm/argus-realm.json")
+}
+
 dependencies {
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.actuator)
@@ -30,6 +37,7 @@ dependencies {
     testImplementation(libs.testcontainers.junit)
     testImplementation(libs.testcontainers.postgres)
     testImplementation(libs.testcontainers.minio)
+    testImplementation(libs.testcontainers.keycloak)
     testImplementation(libs.wiremock.standalone)
     testImplementation(libs.mockito.junit)
 }

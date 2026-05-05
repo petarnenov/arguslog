@@ -1,8 +1,8 @@
 package org.arguslog.api.application;
 
+import java.util.Optional;
 import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.domain.Issue;
-import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

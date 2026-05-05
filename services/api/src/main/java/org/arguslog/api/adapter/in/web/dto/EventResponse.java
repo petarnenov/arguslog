@@ -2,9 +2,9 @@ package org.arguslog.api.adapter.in.web.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.arguslog.api.domain.Event;
 import java.time.Instant;
 import java.util.UUID;
+import org.arguslog.api.domain.Event;
 
 public record EventResponse(
     UUID id,

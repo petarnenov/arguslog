@@ -1,5 +1,8 @@
 package org.arguslog.api.adapter.in.web;
 
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
 import org.arguslog.api.adapter.in.web.dto.EventResponse;
 import org.arguslog.api.adapter.in.web.dto.IssueResponse;
 import org.arguslog.api.adapter.in.web.dto.PageResponse;
@@ -10,9 +13,6 @@ import org.arguslog.api.application.ListIssuesUseCase;
 import org.arguslog.api.application.ListIssuesUseCase.Query;
 import org.arguslog.api.domain.Issue;
 import org.arguslog.api.security.AccessException;
-import java.net.URI;
-import java.util.List;
-import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -121,7 +121,8 @@ public class IssueController {
         ProblemDetail.forStatusAndDetail(
             org.springframework.http.HttpStatus.valueOf(status), detail);
     body.setTitle(title);
-    body.setType(URI.create("https://arguslog.org/problems/" + title.toLowerCase().replace(' ', '-')));
+    body.setType(
+        URI.create("https://arguslog.org/problems/" + title.toLowerCase().replace(' ', '-')));
     return ResponseEntity.status(status).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(body);
   }
 

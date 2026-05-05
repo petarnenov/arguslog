@@ -1,8 +1,8 @@
 package org.arguslog.api.application;
 
-import org.arguslog.api.domain.Event;
 import java.util.List;
 import java.util.Optional;
+import org.arguslog.api.domain.Event;
 
 public interface ListIssueEventsUseCase {
 

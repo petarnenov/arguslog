@@ -1,9 +1,9 @@
 package org.arguslog.api.application.port;
 
-import org.arguslog.api.application.CursorCodec;
-import org.arguslog.api.domain.Issue;
 import java.util.List;
 import java.util.Optional;
+import org.arguslog.api.application.CursorCodec;
+import org.arguslog.api.domain.Issue;
 
 /**
  * Read-side persistence port for the issues table. Implementations decide how to enforce tenancy

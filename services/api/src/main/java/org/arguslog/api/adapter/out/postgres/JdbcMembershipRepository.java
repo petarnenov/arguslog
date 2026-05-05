@@ -1,8 +1,8 @@
 package org.arguslog.api.adapter.out.postgres;
 
-import org.arguslog.api.application.port.MembershipRepository;
 import java.util.UUID;
 import javax.sql.DataSource;
+import org.arguslog.api.application.port.MembershipRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 

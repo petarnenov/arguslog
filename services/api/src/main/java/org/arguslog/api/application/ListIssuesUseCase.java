@@ -1,8 +1,8 @@
 package org.arguslog.api.application;
 
-import org.arguslog.api.domain.Issue;
 import java.util.List;
 import java.util.Optional;
+import org.arguslog.api.domain.Issue;
 
 /** Inbound port: list a project's issues, sorted by last_seen_at desc, with cursor pagination. */
 public interface ListIssuesUseCase {
