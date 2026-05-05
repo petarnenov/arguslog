@@ -1,6 +1,10 @@
 package org.arguslog.worker.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class EvaluatePersistedEventServiceTest {
 
   @Mock AlertRuleRepository rules;
+  @Mock DispatchAlertUseCase dispatcher;
 
   EvaluatePersistedEventService service;
   PersistedEvent event;
@@ -33,7 +38,8 @@ class EvaluatePersistedEventServiceTest {
     service =
         new EvaluatePersistedEventService(
             rules,
-            new RuleEvaluator(Clock.fixed(Instant.parse("2026-05-05T12:00:00Z"), ZoneOffset.UTC)));
+            new RuleEvaluator(Clock.fixed(Instant.parse("2026-05-05T12:00:00Z"), ZoneOffset.UTC)),
+            dispatcher);
     event =
         new PersistedEvent(
             7L,
@@ -46,13 +52,14 @@ class EvaluatePersistedEventServiceTest {
   }
 
   @Test
-  void noRulesReturnsEmpty() {
+  void noRulesReturnsEmptyAndDoesNotDispatch() {
     when(rules.enabledForProject(101L)).thenReturn(List.of());
     assertThat(service.evaluate(event)).isEmpty();
+    verify(dispatcher, never()).dispatch(any(), any());
   }
 
   @Test
-  void filtersByConditionsAndReturnsOnlyMatches() throws Exception {
+  void filtersByConditionsAndDispatchesEachMatch() throws Exception {
     AlertRule fires = rule(1, "{\"level\":{\"in\":[\"error\"]}}");
     AlertRule skips = rule(2, "{\"level\":{\"in\":[\"fatal\"]}}");
     AlertRule alsoFires = rule(3, "{}");
@@ -61,11 +68,29 @@ class EvaluatePersistedEventServiceTest {
     List<AlertRule> matches = service.evaluate(event);
 
     assertThat(matches).extracting(AlertRule::id).containsExactly(1L, 3L);
+    verify(dispatcher).dispatch(eq(fires), eq(event));
+    verify(dispatcher).dispatch(eq(alsoFires), eq(event));
+    verify(dispatcher, never()).dispatch(eq(skips), any());
+  }
+
+  @Test
+  void dispatcherFailureOnOneRuleDoesNotBlockSubsequentRules() throws Exception {
+    AlertRule first = rule(1, "{}");
+    AlertRule second = rule(2, "{}");
+    when(rules.enabledForProject(101L)).thenReturn(List.of(first, second));
+    org.mockito.Mockito.doThrow(new RuntimeException("boom"))
+        .when(dispatcher)
+        .dispatch(eq(first), any());
+
+    List<AlertRule> matches = service.evaluate(event);
+
+    assertThat(matches).extracting(AlertRule::id).containsExactly(1L, 2L);
+    verify(dispatcher).dispatch(eq(second), eq(event));
   }
 
   private AlertRule rule(long id, String conditionsJson) throws Exception {
     JsonNode conditions = mapper.readTree(conditionsJson);
     JsonNode actions = mapper.readTree("{\"destinationIds\":[1]}");
-    return new AlertRule(id, 101L, conditions, actions, 300);
+    return new AlertRule(id, 101L, "rule-" + id, conditions, actions, 300);
   }
 }
