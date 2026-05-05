@@ -5,6 +5,7 @@ import org.arguslog.worker.application.port.AlertDestinationRepository;
 import org.arguslog.worker.application.port.AlertRuleRepository;
 import org.arguslog.worker.application.port.EventStore;
 import org.arguslog.worker.application.port.PersistedEventPublisher;
+import org.arguslog.worker.application.port.RuleThrottle;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
@@ -28,6 +29,7 @@ class WorkerApplicationTests {
   @MockitoBean AlertDestinationRepository alertDestinationRepository;
   @MockitoBean AlertContextResolver alertContextResolver;
   @MockitoBean PersistedEventPublisher persistedEventPublisher;
+  @MockitoBean RuleThrottle ruleThrottle;
 
   @Test
   void contextLoads() {}
