@@ -7,6 +7,7 @@ import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useMemo, type ReactNode } from 'react';
 
+import { AuthProvider } from './auth/AuthProvider';
 import { env } from './env';
 import './i18n';
 
@@ -42,9 +43,11 @@ export function Providers({ children }: { children: ReactNode }) {
     <MantineProvider theme={theme} defaultColorScheme="auto">
       <Notifications position="top-right" />
       <QueryClientProvider client={queryClient}>
-        <ArgusErrorBoundary fallback={<div role="alert">Something went wrong.</div>}>
-          {children}
-        </ArgusErrorBoundary>
+        <AuthProvider>
+          <ArgusErrorBoundary fallback={<div role="alert">Something went wrong.</div>}>
+            {children}
+          </ArgusErrorBoundary>
+        </AuthProvider>
       </QueryClientProvider>
     </MantineProvider>
   );

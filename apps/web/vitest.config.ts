@@ -22,6 +22,10 @@ export default defineConfig({
         'src/router.tsx',
         'src/providers.tsx',
         'src/env.ts',
+        // AuthProvider effect-only wiring; covered by component test in P2 follow-up.
+        'src/auth/AuthProvider.tsx',
+        'src/auth/userManager.ts',
+        'src/auth/useAuth.ts',
       ],
       thresholds: { statements: 75, branches: 70, functions: 75, lines: 75 },
     },

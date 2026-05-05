@@ -1,7 +1,9 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 
+import { RequireAuth } from './auth/RequireAuth';
 import { AppShellLayout } from './layouts/AppShellLayout';
 import { AdminPage } from './pages/AdminPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { IssueDetailPage } from './pages/IssueDetailPage';
 import { IssuesPage } from './pages/IssuesPage';
 import { LoginPage } from './pages/LoginPage';
@@ -15,11 +17,16 @@ import { ProjectsPage } from './pages/ProjectsPage';
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/orgs" replace /> },
   { path: '/login', element: <LoginPage /> },
-  { path: '/onboarding', element: <OnboardingPage /> },
+  { path: '/auth/callback', element: <AuthCallbackPage /> },
   {
-    element: <AppShellLayout />,
+    element: (
+      <RequireAuth>
+        <AppShellLayout />
+      </RequireAuth>
+    ),
     children: [
-      { path: '/orgs', element: <Navigate to="/login" replace /> },
+      { path: '/onboarding', element: <OnboardingPage /> },
+      { path: '/orgs', element: <Navigate to="/onboarding" replace /> },
       { path: '/orgs/:orgSlug/projects', element: <ProjectsPage /> },
       { path: '/orgs/:orgSlug/projects/:projectSlug/issues', element: <IssuesPage /> },
       {

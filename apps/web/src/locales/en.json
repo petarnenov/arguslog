@@ -14,7 +14,11 @@
   "auth": {
     "login": "Sign in",
     "loginHint": "Sign in with your organization account",
-    "signup": "Create account"
+    "signup": "Create account",
+    "signingIn": "Signing you in…",
+    "callbackFailed": "Sign-in could not be completed",
+    "signedInAs": "Signed in as {{name}}",
+    "logout": "Log out"
   },
   "onboarding": {
     "title": "Create your first project",

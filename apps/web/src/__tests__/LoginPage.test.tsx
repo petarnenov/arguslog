@@ -1,5 +1,6 @@
 import { MantineProvider } from '@mantine/core';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
 import '../i18n';
@@ -9,7 +10,9 @@ describe('LoginPage', () => {
   it('renders the app name and login button', () => {
     render(
       <MantineProvider>
-        <LoginPage />
+        <MemoryRouter>
+          <LoginPage />
+        </MemoryRouter>
       </MantineProvider>,
     );
     expect(screen.getByText('Argus')).toBeInTheDocument();

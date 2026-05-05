@@ -1,13 +1,34 @@
-import { AppShell, Burger, Group, NavLink, ScrollArea, Title } from '@mantine/core';
+import {
+  ActionIcon,
+  AppShell,
+  Burger,
+  Group,
+  Menu,
+  NavLink,
+  ScrollArea,
+  Text,
+  Title,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAlertTriangle, IconHome, IconSettings, IconShieldLock } from '@tabler/icons-react';
+import {
+  IconAlertTriangle,
+  IconHome,
+  IconLogout,
+  IconSettings,
+  IconShieldLock,
+  IconUser,
+} from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useParams } from 'react-router';
+
+import { useAuth } from '../auth/useAuth';
 
 export function AppShellLayout() {
   const [opened, { toggle }] = useDisclosure();
   const { t } = useTranslation();
   const { orgSlug = 'demo', projectSlug } = useParams();
+  const { user, signOut } = useAuth();
+  const userLabel = user?.name ?? user?.email ?? user?.id;
 
   return (
     <AppShell
@@ -21,6 +42,25 @@ export function AppShellLayout() {
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <Title order={4}>{t('app.name')}</Title>
           </Group>
+          {user && (
+            <Menu position="bottom-end" withArrow>
+              <Menu.Target>
+                <ActionIcon variant="subtle" aria-label={userLabel} size="lg">
+                  <IconUser size={18} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Label>
+                  <Text size="xs" c="dimmed">
+                    {t('auth.signedInAs', { name: userLabel })}
+                  </Text>
+                </Menu.Label>
+                <Menu.Item leftSection={<IconLogout size={14} />} onClick={() => void signOut()}>
+                  {t('auth.logout')}
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          )}
         </Group>
       </AppShell.Header>
 
