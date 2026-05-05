@@ -10,7 +10,9 @@ yarn-error.log*
 # Build outputs
 dist/
 build/
-out/
+# IntelliJ module output at the repo root only — must NOT match legitimate
+# package paths like adapter/out/ in our hexagonal layout.
+/out/
 .turbo/
 .vite/
 coverage/
