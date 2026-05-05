@@ -5,13 +5,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
+import java.util.UUID;
 import org.arguslog.worker.application.ProcessEventUseCase.Result;
 import org.arguslog.worker.application.port.EventStore;
 import org.arguslog.worker.application.port.Fingerprinter;
 import org.arguslog.worker.domain.Fingerprint;
 import org.arguslog.worker.domain.IncomingEvent;
-import java.time.Instant;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

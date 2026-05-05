@@ -1,8 +1,8 @@
 package org.arguslog.ingest.adapter.out.redis;
 
+import java.util.Map;
 import org.arguslog.ingest.application.port.EventStreamPublisher;
 import org.arguslog.ingest.domain.EventEnvelope;
-import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.StreamRecords;

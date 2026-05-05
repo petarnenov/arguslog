@@ -1,10 +1,10 @@
 package org.arguslog.worker.adapter.out.postgres;
 
+import java.sql.Types;
+import javax.sql.DataSource;
 import org.arguslog.worker.application.port.EventStore;
 import org.arguslog.worker.domain.Fingerprint;
 import org.arguslog.worker.domain.IncomingEvent;
-import java.sql.Types;
-import javax.sql.DataSource;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;

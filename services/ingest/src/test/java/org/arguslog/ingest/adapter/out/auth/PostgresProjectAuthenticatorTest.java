@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.arguslog.ingest.application.port.ProjectAuthenticator;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -12,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
+import org.arguslog.ingest.application.port.ProjectAuthenticator;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

@@ -1,12 +1,12 @@
 package org.arguslog.ingest.application;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.util.UUID;
 import org.arguslog.ingest.application.port.EventStreamPublisher;
 import org.arguslog.ingest.application.port.ProjectAuthenticator;
 import org.arguslog.ingest.application.port.QuotaEnforcer;
 import org.arguslog.ingest.domain.EventEnvelope;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 @Service

@@ -2,11 +2,11 @@ package org.arguslog.worker.adapter.out.fingerprint;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.arguslog.worker.application.port.Fingerprinter;
-import org.arguslog.worker.domain.Fingerprint;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import org.arguslog.worker.application.port.Fingerprinter;
+import org.arguslog.worker.domain.Fingerprint;
 import org.springframework.stereotype.Component;
 
 /**

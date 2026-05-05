@@ -6,13 +6,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.arguslog.worker.application.ProcessEventUseCase;
-import org.arguslog.worker.application.ProcessEventUseCase.Result;
-import org.arguslog.worker.domain.IncomingEvent;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.arguslog.worker.application.ProcessEventUseCase;
+import org.arguslog.worker.application.ProcessEventUseCase.Result;
+import org.arguslog.worker.domain.IncomingEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
