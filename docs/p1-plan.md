@@ -8,13 +8,13 @@
 
 ## Milestones
 
-| #   | Milestone                                                                                                      | Status         | Commit    |
-| --- | -------------------------------------------------------------------------------------------------------------- | -------------- | --------- |
-| 1   | Postgres schema + Flyway, owned by api. Orgs / projects / dsns / events (Timescale hypertable) / issues / RLS. | ✅ done        | `32832f7` |
-| 2   | Real `ProjectAuthenticator` — Postgres lookup of `project_keys`. Replaces `StubProjectAuthenticator`.          | ✅ done        | `81fdf33` |
-| 3   | Worker implementation — Redis Streams consumer, fingerprint, UPSERT issue, INSERT event, ACK.                  | ⏳ in progress | —         |
-| 4   | End-to-end test — sdk-browser → ingest → Redis → worker → Postgres → assert event persisted under right issue. | pending        | —         |
-| 5   | Real `QuotaEnforcer` (Bucket4j-on-Redis). **Deferred to P4** per architecture memory.                          | deferred       | —         |
+| #   | Milestone                                                                                                      | Status   | Commit                                       |
+| --- | -------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------- |
+| 1   | Postgres schema + Flyway, owned by api. Orgs / projects / dsns / events (Timescale hypertable) / issues / RLS. | ✅ done  | `32832f7`                                    |
+| 2   | Real `ProjectAuthenticator` — Postgres lookup of `project_keys`. Replaces `StubProjectAuthenticator`.          | ✅ done  | `81fdf33`                                    |
+| 3   | Worker implementation — Redis Streams consumer, fingerprint, UPSERT issue, INSERT event, ACK.                  | ✅ done  | `b6c67fb` (persistence) + listener follow-up |
+| 4   | End-to-end test — sdk-browser → ingest → Redis → worker → Postgres → assert event persisted under right issue. | ⏳ next  | —                                            |
+| 5   | Real `QuotaEnforcer` (Bucket4j-on-Redis). **Deferred to P4** per architecture memory.                          | deferred | —                                            |
 
 ## Carry-forwards (read before touching adjacent code)
 

@@ -11,7 +11,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     properties = {
       "spring.autoconfigure.exclude="
           + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration"
+          + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration",
+      "argus.worker.stream-enabled=false"
     })
 class WorkerApplicationTests {
 
