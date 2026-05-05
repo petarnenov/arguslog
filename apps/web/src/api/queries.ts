@@ -26,17 +26,19 @@ export function useIssues(params: ListIssuesParams, options: { enabled?: boolean
   });
 }
 
-export function useIssue(projectId: number, issueId: number) {
+export function useIssue(projectId: number, issueId: number, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.issue(projectId, issueId),
     queryFn: () => getIssue(projectId, issueId),
+    enabled: options.enabled ?? true,
   });
 }
 
-export function useIssueEvents(params: ListIssueEventsParams) {
+export function useIssueEvents(params: ListIssueEventsParams, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.issueEvents(params),
     queryFn: () => listIssueEvents(params),
+    enabled: options.enabled ?? true,
     placeholderData: keepPreviousData,
     staleTime: 15_000,
   });
