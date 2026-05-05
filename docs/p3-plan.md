@@ -13,19 +13,19 @@
 
 ## Milestone tracker
 
-| #   | Milestone                                                                                                   | Status  | Commit |
-| --- | ----------------------------------------------------------------------------------------------------------- | ------- | ------ |
-| 1   | API: `alert_destinations` CRUD (Telegram / Slack / email / webhook). Config is per-org encrypted at rest.   | pending | —      |
-| 2   | API: `alert_rules` CRUD (project-scoped, JSONB conditions, throttle_seconds, enabled flag).                 | pending | —      |
-| 3   | Worker: rule evaluator — on issue persisted, find matching enabled rules, enqueue for dispatch.             | pending | —      |
-| 4   | Worker: dispatch fan-out — Telegram first (smallest blast radius), then email (Resend), then Slack/webhook. | pending | —      |
-| 5   | Worker: throttling — Redis-backed `last_fired_at` per rule, skip if within `throttle_seconds`.              | pending | —      |
-| 6   | Web: AlertRulesPage + AlertDestinationsPage under project / org settings.                                   | pending | —      |
-| 7   | CLI: `argus releases new <version>` — POST a release row.                                                   | pending | —      |
-| 8   | CLI: `argus sourcemaps upload <release> <path>` — multipart upload to R2 via api signed URL.                | pending | —      |
-| 9   | API: signed-URL endpoint for sourcemap PUTs; persists to `source_map_artifacts`.                            | pending | —      |
-| 10  | Worker: symbolication — for JS events, fetch matching sourcemap from R2, decode top frames before persist.  | pending | —      |
-| 11  | Web: surface symbolicated frames on IssueDetailPage; show a "raw" toggle for the minified version.          | pending | —      |
+| #   | Milestone                                                                                                   | Status  | Commit    |
+| --- | ----------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| 1   | API: `alert_destinations` CRUD (Telegram / Slack / email / webhook). Config is per-org encrypted at rest.   | ✅ done | `2af4e18` |
+| 2   | API: `alert_rules` CRUD (project-scoped, JSONB conditions, throttle_seconds, enabled flag).                 | ⏳ next | —         |
+| 3   | Worker: rule evaluator — on issue persisted, find matching enabled rules, enqueue for dispatch.             | pending | —         |
+| 4   | Worker: dispatch fan-out — Telegram first (smallest blast radius), then email (Resend), then Slack/webhook. | pending | —         |
+| 5   | Worker: throttling — Redis-backed `last_fired_at` per rule, skip if within `throttle_seconds`.              | pending | —         |
+| 6   | Web: AlertRulesPage + AlertDestinationsPage under project / org settings.                                   | pending | —         |
+| 7   | CLI: `argus releases new <version>` — POST a release row.                                                   | pending | —         |
+| 8   | CLI: `argus sourcemaps upload <release> <path>` — multipart upload to R2 via api signed URL.                | pending | —         |
+| 9   | API: signed-URL endpoint for sourcemap PUTs; persists to `source_map_artifacts`.                            | pending | —         |
+| 10  | Worker: symbolication — for JS events, fetch matching sourcemap from R2, decode top frames before persist.  | pending | —         |
+| 11  | Web: surface symbolicated frames on IssueDetailPage; show a "raw" toggle for the minified version.          | pending | —         |
 
 ## Recommended starting order
 
