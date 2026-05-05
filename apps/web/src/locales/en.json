@@ -25,7 +25,21 @@
     "orgName": "Organization name",
     "projectName": "Project name",
     "platform": "Platform",
-    "create": "Create project"
+    "create": "Create project",
+    "errorOrgName": "Organization name must be at least 2 characters",
+    "errorProjectName": "Project name must be at least 2 characters",
+    "successTitle": "Project created",
+    "successDsnHint": "Copy this DSN into your app's config — it's the only way the SDK can authenticate to ingest.",
+    "copy": "Copy DSN",
+    "copied": "Copied!",
+    "continue": "Open project"
+  },
+  "projects": {
+    "title": "Projects",
+    "create": "New project",
+    "createTitle": "Create a project",
+    "empty": "No projects yet — create one to start receiving events.",
+    "orgNotFound": "Organization not found in your memberships."
   },
   "issues": {
     "title": "Issues",

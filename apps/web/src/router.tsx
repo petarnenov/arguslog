@@ -10,6 +10,7 @@ import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { OrgSettingsPage } from './pages/OrgSettingsPage';
+import { OrgsLandingPage } from './pages/OrgsLandingPage';
 import { ProjectKeysPage } from './pages/ProjectKeysPage';
 import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -26,7 +27,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: '/onboarding', element: <OnboardingPage /> },
-      { path: '/orgs', element: <Navigate to="/onboarding" replace /> },
+      { path: '/orgs', element: <OrgsLandingPage /> },
       { path: '/orgs/:orgSlug/projects', element: <ProjectsPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/issues', element: <IssuesPage /> },
       {

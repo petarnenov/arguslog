@@ -7,12 +7,34 @@ import {
   type ListIssueEventsParams,
   type ListIssuesParams,
 } from './issues';
+import { listMyOrgs } from './orgs';
+import { listProjects } from './projects';
 
 export const queryKeys = {
+  myOrgs: () => ['orgs', 'mine'] as const,
+  projects: (orgId: number) => ['projects', orgId] as const,
   issues: (params: ListIssuesParams) => ['issues', params] as const,
   issue: (projectId: number, issueId: number) => ['issues', projectId, issueId] as const,
   issueEvents: (params: ListIssueEventsParams) => ['issueEvents', params] as const,
 };
+
+export function useMyOrgs(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.myOrgs(),
+    queryFn: listMyOrgs,
+    enabled: options.enabled ?? true,
+    staleTime: 60_000,
+  });
+}
+
+export function useProjects(orgId: number | undefined, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.projects(orgId ?? -1),
+    queryFn: () => listProjects(orgId as number),
+    enabled: (options.enabled ?? true) && orgId != null,
+    staleTime: 30_000,
+  });
+}
 
 export function useIssues(params: ListIssuesParams, options: { enabled?: boolean } = {}) {
   return useQuery({

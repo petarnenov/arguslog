@@ -28,7 +28,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
     }
     OrgAccessGuard o = orgGuard.getIfAvailable();
     if (o != null) {
-      registry.addInterceptor(o).addPathPatterns("/api/v1/orgs/**");
+      // {orgId}-bearing routes only — POST /api/v1/orgs and GET /api/v1/orgs (list-mine) need to
+      // bypass the guard since the caller has no orgId yet, but stay authenticated via Spring
+      // Security's filter chain.
+      registry.addInterceptor(o).addPathPatterns("/api/v1/orgs/*/**");
     }
   }
 }
