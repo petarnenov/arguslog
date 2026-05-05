@@ -1,0 +1,8 @@
+# Pin Nixpacks to JDK 21 (matches gradle/libs.versions.toml: java = "21").
+# Without this, Nixpacks's Java provider may default to a different LTS and
+# break compilation of records / pattern matching / virtual threads.
+
+providers = ["java"]
+
+[variables]
+NIXPACKS_JDK_VERSION = "21"

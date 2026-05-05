@@ -1,0 +1,89 @@
+name: Deploy
+
+# Manual deploy of one or more Argus services to Railway.
+#
+# Authoritative deploy path is the Railway GitHub App (auto on push to main,
+# scoped per-service via Watch Paths). This workflow is the manual fallback
+# for first-time provisioning, emergency redeploys, rollbacks, and selectively
+# shipping a single service when a Watch Path miss happens.
+#
+# Required secret per environment (Settings → Environments → <env> → Secrets):
+#   RAILWAY_TOKEN   project-scoped token from Railway → Project → Tokens
+#
+# The workflow fails fast if RAILWAY_TOKEN is unset, so the file is safe to
+# commit before Railway is wired up (the production environment can be empty
+# until P5).
+
+on:
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Service(s) to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options: [all, api, ingest, worker, web]
+      environment:
+        description: 'Target Railway environment'
+        required: true
+        default: 'production'
+        type: choice
+        options: [production, staging]
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.compute.outputs.services }}
+    steps:
+      - id: compute
+        run: |
+          if [ "${{ inputs.services }}" = "all" ]; then
+            echo 'services=["api","ingest","worker","web"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'services=["${{ inputs.services }}"]' >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    name: Deploy ${{ matrix.service }}
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ inputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.plan.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guard — RAILWAY_TOKEN must be set
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error::RAILWAY_TOKEN is unset for environment '${{ inputs.environment }}'."
+            echo "Add it under Settings → Environments → ${{ inputs.environment }} → Secrets."
+            exit 1
+          fi
+
+      - name: Install Railway CLI
+        run: |
+          curl -fsSL https://railway.com/install.sh | sh -s -- -y
+          echo "$HOME/.railway/bin" >> "$GITHUB_PATH"
+
+      - name: Verify CLI
+        run: railway --version
+
+      - name: Deploy argus-${{ matrix.service }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service argus-${{ matrix.service }} --detach

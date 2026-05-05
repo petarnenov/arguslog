@@ -1,0 +1,15 @@
+# Pin Nixpacks to Node 22 + pnpm 9.10.0 (matches root package.json
+# engines + packageManager). Without an explicit pin Nixpacks may pick the
+# wrong Node major or skip pnpm entirely and fall back to npm install.
+
+providers = ["node"]
+
+[variables]
+NIXPACKS_NODE_VERSION = "22"
+NPM_CONFIG_PRODUCTION = "false"
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "corepack"]
+
+[phases.install]
+cmds = ["corepack enable", "corepack prepare pnpm@9.10.0 --activate", "pnpm install --frozen-lockfile"]
