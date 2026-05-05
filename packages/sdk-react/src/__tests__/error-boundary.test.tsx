@@ -62,4 +62,26 @@ describe('ArgusErrorBoundary', () => {
     );
     expect(onError).toHaveBeenCalled();
   });
+
+  it('reset clears the error and re-renders children', async () => {
+    const { rerender } = render(
+      <ArgusErrorBoundary
+        fallback={({ error, reset }) => (
+          <button onClick={reset} type="button">
+            reset {error.message}
+          </button>
+        )}
+      >
+        <Boom msg="x" />
+      </ArgusErrorBoundary>,
+    );
+    const btn = await screen.findByRole('button');
+    btn.click();
+    rerender(
+      <ArgusErrorBoundary fallback={<div>fallback</div>}>
+        <div>recovered</div>
+      </ArgusErrorBoundary>,
+    );
+    expect(screen.getByText('recovered')).toBeDefined();
+  });
 });
