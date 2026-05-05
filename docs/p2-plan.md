@@ -14,8 +14,8 @@
 | --- | -------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
 | 1   | API: `/api/v1/projects/{id}/issues` paginated list — JOOQ-free JdbcTemplate, RLS-aware, real schema.                 | ✅ done | `ef0950b` |
 | 2   | API auth glue — Keycloak JWT → user → org membership → `current_setting('argus.org_id')` set per request via filter. | ✅ done | `6f117b7` |
-| 3   | API: issue detail + recent events endpoints; surface fingerprint, occurrence_count, level, last_seen.                | ⏳ next | —         |
-| 4   | Web login flow — `oidc-client-ts` redirect + PKCE callback against Keycloak realm, persisted via Zustand store.      | pending | —         |
+| 3   | API: issue detail + recent events endpoints; surface fingerprint, occurrence_count, level, last_seen.                | ✅ done | `b10b084` |
+| 4   | Web login flow — `oidc-client-ts` redirect + PKCE callback against Keycloak realm, persisted via Zustand store.      | ⏳ next | —         |
 | 5   | Web IssuesPage wired to real API via TanStack Query + Mantine table; status / level filters; pagination.             | pending | —         |
 | 6   | Web IssueDetailPage — title / culprit / chart from `issue_stats_5m`, recent events panel.                            | pending | —         |
 | 7   | Keycloak realm verification — confirm `argus-api` + `argus-web` clients, pwa scopes, default test users.             | pending | —         |
