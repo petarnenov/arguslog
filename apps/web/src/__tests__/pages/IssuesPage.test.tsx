@@ -98,8 +98,9 @@ describe('IssuesPage', () => {
     renderAt('/orgs/acme/projects/101/issues');
 
     await waitFor(() => expect(calls.length).toBeGreaterThan(0));
-    const [statusSelect] = screen.getAllByPlaceholderText('Status');
-    await userEvent.click(statusSelect);
+    const statusSelect = screen.getAllByPlaceholderText('Status')[0];
+    expect(statusSelect).toBeDefined();
+    await userEvent.click(statusSelect!);
     await userEvent.click(await screen.findByRole('option', { name: 'Resolved' }));
 
     await waitFor(() => expect(calls.some((u) => u.includes('status=resolved'))).toBe(true));

@@ -38,8 +38,9 @@ describe('apiFetch', () => {
 
     await apiFetch('/api/v1/info');
 
-    const init = spy.mock.calls[0]![1] as RequestInit;
-    const headers = new Headers(init.headers);
+    const call = spy.mock.calls[0] as [unknown, RequestInit] | undefined;
+    expect(call).toBeDefined();
+    const headers = new Headers(call![1].headers);
     expect(headers.get('Authorization')).toBe('Bearer tok-abc');
     expect(headers.get('Accept')).toBe('application/json');
   });
@@ -54,8 +55,9 @@ describe('apiFetch', () => {
 
     await apiFetch('/api/v1/info');
 
-    const headers = new Headers((spy.mock.calls[0]![1] as RequestInit).headers);
-    expect(headers.has('Authorization')).toBe(false);
+    const call = spy.mock.calls[0] as [unknown, RequestInit] | undefined;
+    expect(call).toBeDefined();
+    expect(new Headers(call![1].headers).has('Authorization')).toBe(false);
   });
 
   it('returns parsed JSON for 2xx', async () => {
