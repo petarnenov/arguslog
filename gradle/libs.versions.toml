@@ -19,7 +19,7 @@ telegramBot = "7.10.0"
 resend = "4.0.1"
 argon2 = "2.11"
 mockito = "5.15.2"
-pact = "4.6.16"
+pact = "4.7.1"
 
 [libraries]
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
