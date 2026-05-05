@@ -1,4 +1,4 @@
-import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
+import { UserManager, WebStorageStateStore, type User } from 'oidc-client-ts';
 
 import { env } from '../env';
 
@@ -11,6 +11,7 @@ import { env } from '../env';
  * builds beyond the seam name to discourage misuse.
  */
 let instance: UserManager | undefined;
+let inflightCallback: Promise<User> | undefined;
 
 export function getUserManager(): UserManager {
   if (!instance) {
@@ -32,7 +33,20 @@ export function getUserManager(): UserManager {
   return instance;
 }
 
+/**
+ * Dedupes signinRedirectCallback at module scope so React.StrictMode's double-invoke of the
+ * AuthCallbackPage effect doesn't POST the auth code twice — the second exchange would hit
+ * Keycloak with an already-consumed code and return invalid_grant.
+ */
+export function consumeSigninCallback(): Promise<User> {
+  if (!inflightCallback) {
+    inflightCallback = getUserManager().signinRedirectCallback();
+  }
+  return inflightCallback;
+}
+
 /** Test-only: install a stub UserManager. Resets to lazy-created singleton when called with undefined. */
 export function __setUserManagerForTests(stub: UserManager | undefined): void {
   instance = stub;
+  inflightCallback = undefined;
 }

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
-import { getUserManager } from '../auth/userManager';
+import { consumeSigninCallback } from '../auth/userManager';
 
 interface OidcReturnState {
   returnTo?: string;
@@ -22,8 +22,7 @@ export function AuthCallbackPage() {
 
   useEffect(() => {
     let cancelled = false;
-    getUserManager()
-      .signinRedirectCallback()
+    consumeSigninCallback()
       .then((user) => {
         if (cancelled) return;
         const returnTo = (user.state as OidcReturnState | null | undefined)?.returnTo ?? '/orgs';
