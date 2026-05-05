@@ -34,8 +34,10 @@ class ProjectServiceTest {
   @Test
   void createDerivesSlugAndPassesPlatform() {
     Project expected =
-        new Project(7L, 1L, "my-app", "My App", "javascript", Instant.parse("2026-05-06T00:00:00Z"));
-    when(projects.create(eq(1L), eq("my-app"), eq("My App"), eq("javascript"))).thenReturn(expected);
+        new Project(
+            7L, 1L, "my-app", "My App", "javascript", Instant.parse("2026-05-06T00:00:00Z"));
+    when(projects.create(eq(1L), eq("my-app"), eq("My App"), eq("javascript")))
+        .thenReturn(expected);
 
     Project out = service.create(1L, "My App", "javascript");
 
@@ -61,8 +63,7 @@ class ProjectServiceTest {
 
   @Test
   void acceptsAllKnownPlatforms() {
-    Project p =
-        new Project(1L, 1L, "x", "x", "x", Instant.EPOCH);
+    Project p = new Project(1L, 1L, "x", "x", "x", Instant.EPOCH);
     when(projects.create(anyLong(), anyString(), anyString(), anyString())).thenReturn(p);
     service.create(1L, "ok", "javascript");
     service.create(1L, "ok", "react");
