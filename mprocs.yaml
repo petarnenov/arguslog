@@ -1,0 +1,27 @@
+# mprocs config for `make dev`.
+# Start order is irrelevant — each panel is independent. Infra is brought up
+# (and waited on) by `make dev` before mprocs launches, so JVM services see a
+# healthy Postgres/Redis/Keycloak/MinIO from boot.
+#
+# Keys:  q quit · r restart focused · x kill focused · ↑/↓ scroll · Tab switch
+
+procs:
+  ingest:
+    shell: "./gradlew --console=plain :services:ingest:bootRun"
+    autostart: true
+
+  api:
+    shell: "./gradlew --console=plain :services:api:bootRun"
+    autostart: true
+
+  worker:
+    shell: "./gradlew --console=plain :services:worker:bootRun"
+    autostart: true
+
+  web:
+    shell: "pnpm --filter @argus/web dev"
+    autostart: true
+
+  infra-logs:
+    shell: "docker compose -f infra/docker/docker-compose.yml logs -f --tail=50"
+    autostart: false
