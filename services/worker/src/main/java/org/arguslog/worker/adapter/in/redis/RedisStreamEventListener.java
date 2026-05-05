@@ -1,11 +1,11 @@
 package org.arguslog.worker.adapter.in.redis;
 
-import org.arguslog.worker.application.ProcessEventUseCase;
-import org.arguslog.worker.application.ProcessEventUseCase.Result;
-import org.arguslog.worker.domain.IncomingEvent;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import org.arguslog.worker.application.ProcessEventUseCase;
+import org.arguslog.worker.application.ProcessEventUseCase.Result;
+import org.arguslog.worker.domain.IncomingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.stream.MapRecord;

@@ -1,8 +1,8 @@
 package org.arguslog.ingest.adapter.out.auth;
 
-import org.arguslog.ingest.application.port.ProjectAuthenticator;
 import java.util.Optional;
 import javax.sql.DataSource;
+import org.arguslog.ingest.application.port.ProjectAuthenticator;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;

@@ -1,10 +1,10 @@
 package org.arguslog.ingest.adapter.in.web;
 
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
 import org.arguslog.ingest.application.IngestEventUseCase;
 import org.arguslog.ingest.application.IngestEventUseCase.Command;
 import org.arguslog.ingest.application.IngestEventUseCase.Result;
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.Map;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

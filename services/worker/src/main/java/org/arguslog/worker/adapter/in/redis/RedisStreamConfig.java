@@ -1,7 +1,7 @@
 package org.arguslog.worker.adapter.in.redis;
 
-import org.arguslog.worker.application.ProcessEventUseCase;
 import jakarta.annotation.PostConstruct;
+import org.arguslog.worker.application.ProcessEventUseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

@@ -90,19 +90,35 @@ jobs:
   openapi-diff:
     name: OpenAPI spec stability
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: github.event_name == 'pull_request'
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          fetch-depth: 0
-      - name: Skip if no api changes
-        id: changes
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Regenerate OpenAPI spec
+        # OpenApiContractTest hits /v3/api-docs and asserts the result matches the committed
+        # services/api/openapi.json byte-for-byte. A drift fails the test and writes the new
+        # spec to services/api/build/openapi/openapi.json, which the upload below preserves.
+        run: ./gradlew :services:api:test --tests "org.arguslog.api.openapi.OpenApiContractTest"
+      - name: Verify committed spec matches the api
+        if: always()
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q '^services/api/'; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+          if [ -f services/api/build/openapi/openapi.json ]; then
+            echo "::error::services/api/openapi.json drifted from /v3/api-docs."
+            echo "Regenerate locally with:"
+            echo "  ARGUS_OPENAPI_WRITE=true ./gradlew :services:api:test --tests org.arguslog.api.openapi.OpenApiContractTest"
+            echo "and commit services/api/openapi.json."
+            diff -u services/api/openapi.json services/api/build/openapi/openapi.json || true
+            exit 1
           fi
-      - name: Note
-        if: steps.changes.outputs.changed != 'true'
-        run: echo "No api changes; skipping spec diff."
-      # Real diff job will materialize once api emits OpenAPI artifact in build (P2).
+      - name: Upload generated spec
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: |
+            services/api/openapi.json
+            services/api/build/openapi/openapi.json
