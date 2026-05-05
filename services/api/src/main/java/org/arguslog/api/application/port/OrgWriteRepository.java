@@ -13,7 +13,9 @@ public interface OrgWriteRepository {
    */
   Org create(String baseSlug, String name);
 
-  /** Adds {@code userId} as the given role to {@code orgId}. Idempotent on the (org_id, user_id) PK. */
+  /**
+   * Adds {@code userId} as the given role to {@code orgId}. Idempotent on the (org_id, user_id) PK.
+   */
   void addMember(long orgId, UUID userId, String role);
 
   /** Returns every org {@code userId} is a member of, ordered by org slug ascending. */

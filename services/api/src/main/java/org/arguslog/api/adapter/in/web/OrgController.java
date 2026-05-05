@@ -43,7 +43,8 @@ public class OrgController {
     Jwt jwt = token.getToken();
     UUID userId = parseSubject(token);
     String email = jwt.getClaimAsString("email");
-    String displayName = firstNonBlank(jwt.getClaimAsString("name"), jwt.getClaimAsString("preferred_username"));
+    String displayName =
+        firstNonBlank(jwt.getClaimAsString("name"), jwt.getClaimAsString("preferred_username"));
     Org created = useCase.create(userId, email, displayName, body.name());
     return ResponseEntity.created(URI.create(String.valueOf(created.id())))
         .body(OrgResponse.from(created));

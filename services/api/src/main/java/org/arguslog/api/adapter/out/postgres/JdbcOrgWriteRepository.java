@@ -34,7 +34,10 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
       }
     }
     throw new IllegalStateException(
-        "could not allocate a unique slug after " + MAX_SLUG_ATTEMPTS + " attempts for " + baseSlug);
+        "could not allocate a unique slug after "
+            + MAX_SLUG_ATTEMPTS
+            + " attempts for "
+            + baseSlug);
   }
 
   private Org insert(String slug, String name) {
