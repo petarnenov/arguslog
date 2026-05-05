@@ -51,6 +51,10 @@ management:
 argus:
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+  ingest:
+    # Used to render DSN strings in /projects/{id}/keys responses. The DSN points clients at the
+    # ingest service, not the api — set INGEST_PUBLIC_HOST in production to your ingest hostname.
+    public-host: ${INGEST_PUBLIC_HOST:http://localhost:8080}
   stripe:
     api-key: ${STRIPE_API_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}

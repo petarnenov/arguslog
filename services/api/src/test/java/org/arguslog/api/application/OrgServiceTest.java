@@ -1,0 +1,99 @@
+package org.arguslog.api.application;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.UUID;
+import org.arguslog.api.application.OrgUseCase.InvalidOrgException;
+import org.arguslog.api.application.port.OrgWriteRepository;
+import org.arguslog.api.application.port.UserRepository;
+import org.arguslog.api.domain.Org;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class OrgServiceTest {
+
+  @Mock OrgWriteRepository orgs;
+  @Mock UserRepository users;
+
+  OrgService service;
+
+  static final UUID ACTOR = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+  @BeforeEach
+  void setUp() {
+    service = new OrgService(orgs, users);
+  }
+
+  @Test
+  void createUpsertsUserBeforeInsertingOrgAndAddsOwnerMembership() {
+    Org expected = new Org(42L, "acme", "Acme", "free", Instant.parse("2026-05-06T00:00:00Z"));
+    when(orgs.create(eq("acme"), eq("Acme"))).thenReturn(expected);
+
+    Org out = service.create(ACTOR, "alice@example.com", "Alice", "Acme");
+
+    assertThat(out).isEqualTo(expected);
+    verify(users).upsertFromJwt(ACTOR, "alice@example.com", "Alice");
+    verify(orgs).create("acme", "Acme");
+    verify(orgs).addMember(42L, ACTOR, "owner");
+  }
+
+  @Test
+  void slugifyCollapsesNonAlphanumericRuns() {
+    assertThat(OrgService.slugify("My Cool App!")).isEqualTo("my-cool-app");
+    assertThat(OrgService.slugify("  spaces   here  ")).isEqualTo("spaces-here");
+    assertThat(OrgService.slugify("UPPER_case--mix")).isEqualTo("upper-case-mix");
+    assertThat(OrgService.slugify("trailing---")).isEqualTo("trailing");
+    assertThat(OrgService.slugify("---leading")).isEqualTo("leading");
+  }
+
+  @Test
+  void slugifyFallsBackForNonAsciiOnly() {
+    assertThat(OrgService.slugify("София")).isEqualTo("org");
+    assertThat(OrgService.slugify("!!!")).isEqualTo("org");
+  }
+
+  @Test
+  void rejectsBlankOrShortName() {
+    assertThatThrownBy(() -> service.create(ACTOR, "a@b.com", null, null))
+        .isInstanceOf(InvalidOrgException.class)
+        .hasMessageContaining("required");
+    assertThatThrownBy(() -> service.create(ACTOR, "a@b.com", null, " "))
+        .isInstanceOf(InvalidOrgException.class)
+        .hasMessageContaining("at least");
+    assertThatThrownBy(() -> service.create(ACTOR, "a@b.com", null, "x"))
+        .isInstanceOf(InvalidOrgException.class)
+        .hasMessageContaining("at least");
+    verify(orgs, never()).create(anyString(), anyString());
+    verify(users, never()).upsertFromJwt(any(), anyString(), any());
+  }
+
+  @Test
+  void rejectsMissingEmail() {
+    assertThatThrownBy(() -> service.create(ACTOR, null, "Alice", "Acme"))
+        .isInstanceOf(InvalidOrgException.class)
+        .hasMessageContaining("email");
+    assertThatThrownBy(() -> service.create(ACTOR, " ", "Alice", "Acme"))
+        .isInstanceOf(InvalidOrgException.class)
+        .hasMessageContaining("email");
+    verify(orgs, never()).create(anyString(), anyString());
+  }
+
+  @Test
+  void rejectsNullActor() {
+    assertThatThrownBy(() -> service.create(null, "a@b.com", "Alice", "Acme"))
+        .isInstanceOf(IllegalStateException.class);
+    verify(orgs, never()).create(anyString(), anyString());
+  }
+}
