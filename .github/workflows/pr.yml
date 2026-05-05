@@ -29,6 +29,15 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:coverage
+      - name: Regenerate Pact contracts (sdk-browser → ingest)
+        run: pnpm --filter @argus/sdk-browser test:pact
+      - name: Verify committed Pacts match the SDK
+        run: |
+          if ! git diff --exit-code pacts/; then
+            echo "::error::pacts/ drifted — the sdk-browser contract changed but the committed Pact JSON is stale."
+            echo "Run 'pnpm --filter @argus/sdk-browser test:pact' locally and commit the diff."
+            exit 1
+          fi
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4

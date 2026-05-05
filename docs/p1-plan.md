@@ -14,7 +14,7 @@
 | 2   | Real `ProjectAuthenticator` — Postgres lookup of `project_keys`. Replaces `StubProjectAuthenticator`.          | ✅ done  | `81fdf33`                                    |
 | 3   | Worker implementation — Redis Streams consumer, fingerprint, UPSERT issue, INSERT event, ACK.                  | ✅ done  | `b6c67fb` (persistence) + listener follow-up |
 | 4   | Java end-to-end — ingest → Redis → worker → Postgres in one JVM (real Testcontainers).                         | ✅ done  | (next commit)                                |
-| 4b  | SDK ↔ ingest contract (Pact) — covers the HTTP wire format for sdk-browser / java-sdk.                         | pending  | — _(deferred to P1 follow-up or P2)_         |
+| 4b  | SDK ↔ ingest contract (Pact) — covers the HTTP wire format for sdk-browser.                                    | ✅ done  | (next commit)                                |
 | 5   | Real `QuotaEnforcer` (Bucket4j-on-Redis). **Deferred to P4** per architecture memory.                          | deferred | —                                            |
 
 ## Carry-forwards (read before touching adjacent code)

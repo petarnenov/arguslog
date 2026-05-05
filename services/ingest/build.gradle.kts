@@ -25,4 +25,5 @@ dependencies {
     testImplementation(libs.flyway.postgres)
     testImplementation(libs.wiremock.standalone)
     testImplementation(libs.mockito.junit)
+    testImplementation(libs.pact.provider)
 }

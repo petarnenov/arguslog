@@ -1,0 +1,234 @@
+{
+  "consumer": {
+    "name": "argus-sdk-browser"
+  },
+  "interactions": [
+    {
+      "description": "a TypeError captured by the browser SDK",
+      "request": {
+        "body": {
+          "breadcrumbs": [],
+          "eventId": "aabbccddeeff00112233445566778899",
+          "exception": {
+            "values": [
+              {
+                "stacktrace": {
+                  "frames": []
+                },
+                "type": "TypeError",
+                "value": "x is undefined"
+              }
+            ]
+          },
+          "level": "error",
+          "platform": "javascript",
+          "sdk": {
+            "name": "argus.javascript",
+            "version": "0.0.0"
+          },
+          "timestamp": 1730000000000
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Argus-Auth": "Argus DSN public-key-active"
+        },
+        "matchingRules": {
+          "body": {
+            "$": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.breadcrumbs": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.eventId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "^[0-9a-f]{32}$"
+                }
+              ]
+            },
+            "$.exception.values[0]": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.exception.values[0].stacktrace.frames": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sdk.version": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.timestamp": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            }
+          },
+          "header": {}
+        },
+        "method": "POST",
+        "path": "/api/101/events"
+      },
+      "response": {
+        "body": {
+          "eventId": "12a827e7-f71e-4fcd-9ebf-c6ee9847b10f"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.eventId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 202
+      }
+    },
+    {
+      "description": "a warning message captured by the browser SDK",
+      "request": {
+        "body": {
+          "breadcrumbs": [],
+          "eventId": "aabbccddeeff00112233445566778899",
+          "level": "warning",
+          "message": "config drift detected",
+          "platform": "javascript",
+          "sdk": {
+            "name": "argus.javascript",
+            "version": "0.0.0"
+          },
+          "timestamp": 1730000000000
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Argus-Auth": "Argus DSN public-key-active"
+        },
+        "matchingRules": {
+          "body": {
+            "$": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.breadcrumbs": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.eventId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "^[0-9a-f]{32}$"
+                }
+              ]
+            },
+            "$.sdk.version": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.timestamp": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            }
+          },
+          "header": {}
+        },
+        "method": "POST",
+        "path": "/api/101/events"
+      },
+      "response": {
+        "body": {
+          "eventId": "12a827e7-f71e-4fcd-9ebf-c6ee9847b10f"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.eventId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          },
+          "header": {},
+          "status": {}
+        },
+        "status": 202
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "13.2.0"
+    },
+    "pactRust": {
+      "ffi": "0.4.22",
+      "models": "1.2.3"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "argus-ingest"
+  }
+}
