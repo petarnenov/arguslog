@@ -1,6 +1,7 @@
 package org.arguslog.api;
 
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
+import org.arguslog.api.alerts.application.port.AlertRuleRepository;
 import org.arguslog.api.application.port.EventRepository;
 import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.application.port.MembershipRepository;
@@ -31,6 +32,7 @@ class ApiApplicationTests {
   @MockitoBean ProjectRepository projectRepository;
   @MockitoBean MembershipRepository membershipRepository;
   @MockitoBean AlertDestinationRepository alertDestinationRepository;
+  @MockitoBean AlertRuleRepository alertRuleRepository;
 
   @Test
   void contextLoads() {}

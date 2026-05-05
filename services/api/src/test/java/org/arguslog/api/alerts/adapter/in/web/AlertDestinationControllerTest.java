@@ -58,6 +58,7 @@ class AlertDestinationControllerTest {
   // a DataSource (excluded above). OrgAccessGuard is @Profile("!test"), so the guard
   // doesn't fire either.
   @MockitoBean AlertDestinationRepository alertDestinationRepository;
+  @MockitoBean org.arguslog.api.alerts.application.port.AlertRuleRepository alertRuleRepository;
   @MockitoBean IssueRepository issueRepository;
   @MockitoBean EventRepository eventRepository;
   @MockitoBean ProjectRepository projectRepository;
