@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
 import org.arguslog.api.application.port.EventRepository;
 import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.application.port.MembershipRepository;
@@ -57,6 +58,7 @@ class OpenApiContractTest {
   @MockitoBean EventRepository eventRepository;
   @MockitoBean ProjectRepository projectRepository;
   @MockitoBean MembershipRepository membershipRepository;
+  @MockitoBean AlertDestinationRepository alertDestinationRepository;
 
   @Test
   void generatedSpecMatchesTheCommittedSnapshot() throws Exception {
