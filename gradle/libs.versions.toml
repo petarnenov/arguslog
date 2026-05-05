@@ -1,7 +1,7 @@
 [versions]
 java = "21"
 kotlin = "2.1.0"
-springBoot = "3.4.1"
+springBoot = "4.0.6"
 springDependencyManagement = "1.1.7"
 spotless = "7.0.1"
 springdoc = "2.7.0"
