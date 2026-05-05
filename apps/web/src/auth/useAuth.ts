@@ -19,7 +19,24 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
-    await getUserManager().signoutRedirect();
+    const um = getUserManager();
+    const user = await um.getUser();
+    const tokenLooksUsable =
+      user?.id_token && (!user.expires_at || user.expires_at * 1000 > Date.now());
+
+    if (tokenLooksUsable) {
+      try {
+        await um.signoutRedirect();
+        return;
+      } catch {
+        // Fall through to local-only sign-out below.
+      }
+    }
+    // No usable id_token (expired, missing, or Keycloak rejected) — log out locally so the user
+    // isn't trapped on a "still logged in" UI. The Keycloak SSO cookie may persist; that's OK,
+    // the next signinRedirect will reuse it (or prompt fresh) without an error page.
+    await um.removeUser();
+    window.location.assign(`${window.location.origin}/login`);
   }, []);
 
   return { status, user, error, signIn, signOut };
