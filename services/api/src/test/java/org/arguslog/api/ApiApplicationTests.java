@@ -5,8 +5,10 @@ import org.arguslog.api.alerts.application.port.AlertRuleRepository;
 import org.arguslog.api.application.port.EventRepository;
 import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.application.port.MembershipRepository;
+import org.arguslog.api.application.port.DsnRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.application.port.ProjectRepository;
+import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,6 +39,8 @@ class ApiApplicationTests {
   @MockitoBean AlertRuleRepository alertRuleRepository;
   @MockitoBean OrgWriteRepository orgWriteRepository;
   @MockitoBean UserRepository userRepository;
+  @MockitoBean ProjectWriteRepository projectWriteRepository;
+  @MockitoBean DsnRepository dsnRepository;
 
   @Test
   void contextLoads() {}
