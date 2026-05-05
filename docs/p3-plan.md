@@ -21,7 +21,7 @@
 | 4a  | Worker: dispatch fan-out — Telegram first (smallest blast radius).                                          | ✅ done | `bb10cb3` |
 | 4b  | Worker: dispatch fan-out — email (Resend) + Slack/webhook.                                                  | pending | —         |
 | 5   | Worker: throttling — Redis-backed `last_fired_at` per rule, skip if within `throttle_seconds`.              | ✅ done | `b7042d8` |
-| 6   | Web: AlertRulesPage + AlertDestinationsPage under project / org settings.                                   | ⏳ next | —         |
+| 6   | Web: AlertRulesPage + AlertDestinationsPage under project / org settings.                                   | ✅ done | `509af8e` |
 | 7   | CLI: `argus releases new <version>` — POST a release row.                                                   | pending | —         |
 | 8   | CLI: `argus sourcemaps upload <release> <path>` — multipart upload to R2 via api signed URL.                | pending | —         |
 | 9   | API: signed-URL endpoint for sourcemap PUTs; persists to `source_map_artifacts`.                            | pending | —         |
