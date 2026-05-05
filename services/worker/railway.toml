@@ -1,0 +1,15 @@
+# Railway config for the argus-worker service.
+# Built with Nixpacks (auto-detects Java 21 + Gradle).
+# Provisioned in P5 alongside the other services.
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "./gradlew :services:worker:bootJar -x test --no-daemon"
+
+[deploy]
+startCommand = "java $JAVA_TOOL_OPTIONS -jar services/worker/build/libs/worker-0.0.1-SNAPSHOT.jar"
+healthcheckPath = "/actuator/health/readiness"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+numReplicas = 1

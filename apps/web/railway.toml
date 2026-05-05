@@ -1,0 +1,16 @@
+# Railway config for the argus-web app.
+# Built with Nixpacks (Node 22 + pnpm). Static dist served by `serve`.
+# Provisioned in P5; the actual production CDN may move to Cloudflare Pages
+# once we measure cold-start latency from EU.
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @argus/web build"
+
+[deploy]
+startCommand = "pnpm dlx serve@14 -s apps/web/dist -l ${PORT:-3000}"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+numReplicas = 1
