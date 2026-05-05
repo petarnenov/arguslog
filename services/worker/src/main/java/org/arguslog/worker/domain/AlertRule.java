@@ -8,4 +8,9 @@ import com.fasterxml.jackson.databind.JsonNode;
  * api; this record is read-only from the worker.
  */
 public record AlertRule(
-    long id, long projectId, JsonNode conditions, JsonNode actions, int throttleSeconds) {}
+    long id,
+    long projectId,
+    String name,
+    JsonNode conditions,
+    JsonNode actions,
+    int throttleSeconds) {}

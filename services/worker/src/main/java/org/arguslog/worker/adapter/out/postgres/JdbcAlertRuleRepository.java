@@ -17,8 +17,8 @@ public class JdbcAlertRuleRepository implements AlertRuleRepository {
   // The partial index `idx_alert_rules_project ... WHERE enabled` from V1 covers the lookup.
   private static final String SELECT_ENABLED_FOR_PROJECT_SQL =
       """
-      SELECT id, project_id, conditions::text AS conditions_json, actions::text AS actions_json,
-             throttle_seconds
+      SELECT id, project_id, name, conditions::text AS conditions_json,
+             actions::text AS actions_json, throttle_seconds
         FROM alert_rules
        WHERE project_id = ? AND enabled = TRUE
       """;
@@ -39,6 +39,7 @@ public class JdbcAlertRuleRepository implements AlertRuleRepository {
             new AlertRule(
                 rs.getLong("id"),
                 rs.getLong("project_id"),
+                rs.getString("name"),
                 parse(rs.getString("conditions_json")),
                 parse(rs.getString("actions_json")),
                 rs.getInt("throttle_seconds")),

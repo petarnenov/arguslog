@@ -17,10 +17,13 @@ public class EvaluatePersistedEventService implements EvaluatePersistedEventUseC
 
   private final AlertRuleRepository rules;
   private final RuleEvaluator evaluator;
+  private final DispatchAlertUseCase dispatcher;
 
-  public EvaluatePersistedEventService(AlertRuleRepository rules, RuleEvaluator evaluator) {
+  public EvaluatePersistedEventService(
+      AlertRuleRepository rules, RuleEvaluator evaluator, DispatchAlertUseCase dispatcher) {
     this.rules = rules;
     this.evaluator = evaluator;
+    this.dispatcher = dispatcher;
   }
 
   @Override
@@ -35,16 +38,26 @@ public class EvaluatePersistedEventService implements EvaluatePersistedEventUseC
         matches.add(rule);
       }
     }
-    if (!matches.isEmpty()) {
-      // Until P3 #4 wires the dispatcher this is the only signal a rule is firing — keep it loud
-      // enough to debug without overwhelming logs (one line per match, not per event).
-      for (AlertRule m : matches) {
-        log.info(
-            "alert rule matched: ruleId={} projectId={} issueId={} occurrence={}",
+    for (AlertRule m : matches) {
+      // Single info line per fired rule keeps audit trails greppable; the dispatcher logs its own
+      // per-destination outcome at warn (only on failure).
+      log.info(
+          "alert rule matched: ruleId={} projectId={} issueId={} occurrence={}",
+          m.id(),
+          event.projectId(),
+          event.issueId(),
+          event.occurrenceCount());
+      try {
+        dispatcher.dispatch(m, event);
+      } catch (RuntimeException e) {
+        // Last-line defense: dispatch should already isolate per-destination errors. If something
+        // upstream of the per-destination loop blows up (e.g. resolver), we still want the next
+        // matched rule on this event to get its shot.
+        log.warn(
+            "dispatch crashed for ruleId={} issueId={}: {}",
             m.id(),
-            event.projectId(),
             event.issueId(),
-            event.occurrenceCount());
+            e.getMessage());
       }
     }
     return matches;

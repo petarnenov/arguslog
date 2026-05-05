@@ -79,7 +79,7 @@ class RuleEvaluatorTest {
     try {
       JsonNode conditions = MAPPER.readTree(conditionsJson);
       JsonNode actions = MAPPER.readTree("{\"destinationIds\":[1]}");
-      return new AlertRule(7L, 101L, conditions, actions, 300);
+      return new AlertRule(7L, 101L, "test-rule", conditions, actions, 300);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
