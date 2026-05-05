@@ -15,7 +15,7 @@ PNPM           := pnpm
 
 .DEFAULT_GOAL  := help
 
-.PHONY: help dev up down restart logs ps \
+.PHONY: help dev up down stop restart logs ps \
         api ingest worker web \
         install e2e-install e2e \
         build lint typecheck test \
@@ -40,6 +40,18 @@ up: ## Start Postgres/Redis/Keycloak/MinIO/MailHog and wait until healthy
 
 down: ## Stop and remove infra containers (volumes preserved)
 	@$(COMPOSE) down
+
+stop: down ## Stop EVERYTHING: infra + dev servers (5173/8080/8081/8082) + Gradle daemons + mprocs
+	@echo "▶ Killing dev servers on ports 5173/8080/8081/8082..."
+	@for port in 5173 8080 8081 8082; do \
+		pid=$$(lsof -ti tcp:$$port 2>/dev/null || true); \
+		if [ -n "$$pid" ]; then echo "  :$$port → pid $$pid"; kill $$pid 2>/dev/null || true; fi; \
+	done
+	@echo "▶ Stopping Gradle daemons..."
+	@$(GRADLE) --stop >/dev/null 2>&1 || true
+	@echo "▶ Stopping mprocs..."
+	@pkill -x mprocs 2>/dev/null || true
+	@echo "✓ All stopped"
 
 restart: down up ## Restart infra
 
