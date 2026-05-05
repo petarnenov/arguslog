@@ -2,6 +2,7 @@ package dev.argus.api.adapter.out.postgres;
 
 import dev.argus.api.application.port.IssueRepository;
 import dev.argus.api.domain.Issue;
+import dev.argus.api.security.OrgContext;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,6 +73,8 @@ public class JdbcIssueRepository implements IssueRepository {
       Types.INTEGER
     };
 
+    pinOrgContextForRls();
+
     List<Issue> out = new ArrayList<>(limit);
     jdbc.query(
         PAGE_SQL,
@@ -92,5 +95,18 @@ public class JdbcIssueRepository implements IssueRepository {
                   rs.getLong("occurrence_count")));
         });
     return out;
+  }
+
+  /**
+   * Sets {@code argus.org_id} for the current transaction so RLS policies on issues / projects
+   * filter to the request's tenant. The {@code true} third arg makes this {@code SET LOCAL}; the
+   * caller MUST ensure a TX is active (we do via {@code @Transactional} on the use case). Requires
+   * OrgContext to be primed by the access guard — refusing to run a tenant-scoped query with no
+   * tenant is the correct behavior, not a quiet "show everything".
+   */
+  private void pinOrgContextForRls() {
+    long orgId = OrgContext.requireCurrent();
+    jdbc.queryForObject(
+        "SELECT set_config('argus.org_id', ?, true)", String.class, String.valueOf(orgId));
   }
 }

@@ -7,6 +7,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import dev.argus.api.application.port.IssueRepository;
 import dev.argus.api.application.port.IssueRepository.Cursor;
 import dev.argus.api.domain.Issue;
+import dev.argus.api.security.OrgContext;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.time.Instant;
@@ -15,9 +16,12 @@ import java.util.Optional;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.support.JdbcTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -50,7 +54,16 @@ class JdbcIssueRepositoryTest {
 
     Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate();
     seedProject(dataSource);
-    repository = new JdbcIssueRepository(dataSource);
+
+    // The repo's pinOrgContextForRls calls SET LOCAL, which only sticks inside a TX. Wrap each
+    // page() in a TransactionTemplate so the test exercises the production path. Without this,
+    // set_config(local=true) silently degrades to session scope and leaks across pooled
+    // connections — flaky tests in disguise.
+    TransactionTemplate tx = new TransactionTemplate(new JdbcTransactionManager(dataSource));
+    JdbcIssueRepository raw = new JdbcIssueRepository(dataSource);
+    repository =
+        (projectId, status, level, cursor, limit) ->
+            tx.execute(s -> raw.page(projectId, status, level, cursor, limit));
   }
 
   @AfterAll
@@ -59,10 +72,16 @@ class JdbcIssueRepositoryTest {
   }
 
   @BeforeEach
-  void cleanIssues() throws Exception {
+  void primeOrgContext() throws Exception {
+    OrgContext.set(1L); // tests query under the 'acme' org by default
     try (Connection conn = dataSource.getConnection()) {
       exec(conn, "TRUNCATE issues RESTART IDENTITY CASCADE");
     }
+  }
+
+  @AfterEach
+  void clearOrgContext() {
+    OrgContext.clear();
   }
 
   @Test

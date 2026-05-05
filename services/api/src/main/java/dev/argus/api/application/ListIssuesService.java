@@ -9,6 +9,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ListIssuesService implements ListIssuesUseCase {
@@ -19,7 +20,10 @@ public class ListIssuesService implements ListIssuesUseCase {
     this.repository = repository;
   }
 
+  // Read-only TX so the SET LOCAL inside JdbcIssueRepository.pinOrgContextForRls scopes to this
+  // request, and PG can route to a hot-standby when we add one in P5.
   @Override
+  @Transactional(readOnly = true)
   public Page list(Query query) {
     Optional<Cursor> cursor = query.cursor().map(ListIssuesService::decode);
 

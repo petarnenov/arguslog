@@ -12,6 +12,8 @@ import dev.argus.api.application.ListIssuesService.InvalidCursorException;
 import dev.argus.api.application.ListIssuesUseCase;
 import dev.argus.api.application.ListIssuesUseCase.Page;
 import dev.argus.api.application.port.IssueRepository;
+import dev.argus.api.application.port.MembershipRepository;
+import dev.argus.api.application.port.ProjectRepository;
 import dev.argus.api.domain.Issue;
 import java.time.Instant;
 import java.util.List;
@@ -42,10 +44,14 @@ class IssueControllerTest {
 
   @Autowired MockMvc mvc;
 
-  // Mocking the use case alone is not enough — JdbcIssueRepository would still try to wire
-  // a DataSource bean (excluded above). Mock the repo too so the context is infra-free.
+  // Mocking the use case alone is not enough — JdbcIssueRepository / JdbcProjectRepository /
+  // JdbcMembershipRepository would still try to wire a DataSource bean (excluded above).
+  // Mock every port so the context is infra-free. ProjectAccessGuard is @Profile("!test"),
+  // so it does not register here either.
   @MockitoBean ListIssuesUseCase listIssues;
   @MockitoBean IssueRepository issueRepository;
+  @MockitoBean ProjectRepository projectRepository;
+  @MockitoBean MembershipRepository membershipRepository;
 
   @Test
   void returnsPaginatedEnvelope() throws Exception {

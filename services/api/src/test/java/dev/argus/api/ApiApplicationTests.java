@@ -1,6 +1,8 @@
 package dev.argus.api;
 
 import dev.argus.api.application.port.IssueRepository;
+import dev.argus.api.application.port.MembershipRepository;
+import dev.argus.api.application.port.ProjectRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -20,9 +22,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     })
 class ApiApplicationTests {
 
-  // JdbcIssueRepository requires a DataSource which we excluded above; mock the port so the
+  // Every JDBC repository needs a DataSource which we excluded above; mock the ports so the
   // smoke test stays infrastructure-free (mirrors IngestApplicationTests / WorkerApplicationTests).
   @MockitoBean IssueRepository issueRepository;
+  @MockitoBean ProjectRepository projectRepository;
+  @MockitoBean MembershipRepository membershipRepository;
 
   @Test
   void contextLoads() {}
