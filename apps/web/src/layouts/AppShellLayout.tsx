@@ -26,7 +26,7 @@ import { useAuth } from '../auth/useAuth';
 export function AppShellLayout() {
   const [opened, { toggle }] = useDisclosure();
   const { t } = useTranslation();
-  const { orgSlug = 'demo', projectSlug } = useParams();
+  const { orgSlug = 'demo', projectId } = useParams();
   const { user, signOut } = useAuth();
   const userLabel = user?.name ?? user?.email ?? user?.id;
 
@@ -72,23 +72,23 @@ export function AppShellLayout() {
             label={t('nav.issues')}
             leftSection={<IconHome size={16} />}
           />
-          {projectSlug && (
+          {projectId && (
             <>
               <NavLink
                 component={Link}
-                to={`/orgs/${orgSlug}/projects/${projectSlug}/issues`}
+                to={`/orgs/${orgSlug}/projects/${projectId}/issues`}
                 label={t('issues.title')}
                 leftSection={<IconAlertTriangle size={16} />}
               />
               <NavLink
                 component={Link}
-                to={`/orgs/${orgSlug}/projects/${projectSlug}/settings`}
+                to={`/orgs/${orgSlug}/projects/${projectId}/settings`}
                 label={t('nav.settings')}
                 leftSection={<IconSettings size={16} />}
               />
               <NavLink
                 component={Link}
-                to={`/orgs/${orgSlug}/projects/${projectSlug}/settings/keys`}
+                to={`/orgs/${orgSlug}/projects/${projectId}/settings/keys`}
                 label="Keys"
                 leftSection={<IconShieldLock size={16} />}
               />

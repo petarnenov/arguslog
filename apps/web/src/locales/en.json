@@ -30,9 +30,27 @@
   "issues": {
     "title": "Issues",
     "empty": "No issues — your code is healthy.",
-    "level": "Level",
     "lastSeen": "Last seen",
-    "occurrences": "Occurrences"
+    "occurrences": "Occurrences",
+    "statusFilter": "Status",
+    "levelFilter": "Level",
+    "invalidProjectId": "Invalid project — pick a project from the sidebar.",
+    "status": {
+      "unresolved": "Unresolved",
+      "resolved": "Resolved",
+      "ignored": "Ignored"
+    },
+    "level": {
+      "fatal": "Fatal",
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Info",
+      "debug": "Debug"
+    }
+  },
+  "pagination": {
+    "first": "First page",
+    "next": "Next"
   },
   "errors": {
     "generic": "Something went wrong",
