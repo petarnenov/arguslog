@@ -21,12 +21,18 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useParams } from 'react-router';
 
+import { useMyOrgs } from '../api/queries';
 import { useAuth } from '../auth/useAuth';
 
 export function AppShellLayout() {
   const [opened, { toggle }] = useDisclosure();
   const { t } = useTranslation();
-  const { orgSlug = 'demo', projectId } = useParams();
+  const { orgSlug: urlOrgSlug, projectId } = useParams();
+  const orgs = useMyOrgs();
+  // When the URL doesn't carry an org slug yet (e.g. /onboarding), fall back to the user's first
+  // org. This keeps the sidebar's "Issues" link pointing somewhere real instead of the previous
+  // hard-coded 'demo' default which sent users to an org they don't belong to.
+  const orgSlug = urlOrgSlug ?? orgs.data?.[0]?.slug;
   const { user, signOut } = useAuth();
   const userLabel = user?.name ?? user?.email ?? user?.id;
 
@@ -66,13 +72,15 @@ export function AppShellLayout() {
 
       <AppShell.Navbar p="xs">
         <AppShell.Section grow component={ScrollArea}>
-          <NavLink
-            component={Link}
-            to={`/orgs/${orgSlug}/projects`}
-            label={t('nav.issues')}
-            leftSection={<IconHome size={16} />}
-          />
-          {projectId && (
+          {orgSlug && (
+            <NavLink
+              component={Link}
+              to={`/orgs/${orgSlug}/projects`}
+              label={t('nav.issues')}
+              leftSection={<IconHome size={16} />}
+            />
+          )}
+          {orgSlug && projectId && (
             <>
               <NavLink
                 component={Link}
