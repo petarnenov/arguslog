@@ -20,8 +20,8 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
-import { useMyOrgs, useProjects, queryKeys } from '../api/queries';
 import { createProject } from '../api/projects';
+import { useMyOrgs, useProjects, queryKeys } from '../api/queries';
 
 export function ProjectsPage() {
   const { orgSlug } = useParams();

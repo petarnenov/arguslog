@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
+import { listAlertDestinations, listAlertRules } from './alerts';
 import {
   getIssue,
   listIssueEvents,
@@ -16,6 +17,8 @@ export const queryKeys = {
   issues: (params: ListIssuesParams) => ['issues', params] as const,
   issue: (projectId: number, issueId: number) => ['issues', projectId, issueId] as const,
   issueEvents: (params: ListIssueEventsParams) => ['issueEvents', params] as const,
+  alertRules: (projectId: number) => ['alert-rules', projectId] as const,
+  alertDestinations: (orgId: number) => ['alert-destinations', orgId] as const,
 };
 
 export function useMyOrgs(options: { enabled?: boolean } = {}) {
@@ -63,5 +66,26 @@ export function useIssueEvents(params: ListIssueEventsParams, options: { enabled
     enabled: options.enabled ?? true,
     placeholderData: keepPreviousData,
     staleTime: 15_000,
+  });
+}
+
+export function useAlertRules(projectId: number | undefined, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.alertRules(projectId ?? -1),
+    queryFn: () => listAlertRules(projectId as number),
+    enabled: (options.enabled ?? true) && projectId != null,
+    staleTime: 30_000,
+  });
+}
+
+export function useAlertDestinations(
+  orgId: number | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.alertDestinations(orgId ?? -1),
+    queryFn: () => listAlertDestinations(orgId as number),
+    enabled: (options.enabled ?? true) && orgId != null,
+    staleTime: 30_000,
   });
 }
