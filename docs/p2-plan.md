@@ -17,8 +17,8 @@
 | 3   | API: issue detail + recent events endpoints; surface fingerprint, occurrence_count, level, last_seen.                | ✅ done | `b10b084` |
 | 4   | Web login flow — `oidc-client-ts` redirect + PKCE callback against Keycloak realm, persisted via Zustand store.      | ✅ done | `86bdd66` |
 | 5   | Web IssuesPage wired to real API via TanStack Query + Mantine table; status / level filters; pagination.             | ✅ done | `6cca436` |
-| 6   | Web IssueDetailPage — title / culprit / chart from `issue_stats_5m`, recent events panel.                            | ⏳ next | —         |
-| 7   | Keycloak realm verification — confirm `argus-api` + `argus-web` clients, pwa scopes, default test users.             | pending | —         |
+| 6   | Web IssueDetailPage — title / culprit / chart from `issue_stats_5m`, recent events panel.                            | ✅ done | `ad1cd26` |
+| 7   | Keycloak realm verification — confirm `argus-api` + `argus-web` clients, pwa scopes, default test users.             | ⏳ next | —         |
 | 8   | OpenAPI artifact emit + the openapi-diff CI job lights up (was a placeholder under PR workflow).                     | pending | —         |
 
 ## Architecture decisions to lock in

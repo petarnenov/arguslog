@@ -30,6 +30,7 @@
   "issues": {
     "title": "Issues",
     "empty": "No issues — your code is healthy.",
+    "notFound": "Issue not found.",
     "lastSeen": "Last seen",
     "occurrences": "Occurrences",
     "statusFilter": "Status",
@@ -47,6 +48,16 @@
       "info": "Info",
       "debug": "Debug"
     }
+  },
+  "issueDetail": {
+    "firstSeen": "First seen",
+    "lastSeen": "Last seen",
+    "occurrences": "Occurrences",
+    "recentEvents": "Recent events",
+    "eventTime": "Time",
+    "eventId": "Event",
+    "payload": "Payload",
+    "noEvents": "No events recorded yet."
   },
   "pagination": {
     "first": "First page",
