@@ -25,4 +25,8 @@ dependencies {
     testImplementation(libs.flyway.postgres)
     testImplementation(libs.wiremock.standalone)
     testImplementation(libs.mockito.junit)
+    testImplementation(libs.awaitility)
+    // ingest classes for the in-process end-to-end test (P1 milestone #4).
+    // Test-scoped so the production worker JAR doesn't pull in ingest.
+    testImplementation(project(":services:ingest"))
 }
