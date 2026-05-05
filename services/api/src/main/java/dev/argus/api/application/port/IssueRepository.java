@@ -1,7 +1,7 @@
 package dev.argus.api.application.port;
 
+import dev.argus.api.application.CursorCodec;
 import dev.argus.api.domain.Issue;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,9 +19,12 @@ public interface IssueRepository {
       long projectId,
       Optional<Issue.Status> status,
       Optional<Issue.Level> level,
-      Optional<Cursor> cursor,
+      Optional<CursorCodec.LongCursor> cursor,
       int limit);
 
-  /** Cursor used to seek strictly past a given (last_seen_at, id) tuple. */
-  record Cursor(Instant lastSeenAt, long id) {}
+  /**
+   * Returns the issue with {@code issueId} when it belongs to {@code projectId}. Empty either way —
+   * caller never gets to distinguish "doesn't exist" from "wrong project" (Sentry-style 404).
+   */
+  Optional<Issue> findByProjectAndId(long projectId, long issueId);
 }

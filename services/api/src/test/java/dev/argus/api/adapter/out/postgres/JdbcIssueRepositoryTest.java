@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import dev.argus.api.application.CursorCodec.LongCursor;
 import dev.argus.api.application.port.IssueRepository;
-import dev.argus.api.application.port.IssueRepository.Cursor;
 import dev.argus.api.domain.Issue;
 import dev.argus.api.security.OrgContext;
 import java.sql.Connection;
@@ -55,15 +55,29 @@ class JdbcIssueRepositoryTest {
     Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate();
     seedProject(dataSource);
 
-    // The repo's pinOrgContextForRls calls SET LOCAL, which only sticks inside a TX. Wrap each
-    // page() in a TransactionTemplate so the test exercises the production path. Without this,
+    // The repo's pinOrgContextForRls calls SET LOCAL, which only sticks inside a TX. Wrap every
+    // call in a TransactionTemplate so the test exercises the production path. Without this,
     // set_config(local=true) silently degrades to session scope and leaks across pooled
     // connections — flaky tests in disguise.
     TransactionTemplate tx = new TransactionTemplate(new JdbcTransactionManager(dataSource));
     JdbcIssueRepository raw = new JdbcIssueRepository(dataSource);
     repository =
-        (projectId, status, level, cursor, limit) ->
-            tx.execute(s -> raw.page(projectId, status, level, cursor, limit));
+        new IssueRepository() {
+          @Override
+          public List<Issue> page(
+              long projectId,
+              Optional<Issue.Status> status,
+              Optional<Issue.Level> level,
+              Optional<LongCursor> cursor,
+              int limit) {
+            return tx.execute(s -> raw.page(projectId, status, level, cursor, limit));
+          }
+
+          @Override
+          public Optional<Issue> findByProjectAndId(long projectId, long issueId) {
+            return tx.execute(s -> raw.findByProjectAndId(projectId, issueId));
+          }
+        };
   }
 
   @AfterAll
@@ -145,7 +159,7 @@ class JdbcIssueRepositoryTest {
             101L,
             Optional.empty(),
             Optional.empty(),
-            Optional.of(new Cursor(last.lastSeenAt(), last.id())),
+            Optional.of(new LongCursor(last.lastSeenAt(), last.id())),
             10);
     assertThat(next).hasSize(1);
     assertThat(next.get(0).id()).isLessThan(last.id());

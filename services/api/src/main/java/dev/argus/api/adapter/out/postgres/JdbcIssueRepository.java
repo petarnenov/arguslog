@@ -1,14 +1,20 @@
 package dev.argus.api.adapter.out.postgres;
 
+import dev.argus.api.application.CursorCodec;
 import dev.argus.api.application.port.IssueRepository;
 import dev.argus.api.domain.Issue;
 import dev.argus.api.security.OrgContext;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowCallbackHandler;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -30,6 +36,16 @@ public class JdbcIssueRepository implements IssueRepository {
        LIMIT ?
       """;
 
+  private static final String FIND_BY_PROJECT_AND_ID_SQL =
+      """
+      SELECT id, project_id, fingerprint, status::text, level::text, title, culprit,
+             first_seen_at, last_seen_at, occurrence_count
+        FROM issues
+       WHERE project_id = ? AND id = ?
+      """;
+
+  private static final RowMapper<Issue> ROW_MAPPER = JdbcIssueRepository::mapRow;
+
   private final JdbcTemplate jdbc;
 
   public JdbcIssueRepository(DataSource dataSource) {
@@ -41,13 +57,13 @@ public class JdbcIssueRepository implements IssueRepository {
       long projectId,
       Optional<Issue.Status> status,
       Optional<Issue.Level> level,
-      Optional<Cursor> cursor,
+      Optional<CursorCodec.LongCursor> cursor,
       int limit) {
 
     String statusValue = status.map(Issue.Status::dbValue).orElse(null);
     String levelValue = level.map(Issue.Level::dbValue).orElse(null);
-    Object cursorTs = cursor.map(c -> java.sql.Timestamp.from(c.lastSeenAt())).orElse(null);
-    Object cursorId = cursor.map(Cursor::id).orElse(null);
+    Object cursorTs = cursor.map(c -> java.sql.Timestamp.from(c.instant())).orElse(null);
+    Object cursorId = cursor.map(CursorCodec.LongCursor::id).orElse(null);
     Object cursorPresence = cursor.isPresent() ? Boolean.TRUE : null;
 
     Object[] args = {
@@ -74,27 +90,21 @@ public class JdbcIssueRepository implements IssueRepository {
     };
 
     pinOrgContextForRls();
-
     List<Issue> out = new ArrayList<>(limit);
-    jdbc.query(
-        PAGE_SQL,
-        args,
-        types,
-        rs -> {
-          out.add(
-              new Issue(
-                  rs.getLong("id"),
-                  rs.getLong("project_id"),
-                  rs.getString("fingerprint"),
-                  Issue.Status.fromString(rs.getString("status")),
-                  Issue.Level.fromString(rs.getString("level")),
-                  rs.getString("title"),
-                  rs.getString("culprit"),
-                  rs.getTimestamp("first_seen_at").toInstant(),
-                  rs.getTimestamp("last_seen_at").toInstant(),
-                  rs.getLong("occurrence_count")));
-        });
+    RowCallbackHandler handler = rs -> out.add(mapRow(rs, 0));
+    jdbc.query(PAGE_SQL, args, types, handler);
     return out;
+  }
+
+  @Override
+  public Optional<Issue> findByProjectAndId(long projectId, long issueId) {
+    pinOrgContextForRls();
+    try {
+      return Optional.ofNullable(
+          jdbc.queryForObject(FIND_BY_PROJECT_AND_ID_SQL, ROW_MAPPER, projectId, issueId));
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
   }
 
   /**
@@ -108,5 +118,19 @@ public class JdbcIssueRepository implements IssueRepository {
     long orgId = OrgContext.requireCurrent();
     jdbc.queryForObject(
         "SELECT set_config('argus.org_id', ?, true)", String.class, String.valueOf(orgId));
+  }
+
+  private static Issue mapRow(ResultSet rs, int rowNum) throws SQLException {
+    return new Issue(
+        rs.getLong("id"),
+        rs.getLong("project_id"),
+        rs.getString("fingerprint"),
+        Issue.Status.fromString(rs.getString("status")),
+        Issue.Level.fromString(rs.getString("level")),
+        rs.getString("title"),
+        rs.getString("culprit"),
+        rs.getTimestamp("first_seen_at").toInstant(),
+        rs.getTimestamp("last_seen_at").toInstant(),
+        rs.getLong("occurrence_count"));
   }
 }

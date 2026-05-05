@@ -9,11 +9,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.argus.api.application.ListIssuesService.InvalidCursorException;
+import dev.argus.api.application.CursorCodec.InvalidCursorException;
+import dev.argus.api.application.CursorCodec.LongCursor;
 import dev.argus.api.application.ListIssuesUseCase.Page;
 import dev.argus.api.application.ListIssuesUseCase.Query;
 import dev.argus.api.application.port.IssueRepository;
-import dev.argus.api.application.port.IssueRepository.Cursor;
 import dev.argus.api.domain.Issue;
 import java.time.Instant;
 import java.util.List;
@@ -64,46 +64,47 @@ class ListIssuesServiceTest {
         service.list(new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), 2));
     assertThat(page.issues()).hasSize(2);
     assertThat(page.nextCursor()).isPresent();
-    Cursor decoded = ListIssuesService.decode(page.nextCursor().orElseThrow());
+    LongCursor decoded = CursorCodec.decodeLong(page.nextCursor().orElseThrow());
     assertThat(decoded.id()).isEqualTo(page.issues().get(1).id());
   }
 
   @Test
   void cursorIsDecodedAndForwardedToRepository() {
-    Cursor cursor = new Cursor(Instant.parse("2026-05-05T12:00:00Z"), 42L);
-    String encoded = ListIssuesService.encode(cursor);
+    LongCursor cursor = new LongCursor(Instant.parse("2026-05-05T12:00:00Z"), 42L);
+    String encoded = CursorCodec.encodeLong(cursor.instant(), cursor.id());
     when(repository.page(anyLong(), any(), any(), any(), anyInt())).thenReturn(List.of());
 
     service.list(new Query(101L, Optional.empty(), Optional.empty(), Optional.of(encoded), 50));
 
     @SuppressWarnings("unchecked")
-    ArgumentCaptor<Optional<Cursor>> captor = ArgumentCaptor.forClass(Optional.class);
+    ArgumentCaptor<Optional<LongCursor>> captor = ArgumentCaptor.forClass(Optional.class);
     verify(repository).page(eq(101L), any(), any(), captor.capture(), eq(51));
     assertThat(captor.getValue()).contains(cursor);
   }
 
   @Test
   void cursorRoundTripsExactly() {
-    Cursor original = new Cursor(Instant.parse("2026-05-05T12:34:56.789Z"), 12345L);
-    Cursor parsed = ListIssuesService.decode(ListIssuesService.encode(original));
+    LongCursor original = new LongCursor(Instant.parse("2026-05-05T12:34:56.789Z"), 12345L);
+    LongCursor parsed =
+        CursorCodec.decodeLong(CursorCodec.encodeLong(original.instant(), original.id()));
     assertThat(parsed).isEqualTo(original);
   }
 
   @Test
   void brokenCursorsAreRejectedClearly() {
-    assertThatThrownBy(() -> ListIssuesService.decode("not-base64!!"))
+    assertThatThrownBy(() -> CursorCodec.decodeLong("not-base64!!"))
         .isInstanceOf(InvalidCursorException.class);
     String noSeparator =
         java.util.Base64.getUrlEncoder()
             .withoutPadding()
             .encodeToString("missing-separator".getBytes());
-    assertThatThrownBy(() -> ListIssuesService.decode(noSeparator))
+    assertThatThrownBy(() -> CursorCodec.decodeLong(noSeparator))
         .isInstanceOf(InvalidCursorException.class);
     String badInstant =
         java.util.Base64.getUrlEncoder()
             .withoutPadding()
             .encodeToString("not-a-time|123".getBytes());
-    assertThatThrownBy(() -> ListIssuesService.decode(badInstant))
+    assertThatThrownBy(() -> CursorCodec.decodeLong(badInstant))
         .isInstanceOf(InvalidCursorException.class);
   }
 

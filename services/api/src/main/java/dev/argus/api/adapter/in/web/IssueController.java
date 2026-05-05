@@ -1,12 +1,15 @@
 package dev.argus.api.adapter.in.web;
 
+import dev.argus.api.adapter.in.web.dto.EventResponse;
 import dev.argus.api.adapter.in.web.dto.IssueResponse;
 import dev.argus.api.adapter.in.web.dto.PageResponse;
-import dev.argus.api.application.ListIssuesService.InvalidCursorException;
+import dev.argus.api.application.CursorCodec.InvalidCursorException;
+import dev.argus.api.application.GetIssueUseCase;
+import dev.argus.api.application.ListIssueEventsUseCase;
 import dev.argus.api.application.ListIssuesUseCase;
-import dev.argus.api.application.ListIssuesUseCase.Page;
 import dev.argus.api.application.ListIssuesUseCase.Query;
 import dev.argus.api.domain.Issue;
+import dev.argus.api.security.AccessException;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
@@ -27,9 +30,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class IssueController {
 
   private final ListIssuesUseCase listIssues;
+  private final GetIssueUseCase getIssue;
+  private final ListIssueEventsUseCase listEvents;
 
-  public IssueController(ListIssuesUseCase listIssues) {
+  public IssueController(
+      ListIssuesUseCase listIssues, GetIssueUseCase getIssue, ListIssueEventsUseCase listEvents) {
     this.listIssues = listIssues;
+    this.getIssue = getIssue;
+    this.listEvents = listEvents;
   }
 
   @GetMapping
@@ -42,9 +50,40 @@ public class IssueController {
 
     Optional<Issue.Status> status = parseStatus(statusParam);
     Optional<Issue.Level> level = parseLevel(levelParam);
-    Page page =
+    var page =
         listIssues.list(new Query(projectId, status, level, Optional.ofNullable(cursor), limit));
     List<IssueResponse> data = page.issues().stream().map(IssueResponse::from).toList();
+    return PageResponse.of(data, page.nextCursor().orElse(null));
+  }
+
+  @GetMapping("/{issueId}")
+  public IssueResponse getOne(@PathVariable long projectId, @PathVariable long issueId) {
+    return getIssue
+        .get(projectId, issueId)
+        .map(IssueResponse::from)
+        .orElseThrow(() -> AccessException.notFound(issueId));
+  }
+
+  @GetMapping("/{issueId}/events")
+  public PageResponse<EventResponse> listEvents(
+      @PathVariable long projectId,
+      @PathVariable long issueId,
+      @RequestParam(value = "cursor", required = false) String cursor,
+      @RequestParam(value = "limit", required = false, defaultValue = "50") int limit) {
+
+    var page =
+        listEvents.list(
+            new ListIssueEventsUseCase.Query(
+                projectId, issueId, Optional.ofNullable(cursor), limit));
+    if (page.events().isEmpty() && cursor == null) {
+      // ListIssueEventsService returns an empty page for an unknown issue under this project so
+      // controller code stays straight-line. Map that to 404 here. (A genuinely empty issue still
+      // returns 200 + [], but only after the issue lookup confirms it exists — see service.)
+      if (getIssue.get(projectId, issueId).isEmpty()) {
+        throw AccessException.notFound(issueId);
+      }
+    }
+    List<EventResponse> data = page.events().stream().map(EventResponse::from).toList();
     return PageResponse.of(data, page.nextCursor().orElse(null));
   }
 

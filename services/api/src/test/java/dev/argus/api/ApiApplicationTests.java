@@ -1,5 +1,6 @@
 package dev.argus.api;
 
+import dev.argus.api.application.port.EventRepository;
 import dev.argus.api.application.port.IssueRepository;
 import dev.argus.api.application.port.MembershipRepository;
 import dev.argus.api.application.port.ProjectRepository;
@@ -25,6 +26,7 @@ class ApiApplicationTests {
   // Every JDBC repository needs a DataSource which we excluded above; mock the ports so the
   // smoke test stays infrastructure-free (mirrors IngestApplicationTests / WorkerApplicationTests).
   @MockitoBean IssueRepository issueRepository;
+  @MockitoBean EventRepository eventRepository;
   @MockitoBean ProjectRepository projectRepository;
   @MockitoBean MembershipRepository membershipRepository;
 

@@ -2,22 +2,28 @@ package dev.argus.api.adapter.in.web;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import dev.argus.api.application.ListIssuesService.InvalidCursorException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.argus.api.application.CursorCodec.InvalidCursorException;
+import dev.argus.api.application.GetIssueUseCase;
+import dev.argus.api.application.ListIssueEventsUseCase;
 import dev.argus.api.application.ListIssuesUseCase;
-import dev.argus.api.application.ListIssuesUseCase.Page;
+import dev.argus.api.application.port.EventRepository;
 import dev.argus.api.application.port.IssueRepository;
 import dev.argus.api.application.port.MembershipRepository;
 import dev.argus.api.application.port.ProjectRepository;
+import dev.argus.api.domain.Event;
 import dev.argus.api.domain.Issue;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -43,34 +49,25 @@ import org.springframework.test.web.servlet.MockMvc;
 class IssueControllerTest {
 
   @Autowired MockMvc mvc;
+  @Autowired ObjectMapper json;
 
-  // Mocking the use case alone is not enough — JdbcIssueRepository / JdbcProjectRepository /
-  // JdbcMembershipRepository would still try to wire a DataSource bean (excluded above).
-  // Mock every port so the context is infra-free. ProjectAccessGuard is @Profile("!test"),
-  // so it does not register here either.
+  // Use cases mocked so the request never reaches the JDBC adapters; ports mocked because
+  // the @Component adapters still need a DataSource at wiring time. ProjectAccessGuard is
+  // @Profile("!test"), so it doesn't register here either.
   @MockitoBean ListIssuesUseCase listIssues;
+  @MockitoBean GetIssueUseCase getIssue;
+  @MockitoBean ListIssueEventsUseCase listEvents;
   @MockitoBean IssueRepository issueRepository;
+  @MockitoBean EventRepository eventRepository;
   @MockitoBean ProjectRepository projectRepository;
   @MockitoBean MembershipRepository membershipRepository;
+
+  // ── list ─────────────────────────────────────────────────────────────────
 
   @Test
   void returnsPaginatedEnvelope() throws Exception {
     when(listIssues.list(any()))
-        .thenReturn(
-            new Page(
-                List.of(
-                    new Issue(
-                        7L,
-                        101L,
-                        "fp-x",
-                        Issue.Status.UNRESOLVED,
-                        Issue.Level.ERROR,
-                        "TypeError: x",
-                        "render at app.js:42",
-                        Instant.parse("2026-05-05T10:00:00Z"),
-                        Instant.parse("2026-05-05T11:00:00Z"),
-                        3L)),
-                Optional.of("Mi4yLjI=")));
+        .thenReturn(new ListIssuesUseCase.Page(List.of(sampleIssue(7L)), Optional.of("Mi4yLjI=")));
 
     mvc.perform(get("/api/v1/projects/101/issues").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
@@ -89,7 +86,8 @@ class IssueControllerTest {
 
   @Test
   void omitsNextWhenLastPage() throws Exception {
-    when(listIssues.list(any())).thenReturn(new Page(List.of(), Optional.empty()));
+    when(listIssues.list(any()))
+        .thenReturn(new ListIssuesUseCase.Page(List.of(), Optional.empty()));
     mvc.perform(get("/api/v1/projects/101/issues"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data", hasSize(0)))
@@ -118,5 +116,79 @@ class IssueControllerTest {
     mvc.perform(get("/api/v1/projects/101/issues?level=critical"))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.title").value("Invalid filter"));
+  }
+
+  // ── get one ──────────────────────────────────────────────────────────────
+
+  @Test
+  void issueDetailReturnsTheRow() throws Exception {
+    when(getIssue.get(101L, 7L)).thenReturn(Optional.of(sampleIssue(7L)));
+    mvc.perform(get("/api/v1/projects/101/issues/7"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(7))
+        .andExpect(jsonPath("$.projectId").value(101))
+        .andExpect(jsonPath("$.title").value("TypeError: x"));
+  }
+
+  @Test
+  void unknownIssueIs404ProblemJson() throws Exception {
+    when(getIssue.get(eq(101L), eq(999L))).thenReturn(Optional.empty());
+    mvc.perform(get("/api/v1/projects/101/issues/999"))
+        .andExpect(status().isNotFound())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.title").value("Not found"));
+  }
+
+  // ── events ───────────────────────────────────────────────────────────────
+
+  @Test
+  void issueEventsReturnsEnvelopeWithPayloadPassedThrough() throws Exception {
+    UUID eventId = UUID.fromString("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+    when(getIssue.get(101L, 7L)).thenReturn(Optional.of(sampleIssue(7L)));
+    when(listEvents.list(any()))
+        .thenReturn(
+            new ListIssueEventsUseCase.Page(
+                List.of(
+                    new Event(
+                        eventId,
+                        7L,
+                        101L,
+                        Instant.parse("2026-05-05T12:00:00Z"),
+                        json.readTree("{\"level\":\"error\",\"message\":\"boom\"}"))),
+                Optional.empty()));
+
+    mvc.perform(get("/api/v1/projects/101/issues/7/events"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data", hasSize(1)))
+        .andExpect(jsonPath("$.data[0].id").value(eventId.toString()))
+        .andExpect(jsonPath("$.data[0].issueId").value(7))
+        .andExpect(jsonPath("$.data[0].projectId").value(101))
+        .andExpect(jsonPath("$.data[0].payload.level").value("error"))
+        .andExpect(jsonPath("$.data[0].payload.message").value("boom"))
+        .andExpect(jsonPath("$.page.next").doesNotExist());
+  }
+
+  @Test
+  void issueEventsForUnknownIssueIs404() throws Exception {
+    when(getIssue.get(101L, 999L)).thenReturn(Optional.empty());
+    when(listEvents.list(any()))
+        .thenReturn(new ListIssueEventsUseCase.Page(List.of(), Optional.empty()));
+    mvc.perform(get("/api/v1/projects/101/issues/999/events"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.title").value("Not found"));
+  }
+
+  private static Issue sampleIssue(long id) {
+    return new Issue(
+        id,
+        101L,
+        "fp-x",
+        Issue.Status.UNRESOLVED,
+        Issue.Level.ERROR,
+        "TypeError: x",
+        "render at app.js:42",
+        Instant.parse("2026-05-05T10:00:00Z"),
+        Instant.parse("2026-05-05T11:00:00Z"),
+        3L);
   }
 }
