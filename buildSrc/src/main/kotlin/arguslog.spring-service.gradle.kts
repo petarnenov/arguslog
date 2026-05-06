@@ -28,3 +28,9 @@ tasks.withType<Test> {
         events("passed", "skipped", "failed")
     }
 }
+
+// Disable the non-Spring-Boot "plain" jar — it confuses Dockerfiles that COPY *.jar (the plain
+// jar is missing the Spring Boot layout and won't run on its own) and bloats build/libs.
+tasks.named<Jar>("jar") {
+    enabled = false
+}
