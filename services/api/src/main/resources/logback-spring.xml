@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logback config for the api service. Spring Boot's default console appender stays in place;
+  the only addition is the Arguslog appender which forwards ERROR-level events back into the
+  platform via the SDK. The appender is a no-op when arguslog.dsn is unset (always true in
+  tests + local dev), so this file is safe to ship without env-specific overrides.
+-->
+<configuration>
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+  <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+  <appender name="ARGUSLOG" class="org.arguslog.sdk.logback.ArgusLogbackAppender">
+    <minLevel>ERROR</minLevel>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="ARGUSLOG"/>
+  </root>
+</configuration>

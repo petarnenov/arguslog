@@ -67,6 +67,11 @@ arguslog:
     # ISO-8601 duration. 7 days matches industry norms (GitHub, Vercel) and is short enough
     # to bound disk burn from a customer with a permanently broken card.
     grace-period: ${BILLING_GRACE_PERIOD:P7D}
+  # Dogfood — when ARGUS_DSN is set the SDK auto-init forwards ERROR-level Logback events
+  # back into Arguslog itself. Empty in dev/test → SDK is a no-op so log lines stay local.
+  dsn: ${ARGUS_DSN:}
+  environment: ${ARGUS_ENVIRONMENT:dev}
+  release: ${ARGUS_RELEASE:0.0.1-SNAPSHOT}
   r2:
     endpoint: ${R2_ENDPOINT:http://localhost:9000}
     bucket: ${R2_BUCKET:arguslog-sourcemaps}

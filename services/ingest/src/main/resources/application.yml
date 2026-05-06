@@ -45,6 +45,10 @@ management:
       enabled: true
 
 arguslog:
+  # Dogfood — see services/api/src/main/resources/application.yml for rationale.
+  dsn: ${ARGUS_DSN:}
+  environment: ${ARGUS_ENVIRONMENT:dev}
+  release: ${ARGUS_RELEASE:0.0.1-SNAPSHOT}
   ingest:
     stream-key: events:incoming
     max-payload-bytes: 204800
