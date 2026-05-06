@@ -117,7 +117,8 @@
       "Bash(awk -F: '{sum+=$2} END {print \"API:\", sum}')",
       "Bash(awk -F: '{sum+=$2} END {print \"WORKER TOTAL:\", sum}')",
       "Bash(pnpm -r --filter \"@arguslog/sdk-browser\" --filter \"@arguslog/sdk-react\" build)",
-      "Bash(awk -F: '{sum+=$2} END {print \"API:\",sum}')"
+      "Bash(awk -F: '{sum+=$2} END {print \"API:\",sum}')",
+      "Bash(make help *)"
     ]
   }
 }
