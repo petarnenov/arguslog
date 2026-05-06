@@ -17,31 +17,43 @@ describe('parseArgs', () => {
 });
 
 describe('run', () => {
-  it.each([['help'], ['--help'], ['-h']])('prints usage on %s', (flag) => {
-    const r = run([flag]);
+  it.each([['help'], ['--help'], ['-h']])('prints usage on %s', async (flag) => {
+    const r = await run([flag]);
     expect(r.exitCode).toBe(0);
     expect(r.stdout).toContain('Usage:');
     expect(r.stderr).toBe('');
   });
 
-  it.each([['version'], ['--version'], ['-v']])('prints VERSION on %s', (flag) => {
-    const r = run([flag]);
+  it.each([['version'], ['--version'], ['-v']])('prints VERSION on %s', async (flag) => {
+    const r = await run([flag]);
     expect(r.exitCode).toBe(0);
     expect(r.stdout.trim()).toBe(VERSION);
   });
 
-  it('returns exit 2 for stub releases/sourcemaps subcommands', () => {
-    expect(run(['releases', 'new', '1.0.0']).exitCode).toBe(2);
-    expect(run(['sourcemaps', 'upload', './dist']).exitCode).toBe(2);
-  });
-
-  it('returns exit 1 for unknown command', () => {
-    const r = run(['bogus']);
+  it('returns exit 1 for unknown command', async () => {
+    const r = await run(['bogus']);
     expect(r.exitCode).toBe(1);
     expect(r.stderr).toContain('unknown command');
   });
 
-  it('defaults to help when argv is empty', () => {
-    expect(run([]).exitCode).toBe(0);
+  it('defaults to help when argv is empty', async () => {
+    const r = await run([]);
+    expect(r.exitCode).toBe(0);
+  });
+
+  it('rejects releases new without --project as usage error', async () => {
+    const r = await run(['releases', 'new', '1.2.3'], {
+      loadConfig: () => ({ apiBaseUrl: 'http://x', token: 't' }),
+    });
+    expect(r.exitCode).toBe(2);
+    expect(r.stderr).toContain('--project');
+  });
+
+  it('rejects sourcemaps upload without --release as usage error', async () => {
+    const r = await run(['sourcemaps', 'upload', './a.map', '--project', '1'], {
+      loadConfig: () => ({ apiBaseUrl: 'http://x', token: 't' }),
+    });
+    expect(r.exitCode).toBe(2);
+    expect(r.stderr).toContain('--release');
   });
 });
