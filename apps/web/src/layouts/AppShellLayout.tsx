@@ -25,6 +25,7 @@ import {
   IconChevronDown,
   IconCreditCard,
   IconHome,
+  IconKey,
   IconLogout,
   IconPlus,
   IconSend,
@@ -110,6 +111,13 @@ export function AppShellLayout() {
                     {t('auth.signedInAs', { name: userLabel })}
                   </Text>
                 </Menu.Label>
+                <Menu.Item
+                  component={Link}
+                  to="/me/tokens"
+                  leftSection={<IconKey size={14} />}
+                >
+                  {t('nav.tokens')}
+                </Menu.Item>
                 <Menu.Item leftSection={<IconLogout size={14} />} onClick={() => void signOut()}>
                   {t('auth.logout')}
                 </Menu.Item>

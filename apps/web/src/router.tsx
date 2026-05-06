@@ -14,6 +14,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { OrgSettingsPage } from './pages/OrgSettingsPage';
 import { OrgsLandingPage } from './pages/OrgsLandingPage';
+import { PersonalAccessTokensPage } from './pages/PersonalAccessTokensPage';
 import { ProjectKeysPage } from './pages/ProjectKeysPage';
 import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
       { path: '/orgs/:orgSlug/settings', element: <OrgSettingsPage /> },
       { path: '/orgs/:orgSlug/settings/destinations', element: <AlertDestinationsPage /> },
       { path: '/orgs/:orgSlug/billing', element: <BillingPage /> },
+      { path: '/me/tokens', element: <PersonalAccessTokensPage /> },
       { path: '/admin', element: <AdminPage /> },
     ],
   },
