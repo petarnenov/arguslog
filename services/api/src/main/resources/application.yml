@@ -58,6 +58,11 @@ arguslog:
   stripe:
     api-key: ${STRIPE_API_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    # Stripe price id for the Pro tier — pulled from env so test + live mode use different
+    # objects without a code change. Empty until Stripe is provisioned.
+    price-pro-id: ${STRIPE_PRICE_PRO:}
+    # Where Stripe redirects after Checkout / Customer Portal — points at the dashboard.
+    dashboard-base-url: ${DASHBOARD_BASE_URL:http://localhost:5173}
   r2:
     endpoint: ${R2_ENDPOINT:http://localhost:9000}
     bucket: ${R2_BUCKET:arguslog-sourcemaps}

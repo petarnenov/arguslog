@@ -595,6 +595,33 @@
         }
       }
     },
+    "/api/v1/orgs/{orgId}/billing/checkout-session" : {
+      "post" : {
+        "tags" : [ "checkout-controller" ],
+        "operationId" : "start",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CheckoutResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{orgId}/alert-destinations" : {
       "get" : {
         "tags" : [ "alert-destination-controller" ],
@@ -1264,6 +1291,14 @@
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }
+      },
+      "CheckoutResponse" : {
+        "type" : "object",
+        "properties" : {
+          "url" : {
+            "type" : "string"
           }
         }
       },

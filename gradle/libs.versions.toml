@@ -15,6 +15,7 @@ opentelemetry = "1.46.0"
 otelInstrumentation = "2.11.0"
 bucket4j = "8.14.0"
 stripeJava = "29.0.0"
+gson = "2.11.0"
 telegramBot = "7.10.0"
 resend = "4.0.1"
 argon2 = "2.11"
@@ -56,6 +57,7 @@ otel-spring-boot-starter = { module = "io.opentelemetry.instrumentation:opentele
 bucket4j-redis = { module = "com.bucket4j:bucket4j_jdk17-redis", version.ref = "bucket4j" }
 bucket4j-core = { module = "com.bucket4j:bucket4j_jdk17-core", version.ref = "bucket4j" }
 stripe-java = { module = "com.stripe:stripe-java", version.ref = "stripeJava" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 telegram-bot = { module = "com.github.pengrad:java-telegram-bot-api", version.ref = "telegramBot" }
 resend-java = { module = "com.resend:resend-java", version.ref = "resend" }
 argon2-jvm = { module = "de.mkammerer:argon2-jvm", version.ref = "argon2" }

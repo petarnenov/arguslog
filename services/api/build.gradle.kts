@@ -29,6 +29,10 @@ dependencies {
     implementation(libs.flyway.postgres)
     implementation(libs.aws.s3)
     implementation(libs.stripe.java)
+    // Stripe SDK is annotated with com.google.gson.annotations.SerializedName; declare gson
+    // explicitly so the api compile classpath sees the annotation type (Stripe pulls it at
+    // runtime but doesn't expose it through its POM as a compile-scope dep).
+    implementation(libs.gson)
     implementation(libs.argon2.jvm)
     // TODO(P4): bucket4j-redis for quotas; OTel starter; Pact contracts.
 

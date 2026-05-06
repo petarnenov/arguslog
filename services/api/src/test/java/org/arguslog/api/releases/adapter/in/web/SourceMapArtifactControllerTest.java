@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.stripe.StripeClient;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
+import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.application.port.UsageRepository;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase;
@@ -80,6 +82,8 @@ class SourceMapArtifactControllerTest {
   @MockitoBean TokenHasher tokenHasher;
   @MockitoBean UsageRepository usageRepository;
   @MockitoBean OrgPlanRepository orgPlanRepository;
+  @MockitoBean BillingCustomerRepository billingCustomerRepository;
+  @MockitoBean StripeClient stripeClient;
 
   @Test
   void postReturnsArtifactPlusUploadUrl() throws Exception {
