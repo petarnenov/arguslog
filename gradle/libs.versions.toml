@@ -22,6 +22,7 @@ argon2 = "2.11"
 caffeine = "3.1.8"
 mockito = "5.15.2"
 pact = "4.6.16"
+mavenPublish = "0.30.0"
 
 [libraries]
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
@@ -73,3 +74,4 @@ awaitility = { module = "org.awaitility:awaitility", version = "4.2.2" }
 springBoot = { id = "org.springframework.boot", version.ref = "springBoot" }
 springDependencyManagement = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
