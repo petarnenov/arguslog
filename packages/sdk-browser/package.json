@@ -1,6 +1,6 @@
 {
   "name": "@arguslog/sdk-browser",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Arguslog browser SDK — error tracking for vanilla JS/TS apps",
   "license": "MIT",
   "type": "module",
