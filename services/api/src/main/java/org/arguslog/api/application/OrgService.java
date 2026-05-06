@@ -62,7 +62,7 @@ public class OrgService implements OrgUseCase {
   /**
    * Lowercase-ASCII kebab. Non-alphanumeric runs collapse to a single hyphen; leading/trailing
    * hyphens stripped. Falls back to {@code "org"} for inputs that produce an empty slug (e.g. only
-   * non-ASCII characters), which the repository's collision-suffix loop will then disambiguate.
+   * non-ASCII characters); subsequent collisions surface to the user as a 409 conflict.
    */
   static String slugify(String name) {
     String lower = name.trim().toLowerCase();
