@@ -55,8 +55,7 @@ public class OrgService implements OrgUseCase {
         memberships
             .userRoleInOrg(actorId, orgId)
             .orElseThrow(
-                () ->
-                    new OrgAccessDeniedException("You are not a member of this organization."));
+                () -> new OrgAccessDeniedException("You are not a member of this organization."));
     if (!"owner".equals(role)) {
       throw new OrgAccessDeniedException("Only org owners can delete an organization.");
     }

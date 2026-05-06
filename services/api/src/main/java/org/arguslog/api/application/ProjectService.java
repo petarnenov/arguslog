@@ -61,11 +61,9 @@ public class ProjectService implements ProjectUseCase {
             .userRoleInOrg(actorId, orgId)
             .orElseThrow(
                 () ->
-                    new ProjectAccessDeniedException(
-                        "You are not a member of this organization."));
+                    new ProjectAccessDeniedException("You are not a member of this organization."));
     if (!ARCHIVE_ROLES.contains(role)) {
-      throw new ProjectAccessDeniedException(
-          "Only org owners and admins can archive projects.");
+      throw new ProjectAccessDeniedException("Only org owners and admins can archive projects.");
     }
     return projects.archive(orgId, projectId);
   }

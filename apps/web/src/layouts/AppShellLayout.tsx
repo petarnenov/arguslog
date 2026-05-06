@@ -279,7 +279,7 @@ export function AppShellLayout() {
             value={confirmName}
             onChange={(e) => setConfirmName(e.currentTarget.value)}
             disabled={deleteMutation.isPending}
-            autoFocus
+            data-autofocus
           />
           {deleteError ? (
             <Alert color="red" variant="light">

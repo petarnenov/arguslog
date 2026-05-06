@@ -65,9 +65,7 @@ public class ProjectController {
    */
   @DeleteMapping("/{projectId}")
   public ResponseEntity<Void> archive(
-      @PathVariable long orgId,
-      @PathVariable long projectId,
-      JwtAuthenticationToken token) {
+      @PathVariable long orgId, @PathVariable long projectId, JwtAuthenticationToken token) {
     UUID actorId = UUID.fromString(token.getName());
     if (!useCase.archive(actorId, orgId, projectId)) {
       throw AccessException.notFound(projectId);
