@@ -18,8 +18,11 @@ import org.springframework.stereotype.Component;
  *   [13..]   ciphertext + auth tag
  * </pre>
  *
- * <p>A version byte means rotation is just a config bump + a background re-encrypt of rows whose
- * first byte is the old version. Real KMS / Cloudflare Workers Secrets integration is the P4
+ * <p>
+ * A version byte means rotation is just a config bump + a background re-encrypt
+ * of rows whose
+ * first byte is the old version. Real KMS / Cloudflare Workers Secrets
+ * integration is the P4
  * billing-setup landing zone — the abstraction stays {@link SecretCipher}.
  */
 @Component
@@ -33,26 +36,27 @@ public class AesGcmSecretCipher implements SecretCipher {
   private final SecretKeySpec key;
   private final SecureRandom rng = new SecureRandom();
 
-  public AesGcmSecretCipher(@Value("${argus.alerts.secret-key:}") String base64Key) {
+  public AesGcmSecretCipher(@Value("${arguslog.alerts.secret-key:}") String base64Key) {
     if (base64Key == null || base64Key.isBlank()) {
-      // Dev-mode fallback: exactly 32 bytes — AES-256 won't accept anything else and we don't
-      // want a hidden key-size mismatch in dev silently turning into AES-128. Loud warning so
+      // Dev-mode fallback: exactly 32 bytes — AES-256 won't accept anything else and
+      // we don't
+      // want a hidden key-size mismatch in dev silently turning into AES-128. Loud
+      // warning so
       // this never makes it to prod.
-      byte[] devKey =
-          "argus-dev-fallback-key-32-bytes!".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      byte[] devKey = "arguslog-dev-fallback-key-32byte".getBytes(java.nio.charset.StandardCharsets.UTF_8);
       if (devKey.length != 32) {
         throw new IllegalStateException("dev fallback key must be 32 bytes; got " + devKey.length);
       }
       this.key = new SecretKeySpec(devKey, "AES");
       org.slf4j.LoggerFactory.getLogger(AesGcmSecretCipher.class)
           .warn(
-              "argus.alerts.secret-key is empty — using the built-in dev key. DO NOT run prod like this.");
+              "arguslog.alerts.secret-key is empty — using the built-in dev key. DO NOT run prod like this.");
       return;
     }
     byte[] decoded = Base64.getDecoder().decode(base64Key);
     if (decoded.length != 32) {
       throw new IllegalArgumentException(
-          "argus.alerts.secret-key must decode to 32 bytes (AES-256); got " + decoded.length);
+          "arguslog.alerts.secret-key must decode to 32 bytes (AES-256); got " + decoded.length);
     }
     this.key = new SecretKeySpec(decoded, "AES");
   }
@@ -83,7 +87,7 @@ public class AesGcmSecretCipher implements SecretCipher {
     byte version = ciphertext[0];
     if (version != CURRENT_VERSION) {
       throw new IllegalArgumentException(
-          "unknown key version " + version + "; rotate the master key in argus.alerts.secret-key");
+          "unknown key version " + version + "; rotate the master key in arguslog.alerts.secret-key");
     }
     try {
       byte[] iv = new byte[IV_LEN];
