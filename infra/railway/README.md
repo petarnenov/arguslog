@@ -66,8 +66,11 @@ Open follow-ups (deferred — none block #5/#6 starting):
   store + realm import; tackled as part of #6 dogfood when a real user actually logs in.
 - **Stale plain Postgres service.** `railway add --database postgres` left an unused service
   alongside `timescaledb`. CLI doesn't expose `service delete`; remove via the dashboard.
-- **Stripe + R2 secrets.** Placeholders; populate when Stripe live keys + a Cloudflare R2
-  bucket are minted (production cutover, #7).
+- **Stripe live keys.** Placeholders; populate when ready to charge real cards.
+- **R2 bucket** (`arguslog-attachments`, WEUR) is provisioned and wired to api + worker via
+  `R2_ENDPOINT` + `R2_ACCESS_KEY` + `R2_SECRET_KEY` + `R2_BUCKET` on both staging + production.
+  Same bucket serves both envs — fine for dogfood; consider a separate prod bucket if customer
+  data needs hard-isolation.
 - **Production environment.** All services exist there but with no variables and no first
   deploy. Mirror staging's `railway variables --set` calls under `--environment production`
   before promoting (#7).
