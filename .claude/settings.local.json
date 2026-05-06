@@ -118,7 +118,12 @@
       "Bash(awk -F: '{sum+=$2} END {print \"WORKER TOTAL:\", sum}')",
       "Bash(pnpm -r --filter \"@arguslog/sdk-browser\" --filter \"@arguslog/sdk-react\" build)",
       "Bash(awk -F: '{sum+=$2} END {print \"API:\",sum}')",
-      "Bash(make help *)"
+      "Bash(make help *)",
+      "Bash(pnpm --filter \"@arguslog/sdk-browser\" --filter \"@arguslog/sdk-react\" build)",
+      "Bash(pnpm --filter \"@arguslog/sdk-react...\" build)",
+      "Bash(pnpm --filter \"@arguslog/sdk-browser\" build)",
+      "Bash(pnpm --filter \"@arguslog/sdk-react\" build)",
+      "Bash(make build-sdks *)"
     ]
   }
 }
