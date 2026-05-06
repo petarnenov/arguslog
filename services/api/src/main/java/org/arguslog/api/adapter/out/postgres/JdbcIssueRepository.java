@@ -20,11 +20,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class JdbcIssueRepository implements IssueRepository {
 
-  // Tuple comparison `(last_seen_at, id) < (?,?)` gives a strict cursor without ties; the
-  // optional status / level filters are coalesced through CASE so the same prepared statement
+  // Tuple comparison `(last_seen_at, id) < (?,?)` gives a strict cursor without
+  // ties; the
+  // optional status / level filters are coalesced through CASE so the same
+  // prepared statement
   // serves all four combinations and PG can plan it once.
-  private static final String PAGE_SQL =
-      """
+  private static final String PAGE_SQL = """
       SELECT id, project_id, fingerprint, status::text, level::text, title, culprit,
              first_seen_at, last_seen_at, occurrence_count
         FROM issues
@@ -36,8 +37,7 @@ public class JdbcIssueRepository implements IssueRepository {
        LIMIT ?
       """;
 
-  private static final String FIND_BY_PROJECT_AND_ID_SQL =
-      """
+  private static final String FIND_BY_PROJECT_AND_ID_SQL = """
       SELECT id, project_id, fingerprint, status::text, level::text, title, culprit,
              first_seen_at, last_seen_at, occurrence_count
         FROM issues
@@ -67,26 +67,26 @@ public class JdbcIssueRepository implements IssueRepository {
     Object cursorPresence = cursor.isPresent() ? Boolean.TRUE : null;
 
     Object[] args = {
-      projectId,
-      statusValue,
-      statusValue,
-      levelValue,
-      levelValue,
-      cursorPresence,
-      cursorTs,
-      cursorId,
-      limit
+        projectId,
+        statusValue,
+        statusValue,
+        levelValue,
+        levelValue,
+        cursorPresence,
+        cursorTs,
+        cursorId,
+        limit
     };
     int[] types = {
-      Types.BIGINT,
-      Types.VARCHAR,
-      Types.VARCHAR,
-      Types.VARCHAR,
-      Types.VARCHAR,
-      Types.BOOLEAN,
-      Types.TIMESTAMP,
-      Types.BIGINT,
-      Types.INTEGER
+        Types.BIGINT,
+        Types.VARCHAR,
+        Types.VARCHAR,
+        Types.VARCHAR,
+        Types.VARCHAR,
+        Types.BOOLEAN,
+        Types.TIMESTAMP,
+        Types.BIGINT,
+        Types.INTEGER
     };
 
     pinOrgContextForRls();
@@ -108,16 +108,20 @@ public class JdbcIssueRepository implements IssueRepository {
   }
 
   /**
-   * Sets {@code argus.org_id} for the current transaction so RLS policies on issues / projects
-   * filter to the request's tenant. The {@code true} third arg makes this {@code SET LOCAL}; the
-   * caller MUST ensure a TX is active (we do via {@code @Transactional} on the use case). Requires
-   * OrgContext to be primed by the access guard — refusing to run a tenant-scoped query with no
+   * Sets {@code arguslog.org_id} for the current transaction so RLS policies on
+   * issues / projects
+   * filter to the request's tenant. The {@code true} third arg makes this
+   * {@code SET LOCAL}; the
+   * caller MUST ensure a TX is active (we do via {@code @Transactional} on the
+   * use case). Requires
+   * OrgContext to be primed by the access guard — refusing to run a tenant-scoped
+   * query with no
    * tenant is the correct behavior, not a quiet "show everything".
    */
   private void pinOrgContextForRls() {
     long orgId = OrgContext.requireCurrent();
     jdbc.queryForObject(
-        "SELECT set_config('argus.org_id', ?, true)", String.class, String.valueOf(orgId));
+        "SELECT set_config('arguslog.org_id', ?, true)", String.class, String.valueOf(orgId));
   }
 
   private static Issue mapRow(ResultSet rs, int rowNum) throws SQLException {

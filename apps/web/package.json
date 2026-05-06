@@ -1,5 +1,5 @@
 {
-  "name": "@argus/web",
+  "name": "@arguslog/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,8 @@
     "clean": "rm -rf dist .turbo node_modules/.vite"
   },
   "dependencies": {
-    "@argus/sdk-browser": "workspace:*",
-    "@argus/sdk-react": "workspace:*",
+    "@arguslog/sdk-browser": "workspace:*",
+    "@arguslog/sdk-react": "workspace:*",
     "@mantine/charts": "^7.15.0",
     "@mantine/core": "^7.15.0",
     "@mantine/form": "^7.15.0",
@@ -35,8 +35,8 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
-    "@argus/eslint-config": "workspace:*",
-    "@argus/tsconfig": "workspace:*",
+    "@arguslog/eslint-config": "workspace:*",
+    "@arguslog/tsconfig": "workspace:*",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",

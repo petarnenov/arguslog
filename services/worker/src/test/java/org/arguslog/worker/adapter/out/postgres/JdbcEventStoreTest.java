@@ -32,16 +32,14 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 class JdbcEventStoreTest {
 
-  private static final DockerImageName TIMESCALE_IMAGE =
-      DockerImageName.parse("timescale/timescaledb:latest-pg16")
-          .asCompatibleSubstituteFor("postgres");
+  private static final DockerImageName TIMESCALE_IMAGE = DockerImageName.parse("timescale/timescaledb:latest-pg16")
+      .asCompatibleSubstituteFor("postgres");
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>(TIMESCALE_IMAGE)
-          .withDatabaseName("argus")
-          .withUsername("argus")
-          .withPassword("argus");
+  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(TIMESCALE_IMAGE)
+      .withDatabaseName("arguslog")
+      .withUsername("arguslog")
+      .withPassword("arguslog");
 
   private static HikariDataSource dataSource;
   private static EventStore store;
@@ -61,10 +59,10 @@ class JdbcEventStoreTest {
         .migrate();
     seedProject(dataSource);
 
-    PlatformTransactionManager txm =
-        new org.springframework.jdbc.support.JdbcTransactionManager(dataSource);
+    PlatformTransactionManager txm = new org.springframework.jdbc.support.JdbcTransactionManager(dataSource);
     JdbcEventStore raw = new JdbcEventStore(dataSource);
-    // Wrap in a TransactionTemplate so the @Transactional contract is honored without
+    // Wrap in a TransactionTemplate so the @Transactional contract is honored
+    // without
     // bringing the full Spring context up.
     TransactionTemplate template = new TransactionTemplate(txm);
     store = (event, fingerprint) -> template.execute(status -> raw.persist(event, fingerprint));
@@ -140,9 +138,8 @@ class JdbcEventStoreTest {
 
   @Test
   void issueRowCarriesTitleCulpritAndLevel() {
-    Fingerprint fp =
-        new Fingerprint(
-            "hash-meta", "TypeError: x", "main at app.js:42", Fingerprint.Level.WARNING);
+    Fingerprint fp = new Fingerprint(
+        "hash-meta", "TypeError: x", "main at app.js:42", Fingerprint.Level.WARNING);
     PersistResult result = store.persist(sampleEvent(), fp);
 
     var meta = issueMeta(result.issueId());
@@ -181,8 +178,7 @@ class JdbcEventStoreTest {
 
   private long occurrenceCount(long issueId) {
     try (Connection conn = dataSource.getConnection();
-        PreparedStatement stmt =
-            conn.prepareStatement("SELECT occurrence_count FROM issues WHERE id = ?")) {
+        PreparedStatement stmt = conn.prepareStatement("SELECT occurrence_count FROM issues WHERE id = ?")) {
       stmt.setLong(1, issueId);
       try (ResultSet rs = stmt.executeQuery()) {
         rs.next();
@@ -195,8 +191,7 @@ class JdbcEventStoreTest {
 
   private IssueMeta issueMeta(long issueId) {
     try (Connection conn = dataSource.getConnection();
-        PreparedStatement stmt =
-            conn.prepareStatement("SELECT title, culprit, level::text FROM issues WHERE id = ?")) {
+        PreparedStatement stmt = conn.prepareStatement("SELECT title, culprit, level::text FROM issues WHERE id = ?")) {
       stmt.setLong(1, issueId);
       try (ResultSet rs = stmt.executeQuery()) {
         rs.next();
@@ -207,13 +202,13 @@ class JdbcEventStoreTest {
     }
   }
 
-  private record IssueMeta(String title, String culprit, String level) {}
+  private record IssueMeta(String title, String culprit, String level) {
+  }
 
   private static String resolveMigrationsLocation() {
-    List<Path> candidates =
-        List.of(
-            Path.of("../api/src/main/resources/db/migration"),
-            Path.of("services/api/src/main/resources/db/migration"));
+    List<Path> candidates = List.of(
+        Path.of("../api/src/main/resources/db/migration"),
+        Path.of("services/api/src/main/resources/db/migration"));
     return candidates.stream()
         .map(Path::toAbsolutePath)
         .filter(Files::isDirectory)

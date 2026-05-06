@@ -24,16 +24,14 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 class PostgresProjectAuthenticatorTest {
 
-  private static final DockerImageName TIMESCALE_IMAGE =
-      DockerImageName.parse("timescale/timescaledb:latest-pg16")
-          .asCompatibleSubstituteFor("postgres");
+  private static final DockerImageName TIMESCALE_IMAGE = DockerImageName.parse("timescale/timescaledb:latest-pg16")
+      .asCompatibleSubstituteFor("postgres");
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>(TIMESCALE_IMAGE)
-          .withDatabaseName("argus")
-          .withUsername("argus")
-          .withPassword("argus");
+  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(TIMESCALE_IMAGE)
+      .withDatabaseName("arguslog")
+      .withUsername("arguslog")
+      .withPassword("arguslog");
 
   private static HikariDataSource dataSource;
   private static ProjectAuthenticator auth;
@@ -106,10 +104,9 @@ class PostgresProjectAuthenticatorTest {
   }
 
   private static String resolveMigrationsLocation() {
-    List<Path> candidates =
-        List.of(
-            Path.of("../api/src/main/resources/db/migration"),
-            Path.of("services/api/src/main/resources/db/migration"));
+    List<Path> candidates = List.of(
+        Path.of("../api/src/main/resources/db/migration"),
+        Path.of("services/api/src/main/resources/db/migration"));
     return candidates.stream()
         .map(Path::toAbsolutePath)
         .filter(Files::isDirectory)
@@ -119,7 +116,10 @@ class PostgresProjectAuthenticatorTest {
             () -> new IllegalStateException("Cannot locate api migrations. Tried: " + candidates));
   }
 
-  /** Inserts an organization, project (id 101), and three project_keys covering the cases. */
+  /**
+   * Inserts an organization, project (id 101), and three project_keys covering
+   * the cases.
+   */
   private static void seed(DataSource ds) throws Exception {
     try (Connection conn = ds.getConnection()) {
       exec(conn, "INSERT INTO organizations (id, slug, name) VALUES (1, 'acme', 'Acme Inc.')");

@@ -18,7 +18,7 @@ import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 
 @Configuration
 @EnableConfigurationProperties(RedisStreamProperties.class)
-@ConditionalOnProperty(name = "argus.worker.stream-enabled", matchIfMissing = true)
+@ConditionalOnProperty(name = "arguslog.worker.stream-enabled", matchIfMissing = true)
 public class RedisStreamConfig {
 
   private static final Logger log = LoggerFactory.getLogger(RedisStreamConfig.class);
@@ -32,7 +32,8 @@ public class RedisStreamConfig {
   }
 
   /**
-   * XGROUP CREATE on startup. {@code MKSTREAM} so the worker can boot before ingest has written its
+   * XGROUP CREATE on startup. {@code MKSTREAM} so the worker can boot before
+   * ingest has written its
    * first record. BUSYGROUP just means the group already exists — fine.
    */
   @PostConstruct
@@ -70,19 +71,17 @@ public class RedisStreamConfig {
   }
 
   @Bean(initMethod = "start", destroyMethod = "stop")
-  public StreamMessageListenerContainer<String, MapRecord<String, String, String>>
-      streamListenerContainer(RedisConnectionFactory cf, RedisStreamEventListener listener) {
+  public StreamMessageListenerContainer<String, MapRecord<String, String, String>> streamListenerContainer(
+      RedisConnectionFactory cf, RedisStreamEventListener listener) {
 
-    StreamMessageListenerContainer.StreamMessageListenerContainerOptions<
-            String, MapRecord<String, String, String>>
-        options =
-            StreamMessageListenerContainer.StreamMessageListenerContainerOptions.builder()
-                .pollTimeout(props.pollTimeout())
-                .batchSize(props.batchSize())
-                .build();
+    StreamMessageListenerContainer.StreamMessageListenerContainerOptions<String, MapRecord<String, String, String>> options = StreamMessageListenerContainer.StreamMessageListenerContainerOptions
+        .builder()
+        .pollTimeout(props.pollTimeout())
+        .batchSize(props.batchSize())
+        .build();
 
-    StreamMessageListenerContainer<String, MapRecord<String, String, String>> container =
-        StreamMessageListenerContainer.create(cf, options);
+    StreamMessageListenerContainer<String, MapRecord<String, String, String>> container = StreamMessageListenerContainer
+        .create(cf, options);
 
     container.receive(
         Consumer.from(props.consumerGroup(), props.consumerName()),

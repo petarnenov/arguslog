@@ -52,7 +52,7 @@ publishing {
             pom {
                 name.set("Argus Java SDK")
                 description.set("Argus error tracking SDK for Java and Spring Boot.")
-                url.set("https://github.com/argus/argus")
+                url.set("https://github.com/arguslog/arguslog")
                 licenses {
                     license {
                         name.set("Apache-2.0")

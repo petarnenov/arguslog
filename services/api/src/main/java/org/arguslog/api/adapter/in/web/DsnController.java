@@ -15,9 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(
-    value = "/api/v1/projects/{projectId}/keys",
-    produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/v1/projects/{projectId}/keys", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DsnController {
 
   private final DsnUseCase useCase;
@@ -25,7 +23,7 @@ public class DsnController {
 
   public DsnController(
       DsnUseCase useCase,
-      @Value("${argus.ingest.public-host:http://localhost:8080}") String ingestHost) {
+      @Value("${arguslog.ingest.public-host:http://localhost:8080}") String ingestHost) {
     this.useCase = useCase;
     this.ingestHost = ingestHost;
   }

@@ -1,5 +1,5 @@
 {
-  "name": "argus",
+  "name": "arguslog",
   "version": "0.0.0",
   "private": true,
   "description": "Argus — multi-tenant error tracking platform",
@@ -21,8 +21,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
-    "e2e": "pnpm --filter @argus/e2e e2e",
-    "e2e:install": "pnpm --filter @argus/e2e exec playwright install --with-deps chromium",
+    "e2e": "pnpm --filter @arguslog/e2e e2e",
+    "e2e:install": "pnpm --filter @arguslog/e2e exec playwright install --with-deps chromium",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\""

@@ -1,4 +1,4 @@
-import { ArgusErrorBoundary, init as initArgus } from '@argus/sdk-react';
+import { ArgusErrorBoundary, init as initArgus } from '@arguslog/sdk-react';
 import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/charts/styles.css';

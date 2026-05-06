@@ -1,2 +1,2 @@
-import config from '@argus/eslint-config/base';
+import config from '@arguslog/eslint-config/base';
 export default config;

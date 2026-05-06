@@ -1,4 +1,4 @@
--- Argus initial schema. Owned by argus-api service.
+-- Argus initial schema. Owned by arguslog-api service.
 -- TimescaleDB-backed multi-tenant error tracking schema.
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;
@@ -235,7 +235,7 @@ CREATE INDEX idx_pii_rules_project ON pii_rules(project_id) WHERE enabled;
 
 -- =====================================================================
 -- Defense-in-depth row-level security.
--- App code MUST set `argus.org_id` per request. Service-role connections
+-- App code MUST set `arguslog.org_id` per request. Service-role connections
 -- bypass RLS via BYPASSRLS on the role used by ingest/worker (granted out-of-band).
 -- =====================================================================
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
@@ -245,16 +245,16 @@ ALTER TABLE alert_destinations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quotas ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY projects_org_isolation ON projects
-  USING (org_id = current_setting('argus.org_id', true)::BIGINT);
+  USING (org_id = current_setting('arguslog.org_id', true)::BIGINT);
 CREATE POLICY issues_org_isolation ON issues
   USING (project_id IN (
-    SELECT id FROM projects WHERE org_id = current_setting('argus.org_id', true)::BIGINT
+    SELECT id FROM projects WHERE org_id = current_setting('arguslog.org_id', true)::BIGINT
   ));
 CREATE POLICY alert_rules_org_isolation ON alert_rules
   USING (project_id IN (
-    SELECT id FROM projects WHERE org_id = current_setting('argus.org_id', true)::BIGINT
+    SELECT id FROM projects WHERE org_id = current_setting('arguslog.org_id', true)::BIGINT
   ));
 CREATE POLICY alert_destinations_org_isolation ON alert_destinations
-  USING (org_id = current_setting('argus.org_id', true)::BIGINT);
+  USING (org_id = current_setting('arguslog.org_id', true)::BIGINT);
 CREATE POLICY quotas_org_isolation ON quotas
-  USING (org_id = current_setting('argus.org_id', true)::BIGINT);
+  USING (org_id = current_setting('arguslog.org_id', true)::BIGINT);

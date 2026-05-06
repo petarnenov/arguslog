@@ -14,8 +14,8 @@ const PUBLIC_KEY = 'public-key-active';
 
 function provider(): PactV3 {
   return new PactV3({
-    consumer: 'argus-sdk-browser',
-    provider: 'argus-ingest',
+    consumer: 'arguslog-sdk-browser',
+    provider: 'arguslog-ingest',
     dir: PACT_DIR,
     logLevel: 'warn',
   });
@@ -28,7 +28,7 @@ function dsnFor(mockServerUrl: string): string {
   return `${u.protocol}//${PUBLIC_KEY}@${u.host}/${PROJECT_ID}`;
 }
 
-describe('argus-sdk-browser <-> argus-ingest contract', () => {
+describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
   beforeEach(() => __resetForTests());
   afterEach(() => __resetForTests());
 
@@ -51,7 +51,7 @@ describe('argus-sdk-browser <-> argus-ingest contract', () => {
           eventId: regex('^[0-9a-f]{32}$', 'aabbccddeeff00112233445566778899'),
           timestamp: integer(1730000000000),
           platform: 'javascript',
-          sdk: { name: 'argus.javascript', version: like('0.0.0') },
+          sdk: { name: 'arguslog.javascript', version: like('0.0.0') },
           level: 'error',
           breadcrumbs: like([]),
           exception: {
@@ -98,7 +98,7 @@ describe('argus-sdk-browser <-> argus-ingest contract', () => {
           eventId: regex('^[0-9a-f]{32}$', 'aabbccddeeff00112233445566778899'),
           timestamp: integer(1730000000000),
           platform: 'javascript',
-          sdk: { name: 'argus.javascript', version: like('0.0.0') },
+          sdk: { name: 'arguslog.javascript', version: like('0.0.0') },
           level: 'warning',
           breadcrumbs: like([]),
           message: 'config drift detected',

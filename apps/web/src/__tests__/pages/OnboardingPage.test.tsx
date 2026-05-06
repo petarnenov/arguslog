@@ -59,7 +59,7 @@ describe('OnboardingPage', () => {
           id: 100,
           projectId: 9,
           dsnPublic: 'PUB',
-          dsn: 'argus://PUB@localhost:8080/api/9',
+          dsn: 'arguslog://PUB@localhost:8080/api/9',
           active: true,
           createdAt: 't',
         });
@@ -76,7 +76,7 @@ describe('OnboardingPage', () => {
     await user.click(screen.getByRole('button', { name: /Create project/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('argus://PUB@localhost:8080/api/9')).toBeInTheDocument();
+      expect(screen.getByText('arguslog://PUB@localhost:8080/api/9')).toBeInTheDocument();
     });
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
@@ -99,6 +99,6 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.getByText('name is required')).toBeInTheDocument();
     });
-    expect(screen.queryByText(/argus:\/\//)).not.toBeInTheDocument();
+    expect(screen.queryByText(/arguslog:\/\//)).not.toBeInTheDocument();
   });
 });
