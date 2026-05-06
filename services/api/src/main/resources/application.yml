@@ -1,13 +1,13 @@
 spring:
   application:
-    name: argus-api
+    name: arguslog-api
   threads:
     virtual:
       enabled: true
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/argus}
-    username: ${DATABASE_USER:argus}
-    password: ${DATABASE_PASSWORD:argus}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/arguslog}
+    username: ${DATABASE_USER:arguslog}
+    password: ${DATABASE_PASSWORD:arguslog}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -24,7 +24,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/argus}
+          issuer-uri: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/arguslog}
   jackson:
     default-property-inclusion: non_null
 
@@ -48,7 +48,7 @@ management:
       probes:
         enabled: true
 
-argus:
+arguslog:
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
   ingest:
@@ -60,7 +60,7 @@ argus:
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
   r2:
     endpoint: ${R2_ENDPOINT:http://localhost:9000}
-    bucket: ${R2_BUCKET:argus-sourcemaps}
+    bucket: ${R2_BUCKET:arguslog-sourcemaps}
     access-key: ${R2_ACCESS_KEY:minioadmin}
     secret-key: ${R2_SECRET_KEY:minioadmin}
 

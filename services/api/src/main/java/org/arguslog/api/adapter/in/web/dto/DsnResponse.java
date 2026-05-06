@@ -4,10 +4,14 @@ import java.time.Instant;
 import org.arguslog.api.domain.Dsn;
 
 /**
- * Includes a fully-formed {@code dsn} string (scheme + public key + host + project id) so the web
- * UI can copy it without rebuilding it client-side. The string is reproducible from {@code
- * dsnPublic} given the ingest host, so listing endpoints will leave {@code dsn} populated as well —
- * the public key isn't a secret, only the secret half (which we don't issue for browser-tier SDKs)
+ * Includes a fully-formed {@code dsn} string (scheme + public key + host +
+ * project id) so the web
+ * UI can copy it without rebuilding it client-side. The string is reproducible
+ * from {@code
+ * dsnPublic} given the ingest host, so listing endpoints will leave {@code dsn}
+ * populated as well —
+ * the public key isn't a secret, only the secret half (which we don't issue for
+ * browser-tier SDKs)
  * would warrant single-show treatment.
  */
 public record DsnResponse(
@@ -24,7 +28,7 @@ public record DsnResponse(
   }
 
   static String formatDsn(String publicKey, String ingestHost, long projectId) {
-    return "argus://" + publicKey + "@" + stripScheme(ingestHost) + "/api/" + projectId;
+    return "arguslog://" + publicKey + "@" + stripScheme(ingestHost) + "/api/" + projectId;
   }
 
   private static String stripScheme(String url) {

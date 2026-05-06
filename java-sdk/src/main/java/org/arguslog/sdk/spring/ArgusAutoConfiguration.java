@@ -10,11 +10,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 @AutoConfiguration
 @EnableConfigurationProperties(ArgusProperties.class)
-@ConditionalOnProperty(
-    prefix = "argus",
-    name = "enabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnProperty(prefix = "arguslog", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class ArgusAutoConfiguration {
 
   private final ArgusProperties properties;

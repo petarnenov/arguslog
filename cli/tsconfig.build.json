@@ -1,5 +1,5 @@
 {
-  "extends": "@argus/tsconfig/node.json",
+  "extends": "@arguslog/tsconfig/node.json",
   "compilerOptions": {
     "noEmit": false,
     "outDir": "./dist",

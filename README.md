@@ -18,12 +18,12 @@ services/api/                  # public REST + admin
 services/ingest/               # public event endpoint
 services/worker/               # Redis Streams consumer
 services/keycloak/realm/       # Keycloak realm export
-packages/sdk-browser/          # @argus/sdk-browser
-packages/sdk-react/            # @argus/sdk-react (ErrorBoundary + hook)
+packages/sdk-browser/          # @arguslog/sdk-browser
+packages/sdk-react/            # @arguslog/sdk-react (ErrorBoundary + hook)
 packages/eslint-config/        # shared ESLint config
 packages/tsconfig/             # shared tsconfig presets
-java-sdk/                      # org.arguslog:argus-java-sdk (Spring Boot autoconfig)
-cli/                           # @argus/cli — releases + sourcemap upload (stub, real in P3)
+java-sdk/                      # org.arguslog:arguslog-java-sdk (Spring Boot autoconfig)
+cli/                           # @arguslog/cli — releases + sourcemap upload (stub, real in P3)
 e2e/                           # Playwright suites (real flows in P2)
 infra/docker/                  # docker-compose for local dev
 ```
@@ -37,7 +37,7 @@ Flyway migrations are owned by `services/api` and live in
 Java packages and Maven `groupId` use `org.arguslog.*` — reverse-DNS of
 the project domain `arguslog.org`. The product name is still **Argus**;
 `arguslog` only appears in coordinates and the public domain (the short
-domain `argus.org` was unavailable at registration time).
+domain `arguslog.org` was unavailable at registration time).
 
 ## Local dev
 
@@ -67,9 +67,9 @@ running across mprocs sessions; tear it down with `make down`.
 | `make dev`                                 | full stack (infra + JVM services + web)                         |
 | `make up` / `down`                         | infra only (compose up `--wait` / down)                         |
 | `make logs` / `ps`                         | tail / inspect infra                                            |
-| `make api`                                 | `argus-api` foreground (`:8081`)                                |
-| `make ingest`                              | `argus-ingest` foreground (`:8080`)                             |
-| `make worker`                              | `argus-worker` foreground (`:8082`)                             |
+| `make api`                                 | `arguslog-api` foreground (`:8081`)                                |
+| `make ingest`                              | `arguslog-ingest` foreground (`:8080`)                             |
+| `make worker`                              | `arguslog-worker` foreground (`:8082`)                             |
 | `make web`                                 | Vite dev server (`:5173`)                                       |
 | `make build`                               | Gradle + Turbo full build                                       |
 | `make lint` / `typecheck` / `test` / `e2e` | quality gates                                                   |

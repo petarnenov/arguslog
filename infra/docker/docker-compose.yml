@@ -1,31 +1,31 @@
-name: argus-local
+name: arguslog-local
 
 services:
   postgres:
     image: timescale/timescaledb:latest-pg16
-    container_name: argus-postgres
+    container_name: arguslog-postgres
     environment:
-      POSTGRES_USER: argus
-      POSTGRES_PASSWORD: argus
-      POSTGRES_DB: argus
+      POSTGRES_USER: arguslog
+      POSTGRES_PASSWORD: arguslog
+      POSTGRES_DB: arguslog
     ports:
       - '5432:5432'
     volumes:
-      - argus-postgres-data:/var/lib/postgresql/data
+      - arguslog-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U argus -d argus']
+      test: ['CMD-SHELL', 'pg_isready -U arguslog -d arguslog']
       interval: 5s
       timeout: 5s
       retries: 10
 
   redis:
     image: redis:7-alpine
-    container_name: argus-redis
+    container_name: arguslog-redis
     command: ['redis-server', '--appendonly', 'yes']
     ports:
       - '6379:6379'
     volumes:
-      - argus-redis-data:/data
+      - arguslog-redis-data:/data
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -34,7 +34,7 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:25.0
-    container_name: argus-keycloak
+    container_name: arguslog-keycloak
     command:
       - start-dev
       - --import-realm
@@ -60,7 +60,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: argus-minio
+    container_name: arguslog-minio
     command: ['server', '/data', '--console-address', ':9001']
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -69,7 +69,7 @@ services:
       - '9000:9000'
       - '9001:9001'
     volumes:
-      - argus-minio-data:/data
+      - arguslog-minio-data:/data
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
       interval: 10s
@@ -78,7 +78,7 @@ services:
 
   minio-bucket-init:
     image: minio/mc:latest
-    container_name: argus-minio-init
+    container_name: arguslog-minio-init
     profiles: ['init']
     depends_on:
       minio:
@@ -88,18 +88,18 @@ services:
       - -c
       - |
         mc alias set local http://minio:9000 minioadmin minioadmin &&
-        (mc mb local/argus-sourcemaps || true) &&
-        (mc mb local/argus-attachments || true) &&
+        (mc mb local/arguslog-sourcemaps || true) &&
+        (mc mb local/arguslog-attachments || true) &&
         echo "MinIO buckets ready"
 
   mailhog:
     image: mailhog/mailhog:latest
-    container_name: argus-mailhog
+    container_name: arguslog-mailhog
     ports:
       - '1025:1025' # SMTP
       - '8025:8025' # Web UI
 
 volumes:
-  argus-postgres-data:
-  argus-redis-data:
-  argus-minio-data:
+  arguslog-postgres-data:
+  arguslog-redis-data:
+  arguslog-minio-data:

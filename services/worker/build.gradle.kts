@@ -1,5 +1,5 @@
 plugins {
-    id("argus.spring-service")
+    id("arguslog.spring-service")
 }
 
 description = "Argus worker — consumes Redis Streams, scrubs/fingerprints/persists, dispatches alerts"

@@ -17,12 +17,18 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
 /**
- * Pre-handle interceptor for any URL that carries a {@code {projectId}} path variable. Resolves the
- * project's org, verifies the JWT subject is a member, and primes {@link OrgContext} so the
- * persistence layer can pin {@code argus.org_id} for RLS. Always clears the context in
- * afterCompletion so a reused worker thread does not leak the previous request's tenant.
+ * Pre-handle interceptor for any URL that carries a {@code {projectId}} path
+ * variable. Resolves the
+ * project's org, verifies the JWT subject is a member, and primes
+ * {@link OrgContext} so the
+ * persistence layer can pin {@code arguslog.org_id} for RLS. Always clears the
+ * context in
+ * afterCompletion so a reused worker thread does not leak the previous
+ * request's tenant.
  *
- * <p>404 (not 403) is returned for non-members on purpose — Sentry-style: we never confirm that a
+ * <p>
+ * 404 (not 403) is returned for non-members on purpose — Sentry-style: we never
+ * confirm that a
  * project exists to anyone outside its organization.
  */
 @Component
@@ -66,8 +72,8 @@ public class ProjectAccessGuard implements HandlerInterceptor {
 
   private static long extractProjectId(HttpServletRequest request) {
     @SuppressWarnings("unchecked")
-    Map<String, String> vars =
-        (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+    Map<String, String> vars = (Map<String, String>) request
+        .getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
     String raw = vars == null ? null : vars.get("projectId");
     if (raw == null) {
       throw new IllegalStateException(

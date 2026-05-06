@@ -1,4 +1,4 @@
-import { captureException } from '@argus/sdk-browser';
+import { captureException } from '@arguslog/sdk-browser';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface Props {

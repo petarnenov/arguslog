@@ -64,6 +64,8 @@ export function OnboardingPage() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.projects(result.org.id) });
     },
     onError: (err: unknown) => {
+      // Mirror to console so a misconfigured Alert never silently swallows the failure reason.
+      console.error('[onboarding] create flow failed', err);
       setError(err instanceof ApiError ? err.problem.detail ?? err.problem.title : String(err));
     },
   });

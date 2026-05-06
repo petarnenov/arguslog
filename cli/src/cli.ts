@@ -6,10 +6,10 @@ export interface CommandResult {
   stderr: string;
 }
 
-const HELP = `argus ${VERSION}
+const HELP = `arguslog ${VERSION}
 
 Usage:
-  argus <command> [options]
+  arguslog <command> [options]
 
 Commands:
   releases new <version>          Create a new release  (P3)
@@ -18,7 +18,7 @@ Commands:
   version                         Print CLI version
 
 This is a P0 placeholder. Real commands ship in P3 alongside the alerts +
-symbolication milestone. See https://github.com/petarnenov/argus for status.
+symbolication milestone. See https://github.com/petarnenov/arguslog for status.
 `;
 
 export function parseArgs(argv: readonly string[]): { command: string; rest: readonly string[] } {
@@ -43,13 +43,13 @@ export function run(argv: readonly string[]): CommandResult {
       return {
         exitCode: 2,
         stdout: '',
-        stderr: `argus: '${[command, ...rest].join(' ').trim()}' — not implemented yet (lands in P3)\n`,
+        stderr: `arguslog: '${[command, ...rest].join(' ').trim()}' — not implemented yet (lands in P3)\n`,
       };
     default:
       return {
         exitCode: 1,
         stdout: '',
-        stderr: `argus: unknown command '${command}'. Run 'argus help' for usage.\n`,
+        stderr: `arguslog: unknown command '${command}'. Run 'arguslog help' for usage.\n`,
       };
   }
 }
