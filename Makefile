@@ -16,7 +16,7 @@ PNPM           := pnpm
 .DEFAULT_GOAL  := help
 
 .PHONY: help dev up down stop restart fresh logs ps \
-        api ingest worker web \
+        api ingest worker web build-sdks \
         install e2e-install e2e \
         build lint typecheck test \
         clean reset doctor
@@ -27,7 +27,7 @@ help: ## Show this help
 	@awk 'BEGIN{FS=":.*##"; printf "\nArgus dev targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo ""
 
-dev: up ## Start the full stack (infra + 3× JVM services + web) via mprocs
+dev: up build-sdks ## Start the full stack (infra + 3× JVM services + web) via mprocs
 	@command -v mprocs >/dev/null || { echo "mprocs not installed. Run: brew install mprocs"; exit 1; }
 	@echo "▶ Starting api / ingest / worker / web (quit mprocs with 'q')"
 	@mprocs --config mprocs.yaml
@@ -81,8 +81,11 @@ ingest: ## Run arguslog-ingest in foreground (port 8080)
 worker: ## Run arguslog-worker in foreground (port 8082)
 	@$(GRADLE) :services:worker:bootRun
 
-web: ## Run web app in foreground (Vite, port 5173)
+web: build-sdks ## Run web app in foreground (Vite, port 5173)
 	@$(PNPM) --filter @arguslog/web dev
+
+build-sdks: ## Build workspace SDKs so Vite can resolve them (tsc-incremental, fast on reruns)
+	@$(PNPM) --filter "./packages/*" build
 
 ## ─── Setup / dependencies ──────────────────────────────────────────────────
 
