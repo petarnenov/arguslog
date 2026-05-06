@@ -3,6 +3,8 @@ package org.arguslog.api.application;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.domain.Project;
 import org.springframework.stereotype.Service;
@@ -20,10 +22,15 @@ public class ProjectService implements ProjectUseCase {
    */
   static final Set<String> PLATFORMS = Set.of("javascript", "react", "java-spring");
 
-  private final ProjectWriteRepository projects;
+  /** Roles that may archive a project (owner can also delete the org wholesale). */
+  private static final Set<String> ARCHIVE_ROLES = Set.of("owner", "admin");
 
-  public ProjectService(ProjectWriteRepository projects) {
+  private final ProjectWriteRepository projects;
+  private final MembershipRepository memberships;
+
+  public ProjectService(ProjectWriteRepository projects, MembershipRepository memberships) {
     this.projects = projects;
+    this.memberships = memberships;
   }
 
   @Override
@@ -44,6 +51,23 @@ public class ProjectService implements ProjectUseCase {
   @Transactional(readOnly = true)
   public Optional<Project> get(long orgId, long projectId) {
     return projects.find(orgId, projectId);
+  }
+
+  @Override
+  @Transactional
+  public boolean archive(UUID actorId, long orgId, long projectId) {
+    String role =
+        memberships
+            .userRoleInOrg(actorId, orgId)
+            .orElseThrow(
+                () ->
+                    new ProjectAccessDeniedException(
+                        "You are not a member of this organization."));
+    if (!ARCHIVE_ROLES.contains(role)) {
+      throw new ProjectAccessDeniedException(
+          "Only org owners and admins can archive projects.");
+    }
+    return projects.archive(orgId, projectId);
   }
 
   private static void requireName(String name) {

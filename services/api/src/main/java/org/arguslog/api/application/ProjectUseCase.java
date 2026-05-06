@@ -12,6 +12,12 @@ public interface ProjectUseCase {
 
   Optional<Project> get(long orgId, long projectId);
 
+  /**
+   * Soft-archives a project. Caller must be {@code owner} or {@code admin} of the org. Returns
+   * {@code false} if the project does not exist or was already archived.
+   */
+  boolean archive(java.util.UUID actorId, long orgId, long projectId);
+
   /** Thrown when create input fails surface-level validation. */
   final class InvalidProjectException extends RuntimeException {
     private static final long serialVersionUID = 1L;
@@ -26,6 +32,15 @@ public interface ProjectUseCase {
     private static final long serialVersionUID = 1L;
 
     public DuplicateProjectException(String message) {
+      super(message);
+    }
+  }
+
+  /** Thrown when the actor's role is insufficient to mutate a project (archive, etc.). */
+  final class ProjectAccessDeniedException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    public ProjectAccessDeniedException(String message) {
       super(message);
     }
   }

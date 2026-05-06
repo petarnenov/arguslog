@@ -50,6 +50,11 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
   }
 
   @Override
+  public boolean delete(long orgId) {
+    return jdbc.update("DELETE FROM organizations WHERE id = ?", orgId) > 0;
+  }
+
+  @Override
   public void addMember(long orgId, UUID userId, String role) {
     jdbc.update(
         """

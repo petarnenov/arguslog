@@ -1035,6 +1035,32 @@
             }
           }
         }
+      },
+      "delete" : {
+        "tags" : [ "project-controller" ],
+        "operationId" : "archive",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "projectId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
       }
     },
     "/api/v1/info" : {
@@ -1058,10 +1084,30 @@
         }
       }
     },
+    "/api/v1/orgs/{orgId}" : {
+      "delete" : {
+        "tags" : [ "org-controller" ],
+        "operationId" : "delete_2",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
     "/api/v1/me/tokens/{id}" : {
       "delete" : {
         "tags" : [ "me-tokens-controller" ],
-        "operationId" : "delete_2",
+        "operationId" : "delete_3",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",

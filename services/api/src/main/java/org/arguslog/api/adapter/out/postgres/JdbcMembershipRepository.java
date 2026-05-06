@@ -1,8 +1,10 @@
 package org.arguslog.api.adapter.out.postgres;
 
+import java.util.Optional;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.arguslog.api.application.port.MembershipRepository;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -24,5 +26,20 @@ public class JdbcMembershipRepository implements MembershipRepository {
             userId,
             orgId);
     return Boolean.TRUE.equals(exists);
+  }
+
+  @Override
+  public Optional<String> userRoleInOrg(UUID userId, long orgId) {
+    try {
+      String role =
+          jdbc.queryForObject(
+              "SELECT role::text FROM org_members WHERE user_id = ? AND org_id = ?",
+              String.class,
+              userId,
+              orgId);
+      return Optional.ofNullable(role);
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
   }
 }

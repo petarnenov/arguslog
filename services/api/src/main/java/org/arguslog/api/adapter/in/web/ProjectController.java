@@ -2,17 +2,21 @@ package org.arguslog.api.adapter.in.web;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 import org.arguslog.api.adapter.in.web.dto.ProjectRequest;
 import org.arguslog.api.adapter.in.web.dto.ProjectResponse;
 import org.arguslog.api.application.ProjectUseCase;
 import org.arguslog.api.application.ProjectUseCase.DuplicateProjectException;
 import org.arguslog.api.application.ProjectUseCase.InvalidProjectException;
+import org.arguslog.api.application.ProjectUseCase.ProjectAccessDeniedException;
 import org.arguslog.api.domain.Project;
 import org.arguslog.api.security.AccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -54,6 +58,23 @@ public class ProjectController {
         .orElseThrow(() -> AccessException.notFound(projectId));
   }
 
+  /**
+   * Soft-archives a project. DELETE semantics on the wire (idempotent from the client's view) but
+   * server-side it just flips {@code archived_at}, so issues/events stay queryable for incident
+   * review. Owner/admin only.
+   */
+  @DeleteMapping("/{projectId}")
+  public ResponseEntity<Void> archive(
+      @PathVariable long orgId,
+      @PathVariable long projectId,
+      JwtAuthenticationToken token) {
+    UUID actorId = UUID.fromString(token.getName());
+    if (!useCase.archive(actorId, orgId, projectId)) {
+      throw AccessException.notFound(projectId);
+    }
+    return ResponseEntity.noContent().build();
+  }
+
   @ExceptionHandler(InvalidProjectException.class)
   ResponseEntity<ProblemDetail> handleInvalid(InvalidProjectException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -70,6 +91,16 @@ public class ProjectController {
     body.setTitle("Duplicate project");
     body.setType(URI.create("https://arguslog.dev/problems/duplicate-project"));
     return ResponseEntity.status(HttpStatus.CONFLICT)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(ProjectAccessDeniedException.class)
+  ResponseEntity<ProblemDetail> handleForbidden(ProjectAccessDeniedException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+    body.setTitle("Forbidden");
+    body.setType(URI.create("https://arguslog.dev/problems/project-access-denied"));
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }
