@@ -16,7 +16,14 @@
   "orgSwitcher": {
     "label": "Organization",
     "noneSelected": "Select organization",
-    "create": "New organization"
+    "create": "New organization",
+    "delete": "Delete this organization…",
+    "deleteTitle": "Delete \"{{name}}\"?",
+    "deleteWarning": "This is permanent. All projects, issues, events, alert rules, and destinations under this organization will be deleted.",
+    "deleteBody": "Type the organization name to confirm.",
+    "deleteConfirmLabel": "Type \"{{name}}\" to confirm",
+    "deleteCancel": "Cancel",
+    "deleteConfirm": "Delete organization"
   },
   "auth": {
     "login": "Sign in",
@@ -46,7 +53,13 @@
     "create": "New project",
     "createTitle": "Create a project",
     "empty": "No projects yet — create one to start receiving events.",
-    "orgNotFound": "Organization not found in your memberships."
+    "orgNotFound": "Organization not found in your memberships.",
+    "archiveAria": "Archive {{name}}",
+    "archiveTitle": "Archive project?",
+    "archiveBody": "Archive \"{{name}}\"? It will disappear from the project list, but its issues and events stay accessible by direct ID for incident review.",
+    "archiveHint": "This action is reversible from the database, but no UI to unarchive yet.",
+    "archiveCancel": "Cancel",
+    "archiveConfirm": "Archive project"
   },
   "issues": {
     "title": "Issues",
