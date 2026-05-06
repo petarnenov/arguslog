@@ -15,7 +15,7 @@ PNPM           := pnpm
 
 .DEFAULT_GOAL  := help
 
-.PHONY: help dev up down stop restart logs ps \
+.PHONY: help dev up down stop restart fresh logs ps \
         api ingest worker web \
         install e2e-install e2e \
         build lint typecheck test \
@@ -54,6 +54,15 @@ stop: down ## Stop EVERYTHING: infra + dev servers (5173/8080/8081/8082) + Gradl
 	@echo "✓ All stopped"
 
 restart: down up ## Restart infra
+
+fresh: ## Recreate infra from scratch — drops volumes, re-pulls images, brings up
+	@echo "▶ Removing containers + volumes..."
+	@$(COMPOSE) down -v
+	@echo "▶ Pulling latest images..."
+	@$(COMPOSE) pull
+	@echo "▶ Bringing infra back up..."
+	@$(COMPOSE) up -d --wait
+	@$(COMPOSE) --profile init run --rm minio-bucket-init
 
 logs: ## Tail infra logs
 	@$(COMPOSE) logs -f --tail=100
