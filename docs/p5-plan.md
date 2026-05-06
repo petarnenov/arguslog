@@ -42,8 +42,8 @@
 
 | #   | Milestone                                                                                                   | Status   | Commit |
 | --- | ----------------------------------------------------------------------------------------------------------- | -------- | ------ |
-| 1   | WORKER: Retention purge job — TimescaleDB chunk policy @365d + nightly per-org DELETE for orgs with effective retention < 365d. | ⏳ next | —      |
-| 2   | API + WORKER: Payment failure grace period — `invoice.payment_failed` sets `payment_grace_until = NOW()+7d`; nightly job auto-downgrades expired grace; `invoice.payment_succeeded` clears it; BillingPage banner. | pending  | —      |
+| 1   | WORKER: Retention purge job — TimescaleDB chunk policy @365d + nightly per-org DELETE for orgs with effective retention < 365d. | ✅ done | `027fa23` |
+| 2   | API + WORKER: Payment failure grace period — `invoice.payment_failed` sets `payment_grace_until = NOW()+7d`; nightly job auto-downgrades expired grace; `invoice.payment_succeeded` clears it; BillingPage banner. | ⏳ next | —      |
 | 3   | SDKs: GitHub Actions release workflow — `sdk-browser-v*` / `sdk-react-v*` → npm publish, `java-sdk-v*` → Maven Central via OSSRH (signed). Tag-driven. | pending  | —      |
 | 4   | INFRA: Railway staging environment — services (api/ingest/worker/web) + managed Postgres+Timescale + Redis + R2 bucket + Keycloak. Secrets wiring + first deploy from `main`. | pending  | —      |
 | 5   | INFRA: k6 load testing — ingest hot path (events POST), api login + dashboard read, recorded baseline (p95/p99/err-rate at target RPS) against staging. | pending  | —      |
