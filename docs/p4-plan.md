@@ -37,7 +37,7 @@ hard downgrade is a P5 decision.
 | 4   | API: Stripe Customer Portal endpoint — `POST /api/v1/orgs/{id}/billing/portal`.                             | ✅ done | `c883e16` |
 | 5   | API: Stripe webhook handler — `checkout.session.completed`, `subscription.{updated,deleted}`, `invoice.payment_failed`. | ✅ done | `afb5ea0` |
 | 6   | Web: BillingPage — current plan, usage vs cap, upgrade CTA → Checkout, manage → Portal.                     | ✅ done | `5865e36` |
-| 7   | Web: PersonalAccessTokensPage (P3 #7c carry-forward) — mint / list / revoke.                                | ⏳ next | —         |
+| 7   | Web: PersonalAccessTokensPage (P3 #7c carry-forward) — mint / list / revoke.                                | ✅ done | `7338f89` |
 
 ## Architecture decisions to lock in
 
