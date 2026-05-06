@@ -1,0 +1,42 @@
+package org.arguslog.api.billing.application;
+
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.Optional;
+import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.application.port.UsageRepository;
+import org.arguslog.api.billing.domain.PlanTier;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class UsageService implements UsageUseCase {
+
+  private final OrgPlanRepository plans;
+  private final UsageRepository usage;
+  private final Clock clock;
+
+  public UsageService(OrgPlanRepository plans, UsageRepository usage, Clock clock) {
+    this.plans = plans;
+    this.usage = usage;
+    this.clock = clock;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Optional<UsageSnapshot> snapshot(long orgId) {
+    Optional<PlanTier> plan = plans.findPlan(orgId);
+    if (plan.isEmpty()) return Optional.empty();
+    PlanTier tier = plan.get();
+    long used = usage.currentEventCount(orgId, periodStartUtc());
+    long cap = tier.monthlyEventCap();
+    double ratio = cap == 0 ? 1.0 : (double) used / (double) cap;
+    boolean exceeded = used >= cap;
+    return Optional.of(new UsageSnapshot(tier, used, cap, ratio, exceeded));
+  }
+
+  private LocalDate periodStartUtc() {
+    return LocalDate.now(clock.withZone(ZoneOffset.UTC)).withDayOfMonth(1);
+  }
+}

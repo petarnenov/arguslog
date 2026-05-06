@@ -885,6 +885,33 @@
         }
       }
     },
+    "/api/v1/orgs/{orgId}/usage" : {
+      "get" : {
+        "tags" : [ "usage-controller" ],
+        "operationId" : "current",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UsageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{orgId}/projects/{projectId}" : {
       "get" : {
         "tags" : [ "project-controller" ],
@@ -1379,6 +1406,41 @@
           },
           "page" : {
             "$ref" : "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "UsageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "plan" : {
+            "type" : "string"
+          },
+          "monthlyPriceCents" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "eventsUsed" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "eventCap" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "projectCap" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "retentionDays" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "ratio" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "exceeded" : {
+            "type" : "boolean"
           }
         }
       }
