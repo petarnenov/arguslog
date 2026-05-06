@@ -32,7 +32,7 @@ hard downgrade is a P5 decision.
 | #   | Milestone                                                                                                   | Status  | Commit    |
 | --- | ----------------------------------------------------------------------------------------------------------- | ------- | --------- |
 | 1   | API: Plan catalog + `GET /api/v1/orgs/{id}/usage` for the BillingPage banner.                               | ✅ done | `6723bd4` |
-| 2   | INGEST: `RealQuotaEnforcer` — Bucket4j in-memory burst + Postgres atomic UPSERT monthly cap.                | ✅ done | _pending_ |
+| 2   | INGEST: `RealQuotaEnforcer` — Bucket4j in-memory burst + Postgres atomic UPSERT monthly cap.                | ✅ done | `1d01456` |
 | 3   | API: Stripe Checkout endpoint — `POST /api/v1/orgs/{id}/billing/checkout-session`.                          | ⏳ next | —         |
 | 4   | API: Stripe Customer Portal endpoint — `POST /api/v1/orgs/{id}/billing/portal`.                             | pending | —         |
 | 5   | API: Stripe webhook handler — `checkout.session.completed`, `subscription.{updated,deleted}`, `invoice.payment_failed`. | pending | —         |
