@@ -48,7 +48,14 @@
 | 4   | INFRA: Railway staging environment — services (api/ingest/worker/web) + managed Postgres+Timescale + Redis + R2 bucket + Keycloak. Secrets wiring + first deploy from `main`.                                      | ✅ done | `4e05f06` |
 | 5   | INFRA: k6 load testing — ingest hot path (events POST), api login + dashboard read, recorded baseline (p95/p99/err-rate at target RPS) against staging.                                                            | ✅ done | `bbd83dc` |
 | 6   | DOGFOOD: api/ingest/worker import published `java-sdk`, web imports `@arguslog/sdk-browser` + `@arguslog/sdk-react`. Dedicated `arguslog-internal` org with one project per service.                               | ✅ done | `664b43b` |
-| 7   | INFRA: Railway production deploy + DNS cutover — promote staging build to production env, point `arguslog.org` subdomains at Railway, TLS via Railway, Cloudflare proxy decision per subdomain.                    | pending | —         |
+| 7   | INFRA: Railway production deploy + DNS cutover — promote staging build to production env, point `arguslog.org` subdomains at Railway, TLS via Railway, Cloudflare proxy decision per subdomain.                    | ✅ done\* | `b439752` |
+
+\* Production stack (5 services + 3 dbs) is fully deployed and healthy on Railway-issued URLs;
+DNS records are in Cloudflare; custom domains are added in Railway. The Let's Encrypt cert
+provisioning for the four custom hostnames is stuck at `VALIDATING_OWNERSHIP` despite
+verified DNS — that's a Railway-side asynchronous step, expected to resolve without
+intervention. See `infra/railway/README.md` for the current state + Railway-issued URLs to
+use until the cutover unblocks.
 
 ## Architecture decisions to lock in
 
