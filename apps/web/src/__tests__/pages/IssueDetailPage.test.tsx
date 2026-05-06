@@ -1,6 +1,7 @@
 import { MantineProvider } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -105,5 +106,73 @@ describe('IssueDetailPage', () => {
 
     await waitFor(() => expect(screen.getByText(/Invalid project/i)).toBeInTheDocument());
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('renders the symbolicated stack and toggles back to raw on demand', async () => {
+    const symbolicatedEvents = {
+      data: [
+        {
+          id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          issueId: 7,
+          projectId: 101,
+          receivedAt: '2026-05-05T11:00:00Z',
+          payload: {
+            release: '1.2.3',
+            exception: {
+              values: [
+                {
+                  type: 'TypeError',
+                  stacktrace: {
+                    frames: [
+                      {
+                        filename: 'dist/app.abc.js',
+                        function: 'r',
+                        lineno: 1,
+                        colno: 42,
+                        originalFilename: 'src/app.ts',
+                        originalFunction: 'render',
+                        originalLineno: 10,
+                        originalColno: 4,
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ],
+      page: {},
+    };
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.includes('/events')) return jsonResponse(symbolicatedEvents);
+      return jsonResponse(sampleIssue);
+    }) as typeof fetch;
+
+    renderAt('/orgs/acme/projects/101/issues/7');
+
+    // Default view: original location is shown.
+    await waitFor(() => expect(screen.getByText('src/app.ts:10:4')).toBeInTheDocument());
+    expect(screen.getByText('render')).toBeInTheDocument();
+
+    // Toggle to "Minified" — raw fields surface, original badge disappears.
+    await userEvent.click(screen.getByRole('radio', { name: 'Minified' }));
+    await waitFor(() => expect(screen.getByText('dist/app.abc.js:1:42')).toBeInTheDocument());
+    expect(screen.queryByText('src/app.ts:10:4')).not.toBeInTheDocument();
+  });
+
+  it('hides the toggle when no event has any symbolicated frame', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.includes('/events')) return jsonResponse(sampleEventsPage);
+      return jsonResponse(sampleIssue);
+    }) as typeof fetch;
+
+    renderAt('/orgs/acme/projects/101/issues/7');
+
+    await waitFor(() => expect(screen.getByTestId('events-table')).toBeInTheDocument());
+    expect(screen.queryByRole('radio', { name: 'Minified' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Original' })).not.toBeInTheDocument();
   });
 });

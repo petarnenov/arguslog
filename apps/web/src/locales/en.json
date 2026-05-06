@@ -78,7 +78,13 @@
     "eventTime": "Time",
     "eventId": "Event",
     "payload": "Payload",
-    "noEvents": "No events recorded yet."
+    "noEvents": "No events recorded yet.",
+    "frameAt": "at",
+    "anonymousFrame": "<anonymous>",
+    "original": "original",
+    "toggleOriginal": "Original",
+    "toggleRaw": "Minified",
+    "toggleAria": "Show original or minified frames"
   },
   "pagination": {
     "first": "First page",
