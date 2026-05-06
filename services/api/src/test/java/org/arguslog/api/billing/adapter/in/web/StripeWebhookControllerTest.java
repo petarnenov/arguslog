@@ -1,15 +1,17 @@
 package org.arguslog.api.billing.adapter.in.web;
 
-import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.stripe.StripeClient;
+import com.stripe.exception.SignatureVerificationException;
+import com.stripe.model.Event;
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
 import org.arguslog.api.alerts.application.port.AlertRuleRepository;
 import org.arguslog.api.application.port.DsnRepository;
@@ -22,12 +24,9 @@ import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
-import org.arguslog.api.billing.application.CheckoutUseCase;
-import org.arguslog.api.billing.application.CheckoutUseCase.CheckoutFailedException;
-import org.arguslog.api.billing.application.CheckoutUseCase.StripeNotConfiguredException;
 import org.arguslog.api.billing.application.PortalUseCase;
-import org.arguslog.api.billing.application.PortalUseCase.NoCustomerException;
 import org.arguslog.api.billing.application.StripeWebhookUseCase;
+import org.arguslog.api.billing.application.StripeWebhookUseCase.Outcome;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.application.port.StripeEventLog;
@@ -40,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -55,21 +55,23 @@ import org.springframework.test.web.servlet.MockMvc;
           + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
           + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,"
           + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration"
+          + "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration",
+      // Webhook controller short-circuits with 503 when this is blank — give it a value so
+      // the verifier-rejection / handler-success tests can exercise the real branches.
+      "arguslog.stripe.webhook-secret=whsec_test_4_unit"
     })
-class CheckoutControllerTest {
+class StripeWebhookControllerTest {
 
   @Autowired MockMvc mvc;
 
-  @MockitoBean CheckoutUseCase useCase;
-  @MockitoBean PortalUseCase portalUseCase;
-  @MockitoBean StripeWebhookUseCase stripeWebhookUseCase;
+  @MockitoBean StripeWebhookUseCase useCase;
+  @MockitoBean StripeEventVerifier verifier;
   @MockitoBean StripeEventLog stripeEventLog;
-  @MockitoBean StripeEventVerifier stripeEventVerifier;
-  @MockitoBean BillingCustomerRepository billingCustomerRepository;
-  @MockitoBean StripeClient stripeClient;
+  @MockitoBean PortalUseCase portalUseCase;
   @MockitoBean UsageRepository usageRepository;
   @MockitoBean OrgPlanRepository orgPlanRepository;
+  @MockitoBean BillingCustomerRepository billingCustomerRepository;
+  @MockitoBean StripeClient stripeClient;
   @MockitoBean IssueRepository issueRepository;
   @MockitoBean EventRepository eventRepository;
   @MockitoBean ProjectRepository projectRepository;
@@ -87,55 +89,73 @@ class CheckoutControllerTest {
   @MockitoBean TokenHasher tokenHasher;
 
   @Test
-  void postReturnsCheckoutUrl() throws Exception {
-    // Test profile has SecurityConfig in permit-all mode → no JWT in the security context, so
-    // currentUserEmail() returns null. The use case still receives the orgId either way.
-    when(useCase.createCheckoutUrl(eq(1L), any())).thenReturn("https://checkout.stripe.com/c/abc");
+  void missingSignatureReturns400() throws Exception {
+    mvc.perform(
+            post("/api/v1/webhooks/stripe")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"id\":\"evt_x\"}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error").value("missing_signature"));
+    verify(useCase, never()).handle(any());
+  }
 
-    mvc.perform(post("/api/v1/orgs/1/billing/checkout-session"))
+  @Test
+  void invalidSignatureReturns400() throws Exception {
+    when(verifier.verify(eq("{\"id\":\"evt_x\"}"), eq("t=1,v1=bad"), eq("whsec_test_4_unit")))
+        .thenThrow(new SignatureVerificationException("bad sig", "t=1,v1=bad"));
+
+    mvc.perform(
+            post("/api/v1/webhooks/stripe")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Stripe-Signature", "t=1,v1=bad")
+                .content("{\"id\":\"evt_x\"}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error").value("invalid_signature"));
+    verify(useCase, never()).handle(any());
+  }
+
+  @Test
+  void verifiedEventDelegatesToUseCaseAndReturnsOutcome() throws Exception {
+    Event event = org.mockito.Mockito.mock(Event.class);
+    when(verifier.verify(any(), any(), eq("whsec_test_4_unit"))).thenReturn(event);
+    when(useCase.handle(event)).thenReturn(Outcome.PROCESSED);
+
+    mvc.perform(
+            post("/api/v1/webhooks/stripe")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Stripe-Signature", "t=1,v1=ok")
+                .content("{\"id\":\"evt_y\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.url").value("https://checkout.stripe.com/c/abc"));
+        .andExpect(jsonPath("$.outcome").value("processed"));
   }
 
   @Test
-  void unconfiguredStripeReturns503ProblemJson() throws Exception {
-    when(useCase.createCheckoutUrl(eq(1L), any()))
-        .thenThrow(new StripeNotConfiguredException("Stripe is not configured"));
+  void duplicateEventOutcomeStillReturns200() throws Exception {
+    Event event = org.mockito.Mockito.mock(Event.class);
+    when(verifier.verify(any(), any(), any())).thenReturn(event);
+    when(useCase.handle(event)).thenReturn(Outcome.ALREADY_SEEN);
 
-    mvc.perform(post("/api/v1/orgs/1/billing/checkout-session"))
-        .andExpect(status().isServiceUnavailable())
-        .andExpect(content().contentType("application/problem+json"))
-        .andExpect(jsonPath("$.title").value(startsWith("Stripe not configured")));
-  }
-
-  @Test
-  void stripeRejectionReturns502ProblemJson() throws Exception {
-    when(useCase.createCheckoutUrl(eq(1L), any()))
-        .thenThrow(new CheckoutFailedException("rate-limited", new RuntimeException()));
-
-    mvc.perform(post("/api/v1/orgs/1/billing/checkout-session"))
-        .andExpect(status().isBadGateway())
-        .andExpect(content().contentType("application/problem+json"))
-        .andExpect(jsonPath("$.title").value(startsWith("Stripe checkout failed")));
-  }
-
-  @Test
-  void portalReturnsHostedUrl() throws Exception {
-    when(portalUseCase.createPortalUrl(1L)).thenReturn("https://billing.stripe.com/p/sess_xyz");
-
-    mvc.perform(post("/api/v1/orgs/1/billing/portal"))
+    mvc.perform(
+            post("/api/v1/webhooks/stripe")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Stripe-Signature", "t=1,v1=ok")
+                .content("{\"id\":\"evt_dup\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.url").value("https://billing.stripe.com/p/sess_xyz"));
+        .andExpect(jsonPath("$.outcome").value("already_seen"));
   }
 
   @Test
-  void portalWithoutCustomerReturns409ProblemJson() throws Exception {
-    when(portalUseCase.createPortalUrl(1L))
-        .thenThrow(new NoCustomerException("Org 1 has no Stripe customer yet"));
+  void handlerCrashYields500SoStripeRedelivers() throws Exception {
+    Event event = org.mockito.Mockito.mock(Event.class);
+    when(verifier.verify(any(), any(), any())).thenReturn(event);
+    when(useCase.handle(event)).thenThrow(new RuntimeException("db down"));
 
-    mvc.perform(post("/api/v1/orgs/1/billing/portal"))
-        .andExpect(status().isConflict())
-        .andExpect(content().contentType("application/problem+json"))
-        .andExpect(jsonPath("$.title").value(startsWith("No Stripe customer")));
+    mvc.perform(
+            post("/api/v1/webhooks/stripe")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Stripe-Signature", "t=1,v1=ok")
+                .content("{\"id\":\"evt_z\"}"))
+        .andExpect(status().isInternalServerError())
+        .andExpect(jsonPath("$.error").value("handler_failed"));
   }
 }
