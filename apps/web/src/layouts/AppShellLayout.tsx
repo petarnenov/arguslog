@@ -23,6 +23,7 @@ import {
   IconBuilding,
   IconCheck,
   IconChevronDown,
+  IconCreditCard,
   IconHome,
   IconLogout,
   IconPlus,
@@ -201,6 +202,14 @@ export function AppShellLayout() {
               to={`/orgs/${orgSlug}/settings/destinations`}
               label={t('nav.destinations')}
               leftSection={<IconSend size={16} />}
+            />
+          )}
+          {orgSlug && (
+            <NavLink
+              component={Link}
+              to={`/orgs/${orgSlug}/billing`}
+              label={t('nav.billing')}
+              leftSection={<IconCreditCard size={16} />}
             />
           )}
           {orgSlug && projectId && (

@@ -6,6 +6,7 @@ import { AdminPage } from './pages/AdminPage';
 import { AlertDestinationsPage } from './pages/AlertDestinationsPage';
 import { AlertRulesPage } from './pages/AlertRulesPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
+import { BillingPage } from './pages/BillingPage';
 import { IssueDetailPage } from './pages/IssueDetailPage';
 import { IssuesPage } from './pages/IssuesPage';
 import { LoginPage } from './pages/LoginPage';
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
       { path: '/orgs/:orgSlug/projects/:projectId/alert-rules', element: <AlertRulesPage /> },
       { path: '/orgs/:orgSlug/settings', element: <OrgSettingsPage /> },
       { path: '/orgs/:orgSlug/settings/destinations', element: <AlertDestinationsPage /> },
+      { path: '/orgs/:orgSlug/billing', element: <BillingPage /> },
       { path: '/admin', element: <AdminPage /> },
     ],
   },
