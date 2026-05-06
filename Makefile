@@ -85,7 +85,15 @@ web: build-sdks ## Run web app in foreground (Vite, port 5173)
 	@$(PNPM) --filter @arguslog/web dev
 
 build-sdks: ## Build workspace SDKs so Vite can resolve them (tsc-incremental, fast on reruns)
-	@$(PNPM) --filter "./packages/*" build
+	@# Drop stale tsbuildinfo when dist/ went missing externally — tsc's
+	@# incremental cache keys off source mtimes only, so it'd otherwise say
+	@# "Done" without emitting and leave Vite without sdk-browser types.
+	@for p in packages/sdk-browser packages/sdk-react; do \
+		if [ ! -f "$$p/dist/index.d.ts" ]; then rm -f "$$p/tsconfig.build.tsbuildinfo"; fi; \
+	done
+	@# `...sdk-react` means "sdk-react AND its workspace deps" — pnpm builds
+	@# them in topological order so sdk-browser finishes before sdk-react needs it.
+	@$(PNPM) --filter "@arguslog/sdk-react..." build
 
 ## ─── Setup / dependencies ──────────────────────────────────────────────────
 
