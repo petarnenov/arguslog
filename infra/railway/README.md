@@ -26,27 +26,32 @@ there's no per-service dashboard config to drift.
 | Redis                | `railway add redis`                    | Used by ingest (Streams) + worker (consumer group) + api (cache). |
 | Cloudflare R2        | external (S3-compatible)               | Source maps + attachments.                                        |
 
-## Current state (P5 #7 in progress)
+## Current state — production live (P5 #7 ✅)
 
-Both environments are deployed; cert provisioning on the production custom domains is the only
-piece still pending (Railway's Let's Encrypt issuance has been stuck on `VALIDATING_OWNERSHIP`
-after multiple add/remove cycles). Project id `f24cb7e5-c1fd-4520-a04d-dea1acd0d309`.
+Project id `f24cb7e5-c1fd-4520-a04d-dea1acd0d309`. All four custom domains are answering 200 on
+their respective health endpoints; Keycloak realm import + email verification flow are live;
+Cloudflare R2 wired for attachments + source maps.
 
-| Subdomain               | DNS in Cloudflare                       | Railway domain | TLS         | HTTP                          |
-| ----------------------- | --------------------------------------- | -------------- | ----------- | ----------------------------- |
-| `app.arguslog.org`      | CNAME → b452yzy1.up.railway.app (proxy) | added          | CF Universal| 404 (Railway routing pending) |
-| `api.arguslog.org`      | CNAME → 4j1n7gex.up.railway.app (proxy) | added          | CF Universal| 404 (Railway routing pending) |
-| `auth.arguslog.org`     | CNAME → cymu37i0.up.railway.app (proxy) | added          | CF Universal| 404 (Railway routing pending) |
-| `ingest.arguslog.org`   | CNAME → d9fz3gra.up.railway.app (no cf) | added          | pending     | 000 (cert not issued)         |
+| Subdomain               | DNS in Cloudflare                  | Cloudflare proxy | Health endpoint                                    |
+| ----------------------- | ---------------------------------- | ---------------- | -------------------------------------------------- |
+| `app.arguslog.org`      | CNAME → 8onbll5q.up.railway.app    | ON (orange)      | `/healthz` 200                                     |
+| `api.arguslog.org`      | CNAME → 4j1n7gex.up.railway.app    | ON (orange)      | `/actuator/health/readiness` 200                   |
+| `auth.arguslog.org`     | CNAME → cymu37i0.up.railway.app    | ON (orange)      | `/realms/arguslog/.well-known/openid-configuration` 200 |
+| `ingest.arguslog.org`   | CNAME → d9fz3gra.up.railway.app    | OFF (grey)       | `/actuator/health/readiness` 200                   |
 
-Railway-issued URLs work in the meantime (use these for end-to-end testing until cutover):
+Cloudflare zone-wide settings: **SSL/TLS mode = Full** (required by Railway custom-domain TLS;
+"Flexible" mode breaks origin handshakes). Resend DKIM/SPF/DMARC TXT + MX records also live in
+the same zone — keep them when re-applying DNS templates.
 
-| Service           | Direct URL (no domain)                                 |
-| ----------------- | ------------------------------------------------------ |
-| `arguslog-api`    | https://arguslog-api-production.up.railway.app         |
-| `arguslog-ingest` | https://arguslog-ingest-production.up.railway.app      |
-| `arguslog-web`    | https://arguslog-web-production.up.railway.app         |
-| `arguslog-keycloak` | https://arguslog-keycloak-production.up.railway.app  |
+Railway-issued direct URLs are still active and useful for bypassing Cloudflare during incident
+debug:
+
+| Service             | Direct URL                                              |
+| ------------------- | ------------------------------------------------------- |
+| `arguslog-api`      | https://arguslog-api-production.up.railway.app          |
+| `arguslog-ingest`   | https://arguslog-ingest-production.up.railway.app       |
+| `arguslog-web`      | https://arguslog-web-production.up.railway.app          |
+| `arguslog-keycloak` | https://arguslog-keycloak-production.up.railway.app     |
 
 ## Staging
 
@@ -71,6 +76,13 @@ Open follow-ups (deferred — none block #5/#6 starting):
   `R2_ENDPOINT` + `R2_ACCESS_KEY` + `R2_SECRET_KEY` + `R2_BUCKET` on both staging + production.
   Same bucket serves both envs — fine for dogfood; consider a separate prod bucket if customer
   data needs hard-isolation.
+- **Resend SMTP** is wired into the Keycloak realm via the admin API (host=smtp.resend.com,
+  port=465 SSL, from=noreply@arguslog.org). The `services/keycloak/realm/arguslog-realm.json`
+  file still references the docker-compose `mailhog` host so local dev keeps working — prod
+  overrides live in Keycloak, not the file. Re-import after a clean DB reset will need the
+  SMTP block patched again via `PUT /admin/realms/arguslog`.
+- **Demo seeded user** in the realm import (`demo@arguslog.local` / `demo`). Delete or rotate
+  before sharing the dashboard publicly.
 - **Production environment.** All services exist there but with no variables and no first
   deploy. Mirror staging's `railway variables --set` calls under `--environment production`
   before promoting (#7).
