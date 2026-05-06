@@ -53,7 +53,8 @@ aws-s3 = { module = "software.amazon.awssdk:s3", version.ref = "awsSdk" }
 opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "opentelemetry" }
 otel-instrumentation-bom = { module = "io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom", version.ref = "otelInstrumentation" }
 otel-spring-boot-starter = { module = "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter" }
-bucket4j-redis = { module = "com.bucket4j:bucket4j-redis", version.ref = "bucket4j" }
+bucket4j-redis = { module = "com.bucket4j:bucket4j_jdk17-redis", version.ref = "bucket4j" }
+bucket4j-core = { module = "com.bucket4j:bucket4j_jdk17-core", version.ref = "bucket4j" }
 stripe-java = { module = "com.stripe:stripe-java", version.ref = "stripeJava" }
 telegram-bot = { module = "com.github.pengrad:java-telegram-bot-api", version.ref = "telegramBot" }
 resend-java = { module = "com.resend:resend-java", version.ref = "resend" }

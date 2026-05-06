@@ -16,7 +16,9 @@ dependencies {
     implementation(libs.springdoc.openapi.webmvc)
     implementation(libs.postgres.driver)
     implementation(libs.argon2.jvm)
-    // TODO(P1): bucket4j-redis for rate limiting; OTel starter for traces.
+    implementation(libs.bucket4j.core)
+    implementation(libs.caffeine)
+    // TODO(P5): bucket4j-redis for cross-instance burst limiting; OTel starter for traces.
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.testcontainers.junit)
