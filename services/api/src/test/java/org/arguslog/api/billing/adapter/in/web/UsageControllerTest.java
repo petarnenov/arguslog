@@ -20,6 +20,7 @@ import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
+import org.arguslog.api.billing.application.PortalUseCase;
 import org.arguslog.api.billing.application.UsageUseCase;
 import org.arguslog.api.billing.application.UsageUseCase.UsageSnapshot;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
@@ -59,6 +60,7 @@ class UsageControllerTest {
   @MockitoBean UsageRepository usageRepository;
   @MockitoBean OrgPlanRepository orgPlanRepository;
   @MockitoBean BillingCustomerRepository billingCustomerRepository;
+  @MockitoBean PortalUseCase portalUseCase;
   @MockitoBean StripeClient stripeClient;
   @MockitoBean IssueRepository issueRepository;
   @MockitoBean EventRepository eventRepository;

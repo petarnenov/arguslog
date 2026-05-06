@@ -130,7 +130,9 @@
       "Bash(git rebase *)",
       "Bash(unzip -l ~/.gradle/caches/modules-2/files-2.1/com.stripe/stripe-java/29.0.0/*.jar)",
       "Bash(unzip -p ~/.gradle/caches/modules-2/files-2.1/com.stripe/stripe-java/29.0.0/eb7e05bab56612f6313058486f289c1f7816a2c8/stripe-java-29.0.0-sources.jar com/stripe/StripeClient.java)",
-      "Bash(grep -oE '<failure[^>]+message=\"[^\"]{0,300}\"' /Users/petarpetrov/vite/argus/services/api/build/test-results/test/TEST-org.arguslog.api.billing.application.StripeCheckoutServiceTest.xml)"
+      "Bash(grep -oE '<failure[^>]+message=\"[^\"]{0,300}\"' /Users/petarpetrov/vite/argus/services/api/build/test-results/test/TEST-org.arguslog.api.billing.application.StripeCheckoutServiceTest.xml)",
+      "Bash(unzip -p ~/.gradle/caches/modules-2/files-2.1/com.stripe/stripe-java/29.0.0/eb7e05bab56612f6313058486f289c1f7816a2c8/stripe-java-29.0.0-sources.jar com/stripe/service/BillingPortalService.java)",
+      "Bash(unzip -p ~/.gradle/caches/modules-2/files-2.1/com.stripe/stripe-java/29.0.0/eb7e05bab56612f6313058486f289c1f7816a2c8/stripe-java-29.0.0-sources.jar com/stripe/service/CheckoutService.java)"
     ]
   }
 }

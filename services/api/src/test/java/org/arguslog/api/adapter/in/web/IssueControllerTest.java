@@ -31,6 +31,7 @@ import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
+import org.arguslog.api.billing.application.PortalUseCase;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.application.port.UsageRepository;
@@ -90,6 +91,7 @@ class IssueControllerTest {
   @MockitoBean UsageRepository usageRepository;
   @MockitoBean OrgPlanRepository orgPlanRepository;
   @MockitoBean BillingCustomerRepository billingCustomerRepository;
+  @MockitoBean PortalUseCase portalUseCase;
   @MockitoBean StripeClient stripeClient;
 
   // ── list ─────────────────────────────────────────────────────────────────

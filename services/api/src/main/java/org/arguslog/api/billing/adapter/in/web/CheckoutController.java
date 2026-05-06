@@ -5,6 +5,8 @@ import org.arguslog.api.billing.adapter.in.web.dto.CheckoutResponse;
 import org.arguslog.api.billing.application.CheckoutUseCase;
 import org.arguslog.api.billing.application.CheckoutUseCase.CheckoutFailedException;
 import org.arguslog.api.billing.application.CheckoutUseCase.StripeNotConfiguredException;
+import org.arguslog.api.billing.application.PortalUseCase;
+import org.arguslog.api.billing.application.PortalUseCase.NoCustomerException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -20,26 +22,34 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Stripe Checkout entry point. Single endpoint — POST starts a hosted Checkout Session.
+ * Stripe-hosted billing flows: Checkout for the initial Pro upgrade, Customer Portal for everything
+ * after (card updates, invoices, cancellation).
  *
  * <p>Membership is enforced by {@code OrgAccessGuard} via the {@code /orgs/{orgId}/...} path. We
- * intentionally do NOT restrict to org owners for P4: Stripe Checkout itself requires a payment
- * method, so a member-but-not-owner can't accidentally charge anyone — they'd get the form, stall
- * at payment. Granular role checks land in P5 alongside scoped PATs.
+ * intentionally do NOT restrict to org owners for P4: Stripe itself requires a payment method
+ * before charging, so a member-but-not-owner can't accidentally bill anyone — they'd get the form,
+ * stall at payment. Granular role checks land in P5 alongside scoped PATs.
  */
 @RestController
 @RequestMapping(value = "/api/v1/orgs/{orgId}/billing", produces = MediaType.APPLICATION_JSON_VALUE)
 public class CheckoutController {
 
-  private final CheckoutUseCase useCase;
+  private final CheckoutUseCase checkout;
+  private final PortalUseCase portal;
 
-  public CheckoutController(CheckoutUseCase useCase) {
-    this.useCase = useCase;
+  public CheckoutController(CheckoutUseCase checkout, PortalUseCase portal) {
+    this.checkout = checkout;
+    this.portal = portal;
   }
 
   @PostMapping("/checkout-session")
   public CheckoutResponse start(@PathVariable long orgId) {
-    return new CheckoutResponse(useCase.createCheckoutUrl(orgId, currentUserEmail()));
+    return new CheckoutResponse(checkout.createCheckoutUrl(orgId, currentUserEmail()));
+  }
+
+  @PostMapping("/portal")
+  public CheckoutResponse portal(@PathVariable long orgId) {
+    return new CheckoutResponse(portal.createPortalUrl(orgId));
   }
 
   /**
@@ -71,6 +81,18 @@ public class CheckoutController {
     body.setTitle("Stripe checkout failed");
     body.setType(URI.create("https://arguslog.dev/problems/stripe-checkout-failed"));
     return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(NoCustomerException.class)
+  ResponseEntity<ProblemDetail> handleNoCustomer(NoCustomerException e) {
+    // 409 Conflict: the resource state (no customer yet) blocks the requested action; the
+    // dashboard should disable the "Manage subscription" button when usage shows free tier.
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+    body.setTitle("No Stripe customer for this org");
+    body.setType(URI.create("https://arguslog.dev/problems/no-stripe-customer"));
+    return ResponseEntity.status(HttpStatus.CONFLICT)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }
