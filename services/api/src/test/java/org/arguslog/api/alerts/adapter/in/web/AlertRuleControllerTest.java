@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stripe.StripeClient;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +37,7 @@ import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
+import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.application.port.UsageRepository;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
@@ -86,6 +88,8 @@ class AlertRuleControllerTest {
   @MockitoBean TokenHasher tokenHasher;
   @MockitoBean UsageRepository usageRepository;
   @MockitoBean OrgPlanRepository orgPlanRepository;
+  @MockitoBean BillingCustomerRepository billingCustomerRepository;
+  @MockitoBean StripeClient stripeClient;
 
   @Test
   void listReturnsTheRules() throws Exception {

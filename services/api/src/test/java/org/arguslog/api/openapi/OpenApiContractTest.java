@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.stripe.StripeClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -20,6 +21,7 @@ import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
+import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.application.port.UsageRepository;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
@@ -83,6 +85,8 @@ class OpenApiContractTest {
   @MockitoBean TokenHasher tokenHasher;
   @MockitoBean UsageRepository usageRepository;
   @MockitoBean OrgPlanRepository orgPlanRepository;
+  @MockitoBean BillingCustomerRepository billingCustomerRepository;
+  @MockitoBean StripeClient stripeClient;
 
   @Test
   void generatedSpecMatchesTheCommittedSnapshot() throws Exception {

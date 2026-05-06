@@ -118,12 +118,6 @@
       "Bash(awk -F: '{sum+=$2} END {print \"WORKER TOTAL:\", sum}')",
       "Bash(pnpm -r --filter \"@arguslog/sdk-browser\" --filter \"@arguslog/sdk-react\" build)",
       "Bash(awk -F: '{sum+=$2} END {print \"API:\",sum}')",
-      "Bash(make help *)",
-      "Bash(pnpm --filter \"@arguslog/sdk-browser\" --filter \"@arguslog/sdk-react\" build)",
-      "Bash(pnpm --filter \"@arguslog/sdk-react...\" build)",
-      "Bash(pnpm --filter \"@arguslog/sdk-browser\" build)",
-      "Bash(pnpm --filter \"@arguslog/sdk-react\" build)",
-      "Bash(make build-sdks *)",
       "Bash(./gradlew :services:ingest:compileJava)",
       "Read(//private/tmp/**)",
       "Bash(curl -s 'https://search.maven.org/solrsearch/select?q=g:com.bucket4j+AND+v:8.14.0&rows=20')",
@@ -131,7 +125,12 @@
       "Bash(curl -s 'https://search.maven.org/solrsearch/select?q=g:com.bucket4j+AND+a:bucket4j_jdk17-core&rows=5')",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(x['a'], x['v']\\) for x in d.get\\('response',{}\\).get\\('docs',[]\\)]\")",
       "Bash(curl -s 'https://search.maven.org/solrsearch/select?q=g:com.bucket4j+AND+a:bucket4j_jdk17-core')",
-      "Bash(awk -F: '{sum+=$2} END {print \"INGEST TOTAL:\",sum}')"
+      "Bash(awk -F: '{sum+=$2} END {print \"INGEST TOTAL:\",sum}')",
+      "Bash(git fetch *)",
+      "Bash(git rebase *)",
+      "Bash(unzip -l ~/.gradle/caches/modules-2/files-2.1/com.stripe/stripe-java/29.0.0/*.jar)",
+      "Bash(unzip -p ~/.gradle/caches/modules-2/files-2.1/com.stripe/stripe-java/29.0.0/eb7e05bab56612f6313058486f289c1f7816a2c8/stripe-java-29.0.0-sources.jar com/stripe/StripeClient.java)",
+      "Bash(grep -oE '<failure[^>]+message=\"[^\"]{0,300}\"' /Users/petarpetrov/vite/argus/services/api/build/test-results/test/TEST-org.arguslog.api.billing.application.StripeCheckoutServiceTest.xml)"
     ]
   }
 }
