@@ -22,7 +22,8 @@
 | 4b  | Worker: dispatch fan-out — email (Resend) + Slack/webhook.                                                  | ✅ done | `e4c12fb` |
 | 5   | Worker: throttling — Redis-backed `last_fired_at` per rule, skip if within `throttle_seconds`.              | ✅ done | `b7042d8` |
 | 6   | Web: AlertRulesPage + AlertDestinationsPage under project / org settings.                                   | ✅ done | `509af8e` |
-| 7   | CLI: `arguslog releases new <version>` — POST a release row.                                                | pending | —         |
+| 7a  | API: `releases` endpoint (CRUD, RLS) backing the CLI release-new command.                                   | ✅ done | `cbf6902` |
+| 7b  | CLI: `arguslog releases new <version>` (PAT auth) — POST to /api/v1/projects/.../releases.                  | pending | —         |
 | 8   | CLI: `arguslog sourcemaps upload <release> <path>` — multipart upload to R2 via api signed URL.             | pending | —         |
 | 9   | API: signed-URL endpoint for sourcemap PUTs; persists to `source_map_artifacts`.                            | pending | —         |
 | 10  | Worker: symbolication — for JS events, fetch matching sourcemap from R2, decode top frames before persist.  | pending | —         |
