@@ -1,0 +1,35 @@
+# Caddy config for the Argus dashboard SPA.
+#
+# Listens on $PORT (Railway injects), serves /srv, and rewrites every miss to /index.html so
+# client-side routing works on hard reloads. Static assets keep their natural 404 because the
+# SPA shell shouldn't masquerade as a missing image.
+
+:{$PORT:8080} {
+    root * /srv
+
+    # SPA fallback: anything that doesn't match a real file becomes /index.html. Caddy's
+    # try_files honors the route order so /assets/foo.js gets a real 404 if missing.
+    try_files {path} /index.html
+
+    file_server
+
+    # Long-cache hashed bundle assets, no-cache index.html.
+    @hashed path_regexp ^/assets/.+\.[0-9a-f]{8,}\..+$
+    header @hashed Cache-Control "public, max-age=31536000, immutable"
+    @notHashed not path /assets/*
+    header @notHashed Cache-Control "no-cache, must-revalidate"
+
+    # Sentry-style security headers — the dashboard is the main user-visible surface, so
+    # tighten what the browser will accept.
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Strict-Transport-Security set by Cloudflare in front; not duplicated here.
+    }
+
+    # Healthcheck endpoint Railway can hit without going through index.html.
+    handle /healthz {
+        respond "ok" 200
+    }
+}

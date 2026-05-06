@@ -1,15 +1,25 @@
-# Railway config for the arguslog-api service.
-# Built with Nixpacks (auto-detects Java 21 + Gradle).
-# Provisioned in P5 alongside the other services.
+# Railway service config for arguslog-api. Built with the repo's Dockerfile so the runtime image
+# is identical to local docker-compose; build context is the repo root (Gradle multi-module needs
+# settings.gradle.kts + buildSrc + the version catalog).
 
 [build]
-builder = "NIXPACKS"
-buildCommand = "./gradlew :services:api:bootJar -x test --no-daemon"
+builder = "DOCKERFILE"
+dockerfilePath = "services/api/Dockerfile"
+# Scope "redeploy on push" to the files this service actually depends on. Touching apps/web or
+# services/worker/ should not trigger an api rebuild.
+watchPatterns = [
+  "services/api/**",
+  "java-sdk/**",
+  "buildSrc/**",
+  "settings.gradle.kts",
+  "build.gradle.kts",
+  "gradle/libs.versions.toml",
+]
 
 [deploy]
-startCommand = "java $JAVA_TOOL_OPTIONS -jar services/api/build/libs/api-0.0.1-SNAPSHOT.jar"
 healthcheckPath = "/actuator/health/readiness"
-healthcheckTimeout = 60
+# Spring Boot + Flyway cold start can take ~60s; bump if migrations grow.
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 5
+restartPolicyMaxRetries = 3
 numReplicas = 1

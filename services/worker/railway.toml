@@ -1,15 +1,20 @@
-# Railway config for the arguslog-worker service.
-# Built with Nixpacks (auto-detects Java 21 + Gradle).
-# Provisioned in P5 alongside the other services.
+# Railway service config for arguslog-worker. See services/api/railway.toml for rationale.
 
 [build]
-builder = "NIXPACKS"
-buildCommand = "./gradlew :services:worker:bootJar -x test --no-daemon"
+builder = "DOCKERFILE"
+dockerfilePath = "services/worker/Dockerfile"
+watchPatterns = [
+  "services/worker/**",
+  "java-sdk/**",
+  "buildSrc/**",
+  "settings.gradle.kts",
+  "build.gradle.kts",
+  "gradle/libs.versions.toml",
+]
 
 [deploy]
-startCommand = "java $JAVA_TOOL_OPTIONS -jar services/worker/build/libs/worker-0.0.1-SNAPSHOT.jar"
 healthcheckPath = "/actuator/health/readiness"
-healthcheckTimeout = 60
+healthcheckTimeout = 180
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 5
+restartPolicyMaxRetries = 3
 numReplicas = 1

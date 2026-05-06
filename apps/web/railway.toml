@@ -1,16 +1,22 @@
-# Railway config for the arguslog-web app.
-# Built with Nixpacks (Node 22 + pnpm). Static dist served by `serve`.
-# Provisioned in P5; the actual production CDN may move to Cloudflare Pages
-# once we measure cold-start latency from EU.
+# Railway service config for arguslog-web. Multi-stage Dockerfile builds the SPA with pnpm and
+# serves the dist with Caddy (SPA fallback configured via apps/web/Caddyfile).
 
 [build]
-builder = "NIXPACKS"
-buildCommand = "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @arguslog/web build"
+builder = "DOCKERFILE"
+dockerfilePath = "apps/web/Dockerfile"
+watchPatterns = [
+  "apps/web/**",
+  "packages/sdk-browser/**",
+  "packages/sdk-react/**",
+  "packages/eslint-config/**",
+  "packages/tsconfig/**",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+]
 
 [deploy]
-startCommand = "pnpm dlx serve@14 -s apps/web/dist -l ${PORT:-3000}"
-healthcheckPath = "/"
-healthcheckTimeout = 30
+healthcheckPath = "/healthz"
+healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 numReplicas = 1
