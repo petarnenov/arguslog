@@ -70,8 +70,33 @@ mavenPublishing {
 
     pom {
         name.set("Arguslog Java SDK")
-        description.set("Arguslog error tracking SDK for Java and Spring Boot.")
-        url.set("https://github.com/petarnenov/argus")
+        description.set(
+            """
+            Java SDK for Arguslog (https://arguslog.org), a multi-tenant error tracking platform.
+
+            Three integration paths in one artifact:
+              1. Plain Java — Arguslog.init(...) + captureException / captureMessage facade.
+              2. Spring Boot — autoconfig wires the client at @PostConstruct, flushes at @PreDestroy.
+                 Configure via the standard arguslog.* properties (dsn, environment, release,
+                 sample-rate, scrubbing, debug). No-op when arguslog.dsn is empty.
+              3. Logback — drop org.arguslog.sdk.logback.ArgusLogbackAppender into logback-spring.xml
+                 and every log.error(...) call ships its throwable. UnsynchronizedAppenderBase, so
+                 high-volume loggers don't serialize on it; the SDK's bounded queue is the
+                 back-pressure boundary.
+
+            Java 21 baseline. Logback and Spring Boot are compileOnly — only pulled in when the
+            consumer already has them. Non-blocking captures (single daemon worker thread,
+            bounded queue, drop-on-overflow). Built-in PII scrubbing (emails, IPs, JWT-ish
+            tokens) on messages and stack traces; extra patterns supplied via builder.
+
+            Apache-2.0 — explicit patent grant chosen for the JVM ecosystem; the JS SDKs
+            (@arguslog/sdk-browser, @arguslog/sdk-react) ship under MIT.
+
+            See README at https://github.com/petarnenov/argus/tree/main/java-sdk for full
+            quick-start, options table, and threading model.
+            """.trimIndent(),
+        )
+        url.set("https://github.com/petarnenov/argus/tree/main/java-sdk")
         inceptionYear.set("2026")
         licenses {
             license {
