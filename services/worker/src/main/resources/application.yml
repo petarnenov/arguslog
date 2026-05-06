@@ -37,6 +37,12 @@ arguslog:
     consumer-name: ${HOSTNAME:worker-1}
     batch-size: 50
     poll-timeout-ms: 1000
+  retention:
+    # Safety default — first deploy logs scope without mutating data. Flip to false after one
+    # cycle confirms the count is sane.
+    dry-run: ${RETENTION_DRY_RUN:true}
+    batch-size: ${RETENTION_BATCH_SIZE:10000}
+    cron: ${RETENTION_CRON:0 0 3 * * *}
   r2:
     endpoint: ${R2_ENDPOINT:http://localhost:9000}
     bucket: ${R2_BUCKET:arguslog-sourcemaps}
