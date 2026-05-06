@@ -25,6 +25,8 @@ import org.arguslog.api.auth.application.port.TokenHasher;
 import org.arguslog.api.billing.application.CheckoutUseCase;
 import org.arguslog.api.billing.application.CheckoutUseCase.CheckoutFailedException;
 import org.arguslog.api.billing.application.CheckoutUseCase.StripeNotConfiguredException;
+import org.arguslog.api.billing.application.PortalUseCase;
+import org.arguslog.api.billing.application.PortalUseCase.NoCustomerException;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.application.port.UsageRepository;
@@ -57,6 +59,7 @@ class CheckoutControllerTest {
   @Autowired MockMvc mvc;
 
   @MockitoBean CheckoutUseCase useCase;
+  @MockitoBean PortalUseCase portalUseCase;
   @MockitoBean BillingCustomerRepository billingCustomerRepository;
   @MockitoBean StripeClient stripeClient;
   @MockitoBean UsageRepository usageRepository;
@@ -108,5 +111,25 @@ class CheckoutControllerTest {
         .andExpect(status().isBadGateway())
         .andExpect(content().contentType("application/problem+json"))
         .andExpect(jsonPath("$.title").value(startsWith("Stripe checkout failed")));
+  }
+
+  @Test
+  void portalReturnsHostedUrl() throws Exception {
+    when(portalUseCase.createPortalUrl(1L)).thenReturn("https://billing.stripe.com/p/sess_xyz");
+
+    mvc.perform(post("/api/v1/orgs/1/billing/portal"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.url").value("https://billing.stripe.com/p/sess_xyz"));
+  }
+
+  @Test
+  void portalWithoutCustomerReturns409ProblemJson() throws Exception {
+    when(portalUseCase.createPortalUrl(1L))
+        .thenThrow(new NoCustomerException("Org 1 has no Stripe customer yet"));
+
+    mvc.perform(post("/api/v1/orgs/1/billing/portal"))
+        .andExpect(status().isConflict())
+        .andExpect(content().contentType("application/problem+json"))
+        .andExpect(jsonPath("$.title").value(startsWith("No Stripe customer")));
   }
 }

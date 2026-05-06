@@ -595,6 +595,33 @@
         }
       }
     },
+    "/api/v1/orgs/{orgId}/billing/portal" : {
+      "post" : {
+        "tags" : [ "checkout-controller" ],
+        "operationId" : "portal",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CheckoutResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{orgId}/billing/checkout-session" : {
       "post" : {
         "tags" : [ "checkout-controller" ],
