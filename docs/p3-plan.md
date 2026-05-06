@@ -23,9 +23,9 @@
 | 5   | Worker: throttling — Redis-backed `last_fired_at` per rule, skip if within `throttle_seconds`.              | ✅ done | `b7042d8` |
 | 6   | Web: AlertRulesPage + AlertDestinationsPage under project / org settings.                                   | ✅ done | `509af8e` |
 | 7a  | API: `releases` endpoint (CRUD, RLS) backing the CLI release-new command.                                   | ✅ done | `cbf6902` |
-| 7b  | CLI: `arguslog releases new <version>` (PAT auth) — POST to /api/v1/projects/.../releases.                  | pending | —         |
+| 7b  | CLI: `arguslog releases new <version>` (PAT auth) — POST to /api/v1/projects/.../releases.                  | ✅ done | `3aa72f3` |
 | 7c  | API: PAT auth — `personal_access_tokens` table + `/api/v1/me/tokens` + Spring Security PAT filter.          | ✅ done | `a313415` |
-| 8   | CLI: `arguslog sourcemaps upload <release> <path>` — multipart upload to R2 via api signed URL.             | pending | —         |
+| 8   | CLI: `arguslog sourcemaps upload <release> <path>` — multipart upload to R2 via api signed URL.             | ✅ done | `3aa72f3` |
 | 9   | API: signed-URL endpoint for sourcemap PUTs; persists to `source_map_artifacts`.                            | ✅ done | `22d598b` |
 | 10  | Worker: symbolication — for JS events, fetch matching sourcemap from R2, decode top frames before persist.  | pending | —         |
 | 11  | Web: surface symbolicated frames on IssueDetailPage; show a "raw" toggle for the minified version.          | pending | —         |
