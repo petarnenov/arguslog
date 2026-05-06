@@ -8,6 +8,8 @@ import org.arguslog.worker.application.port.PersistedEventPublisher;
 import org.arguslog.worker.application.port.RuleThrottle;
 import org.arguslog.worker.application.port.SourceMapStore;
 import org.arguslog.worker.application.port.SymbolicationRepository;
+import org.arguslog.worker.retention.application.port.OrgRetentionRepository;
+import org.arguslog.worker.retention.application.port.RetentionPurgeRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
@@ -35,6 +37,8 @@ class WorkerApplicationTests {
   @MockitoBean RuleThrottle ruleThrottle;
   @MockitoBean SymbolicationRepository symbolicationRepository;
   @MockitoBean SourceMapStore sourceMapStore;
+  @MockitoBean OrgRetentionRepository orgRetentionRepository;
+  @MockitoBean RetentionPurgeRepository retentionPurgeRepository;
 
   @Test
   void contextLoads() {}
