@@ -9,18 +9,26 @@ import {
   Grid,
   Group,
   Loader,
+  SegmentedControl,
   Stack,
   Table,
   Text,
   Title,
 } from '@mantine/core';
 import { IconChevronRight } from '@tabler/icons-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams, useSearchParams } from 'react-router';
 
 import type { IssueLevel, IssueStatus } from '../api/issues';
 import { useIssue, useIssueEvents } from '../api/queries';
+
+import {
+  extractFrames,
+  hasSymbolication,
+  type RawFrame,
+  StacktraceView,
+} from './issue-detail/Stacktrace';
 
 const LEVEL_COLOR: Record<IssueLevel, string> = {
   fatal: 'red',
@@ -49,6 +57,20 @@ export function IssueDetailPage() {
 
   const issueQ = useIssue(projectId, issueId, { enabled: valid });
   const eventsQ = useIssueEvents({ projectId, issueId, cursor, limit: 25 }, { enabled: valid });
+
+  // Per-issue toggle: when any event has decoded frames, default to "original" so the user sees
+  // the symbolicated location first; the toggle lets them flip back to the bundled output for
+  // when they need to verify what the SDK actually saw.
+  const [preferOriginal, setPreferOriginal] = useState(true);
+  const eventFrames = useMemo<Record<string, RawFrame[]>>(() => {
+    const out: Record<string, RawFrame[]> = {};
+    for (const ev of eventsQ.data?.data ?? []) out[ev.id] = extractFrames(ev.payload);
+    return out;
+  }, [eventsQ.data]);
+  const anySymbolicated = useMemo(
+    () => Object.values(eventFrames).some((f) => hasSymbolication(f)),
+    [eventFrames],
+  );
 
   const formatter = useMemo(
     () =>
@@ -157,7 +179,21 @@ export function IssueDetailPage() {
 
       <Card withBorder padding="md">
         <Stack>
-          <Title order={4}>{t('issueDetail.recentEvents')}</Title>
+          <Group justify="space-between">
+            <Title order={4}>{t('issueDetail.recentEvents')}</Title>
+            {anySymbolicated && (
+              <SegmentedControl
+                size="xs"
+                value={preferOriginal ? 'original' : 'raw'}
+                onChange={(v) => setPreferOriginal(v === 'original')}
+                data={[
+                  { value: 'original', label: t('issueDetail.toggleOriginal') },
+                  { value: 'raw', label: t('issueDetail.toggleRaw') },
+                ]}
+                aria-label={t('issueDetail.toggleAria')}
+              />
+            )}
+          </Group>
           {eventsQ.isLoading && (
             <Center py="md">
               <Loader size="sm" />
@@ -181,19 +217,33 @@ export function IssueDetailPage() {
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {eventsQ.data.data.map((event) => (
-                  <Table.Tr key={event.id}>
-                    <Table.Td>{formatter.format(new Date(event.receivedAt))}</Table.Td>
-                    <Table.Td>
-                      <Code>{event.id.slice(0, 8)}</Code>
-                    </Table.Td>
-                    <Table.Td>
-                      <Code style={{ maxWidth: 480, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {previewPayload(event.payload)}
-                      </Code>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
+                {eventsQ.data.data.flatMap((event) => {
+                  const frames = eventFrames[event.id] ?? [];
+                  return [
+                    <Table.Tr key={event.id}>
+                      <Table.Td>{formatter.format(new Date(event.receivedAt))}</Table.Td>
+                      <Table.Td>
+                        <Code>{event.id.slice(0, 8)}</Code>
+                      </Table.Td>
+                      <Table.Td>
+                        <Code
+                          style={{ maxWidth: 480, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                        >
+                          {previewPayload(event.payload)}
+                        </Code>
+                      </Table.Td>
+                    </Table.Tr>,
+                    ...(frames.length > 0
+                      ? [
+                          <Table.Tr key={`${event.id}-stack`}>
+                            <Table.Td colSpan={3} style={{ paddingTop: 0 }}>
+                              <StacktraceView frames={frames} preferOriginal={preferOriginal} />
+                            </Table.Td>
+                          </Table.Tr>,
+                        ]
+                      : []),
+                  ];
+                })}
               </Table.Tbody>
             </Table>
           )}
