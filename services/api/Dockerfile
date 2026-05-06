@@ -13,14 +13,14 @@ WORKDIR /workspace
 COPY settings.gradle.kts build.gradle.kts gradlew gradlew.bat ./
 COPY gradle ./gradle
 COPY buildSrc ./buildSrc
-RUN --mount=type=cache,target=/root/.gradle \
+RUN --mount=type=cache,id=gradle-cache,target=/root/.gradle \
     ./gradlew --version --no-daemon
 
 # Now bring in the actual sources.
 COPY services ./services
 COPY java-sdk ./java-sdk
 
-RUN --mount=type=cache,target=/root/.gradle \
+RUN --mount=type=cache,id=gradle-cache,target=/root/.gradle \
     ./gradlew :services:api:bootJar -x test --no-daemon
 
 # Runtime stage — JRE only, executable boot jar copied in. eclipse-temurin matches the JDK used
