@@ -10,7 +10,7 @@
   <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
   <appender name="ARGUSLOG" class="org.arguslog.sdk.logback.ArgusLogbackAppender">
-    <minLevel>ERROR</minLevel>
+    <minLevel>${ARGUS_LOG_LEVEL:-ERROR}</minLevel>
   </appender>
 
   <root level="INFO">
