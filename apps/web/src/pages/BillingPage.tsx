@@ -82,9 +82,7 @@ export function BillingPage() {
           <Group justify="space-between" align="center" wrap="nowrap">
             <Stack gap={2}>
               <Text fw={600}>{t('billing.paymentFailedTitle')}</Text>
-              <Text size="sm">
-                {t('billing.paymentFailedBody', { days: graceDaysRemaining })}
-              </Text>
+              <Text size="sm">{t('billing.paymentFailedBody', { days: graceDaysRemaining })}</Text>
             </Stack>
             <Button
               variant="white"

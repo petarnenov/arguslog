@@ -97,10 +97,7 @@ describe('BillingPage', () => {
           exceeded: false,
         });
       }
-      if (
-        url.endsWith('/api/v1/orgs/1/billing/checkout-session') &&
-        init?.method === 'POST'
-      ) {
+      if (url.endsWith('/api/v1/orgs/1/billing/checkout-session') && init?.method === 'POST') {
         return jsonResponse({ url: 'https://checkout.stripe.com/c/sess_abc' });
       }
       throw new Error(`unexpected fetch: ${url}`);

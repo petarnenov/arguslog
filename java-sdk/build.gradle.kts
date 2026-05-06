@@ -1,18 +1,21 @@
+import com.vanniktech.maven.publish.JavaLibrary
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     `java-library`
-    `maven-publish`
+    alias(libs.plugins.mavenPublish)
     id("io.spring.dependency-management")
 }
 
 group = "org.arguslog"
+// Version is overridden by the release workflow via -Pversion=<x.y.z> when publishing.
 version = "0.0.1-SNAPSHOT"
 
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
     }
-    withSourcesJar()
-    withJavadocJar()
 }
 
 dependencyManagement {
@@ -45,21 +48,45 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-            pom {
-                name.set("Arguslog Java SDK")
-                description.set("Arguslog error tracking SDK for Java and Spring Boot.")
-                url.set("https://github.com/arguslog/arguslog")
-                licenses {
-                    license {
-                        name.set("Apache-2.0")
-                        url.set("https://www.apache.org/licenses/LICENSE-2.0")
-                    }
-                }
+mavenPublishing {
+    // CENTRAL_PORTAL is the new Maven Central path; new namespaces (like org.arguslog) cannot
+    // use the legacy OSSRH staging repository.
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+
+    // Sources + Javadoc jars are required by Maven Central. Plugin generates both from the
+    // already-configured Java toolchain.
+    configure(JavaLibrary(javadocJar = JavadocJar.Javadoc(), sourcesJar = true))
+
+    coordinates("org.arguslog", "java-sdk", project.version.toString())
+
+    // Signing is required by Central. The release workflow injects an in-memory ASCII-armored
+    // GPG key via env vars; locally `./gradlew publish` will prompt for or fail loudly without
+    // ORG_GRADLE_PROJECT_signingInMemoryKey configured.
+    signAllPublications()
+
+    pom {
+        name.set("Arguslog Java SDK")
+        description.set("Arguslog error tracking SDK for Java and Spring Boot.")
+        url.set("https://github.com/petarnenov/argus")
+        inceptionYear.set("2026")
+        licenses {
+            license {
+                name.set("Apache-2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                distribution.set("repo")
             }
+        }
+        developers {
+            developer {
+                id.set("arguslog")
+                name.set("Argus team")
+                url.set("https://arguslog.org")
+            }
+        }
+        scm {
+            url.set("https://github.com/petarnenov/argus")
+            connection.set("scm:git:git://github.com/petarnenov/argus.git")
+            developerConnection.set("scm:git:ssh://git@github.com/petarnenov/argus.git")
         }
     }
 }

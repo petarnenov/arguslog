@@ -3,3 +3,4 @@ packages:
   - 'packages/*'
   - 'cli'
   - 'e2e'
+  - 'scripts'
