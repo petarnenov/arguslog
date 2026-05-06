@@ -13,6 +13,14 @@ public interface BillingCustomerRepository {
   Optional<String> findCustomerId(long orgId);
 
   /**
+   * Reverse lookup — webhook events arrive with the Stripe customer id, not our org id, so the
+   * handler resolves which row to mutate via this. Returns empty when Stripe sends an event for a
+   * customer that was never created through our checkout (e.g. someone added the same customer to a
+   * different api environment by hand).
+   */
+  Optional<Long> findOrgIdByCustomerId(String customerId);
+
+  /**
    * Persists the Stripe customer id created by {@code checkout.session.completed}. Idempotent —
    * called from the webhook handler which Stripe redelivers on 5xx.
    */

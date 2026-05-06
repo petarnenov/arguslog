@@ -32,6 +32,18 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
   }
 
   @Override
+  public Optional<Long> findOrgIdByCustomerId(String customerId) {
+    try {
+      Long id =
+          jdbc.queryForObject(
+              "SELECT id FROM organizations WHERE stripe_customer_id = ?", Long.class, customerId);
+      return Optional.ofNullable(id);
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
+  }
+
+  @Override
   public void saveCustomerId(long orgId, String customerId) {
     jdbc.update(
         "UPDATE organizations SET stripe_customer_id = ?, updated_at = NOW() WHERE id = ?",
@@ -45,6 +57,8 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
         "UPDATE organizations SET plan = ?::org_plan, plan_renews_at = ?, updated_at = NOW()"
             + " WHERE id = ?",
         new Object[] {planDbValue, renewsAt == null ? null : Timestamp.from(renewsAt), orgId},
-        new int[] {Types.OTHER, Types.TIMESTAMP_WITH_TIMEZONE, Types.BIGINT});
+        // Use TIMESTAMP not TIMESTAMP_WITH_TIMEZONE — the latter refuses java.sql.Timestamp; the
+        // Postgres JDBC driver coerces UTC-anchored Timestamps into TIMESTAMPTZ correctly anyway.
+        new int[] {Types.OTHER, Types.TIMESTAMP, Types.BIGINT});
   }
 }

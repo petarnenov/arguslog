@@ -217,6 +217,42 @@
         }
       }
     },
+    "/api/v1/webhooks/stripe" : {
+      "post" : {
+        "tags" : [ "stripe-webhook-controller" ],
+        "operationId" : "receive",
+        "parameters" : [ {
+          "name" : "Stripe-Signature",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{projectId}/releases" : {
       "get" : {
         "tags" : [ "release-controller" ],
