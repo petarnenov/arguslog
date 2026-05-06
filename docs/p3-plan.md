@@ -74,6 +74,90 @@ The two tracks are independent until #6 / #11 (web). Either can ship first.
 - Tests follow the layered convention: pure unit + Testcontainers integration + (where it counts)
   contract via Pact / OpenAPI / realm-import snapshot.
 
+## Resume here (next session)
+
+**Where we stopped:** alerts track 100% done; symbolication api + CLI done; **#10 + #11 remain**.
+The api side already mints presigned PUT URLs and the CLI already uploads to R2, so worker just
+needs to read the bytes back, decode, and enrich event payloads before persist.
+
+### #10 — worker symbolication (next up)
+
+Reads `source_map_artifacts` from Postgres, fetches the `.map` from R2, decodes the top frames of
+JS exception payloads, and writes the enriched payload back **before** `ProcessEventService` runs
+fingerprint+persist (so a fingerprint over the original frame stays stable across re-uploads).
+
+**Plan locked in this session (decisions to honor on resume):**
+
+- **Trigger:** event payload carries `release: "<version>"` (SDK responsibility — out of scope for
+  worker; if missing, symbolicator is a no-op).
+- **Lookup:** `(projectId, release version)` → `release_id`, then `(release_id, originalPath)` →
+  `r2_key`. Frame's `filename` is normalised by stripping the leading `/` and any cache-busting
+  hash segment (CLI's `--name` flag is the canonical authority for what gets recorded as
+  `originalPath`).
+- **Fetch + cache:** Caffeine LRU bounded to 256 parsed maps, keyed by `r2_key`. Miss → S3
+  `getObject` against the configured R2 endpoint (worker already has `aws.s3` dep; copy
+  `R2Properties` + `R2Config` from api as `arguslog.r2.*` matches the existing config block).
+- **VLQ + parser:** hand-rolled. Sourcemap v3 spec is small (~150 lines incl. `;`/`,` segment
+  walk). No third-party sourcemap library — keeps the dep surface minimal.
+- **Frame mutation:** add fields to each frame in place (don't drop the originals — the dashboard
+  may want a "raw" toggle in #11):
+    - `originalFilename`, `originalLineno`, `originalColno`, `originalFunction`
+- **Hook point:** new `Symbolicator` port → `String symbolicate(long projectId, String rawPayload)`.
+  `ProcessEventService.process` calls it BEFORE `fingerprinter.compute(...)` so the fingerprint
+  reflects the symbolicated frames. No-op when `release` is missing or no artifact resolves.
+- **Failure mode:** any error inside symbolicator (R2 down, malformed sourcemap, decode bug) is
+  logged at warn and the original payload returns through unchanged. Symbolication failure must
+  never drop the event.
+
+**Files to add (estimate ~14 source + 5 test):**
+
+| File | Purpose |
+| --- | --- |
+| `worker/build.gradle.kts` | add `caffeine` dep |
+| `gradle/libs.versions.toml` | `caffeine = "com.github.ben-manes.caffeine:caffeine:3.1.8"` |
+| `worker/application/port/Symbolicator.java` | port |
+| `worker/application/CachingSymbolicator.java` | impl + Caffeine cache |
+| `worker/application/port/SymbolicationRepository.java` | `findArtifact(projectId, version, originalPath)` |
+| `worker/application/port/SourceMapStore.java` | fetch raw `.map` bytes by `r2_key` |
+| `worker/domain/ParsedSourceMap.java` | parsed map + lookup `(line,col) → original` |
+| `worker/adapter/out/sourcemap/SourceMapJsonParser.java` | JSON → ParsedSourceMap |
+| `worker/adapter/out/sourcemap/Vlq.java` | base64-VLQ decode util |
+| `worker/adapter/out/postgres/JdbcSymbolicationRepository.java` | `(projectId, version)` JOIN |
+| `worker/adapter/out/r2/R2Properties.java` | copy from api (worker uses same `arguslog.r2.*`) |
+| `worker/adapter/out/r2/R2Config.java` | S3Client only (no presigner needed worker-side) |
+| `worker/adapter/out/r2/S3SourceMapStore.java` | adapter |
+| `worker/application/ProcessEventService.java` | call symbolicator before fingerprint |
+
+**Tests:**
+
+- `VlqTest` — decode known fixtures from sourcemap v3 spec
+- `SourceMapJsonParserTest` — small handcrafted `.map` fixture
+- `ParsedSourceMapTest` — `(line,col) → (sourceFile,line,col,name)` lookup
+- `CachingSymbolicatorTest` — mock store + repo, verify frame enrichment + cache hit on second call
+- `JdbcSymbolicationRepositoryTest` — Testcontainers, two-hop join
+
+Plus update `WorkerApplicationTests` smoke with `@MockitoBean SymbolicationRepository` +
+`SourceMapStore`.
+
+### #11 — web symbolicated frames (after #10)
+
+Display the enriched frame fields on `IssueDetailPage` with a "raw" toggle that swaps in
+`filename`/`lineno`/`colno` from the original frame. New api work needed: include the full
+`payload.exception.values[*].stacktrace.frames` in the `IssueEvent` response (likely already there
+— verify before touching api). Pure web work otherwise.
+
+### Carry-forwards / open TODOs from earlier in P3
+
+- **AesGcmSecretCipher duplication** (`api/.../crypto/` + `worker/.../crypto/`) — extract to a
+  shared module in P4.
+- **RLS owner-bypass in tests** — JdbcReleaseRepositoryTest etc. document this; resolve by
+  splitting test container roles in P4.
+- **PAT scopes** — currently single implicit `pat` scope. Per-resource scopes
+  (`releases:write`, `sourcemaps:write`, …) deferred to P4.
+- **Web tokens UI** — PAT api landed without a "Personal access tokens" page on the dashboard.
+  Either add a minimal page early in P4 or surface tokens via the OnboardingPage so users can
+  mint one without curl.
+
 ## Out of scope for P3 (revisit later)
 
 - Real KMS / Cloudflare Workers Secrets integration (P4 billing setup landing zone).
