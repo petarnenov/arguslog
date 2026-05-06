@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.arguslog.api.adapter.in.web.dto.OrgRequest;
 import org.arguslog.api.adapter.in.web.dto.OrgResponse;
 import org.arguslog.api.application.OrgUseCase;
+import org.arguslog.api.application.OrgUseCase.DuplicateOrgException;
 import org.arguslog.api.application.OrgUseCase.InvalidOrgException;
 import org.arguslog.api.domain.Org;
 import org.springframework.http.HttpStatus;
@@ -56,6 +57,16 @@ public class OrgController {
     body.setTitle("Invalid org");
     body.setType(URI.create("https://arguslog.dev/problems/invalid-org"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(DuplicateOrgException.class)
+  ResponseEntity<ProblemDetail> handleDuplicate(DuplicateOrgException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+    body.setTitle("Duplicate org");
+    body.setType(URI.create("https://arguslog.dev/problems/duplicate-org"));
+    return ResponseEntity.status(HttpStatus.CONFLICT)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }

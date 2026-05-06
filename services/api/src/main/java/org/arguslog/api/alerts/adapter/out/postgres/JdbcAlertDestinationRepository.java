@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
+import org.arguslog.api.alerts.application.AlertDestinationUseCase.DuplicateDestinationException;
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
 import org.arguslog.api.alerts.application.port.SecretCipher;
 import org.arguslog.api.alerts.domain.AlertDestination;
@@ -32,17 +33,26 @@ public class JdbcAlertDestinationRepository implements AlertDestinationRepositor
   public AlertDestination create(long orgId, DestinationKind kind, String name, String configJson) {
     pinOrgContextForRls();
     byte[] encrypted = cipher.encrypt(configJson.getBytes(StandardCharsets.UTF_8));
-    return jdbc.queryForObject(
-        """
-            INSERT INTO alert_destinations (org_id, kind, name, config_encrypted)
-                 VALUES (?, ?::destination_kind, ?, ?)
-              RETURNING id, org_id, kind::text, name, config_encrypted, created_at
-            """,
-        rowMapper,
-        orgId,
-        kind.dbValue(),
-        name,
-        encrypted);
+    // ON CONFLICT DO NOTHING avoids leaking a 500 when (org_id, name) collides — the controller
+    // maps DuplicateDestinationException to 409 with a friendly problem+json body.
+    AlertDestination inserted =
+        jdbc.query(
+            """
+                INSERT INTO alert_destinations (org_id, kind, name, config_encrypted)
+                     VALUES (?, ?::destination_kind, ?, ?)
+                ON CONFLICT (org_id, name) DO NOTHING
+                  RETURNING id, org_id, kind::text, name, config_encrypted, created_at
+                """,
+            rs -> rs.next() ? mapRow(rs, 0) : null,
+            orgId,
+            kind.dbValue(),
+            name,
+            encrypted);
+    if (inserted == null) {
+      throw new DuplicateDestinationException(
+          "A destination named '" + name + "' already exists in this organization.");
+    }
+    return inserted;
   }
 
   @Override

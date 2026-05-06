@@ -20,4 +20,13 @@ public interface ProjectUseCase {
       super(message);
     }
   }
+
+  /** Thrown when a project with the derived slug already exists in the same org. */
+  final class DuplicateProjectException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    public DuplicateProjectException(String message) {
+      super(message);
+    }
+  }
 }

@@ -18,4 +18,13 @@ public interface OrgUseCase {
       super(message);
     }
   }
+
+  /** Thrown when an org with the derived slug already exists (per-instance unique). */
+  final class DuplicateOrgException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    public DuplicateOrgException(String message) {
+      super(message);
+    }
+  }
 }

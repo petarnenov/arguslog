@@ -5,6 +5,7 @@ import java.util.List;
 import org.arguslog.api.alerts.adapter.in.web.dto.AlertDestinationRequest;
 import org.arguslog.api.alerts.adapter.in.web.dto.AlertDestinationResponse;
 import org.arguslog.api.alerts.application.AlertDestinationUseCase;
+import org.arguslog.api.alerts.application.AlertDestinationUseCase.DuplicateDestinationException;
 import org.arguslog.api.alerts.application.AlertDestinationUseCase.InvalidDestinationConfigException;
 import org.arguslog.api.alerts.domain.AlertDestination;
 import org.arguslog.api.alerts.domain.DestinationKind;
@@ -89,6 +90,16 @@ public class AlertDestinationController {
     body.setTitle("Invalid alert destination");
     body.setType(URI.create("https://arguslog.dev/problems/invalid-alert-destination"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(DuplicateDestinationException.class)
+  ResponseEntity<ProblemDetail> handleDuplicate(DuplicateDestinationException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+    body.setTitle("Duplicate alert destination");
+    body.setType(URI.create("https://arguslog.dev/problems/duplicate-alert-destination"));
+    return ResponseEntity.status(HttpStatus.CONFLICT)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }
