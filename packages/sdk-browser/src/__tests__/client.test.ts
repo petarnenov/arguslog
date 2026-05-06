@@ -19,7 +19,7 @@ describe('ArgusClient', () => {
 
   function makeClient(extra: Partial<ArgusOptions> = {}): ArgusClient {
     return new ArgusClient({
-      dsn: 'http://k@localhost:8080/1',
+      dsn: 'arguslog://k@localhost:8080/api/1',
       environment: 'test',
       release: '0.0.0',
       transport: { fetch: fetchMock as unknown as typeof fetch, maxRetries: 0 },

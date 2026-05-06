@@ -12,7 +12,7 @@ describe('ArgusErrorBoundary', () => {
   beforeEach(() => {
     __resetForTests();
     init({
-      dsn: 'http://k@localhost:8080/1',
+      dsn: 'arguslog://k@localhost:8080/api/1',
       transport: {
         fetch: vi.fn(async () => new Response(null, { status: 202 })) as unknown as typeof fetch,
       },
