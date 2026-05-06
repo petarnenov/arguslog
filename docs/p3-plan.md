@@ -27,7 +27,7 @@
 | 7c  | API: PAT auth — `personal_access_tokens` table + `/api/v1/me/tokens` + Spring Security PAT filter.          | ✅ done | `a313415` |
 | 8   | CLI: `arguslog sourcemaps upload <release> <path>` — multipart upload to R2 via api signed URL.             | ✅ done | `3aa72f3` |
 | 9   | API: signed-URL endpoint for sourcemap PUTs; persists to `source_map_artifacts`.                            | ✅ done | `22d598b` |
-| 10  | Worker: symbolication — for JS events, fetch matching sourcemap from R2, decode top frames before persist.  | pending | —         |
+| 10  | Worker: symbolication — for JS events, fetch matching sourcemap from R2, decode top frames before persist.  | ✅ done | `11a86fc` |
 | 11  | Web: surface symbolicated frames on IssueDetailPage; show a "raw" toggle for the minified version.          | pending | —         |
 
 ## Recommended starting order
