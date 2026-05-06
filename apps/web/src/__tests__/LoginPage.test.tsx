@@ -15,7 +15,7 @@ describe('LoginPage', () => {
         </MemoryRouter>
       </MantineProvider>,
     );
-    expect(screen.getByText('Argus')).toBeInTheDocument();
+    expect(screen.getByText('Arguslog')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 });

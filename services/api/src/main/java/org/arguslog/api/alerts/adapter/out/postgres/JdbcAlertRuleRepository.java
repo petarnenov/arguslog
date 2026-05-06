@@ -46,10 +46,10 @@ public class JdbcAlertRuleRepository implements AlertRuleRepository {
                         throttle_seconds, enabled, created_at
             """,
         new Object[] {
-            projectId, name, serialize(conditions), serialize(actions), throttleSeconds, enabled
+          projectId, name, serialize(conditions), serialize(actions), throttleSeconds, enabled
         },
         new int[] {
-            Types.BIGINT, Types.VARCHAR, Types.OTHER, Types.OTHER, Types.INTEGER, Types.BOOLEAN,
+          Types.BIGINT, Types.VARCHAR, Types.OTHER, Types.OTHER, Types.INTEGER, Types.BOOLEAN,
         },
         rowMapper);
   }
@@ -99,29 +99,30 @@ public class JdbcAlertRuleRepository implements AlertRuleRepository {
       int throttleSeconds,
       boolean enabled) {
     pinOrgContextForRls();
-    int updated = jdbc.update(
-        """
+    int updated =
+        jdbc.update(
+            """
             UPDATE alert_rules
                SET name = ?, conditions = ?::jsonb, actions = ?::jsonb,
                    throttle_seconds = ?, enabled = ?
              WHERE project_id = ? AND id = ?
             """,
-        name,
-        serialize(conditions),
-        serialize(actions),
-        throttleSeconds,
-        enabled,
-        projectId,
-        id);
-    if (updated == 0)
-      return Optional.empty();
+            name,
+            serialize(conditions),
+            serialize(actions),
+            throttleSeconds,
+            enabled,
+            projectId,
+            id);
+    if (updated == 0) return Optional.empty();
     return find(projectId, id);
   }
 
   @Override
   public boolean delete(long projectId, long id) {
     pinOrgContextForRls();
-    return jdbc.update("DELETE FROM alert_rules WHERE project_id = ? AND id = ?", projectId, id) > 0;
+    return jdbc.update("DELETE FROM alert_rules WHERE project_id = ? AND id = ?", projectId, id)
+        > 0;
   }
 
   private void pinOrgContextForRls() {

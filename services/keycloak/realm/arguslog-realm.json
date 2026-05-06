@@ -15,7 +15,7 @@
     "host": "mailhog",
     "port": "1025",
     "from": "noreply@arguslog.local",
-    "fromDisplayName": "Argus",
+    "fromDisplayName": "Arguslog",
     "starttls": "false",
     "auth": "false"
   },
@@ -56,7 +56,7 @@
       },
       {
         "name": "arguslog:staff",
-        "description": "Internal Argus operator"
+        "description": "Internal Arguslog operator"
       }
     ]
   },

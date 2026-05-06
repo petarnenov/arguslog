@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 /**
  * Sends alert emails via the Resend HTTP API (no SDK — keeps worker dep-free). Plain-text body to
  * stay well under spam-filter thresholds. Per-destination config is just {@code {to: "..."}};
- * {@code from} is global so a single Argus install can verify one sender domain.
+ * {@code from} is global so a single Arguslog install can verify one sender domain.
  */
 @Component
 @EnableConfigurationProperties(EmailProperties.class)
@@ -39,7 +39,8 @@ public class ResendEmailDispatcher implements AlertDispatcher {
     this.mapper = mapper;
     this.http = HttpClient.newBuilder().connectTimeout(props.timeout()).build();
     if (!props.configured()) {
-      log.warn("argus.alerts.email.api-key is empty — email dispatch will log-and-drop until set");
+      log.warn(
+          "arguslog.alerts.email.api-key is empty — email dispatch will log-and-drop until set");
     }
   }
 
@@ -115,7 +116,7 @@ public class ResendEmailDispatcher implements AlertDispatcher {
   }
 
   private String renderSubject(Alert a) {
-    return "[Argus] " + a.level() + " in " + a.projectSlug() + ": " + a.issueTitle();
+    return "[Arguslog] " + a.level() + " in " + a.projectSlug() + ": " + a.issueTitle();
   }
 
   private String renderBody(Alert a) {

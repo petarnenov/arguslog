@@ -124,7 +124,7 @@ public class SlackAlertDispatcher implements AlertDispatcher {
         + ISO.format(a.firstSeenAt())
         + "\n<"
         + url
-        + "|Open in Argus>"
+        + "|Open in Arguslog>"
         + "\n_rule: "
         + a.ruleName()
         + "_";

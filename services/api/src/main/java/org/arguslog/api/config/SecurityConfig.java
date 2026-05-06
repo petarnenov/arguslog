@@ -24,16 +24,16 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsSource()))
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
-            authz -> authz
-                .requestMatchers(
-                    "/actuator/health/**", "/api/v1/info", "/v3/api-docs/**", "/swagger-ui/**")
-                .permitAll()
-                .requestMatchers("/api/v1/webhooks/stripe")
-                .permitAll()
-                .anyRequest()
-                .authenticated())
-        .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
-        }));
+            authz ->
+                authz
+                    .requestMatchers(
+                        "/actuator/health/**", "/api/v1/info", "/v3/api-docs/**", "/swagger-ui/**")
+                    .permitAll()
+                    .requestMatchers("/api/v1/webhooks/stripe")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
     return http.build();
   }
 

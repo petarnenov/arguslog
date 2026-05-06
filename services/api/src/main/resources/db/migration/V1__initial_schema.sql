@@ -1,4 +1,4 @@
--- Argus initial schema. Owned by arguslog-api service.
+-- Arguslog initial schema. Owned by arguslog-api service.
 -- TimescaleDB-backed multi-tenant error tracking schema.
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;

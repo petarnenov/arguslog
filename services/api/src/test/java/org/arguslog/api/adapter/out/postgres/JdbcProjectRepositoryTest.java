@@ -21,12 +21,13 @@ import org.testcontainers.utility.DockerImageName;
 class JdbcProjectRepositoryTest {
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
-      DockerImageName.parse("timescale/timescaledb:latest-pg16")
-          .asCompatibleSubstituteFor("postgres"))
-      .withDatabaseName("arguslog")
-      .withUsername("arguslog")
-      .withPassword("arguslog");
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>(
+              DockerImageName.parse("timescale/timescaledb:latest-pg16")
+                  .asCompatibleSubstituteFor("postgres"))
+          .withDatabaseName("arguslog")
+          .withUsername("arguslog")
+          .withPassword("arguslog");
 
   private static HikariDataSource dataSource;
   private static ProjectRepository repository;
@@ -45,8 +46,7 @@ class JdbcProjectRepositoryTest {
 
   @AfterAll
   static void stop() {
-    if (dataSource != null)
-      dataSource.close();
+    if (dataSource != null) dataSource.close();
   }
 
   @Test

@@ -76,7 +76,7 @@ class ResendEmailDispatcherTest {
     assertThat(body.path("from").asText()).isEqualTo("alerts@argus.example");
     assertThat(body.path("to").get(0).asText()).isEqualTo("ops@example.com");
     assertThat(body.path("subject").asText())
-        .contains("[Argus]")
+        .contains("[Arguslog]")
         .contains("error")
         .contains("web")
         .contains("TypeError");

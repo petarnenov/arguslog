@@ -1,6 +1,6 @@
 name: Deploy
 
-# Manual deploy of one or more Argus services to Railway.
+# Manual deploy of one or more Arguslog services to Railway.
 #
 # Authoritative deploy path is the Railway GitHub App (auto on push to main,
 # scoped per-service via Watch Paths). This workflow is the manual fallback

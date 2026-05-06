@@ -31,12 +31,13 @@ import org.testcontainers.utility.DockerImageName;
 class JdbcAlertDestinationRepositoryTest {
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
-      DockerImageName.parse("timescale/timescaledb:latest-pg16")
-          .asCompatibleSubstituteFor("postgres"))
-      .withDatabaseName("arguslog")
-      .withUsername("arguslog")
-      .withPassword("arguslog");
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>(
+              DockerImageName.parse("timescale/timescaledb:latest-pg16")
+                  .asCompatibleSubstituteFor("postgres"))
+          .withDatabaseName("arguslog")
+          .withUsername("arguslog")
+          .withPassword("arguslog");
 
   private static HikariDataSource dataSource;
   private static AlertDestinationRepository repository;
@@ -52,47 +53,48 @@ class JdbcAlertDestinationRepositoryTest {
     seed(dataSource);
 
     TransactionTemplate tx = new TransactionTemplate(new JdbcTransactionManager(dataSource));
-    JdbcAlertDestinationRepository raw = new JdbcAlertDestinationRepository(
-        dataSource,
-        new AesGcmSecretCipher(
-            java.util.Base64.getEncoder()
-                .encodeToString("the-key-must-be-32-bytes-long!!!".getBytes())));
+    JdbcAlertDestinationRepository raw =
+        new JdbcAlertDestinationRepository(
+            dataSource,
+            new AesGcmSecretCipher(
+                java.util.Base64.getEncoder()
+                    .encodeToString("the-key-must-be-32-bytes-long!!!".getBytes())));
     // Wrap so SET LOCAL inside pinOrgContextForRls scopes to the call's
     // transaction.
-    repository = new AlertDestinationRepository() {
-      @Override
-      public AlertDestination create(
-          long orgId, DestinationKind kind, String name, String configJson) {
-        return tx.execute(s -> raw.create(orgId, kind, name, configJson));
-      }
+    repository =
+        new AlertDestinationRepository() {
+          @Override
+          public AlertDestination create(
+              long orgId, DestinationKind kind, String name, String configJson) {
+            return tx.execute(s -> raw.create(orgId, kind, name, configJson));
+          }
 
-      @Override
-      public List<AlertDestination> listForOrg(long orgId) {
-        return tx.execute(s -> raw.listForOrg(orgId));
-      }
+          @Override
+          public List<AlertDestination> listForOrg(long orgId) {
+            return tx.execute(s -> raw.listForOrg(orgId));
+          }
 
-      @Override
-      public Optional<AlertDestination> find(long orgId, long id) {
-        return tx.execute(s -> raw.find(orgId, id));
-      }
+          @Override
+          public Optional<AlertDestination> find(long orgId, long id) {
+            return tx.execute(s -> raw.find(orgId, id));
+          }
 
-      @Override
-      public Optional<AlertDestination> update(
-          long orgId, long id, String name, String configJson) {
-        return tx.execute(s -> raw.update(orgId, id, name, configJson));
-      }
+          @Override
+          public Optional<AlertDestination> update(
+              long orgId, long id, String name, String configJson) {
+            return tx.execute(s -> raw.update(orgId, id, name, configJson));
+          }
 
-      @Override
-      public boolean delete(long orgId, long id) {
-        return Boolean.TRUE.equals(tx.execute(s -> raw.delete(orgId, id)));
-      }
-    };
+          @Override
+          public boolean delete(long orgId, long id) {
+            return Boolean.TRUE.equals(tx.execute(s -> raw.delete(orgId, id)));
+          }
+        };
   }
 
   @AfterAll
   static void stop() {
-    if (dataSource != null)
-      dataSource.close();
+    if (dataSource != null) dataSource.close();
   }
 
   @BeforeEach
@@ -110,7 +112,8 @@ class JdbcAlertDestinationRepositoryTest {
 
   @Test
   void roundTripsConfigThroughEncryption() {
-    AlertDestination created = repository.create(1L, DestinationKind.TELEGRAM, "ops", "{\"chatId\":\"-100\"}");
+    AlertDestination created =
+        repository.create(1L, DestinationKind.TELEGRAM, "ops", "{\"chatId\":\"-100\"}");
     AlertDestination loaded = repository.find(1L, created.id()).orElseThrow();
     assertThat(loaded.configJson()).isEqualTo("{\"chatId\":\"-100\"}");
     assertThat(loaded.kind()).isEqualTo(DestinationKind.TELEGRAM);
@@ -121,7 +124,8 @@ class JdbcAlertDestinationRepositoryTest {
   void persistsCiphertextNotPlaintextInTheDb() throws Exception {
     repository.create(1L, DestinationKind.WEBHOOK, "ci", "{\"url\":\"https://example.com/hook\"}");
     try (Connection conn = dataSource.getConnection();
-        PreparedStatement stmt = conn.prepareStatement("SELECT config_encrypted FROM alert_destinations LIMIT 1");
+        PreparedStatement stmt =
+            conn.prepareStatement("SELECT config_encrypted FROM alert_destinations LIMIT 1");
         var rs = stmt.executeQuery()) {
       rs.next();
       byte[] raw = rs.getBytes(1);
@@ -135,9 +139,11 @@ class JdbcAlertDestinationRepositoryTest {
 
   @Test
   void listOrdersByCreatedDescId() throws InterruptedException {
-    AlertDestination first = repository.create(1L, DestinationKind.WEBHOOK, "a", "{\"url\":\"https://1\"}");
+    AlertDestination first =
+        repository.create(1L, DestinationKind.WEBHOOK, "a", "{\"url\":\"https://1\"}");
     Thread.sleep(5);
-    AlertDestination second = repository.create(1L, DestinationKind.WEBHOOK, "b", "{\"url\":\"https://2\"}");
+    AlertDestination second =
+        repository.create(1L, DestinationKind.WEBHOOK, "b", "{\"url\":\"https://2\"}");
 
     List<AlertDestination> page = repository.listForOrg(1L);
     assertThat(page).extracting(AlertDestination::id).containsExactly(second.id(), first.id());
@@ -145,10 +151,13 @@ class JdbcAlertDestinationRepositoryTest {
 
   @Test
   void updateOnlyTouchesTheRequestedRow() {
-    AlertDestination kept = repository.create(1L, DestinationKind.WEBHOOK, "kept", "{\"url\":\"https://k\"}");
-    AlertDestination edited = repository.create(1L, DestinationKind.WEBHOOK, "edited", "{\"url\":\"https://e\"}");
+    AlertDestination kept =
+        repository.create(1L, DestinationKind.WEBHOOK, "kept", "{\"url\":\"https://k\"}");
+    AlertDestination edited =
+        repository.create(1L, DestinationKind.WEBHOOK, "edited", "{\"url\":\"https://e\"}");
 
-    Optional<AlertDestination> updated = repository.update(1L, edited.id(), "renamed", "{\"url\":\"https://e2\"}");
+    Optional<AlertDestination> updated =
+        repository.update(1L, edited.id(), "renamed", "{\"url\":\"https://e2\"}");
 
     assertThat(updated).isPresent();
     assertThat(updated.orElseThrow().name()).isEqualTo("renamed");
@@ -158,7 +167,8 @@ class JdbcAlertDestinationRepositoryTest {
 
   @Test
   void deleteIsAccountedFor() {
-    AlertDestination created = repository.create(1L, DestinationKind.WEBHOOK, "k", "{\"url\":\"https://k\"}");
+    AlertDestination created =
+        repository.create(1L, DestinationKind.WEBHOOK, "k", "{\"url\":\"https://k\"}");
     assertThat(repository.delete(1L, created.id())).isTrue();
     assertThat(repository.delete(1L, created.id())).isFalse();
     assertThat(repository.find(1L, created.id())).isEmpty();
@@ -166,7 +176,8 @@ class JdbcAlertDestinationRepositoryTest {
 
   @Test
   void wrongOrgCannotSeeOrMutate() {
-    AlertDestination created = repository.create(1L, DestinationKind.WEBHOOK, "k", "{\"url\":\"https://k\"}");
+    AlertDestination created =
+        repository.create(1L, DestinationKind.WEBHOOK, "k", "{\"url\":\"https://k\"}");
     assertThat(repository.find(2L, created.id())).isEmpty();
     assertThat(repository.update(2L, created.id(), "x", "{\"url\":\"https://x\"}")).isEmpty();
     assertThat(repository.delete(2L, created.id())).isFalse();

@@ -29,27 +29,29 @@ class TelegramAlertDispatcherTest {
   private TelegramAlertDispatcher dispatcher;
   private final ObjectMapper mapper = new ObjectMapper();
 
-  private final Alert alert = new Alert(
-      7L,
-      "errors-in-prod",
-      101L,
-      "web",
-      "acme",
-      42L,
-      "TypeError: x is undefined",
-      "error",
-      5L,
-      Instant.parse("2026-05-05T11:55:00Z"),
-      Instant.parse("2026-05-05T12:00:00Z"));
+  private final Alert alert =
+      new Alert(
+          7L,
+          "errors-in-prod",
+          101L,
+          "web",
+          "acme",
+          42L,
+          "TypeError: x is undefined",
+          "error",
+          5L,
+          Instant.parse("2026-05-05T11:55:00Z"),
+          Instant.parse("2026-05-05T12:00:00Z"));
 
   @BeforeEach
   void startWireMock() {
     wm = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
     wm.start();
-    dispatcher = new TelegramAlertDispatcher(
-        new TelegramProperties(
-            wm.baseUrl(), BOT_TOKEN, "https://arguslog.example", Duration.ofSeconds(2)),
-        mapper);
+    dispatcher =
+        new TelegramAlertDispatcher(
+            new TelegramProperties(
+                wm.baseUrl(), BOT_TOKEN, "https://arguslog.example", Duration.ofSeconds(2)),
+            mapper);
   }
 
   @AfterEach
@@ -114,10 +116,11 @@ class TelegramAlertDispatcherTest {
     wm.stubFor(
         post(urlPathEqualTo(SEND_PATH))
             .willReturn(aResponse().withStatus(200).withFixedDelay(5_000)));
-    TelegramAlertDispatcher fast = new TelegramAlertDispatcher(
-        new TelegramProperties(
-            wm.baseUrl(), BOT_TOKEN, "https://arguslog.example", Duration.ofMillis(150)),
-        mapper);
+    TelegramAlertDispatcher fast =
+        new TelegramAlertDispatcher(
+            new TelegramProperties(
+                wm.baseUrl(), BOT_TOKEN, "https://arguslog.example", Duration.ofMillis(150)),
+            mapper);
 
     fast.dispatch(alert, telegramDestination("{\"chatId\":\"-1\"}"));
     // Reaching this line means the dispatcher absorbed the timeout instead of
@@ -126,10 +129,11 @@ class TelegramAlertDispatcherTest {
 
   @Test
   void emptyBotTokenDropsTheMessage() {
-    TelegramAlertDispatcher unconfigured = new TelegramAlertDispatcher(
-        new TelegramProperties(
-            wm.baseUrl(), "", "https://arguslog.example", Duration.ofSeconds(2)),
-        mapper);
+    TelegramAlertDispatcher unconfigured =
+        new TelegramAlertDispatcher(
+            new TelegramProperties(
+                wm.baseUrl(), "", "https://arguslog.example", Duration.ofSeconds(2)),
+            mapper);
     unconfigured.dispatch(alert, telegramDestination("{\"chatId\":\"-1\"}"));
     wm.verify(0, postRequestedFor(urlPathEqualTo(SEND_PATH)));
   }
@@ -137,18 +141,19 @@ class TelegramAlertDispatcherTest {
   @Test
   void escapesMarkdownControlCharsInProjectAndTitle() throws Exception {
     wm.stubFor(post(urlPathEqualTo(SEND_PATH)).willReturn(aResponse().withStatus(200)));
-    Alert tricky = new Alert(
-        1L,
-        "rule_with_underscores",
-        101L,
-        "web*name",
-        "acme",
-        42L,
-        "fail _at_ `boot`",
-        "error",
-        1L,
-        Instant.parse("2026-05-05T12:00:00Z"),
-        Instant.parse("2026-05-05T12:00:00Z"));
+    Alert tricky =
+        new Alert(
+            1L,
+            "rule_with_underscores",
+            101L,
+            "web*name",
+            "acme",
+            42L,
+            "fail _at_ `boot`",
+            "error",
+            1L,
+            Instant.parse("2026-05-05T12:00:00Z"),
+            Instant.parse("2026-05-05T12:00:00Z"));
     dispatcher.dispatch(tricky, telegramDestination("{\"chatId\":\"-1\"}"));
 
     var requests = wm.findAll(postRequestedFor(urlPathEqualTo(SEND_PATH)));

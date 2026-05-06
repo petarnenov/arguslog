@@ -60,7 +60,7 @@ The two tracks are independent until #6 / #11 (web). Either can ship first.
   in `source_map_artifacts.r2_key`.
 - **Sourcemap fetch:** worker uses Caffeine + R2 client; LRU bounded to 256 maps to keep heap
   predictable. Cache miss → R2 GET via SDK presigned URL (or direct if same VPC).
-- **CLI auth:** uses an Argus PAT (created via web app, stored in `~/.arguslog/credentials`). API
+- **CLI auth:** uses an Arguslog PAT (created via web app, stored in `~/.arguslog/credentials`). API
   exchanges PAT for a short-lived JWT for upload URL signing.
 
 ## Carry-forwards from P1 / P2

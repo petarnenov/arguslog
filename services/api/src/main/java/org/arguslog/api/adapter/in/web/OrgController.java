@@ -70,10 +70,8 @@ public class OrgController {
   }
 
   private static String firstNonBlank(String a, String b) {
-    if (a != null && !a.isBlank())
-      return a;
-    if (b != null && !b.isBlank())
-      return b;
+    if (a != null && !a.isBlank()) return a;
+    if (b != null && !b.isBlank()) return b;
     return null;
   }
 }

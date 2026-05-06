@@ -2,7 +2,7 @@
   "name": "arguslog",
   "version": "0.0.0",
   "private": true,
-  "description": "Argus — multi-tenant error tracking platform",
+  "description": "Arguslog — multi-tenant error tracking platform",
   "license": "MIT",
   "packageManager": "pnpm@9.10.0",
   "engines": {

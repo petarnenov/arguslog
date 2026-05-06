@@ -78,7 +78,7 @@ class WebhookAlertDispatcherTest {
     assertThat(a.path("occurrenceCount").asLong()).isEqualTo(5L);
     assertThat(a.path("url").asText())
         .isEqualTo("https://argus.example/orgs/acme/projects/web/issues/42");
-    assertThat(requests.get(0).getHeader("X-Argus-Signature")).isNull();
+    assertThat(requests.get(0).getHeader("X-Arguslog-Signature")).isNull();
   }
 
   @Test
@@ -93,7 +93,7 @@ class WebhookAlertDispatcherTest {
 
     var requests = wm.findAll(postRequestedFor(urlPathEqualTo(HOOK_PATH)));
     assertThat(requests).hasSize(1);
-    String header = requests.get(0).getHeader("X-Argus-Signature");
+    String header = requests.get(0).getHeader("X-Arguslog-Signature");
     assertThat(header).startsWith("sha256=");
     String expected = "sha256=" + hmacHex(secret, requests.get(0).getBodyAsString());
     assertThat(header).isEqualTo(expected);
@@ -107,7 +107,7 @@ class WebhookAlertDispatcherTest {
         webhookDestination("{\"url\":\"" + wm.baseUrl() + HOOK_PATH + "\",\"secret\":\"   \"}"));
     var requests = wm.findAll(postRequestedFor(urlPathEqualTo(HOOK_PATH)));
     assertThat(requests).hasSize(1);
-    assertThat(requests.get(0).getHeader("X-Argus-Signature")).isNull();
+    assertThat(requests.get(0).getHeader("X-Arguslog-Signature")).isNull();
   }
 
   @Test

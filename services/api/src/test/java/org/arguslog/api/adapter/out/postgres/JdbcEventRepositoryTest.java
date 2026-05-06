@@ -33,12 +33,13 @@ import org.testcontainers.utility.DockerImageName;
 class JdbcEventRepositoryTest {
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
-      DockerImageName.parse("timescale/timescaledb:latest-pg16")
-          .asCompatibleSubstituteFor("postgres"))
-      .withDatabaseName("arguslog")
-      .withUsername("arguslog")
-      .withPassword("arguslog");
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>(
+              DockerImageName.parse("timescale/timescaledb:latest-pg16")
+                  .asCompatibleSubstituteFor("postgres"))
+          .withDatabaseName("arguslog")
+          .withUsername("arguslog")
+          .withPassword("arguslog");
 
   private static HikariDataSource dataSource;
   private static EventRepository repository;
@@ -65,8 +66,7 @@ class JdbcEventRepositoryTest {
 
   @AfterAll
   static void stop() {
-    if (dataSource != null)
-      dataSource.close();
+    if (dataSource != null) dataSource.close();
   }
 
   @BeforeEach
@@ -118,7 +118,8 @@ class JdbcEventRepositoryTest {
     assertThat(first).hasSize(2);
     Event last = first.get(1);
 
-    List<Event> next = repository.page(issueIdA, Optional.of(new UuidCursor(last.receivedAt(), last.id())), 10);
+    List<Event> next =
+        repository.page(issueIdA, Optional.of(new UuidCursor(last.receivedAt(), last.id())), 10);
     assertThat(next).hasSize(1);
     assertThat(next.get(0).id()).isNotEqualTo(last.id());
   }
@@ -137,7 +138,8 @@ class JdbcEventRepositoryTest {
   // ── helpers ──────────────────────────────────────────────────────────────
 
   private static long insertIssue(String fingerprint) {
-    String sql = """
+    String sql =
+        """
         INSERT INTO issues (project_id, environment_id, fingerprint, status, level, title,
                             culprit, first_seen_at, last_seen_at, occurrence_count)
              VALUES (101, NULL, ?, 'unresolved'::issue_status, 'error'::event_level, ?, NULL, NOW(), NOW(), 1)
@@ -161,8 +163,9 @@ class JdbcEventRepositoryTest {
 
   private void insertEvent(long issueId, Instant receivedAt, String payload) {
     try (Connection conn = dataSource.getConnection();
-        PreparedStatement stmt = conn.prepareStatement(
-            "INSERT INTO events (id, issue_id, project_id, environment_id, received_at, payload) VALUES (?, ?, 101, NULL, ?, ?::jsonb)")) {
+        PreparedStatement stmt =
+            conn.prepareStatement(
+                "INSERT INTO events (id, issue_id, project_id, environment_id, received_at, payload) VALUES (?, ?, 101, NULL, ?, ?::jsonb)")) {
       stmt.setObject(1, UUID.randomUUID());
       stmt.setLong(2, issueId);
       stmt.setTimestamp(3, java.sql.Timestamp.from(receivedAt));

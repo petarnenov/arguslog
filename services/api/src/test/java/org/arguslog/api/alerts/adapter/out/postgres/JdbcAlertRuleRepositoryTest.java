@@ -31,12 +31,13 @@ import org.testcontainers.utility.DockerImageName;
 class JdbcAlertRuleRepositoryTest {
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
-      DockerImageName.parse("timescale/timescaledb:latest-pg16")
-          .asCompatibleSubstituteFor("postgres"))
-      .withDatabaseName("arguslog")
-      .withUsername("arguslog")
-      .withPassword("arguslog");
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>(
+              DockerImageName.parse("timescale/timescaledb:latest-pg16")
+                  .asCompatibleSubstituteFor("postgres"))
+          .withDatabaseName("arguslog")
+          .withUsername("arguslog")
+          .withPassword("arguslog");
 
   private static HikariDataSource dataSource;
   private static AlertRuleRepository repository;
@@ -55,53 +56,54 @@ class JdbcAlertRuleRepositoryTest {
 
     TransactionTemplate tx = new TransactionTemplate(new JdbcTransactionManager(dataSource));
     JdbcAlertRuleRepository raw = new JdbcAlertRuleRepository(dataSource, mapper);
-    repository = new AlertRuleRepository() {
-      @Override
-      public AlertRule create(
-          long projectId,
-          String name,
-          JsonNode conditions,
-          JsonNode actions,
-          int throttleSeconds,
-          boolean enabled) {
-        return tx.execute(
-            s -> raw.create(projectId, name, conditions, actions, throttleSeconds, enabled));
-      }
+    repository =
+        new AlertRuleRepository() {
+          @Override
+          public AlertRule create(
+              long projectId,
+              String name,
+              JsonNode conditions,
+              JsonNode actions,
+              int throttleSeconds,
+              boolean enabled) {
+            return tx.execute(
+                s -> raw.create(projectId, name, conditions, actions, throttleSeconds, enabled));
+          }
 
-      @Override
-      public List<AlertRule> listForProject(long projectId) {
-        return tx.execute(s -> raw.listForProject(projectId));
-      }
+          @Override
+          public List<AlertRule> listForProject(long projectId) {
+            return tx.execute(s -> raw.listForProject(projectId));
+          }
 
-      @Override
-      public Optional<AlertRule> find(long projectId, long id) {
-        return tx.execute(s -> raw.find(projectId, id));
-      }
+          @Override
+          public Optional<AlertRule> find(long projectId, long id) {
+            return tx.execute(s -> raw.find(projectId, id));
+          }
 
-      @Override
-      public Optional<AlertRule> update(
-          long projectId,
-          long id,
-          String name,
-          JsonNode conditions,
-          JsonNode actions,
-          int throttleSeconds,
-          boolean enabled) {
-        return tx.execute(
-            s -> raw.update(projectId, id, name, conditions, actions, throttleSeconds, enabled));
-      }
+          @Override
+          public Optional<AlertRule> update(
+              long projectId,
+              long id,
+              String name,
+              JsonNode conditions,
+              JsonNode actions,
+              int throttleSeconds,
+              boolean enabled) {
+            return tx.execute(
+                s ->
+                    raw.update(projectId, id, name, conditions, actions, throttleSeconds, enabled));
+          }
 
-      @Override
-      public boolean delete(long projectId, long id) {
-        return Boolean.TRUE.equals(tx.execute(s -> raw.delete(projectId, id)));
-      }
-    };
+          @Override
+          public boolean delete(long projectId, long id) {
+            return Boolean.TRUE.equals(tx.execute(s -> raw.delete(projectId, id)));
+          }
+        };
   }
 
   @AfterAll
   static void stop() {
-    if (dataSource != null)
-      dataSource.close();
+    if (dataSource != null) dataSource.close();
   }
 
   @BeforeEach
@@ -146,16 +148,18 @@ class JdbcAlertRuleRepositoryTest {
   @Test
   void updateReplacesAllFieldsExceptIdAndProject() throws Exception {
     JsonNode actions = mapper.readTree("{\"destinationIds\":[1]}");
-    AlertRule created = repository.create(101L, "old", mapper.createObjectNode(), actions, 300, true);
+    AlertRule created =
+        repository.create(101L, "old", mapper.createObjectNode(), actions, 300, true);
 
-    Optional<AlertRule> updated = repository.update(
-        101L,
-        created.id(),
-        "new",
-        mapper.readTree("{\"occurrenceThreshold\":50}"),
-        mapper.readTree("{\"destinationIds\":[2,3]}"),
-        900,
-        false);
+    Optional<AlertRule> updated =
+        repository.update(
+            101L,
+            created.id(),
+            "new",
+            mapper.readTree("{\"occurrenceThreshold\":50}"),
+            mapper.readTree("{\"destinationIds\":[2,3]}"),
+            900,
+            false);
 
     assertThat(updated).isPresent();
     AlertRule u = updated.orElseThrow();
@@ -168,13 +172,14 @@ class JdbcAlertRuleRepositoryTest {
 
   @Test
   void deleteIsAccountedFor() throws Exception {
-    AlertRule created = repository.create(
-        101L,
-        "x",
-        mapper.createObjectNode(),
-        mapper.readTree("{\"destinationIds\":[1]}"),
-        300,
-        true);
+    AlertRule created =
+        repository.create(
+            101L,
+            "x",
+            mapper.createObjectNode(),
+            mapper.readTree("{\"destinationIds\":[1]}"),
+            300,
+            true);
     assertThat(repository.delete(101L, created.id())).isTrue();
     assertThat(repository.delete(101L, created.id())).isFalse();
     assertThat(repository.find(101L, created.id())).isEmpty();
@@ -182,13 +187,14 @@ class JdbcAlertRuleRepositoryTest {
 
   @Test
   void wrongProjectCannotSeeOrMutate() throws Exception {
-    AlertRule created = repository.create(
-        101L,
-        "x",
-        mapper.createObjectNode(),
-        mapper.readTree("{\"destinationIds\":[1]}"),
-        300,
-        true);
+    AlertRule created =
+        repository.create(
+            101L,
+            "x",
+            mapper.createObjectNode(),
+            mapper.readTree("{\"destinationIds\":[1]}"),
+            300,
+            true);
 
     assertThat(repository.find(102L, created.id())).isEmpty();
     assertThat(repository.delete(102L, created.id())).isFalse();

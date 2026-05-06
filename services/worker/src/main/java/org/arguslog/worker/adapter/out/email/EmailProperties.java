@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * intentionally do not crash boot so worker can keep delivering Telegram/Slack/webhook even when
  * email isn't yet provisioned.
  */
-@ConfigurationProperties(prefix = "argus.alerts.email")
+@ConfigurationProperties(prefix = "arguslog.alerts.email")
 public record EmailProperties(
     String apiBaseUrl, String apiKey, String from, String dashboardBaseUrl, Duration timeout) {
 

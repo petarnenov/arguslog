@@ -2,7 +2,7 @@ plugins {
     id("arguslog.spring-service")
 }
 
-description = "Argus worker — consumes Redis Streams, scrubs/fingerprints/persists, dispatches alerts"
+description = "Arguslog worker — consumes Redis Streams, scrubs/fingerprints/persists, dispatches alerts"
 
 val libs = the<org.gradle.accessors.dm.LibrariesForLibs>()
 

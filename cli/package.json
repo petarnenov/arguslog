@@ -1,7 +1,7 @@
 {
   "name": "@arguslog/cli",
   "version": "0.0.0",
-  "description": "Argus CLI — releases, sourcemap upload, project bootstrap",
+  "description": "Arguslog CLI — releases, sourcemap upload, project bootstrap",
   "license": "MIT",
   "type": "module",
   "bin": {

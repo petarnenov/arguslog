@@ -20,10 +20,14 @@ import org.arguslog.api.application.CursorCodec.InvalidCursorException;
 import org.arguslog.api.application.GetIssueUseCase;
 import org.arguslog.api.application.ListIssueEventsUseCase;
 import org.arguslog.api.application.ListIssuesUseCase;
+import org.arguslog.api.application.port.DsnRepository;
 import org.arguslog.api.application.port.EventRepository;
 import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.application.port.MembershipRepository;
+import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.application.port.ProjectRepository;
+import org.arguslog.api.application.port.ProjectWriteRepository;
+import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.domain.Event;
 import org.arguslog.api.domain.Issue;
 import org.junit.jupiter.api.Test;
@@ -65,6 +69,10 @@ class IssueControllerTest {
   @MockitoBean MembershipRepository membershipRepository;
   @MockitoBean AlertDestinationRepository alertDestinationRepository;
   @MockitoBean AlertRuleRepository alertRuleRepository;
+  @MockitoBean DsnRepository dsnRepository;
+  @MockitoBean OrgWriteRepository orgWriteRepository;
+  @MockitoBean ProjectWriteRepository projectWriteRepository;
+  @MockitoBean UserRepository userRepository;
 
   // ── list ─────────────────────────────────────────────────────────────────
 

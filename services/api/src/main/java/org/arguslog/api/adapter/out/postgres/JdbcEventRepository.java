@@ -23,7 +23,8 @@ public class JdbcEventRepository implements EventRepository {
   // (received_at, id) tuple comparison handles UUID id ordering correctly in PG.
   // Tightly
   // bounded to issue_id so the chunk planner stays selective on Timescale.
-  private static final String PAGE_SQL = """
+  private static final String PAGE_SQL =
+      """
       SELECT id, issue_id, project_id, received_at, payload::text AS payload_json
         FROM events
        WHERE issue_id = ?
@@ -46,27 +47,28 @@ public class JdbcEventRepository implements EventRepository {
     Object cursorId = cursor.map(c -> c.id().toString()).orElse(null);
     Object cursorPresence = cursor.isPresent() ? Boolean.TRUE : null;
 
-    Object[] args = { issueId, cursorPresence, cursorTs, cursorId, limit };
-    int[] types = { Types.BIGINT, Types.BOOLEAN, Types.TIMESTAMP, Types.OTHER, Types.INTEGER };
+    Object[] args = {issueId, cursorPresence, cursorTs, cursorId, limit};
+    int[] types = {Types.BIGINT, Types.BOOLEAN, Types.TIMESTAMP, Types.OTHER, Types.INTEGER};
 
     pinOrgContextForRls();
     List<Event> out = new ArrayList<>(limit);
-    RowCallbackHandler handler = rs -> {
-      JsonNode payload;
-      try {
-        payload = mapper.readTree(rs.getString("payload_json"));
-      } catch (IOException e) {
-        throw new IllegalStateException(
-            "events.payload was not valid JSON for event " + rs.getString("id"), e);
-      }
-      out.add(
-          new Event(
-              UUID.fromString(rs.getString("id")),
-              rs.getLong("issue_id"),
-              rs.getLong("project_id"),
-              rs.getTimestamp("received_at").toInstant(),
-              payload));
-    };
+    RowCallbackHandler handler =
+        rs -> {
+          JsonNode payload;
+          try {
+            payload = mapper.readTree(rs.getString("payload_json"));
+          } catch (IOException e) {
+            throw new IllegalStateException(
+                "events.payload was not valid JSON for event " + rs.getString("id"), e);
+          }
+          out.add(
+              new Event(
+                  UUID.fromString(rs.getString("id")),
+                  rs.getLong("issue_id"),
+                  rs.getLong("project_id"),
+                  rs.getTimestamp("received_at").toInstant(),
+                  payload));
+        };
     jdbc.query(PAGE_SQL, args, types, handler);
     return out;
   }

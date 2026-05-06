@@ -2,7 +2,7 @@ plugins {
     id("arguslog.spring-service")
 }
 
-description = "Argus ingest — public HTTP event endpoint, Redis Streams writer"
+description = "Arguslog ingest — public HTTP event endpoint, Redis Streams writer"
 
 val libs = the<org.gradle.accessors.dm.LibrariesForLibs>()
 

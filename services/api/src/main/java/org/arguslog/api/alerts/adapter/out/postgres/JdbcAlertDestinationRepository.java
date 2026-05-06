@@ -82,18 +82,18 @@ public class JdbcAlertDestinationRepository implements AlertDestinationRepositor
   public Optional<AlertDestination> update(long orgId, long id, String name, String configJson) {
     pinOrgContextForRls();
     byte[] encrypted = cipher.encrypt(configJson.getBytes(StandardCharsets.UTF_8));
-    int updated = jdbc.update(
-        """
+    int updated =
+        jdbc.update(
+            """
             UPDATE alert_destinations
                SET name = ?, config_encrypted = ?
              WHERE org_id = ? AND id = ?
             """,
-        name,
-        encrypted,
-        orgId,
-        id);
-    if (updated == 0)
-      return Optional.empty();
+            name,
+            encrypted,
+            orgId,
+            id);
+    if (updated == 0) return Optional.empty();
     return find(orgId, id);
   }
 

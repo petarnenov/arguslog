@@ -20,16 +20,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component;
 
 /**
- * Sends a Markdown-formatted message to a Telegram chat via the Bot API.
- * Per-destination config is
- * a JSON object with at least {@code chatId}; everything else (parse mode,
- * threading) is bot-level.
+ * Sends a Markdown-formatted message to a Telegram chat via the Bot API. Per-destination config is
+ * a JSON object with at least {@code chatId}; everything else (parse mode, threading) is bot-level.
  *
- * <p>
- * Failure policy (matches the rest of the dispatch pipeline): every failure is
- * logged and
- * swallowed. Telegram 4xx is permanent (bad chat id, bot kicked), 5xx is
- * transient — but with no
+ * <p>Failure policy (matches the rest of the dispatch pipeline): every failure is logged and
+ * swallowed. Telegram 4xx is permanent (bad chat id, bot kicked), 5xx is transient — but with no
  * persistent outbox in P3 we drop both. P3 #5 brings throttling, not retries.
  */
 @Component
@@ -90,11 +85,12 @@ public class TelegramAlertDispatcher implements AlertDispatcher {
     }
 
     URI uri = URI.create(props.apiBaseUrl() + "/bot" + props.botToken() + "/sendMessage");
-    HttpRequest req = HttpRequest.newBuilder(uri)
-        .timeout(props.timeout())
-        .header("Content-Type", "application/json")
-        .POST(HttpRequest.BodyPublishers.ofString(body))
-        .build();
+    HttpRequest req =
+        HttpRequest.newBuilder(uri)
+            .timeout(props.timeout())
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build();
     try {
       HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
       if (resp.statusCode() / 100 != 2) {
@@ -105,8 +101,7 @@ public class TelegramAlertDispatcher implements AlertDispatcher {
             truncate(resp.body()));
       }
     } catch (java.io.IOException | InterruptedException e) {
-      if (e instanceof InterruptedException)
-        Thread.currentThread().interrupt();
+      if (e instanceof InterruptedException) Thread.currentThread().interrupt();
       log.warn("telegram sendMessage threw for chat {}: {}", chatId, e.getMessage());
     }
   }
@@ -115,8 +110,7 @@ public class TelegramAlertDispatcher implements AlertDispatcher {
     try {
       JsonNode node = mapper.readTree(destination.configJson());
       JsonNode chat = node.path("chatId");
-      if (chat.isMissingNode() || chat.isNull())
-        return null;
+      if (chat.isMissingNode() || chat.isNull()) return null;
       return chat.asText();
     } catch (JsonProcessingException e) {
       log.warn("destination {} config is not valid JSON: {}", destination.id(), e.getMessage());
@@ -126,13 +120,14 @@ public class TelegramAlertDispatcher implements AlertDispatcher {
 
   private String renderMessage(Alert a) {
     String emoji = emojiFor(a.level());
-    String url = props.dashboardBaseUrl()
-        + "/orgs/"
-        + a.orgSlug()
-        + "/projects/"
-        + a.projectSlug()
-        + "/issues/"
-        + a.issueId();
+    String url =
+        props.dashboardBaseUrl()
+            + "/orgs/"
+            + a.orgSlug()
+            + "/projects/"
+            + a.projectSlug()
+            + "/issues/"
+            + a.issueId();
     String firstSeen = ISO.format(a.firstSeenAt());
     return emoji
         + " *"
@@ -153,8 +148,7 @@ public class TelegramAlertDispatcher implements AlertDispatcher {
   }
 
   private static String emojiFor(String level) {
-    if (level == null)
-      return "🔔";
+    if (level == null) return "🔔";
     return switch (level.toLowerCase(java.util.Locale.ROOT)) {
       case "fatal" -> "🛑";
       case "error" -> "🚨";
@@ -167,14 +161,12 @@ public class TelegramAlertDispatcher implements AlertDispatcher {
   // Telegram Markdown is permissive but * and _ are control chars; escape to keep
   // the layout sane.
   private static String escape(String s) {
-    if (s == null)
-      return "";
+    if (s == null) return "";
     return s.replace("_", "\\_").replace("*", "\\*").replace("`", "\\`");
   }
 
   private static String truncate(String s) {
-    if (s == null)
-      return "";
+    if (s == null) return "";
     return s.length() > 200 ? s.substring(0, 200) + "…" : s;
   }
 

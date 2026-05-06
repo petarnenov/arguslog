@@ -27,12 +27,13 @@ import org.testcontainers.utility.DockerImageName;
 class JdbcAlertRuleRepositoryTest {
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
-      DockerImageName.parse("timescale/timescaledb:latest-pg16")
-          .asCompatibleSubstituteFor("postgres"))
-      .withDatabaseName("arguslog")
-      .withUsername("arguslog")
-      .withPassword("arguslog");
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>(
+              DockerImageName.parse("timescale/timescaledb:latest-pg16")
+                  .asCompatibleSubstituteFor("postgres"))
+          .withDatabaseName("arguslog")
+          .withUsername("arguslog")
+          .withPassword("arguslog");
 
   private static HikariDataSource dataSource;
   private static AlertRuleRepository repository;
@@ -55,8 +56,7 @@ class JdbcAlertRuleRepositoryTest {
 
   @AfterAll
   static void stop() {
-    if (dataSource != null)
-      dataSource.close();
+    if (dataSource != null) dataSource.close();
   }
 
   @BeforeEach
@@ -94,9 +94,10 @@ class JdbcAlertRuleRepositoryTest {
   }
 
   private static String resolveMigrationsLocation() {
-    List<Path> candidates = List.of(
-        Path.of("../api/src/main/resources/db/migration"),
-        Path.of("services/api/src/main/resources/db/migration"));
+    List<Path> candidates =
+        List.of(
+            Path.of("../api/src/main/resources/db/migration"),
+            Path.of("services/api/src/main/resources/db/migration"));
     return candidates.stream()
         .map(Path::toAbsolutePath)
         .filter(Files::isDirectory)
@@ -121,9 +122,10 @@ class JdbcAlertRuleRepositoryTest {
   private static void insertRule(long projectId, String name, String conditions, boolean enabled)
       throws Exception {
     try (Connection conn = dataSource.getConnection();
-        PreparedStatement stmt = conn.prepareStatement(
-            "INSERT INTO alert_rules (project_id, name, conditions, actions, throttle_seconds, enabled)"
-                + " VALUES (?, ?, ?::jsonb, '{\"destinationIds\":[1]}'::jsonb, 300, ?)")) {
+        PreparedStatement stmt =
+            conn.prepareStatement(
+                "INSERT INTO alert_rules (project_id, name, conditions, actions, throttle_seconds, enabled)"
+                    + " VALUES (?, ?, ?::jsonb, '{\"destinationIds\":[1]}'::jsonb, 300, ?)")) {
       stmt.setLong(1, projectId);
       stmt.setString(2, name);
       stmt.setString(3, conditions);

@@ -47,7 +47,7 @@ export class Transport {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Argus-Auth': `Argus DSN ${this.publicKey}`,
+          'X-Arguslog-Auth': `Arguslog DSN ${this.publicKey}`,
         },
         body: JSON.stringify(event),
         keepalive: true,
