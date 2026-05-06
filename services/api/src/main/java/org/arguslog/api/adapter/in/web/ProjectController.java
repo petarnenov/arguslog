@@ -5,6 +5,7 @@ import java.util.List;
 import org.arguslog.api.adapter.in.web.dto.ProjectRequest;
 import org.arguslog.api.adapter.in.web.dto.ProjectResponse;
 import org.arguslog.api.application.ProjectUseCase;
+import org.arguslog.api.application.ProjectUseCase.DuplicateProjectException;
 import org.arguslog.api.application.ProjectUseCase.InvalidProjectException;
 import org.arguslog.api.domain.Project;
 import org.arguslog.api.security.AccessException;
@@ -59,6 +60,16 @@ public class ProjectController {
     body.setTitle("Invalid project");
     body.setType(URI.create("https://arguslog.dev/problems/invalid-project"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(DuplicateProjectException.class)
+  ResponseEntity<ProblemDetail> handleDuplicate(DuplicateProjectException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+    body.setTitle("Duplicate project");
+    body.setType(URI.create("https://arguslog.dev/problems/duplicate-project"));
+    return ResponseEntity.status(HttpStatus.CONFLICT)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }

@@ -92,6 +92,24 @@ describe('apiFetch', () => {
     expect(err.status).toBe(502);
     expect(err.problem.title).toBe('HTTP 502');
   });
+
+  it("normalizes Spring's default error JSON into title/detail", async () => {
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          timestamp: '2026-05-05T23:57:35.330+00:00',
+          status: 500,
+          error: 'Internal Server Error',
+          path: '/api/v1/orgs',
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      )) as typeof fetch;
+
+    const err = (await apiFetch('/api/v1/orgs').catch((e: unknown) => e)) as ApiError;
+    expect(err.problem.title).toBe('Internal Server Error');
+    expect(err.problem.detail).toContain('/api/v1/orgs');
+    expect(err.message).not.toBe('undefined');
+  });
 });
 
 describe('buildQuery', () => {

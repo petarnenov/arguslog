@@ -26,14 +26,41 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
 async function readProblem(res: Response): Promise<ProblemDetail> {
   const ct = res.headers.get('Content-Type') ?? '';
+  const fallback: ProblemDetail = {
+    title: `HTTP ${res.status}`,
+    status: res.status,
+    detail: res.statusText,
+  };
   if (ct.includes('application/problem+json') || ct.includes('application/json')) {
     try {
-      return (await res.json()) as ProblemDetail;
+      const body = (await res.json()) as Record<string, unknown>;
+      // Spring's default error JSON ({timestamp,status,error,path,message?}) lacks the RFC 9457
+      // title/detail fields — without this normalization the UI would render an empty alert.
+      const title =
+        typeof body.title === 'string'
+          ? body.title
+          : typeof body.error === 'string'
+            ? body.error
+            : fallback.title;
+      const detail =
+        typeof body.detail === 'string'
+          ? body.detail
+          : typeof body.message === 'string'
+            ? body.message
+            : typeof body.path === 'string'
+              ? `${title} at ${body.path}`
+              : fallback.detail;
+      return {
+        type: typeof body.type === 'string' ? body.type : undefined,
+        title,
+        status: typeof body.status === 'number' ? body.status : res.status,
+        detail,
+      };
     } catch {
       // fall through to generic
     }
   }
-  return { title: `HTTP ${res.status}`, status: res.status, detail: res.statusText };
+  return fallback;
 }
 
 export interface ProblemDetail {

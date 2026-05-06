@@ -29,4 +29,13 @@ public interface AlertDestinationUseCase {
       super(message);
     }
   }
+
+  /** Thrown when a destination with the same name already exists in the org. */
+  final class DuplicateDestinationException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    public DuplicateDestinationException(String message) {
+      super(message);
+    }
+  }
 }
