@@ -62,6 +62,11 @@ jobs:
             sdk-react \
             packages/sdk-react/package.json
 
+      # sdk-react depends on sdk-browser via workspace: protocol — typecheck needs the
+      # sdk-browser dist on disk to find type declarations, so build the dep first.
+      - name: Build sdk-browser dependency
+        run: pnpm --filter @arguslog/sdk-browser build
+
       - name: Lint, typecheck, test
         run: |
           pnpm --filter @arguslog/sdk-react lint
