@@ -8,6 +8,7 @@ import org.arguslog.worker.application.port.PersistedEventPublisher;
 import org.arguslog.worker.application.port.RuleThrottle;
 import org.arguslog.worker.application.port.SourceMapStore;
 import org.arguslog.worker.application.port.SymbolicationRepository;
+import org.arguslog.worker.billing.application.port.PaymentDowngradeRepository;
 import org.arguslog.worker.retention.application.port.OrgRetentionRepository;
 import org.arguslog.worker.retention.application.port.RetentionPurgeRepository;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,7 @@ class WorkerApplicationTests {
   @MockitoBean SourceMapStore sourceMapStore;
   @MockitoBean OrgRetentionRepository orgRetentionRepository;
   @MockitoBean RetentionPurgeRepository retentionPurgeRepository;
+  @MockitoBean PaymentDowngradeRepository paymentDowngradeRepository;
 
   @Test
   void contextLoads() {}

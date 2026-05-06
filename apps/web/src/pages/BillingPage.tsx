@@ -69,10 +69,35 @@ export function BillingPage() {
 
   const checkoutError = errorMessage(checkout.error);
   const portalError = errorMessage(portal.error);
+  const graceDaysRemaining = snapshot.paymentGraceUntil
+    ? daysUntil(snapshot.paymentGraceUntil)
+    : null;
 
   return (
     <Stack maw={760}>
       <Title order={3}>{t('billing.title')}</Title>
+
+      {graceDaysRemaining !== null && (
+        <Alert color="red" variant="filled" data-testid="payment-grace-banner">
+          <Group justify="space-between" align="center" wrap="nowrap">
+            <Stack gap={2}>
+              <Text fw={600}>{t('billing.paymentFailedTitle')}</Text>
+              <Text size="sm">
+                {t('billing.paymentFailedBody', { days: graceDaysRemaining })}
+              </Text>
+            </Stack>
+            <Button
+              variant="white"
+              color="red"
+              loading={portal.isPending}
+              onClick={() => portal.mutate()}
+              data-testid="update-payment-button"
+            >
+              {t('billing.updatePayment')}
+            </Button>
+          </Group>
+        </Alert>
+      )}
 
       <Card withBorder padding="lg" radius="md">
         <Stack gap="md">
@@ -171,4 +196,11 @@ function errorMessage(err: unknown): string | null {
 
 function formatNumber(n: number): string {
   return new Intl.NumberFormat('en-US').format(n);
+}
+
+function daysUntil(iso: string): number {
+  const ms = new Date(iso).getTime() - Date.now();
+  // Math.ceil so the banner reads "1 day remaining" until the deadline actually passes,
+  // and clamps to 0 once expired (worker hasn't run the downgrade yet).
+  return Math.max(0, Math.ceil(ms / (24 * 3600 * 1000)));
 }

@@ -13,7 +13,10 @@ import com.stripe.model.Subscription;
 import com.stripe.model.SubscriptionItem;
 import com.stripe.model.SubscriptionItemCollection;
 import com.stripe.model.checkout.Session;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.arguslog.api.billing.application.StripeWebhookUseCase.Outcome;
@@ -39,9 +42,13 @@ class StripeWebhookServiceTest {
 
   StripeWebhookService service;
 
+  private static final Instant NOW = Instant.parse("2026-05-06T14:00:00Z");
+  private static final Clock FIXED = Clock.fixed(NOW, ZoneOffset.UTC);
+  private static final Duration GRACE = Duration.ofDays(7);
+
   @BeforeEach
   void setUp() {
-    service = new StripeWebhookService(eventLog, customers);
+    service = new StripeWebhookService(eventLog, customers, FIXED, GRACE);
   }
 
   @Test
@@ -140,7 +147,7 @@ class StripeWebhookServiceTest {
   }
 
   @Test
-  void paymentFailedLogsButDoesNotMutate() {
+  void paymentFailedOpensGraceWindow() {
     Invoice invoice = mock(Invoice.class);
     when(invoice.getCustomer()).thenReturn("cus_xyz");
     when(invoice.getId()).thenReturn("in_123");
@@ -148,10 +155,68 @@ class StripeWebhookServiceTest {
     Event event = stubEvent("evt_pf", "invoice.payment_failed", invoice);
     when(eventLog.recordIfNew("evt_pf", "invoice.payment_failed")).thenReturn(true);
     when(customers.findOrgIdByCustomerId("cus_xyz")).thenReturn(Optional.of(42L));
+    when(customers.openPaymentGrace(42L, NOW.plus(GRACE))).thenReturn(true);
 
     assertThat(service.handle(event)).isEqualTo(Outcome.PROCESSED);
-    // P4: payment_failed only logs; no plan mutation.
+    verify(customers).openPaymentGrace(42L, NOW.plus(GRACE));
     verify(customers, never()).updatePlanAndRenewal(anyLong(), anyString(), any());
+  }
+
+  @Test
+  void paymentFailedDelegatesIdempotencyToTheRepository() {
+    // Stripe Smart Retries fire repeated payment_failed events. The repo's conditional UPDATE
+    // returns false the second time; the service must not treat that as an error or branch.
+    Invoice invoice = mock(Invoice.class);
+    when(invoice.getCustomer()).thenReturn("cus_xyz");
+    when(invoice.getId()).thenReturn("in_456");
+
+    Event event = stubEvent("evt_pf2", "invoice.payment_failed", invoice);
+    when(eventLog.recordIfNew("evt_pf2", "invoice.payment_failed")).thenReturn(true);
+    when(customers.findOrgIdByCustomerId("cus_xyz")).thenReturn(Optional.of(42L));
+    when(customers.openPaymentGrace(42L, NOW.plus(GRACE))).thenReturn(false);
+
+    assertThat(service.handle(event)).isEqualTo(Outcome.PROCESSED);
+    verify(customers).openPaymentGrace(42L, NOW.plus(GRACE));
+  }
+
+  @Test
+  void paymentFailedForUnknownCustomerYieldsUnknownCustomer() {
+    Invoice invoice = mock(Invoice.class);
+    when(invoice.getCustomer()).thenReturn("cus_orphan");
+
+    Event event = stubEvent("evt_orphan_pf", "invoice.payment_failed", invoice);
+    when(eventLog.recordIfNew("evt_orphan_pf", "invoice.payment_failed")).thenReturn(true);
+    when(customers.findOrgIdByCustomerId("cus_orphan")).thenReturn(Optional.empty());
+
+    assertThat(service.handle(event)).isEqualTo(Outcome.UNKNOWN_CUSTOMER);
+    verify(customers, never()).openPaymentGrace(anyLong(), any());
+  }
+
+  @Test
+  void paymentSucceededClearsGrace() {
+    Invoice invoice = mock(Invoice.class);
+    when(invoice.getCustomer()).thenReturn("cus_xyz");
+    when(invoice.getId()).thenReturn("in_999");
+
+    Event event = stubEvent("evt_ok", "invoice.payment_succeeded", invoice);
+    when(eventLog.recordIfNew("evt_ok", "invoice.payment_succeeded")).thenReturn(true);
+    when(customers.findOrgIdByCustomerId("cus_xyz")).thenReturn(Optional.of(42L));
+
+    assertThat(service.handle(event)).isEqualTo(Outcome.PROCESSED);
+    verify(customers).clearPaymentGrace(42L);
+  }
+
+  @Test
+  void paymentSucceededForUnknownCustomerYieldsUnknownCustomer() {
+    Invoice invoice = mock(Invoice.class);
+    when(invoice.getCustomer()).thenReturn("cus_orphan");
+
+    Event event = stubEvent("evt_orphan_ok", "invoice.payment_succeeded", invoice);
+    when(eventLog.recordIfNew("evt_orphan_ok", "invoice.payment_succeeded")).thenReturn(true);
+    when(customers.findOrgIdByCustomerId("cus_orphan")).thenReturn(Optional.empty());
+
+    assertThat(service.handle(event)).isEqualTo(Outcome.UNKNOWN_CUSTOMER);
+    verify(customers, never()).clearPaymentGrace(anyLong());
   }
 
   // ── helpers ─────────────────────────────────────────────────────────────

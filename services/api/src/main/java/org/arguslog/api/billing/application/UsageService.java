@@ -33,7 +33,8 @@ public class UsageService implements UsageUseCase {
     long cap = tier.monthlyEventCap();
     double ratio = cap == 0 ? 1.0 : (double) used / (double) cap;
     boolean exceeded = used >= cap;
-    return Optional.of(new UsageSnapshot(tier, used, cap, ratio, exceeded));
+    var graceUntil = plans.findPaymentGraceUntil(orgId).orElse(null);
+    return Optional.of(new UsageSnapshot(tier, used, cap, ratio, exceeded, graceUntil));
   }
 
   private LocalDate periodStartUtc() {

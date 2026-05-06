@@ -1,5 +1,7 @@
 package org.arguslog.api.billing.adapter.out.postgres;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
@@ -24,6 +26,18 @@ public class JdbcOrgPlanRepository implements OrgPlanRepository {
           jdbc.queryForObject(
               "SELECT plan::text FROM organizations WHERE id = ?", String.class, orgId);
       return Optional.of(PlanTier.fromDbValue(raw));
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<Instant> findPaymentGraceUntil(long orgId) {
+    try {
+      Timestamp ts =
+          jdbc.queryForObject(
+              "SELECT payment_grace_until FROM organizations WHERE id = ?", Timestamp.class, orgId);
+      return Optional.ofNullable(ts).map(Timestamp::toInstant);
     } catch (EmptyResultDataAccessException e) {
       return Optional.empty();
     }

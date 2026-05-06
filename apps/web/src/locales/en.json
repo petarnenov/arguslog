@@ -176,7 +176,10 @@
     "retentionDays": "{{days}} days",
     "upgrade": "Upgrade to Pro",
     "manage": "Manage subscription",
-    "capExceeded": "Monthly event cap exceeded — new events are dropped until next renewal."
+    "capExceeded": "Monthly event cap exceeded — new events are dropped until next renewal.",
+    "paymentFailedTitle": "Payment failed",
+    "paymentFailedBody": "Update your payment method within {{days}} day(s) — otherwise your plan will be downgraded to Free.",
+    "updatePayment": "Update payment method"
   },
   "tokens": {
     "title": "Personal access tokens",

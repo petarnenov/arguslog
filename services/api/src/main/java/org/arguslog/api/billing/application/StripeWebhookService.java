@@ -5,6 +5,8 @@ import com.stripe.model.Invoice;
 import com.stripe.model.StripeObject;
 import com.stripe.model.Subscription;
 import com.stripe.model.checkout.Session;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
@@ -12,6 +14,7 @@ import org.arguslog.api.billing.application.port.StripeEventLog;
 import org.arguslog.api.billing.domain.PlanTier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,8 +33,11 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>{@code customer.subscription.updated} — refresh plan_renews_at, downgrade if status
  *       transitions to canceled / unpaid / incomplete_expired
  *   <li>{@code customer.subscription.deleted} — full cancellation → plan = free, no renewal
- *   <li>{@code invoice.payment_failed} — log; the dashboard banner from {@code plan_renews_at}
- *       expiring is the visible signal. Auto-downgrade after grace period is P5.
+ *   <li>{@code invoice.payment_failed} — opens a grace window ({@code
+ *       arguslog.billing.grace-period}, default 7 days). Conditional write so Stripe Smart Retries
+ *       cannot keep extending the window. A separate worker job downgrades expired grace.
+ *   <li>{@code invoice.payment_succeeded} — clears any open grace window so a customer who
+ *       re-uploads a working card immediately stops seeing the banner.
  * </ul>
  */
 @Service
@@ -41,10 +47,18 @@ public class StripeWebhookService implements StripeWebhookUseCase {
 
   private final StripeEventLog eventLog;
   private final BillingCustomerRepository customers;
+  private final Clock clock;
+  private final Duration gracePeriod;
 
-  public StripeWebhookService(StripeEventLog eventLog, BillingCustomerRepository customers) {
+  public StripeWebhookService(
+      StripeEventLog eventLog,
+      BillingCustomerRepository customers,
+      Clock clock,
+      @Value("${arguslog.billing.grace-period:P7D}") Duration gracePeriod) {
     this.eventLog = eventLog;
     this.customers = customers;
+    this.clock = clock;
+    this.gracePeriod = gracePeriod;
   }
 
   @Override
@@ -62,6 +76,7 @@ public class StripeWebhookService implements StripeWebhookUseCase {
       case "customer.subscription.updated" -> handleSubscriptionUpdated(event);
       case "customer.subscription.deleted" -> handleSubscriptionDeleted(event);
       case "invoice.payment_failed" -> handlePaymentFailed(event);
+      case "invoice.payment_succeeded" -> handlePaymentSucceeded(event);
       default -> {
         log.debug("ignoring unhandled stripe event type {}", type);
         yield Outcome.IGNORED;
@@ -156,10 +171,34 @@ public class StripeWebhookService implements StripeWebhookUseCase {
       log.warn("invoice.payment_failed for unknown customer {}", invoice.getCustomer());
       return Outcome.UNKNOWN_CUSTOMER;
     }
-    // P4: visible only via the dashboard banner once plan_renews_at lapses. Auto-downgrade
-    // after a grace window (3 days?) is a P5 polish task.
-    log.warn(
-        "payment failed for org {} (invoice {}) — banner will follow once renewal lapses",
+    Instant graceUntil = clock.instant().plus(gracePeriod);
+    boolean opened = customers.openPaymentGrace(orgId.get(), graceUntil);
+    if (opened) {
+      log.warn(
+          "payment failed for org {} (invoice {}) — grace window opened until {}",
+          orgId.get(),
+          invoice.getId(),
+          graceUntil);
+    } else {
+      log.info(
+          "payment failed for org {} (invoice {}) — grace window already open, not extending",
+          orgId.get(),
+          invoice.getId());
+    }
+    return Outcome.PROCESSED;
+  }
+
+  private Outcome handlePaymentSucceeded(Event event) {
+    Invoice invoice = (Invoice) deserialize(event);
+    if (invoice == null) return Outcome.IGNORED;
+    Optional<Long> orgId = customers.findOrgIdByCustomerId(invoice.getCustomer());
+    if (orgId.isEmpty()) {
+      log.warn("invoice.payment_succeeded for unknown customer {}", invoice.getCustomer());
+      return Outcome.UNKNOWN_CUSTOMER;
+    }
+    customers.clearPaymentGrace(orgId.get());
+    log.info(
+        "payment succeeded for org {} (invoice {}) — any grace cleared",
         orgId.get(),
         invoice.getId());
     return Outcome.PROCESSED;

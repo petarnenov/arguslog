@@ -61,4 +61,22 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
         // Postgres JDBC driver coerces UTC-anchored Timestamps into TIMESTAMPTZ correctly anyway.
         new int[] {Types.OTHER, Types.TIMESTAMP, Types.BIGINT});
   }
+
+  @Override
+  public boolean openPaymentGrace(long orgId, Instant graceUntil) {
+    int rows =
+        jdbc.update(
+            "UPDATE organizations SET payment_grace_until = ?, updated_at = NOW()"
+                + " WHERE id = ? AND (payment_grace_until IS NULL OR payment_grace_until < NOW())",
+            new Object[] {Timestamp.from(graceUntil), orgId},
+            new int[] {Types.TIMESTAMP, Types.BIGINT});
+    return rows == 1;
+  }
+
+  @Override
+  public void clearPaymentGrace(long orgId) {
+    jdbc.update(
+        "UPDATE organizations SET payment_grace_until = NULL, updated_at = NOW() WHERE id = ?",
+        orgId);
+  }
 }

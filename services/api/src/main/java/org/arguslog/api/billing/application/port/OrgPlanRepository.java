@@ -1,5 +1,6 @@
 package org.arguslog.api.billing.application.port;
 
+import java.time.Instant;
 import java.util.Optional;
 import org.arguslog.api.billing.domain.PlanTier;
 
@@ -11,4 +12,10 @@ import org.arguslog.api.billing.domain.PlanTier;
 public interface OrgPlanRepository {
 
   Optional<PlanTier> findPlan(long orgId);
+
+  /**
+   * Returns the active payment grace deadline if a {@code invoice.payment_failed} webhook opened
+   * one. {@link Optional#empty()} means no grace is in effect (most orgs, most of the time).
+   */
+  Optional<Instant> findPaymentGraceUntil(long orgId);
 }

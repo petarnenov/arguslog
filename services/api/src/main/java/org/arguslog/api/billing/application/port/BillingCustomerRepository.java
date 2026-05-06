@@ -28,4 +28,18 @@ public interface BillingCustomerRepository {
 
   /** Updates plan + renewal timestamp in one shot. Used by the subscription webhook handlers. */
   void updatePlanAndRenewal(long orgId, String planDbValue, Instant renewsAt);
+
+  /**
+   * Opens a payment grace window. The write is conditional — only takes effect when no grace is
+   * currently open or the previous one already lapsed, so Stripe Smart Retries (which fire repeated
+   * {@code invoice.payment_failed} events over ~4 weeks) cannot keep extending the window past the
+   * first failure. Returns {@code true} when the row was updated.
+   */
+  boolean openPaymentGrace(long orgId, Instant graceUntil);
+
+  /**
+   * Clears any active payment grace window. Called by the {@code invoice.payment_succeeded} webhook
+   * so a customer who re-uploads a working card immediately stops seeing the banner.
+   */
+  void clearPaymentGrace(long orgId);
 }

@@ -63,6 +63,10 @@ arguslog:
     price-pro-id: ${STRIPE_PRICE_PRO:}
     # Where Stripe redirects after Checkout / Customer Portal — points at the dashboard.
     dashboard-base-url: ${DASHBOARD_BASE_URL:http://localhost:5173}
+  billing:
+    # ISO-8601 duration. 7 days matches industry norms (GitHub, Vercel) and is short enough
+    # to bound disk burn from a customer with a permanently broken card.
+    grace-period: ${BILLING_GRACE_PERIOD:P7D}
   r2:
     endpoint: ${R2_ENDPOINT:http://localhost:9000}
     bucket: ${R2_BUCKET:arguslog-sourcemaps}
