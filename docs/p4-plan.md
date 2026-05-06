@@ -35,8 +35,8 @@ hard downgrade is a P5 decision.
 | 2   | INGEST: `RealQuotaEnforcer` — Bucket4j in-memory burst + Postgres atomic UPSERT monthly cap.                | ✅ done | `1d01456` |
 | 3   | API: Stripe Checkout endpoint — `POST /api/v1/orgs/{id}/billing/checkout-session`.                          | ✅ done | `4fcd904` |
 | 4   | API: Stripe Customer Portal endpoint — `POST /api/v1/orgs/{id}/billing/portal`.                             | ✅ done | `c883e16` |
-| 5   | API: Stripe webhook handler — `checkout.session.completed`, `subscription.{updated,deleted}`, `invoice.payment_failed`. | ⏳ next | —         |
-| 6   | Web: BillingPage — current plan, usage vs cap, upgrade CTA → Checkout, manage → Portal.                     | pending | —         |
+| 5   | API: Stripe webhook handler — `checkout.session.completed`, `subscription.{updated,deleted}`, `invoice.payment_failed`. | ✅ done | `afb5ea0` |
+| 6   | Web: BillingPage — current plan, usage vs cap, upgrade CTA → Checkout, manage → Portal.                     | ⏳ next | —         |
 | 7   | Web: PersonalAccessTokensPage (P3 #7c carry-forward) — mint / list / revoke.                                | pending | —         |
 
 ## Architecture decisions to lock in
