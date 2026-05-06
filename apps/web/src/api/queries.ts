@@ -11,6 +11,7 @@ import {
 } from './issues';
 import { listMyOrgs } from './orgs';
 import { listProjects } from './projects';
+import { listMyTokens } from './tokens';
 
 export const queryKeys = {
   myOrgs: () => ['orgs', 'mine'] as const,
@@ -21,6 +22,7 @@ export const queryKeys = {
   alertRules: (projectId: number) => ['alert-rules', projectId] as const,
   alertDestinations: (orgId: number) => ['alert-destinations', orgId] as const,
   usage: (orgId: number) => ['usage', orgId] as const,
+  myTokens: () => ['tokens', 'mine'] as const,
 };
 
 export function useMyOrgs(options: { enabled?: boolean } = {}) {
@@ -88,6 +90,15 @@ export function useAlertDestinations(
     queryKey: queryKeys.alertDestinations(orgId ?? -1),
     queryFn: () => listAlertDestinations(orgId as number),
     enabled: (options.enabled ?? true) && orgId != null,
+    staleTime: 30_000,
+  });
+}
+
+export function useMyTokens(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.myTokens(),
+    queryFn: listMyTokens,
+    enabled: options.enabled ?? true,
     staleTime: 30_000,
   });
 }

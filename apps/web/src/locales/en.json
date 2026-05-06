@@ -11,6 +11,7 @@
     "settings": "Settings",
     "members": "Members",
     "billing": "Billing",
+    "tokens": "Personal access tokens",
     "logout": "Log out"
   },
   "orgSwitcher": {
@@ -176,5 +177,28 @@
     "upgrade": "Upgrade to Pro",
     "manage": "Manage subscription",
     "capExceeded": "Monthly event cap exceeded — new events are dropped until next renewal."
+  },
+  "tokens": {
+    "title": "Personal access tokens",
+    "intro": "Create a token to authenticate the CLI or scripts as you. Tokens carry your full membership scope, so treat them like passwords.",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. ci-deploy",
+    "create": "Create token",
+    "issuedTitle": "Token \"{{name}}\" created",
+    "issuedHint": "Copy this now — it will not be shown again.",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "empty": "No tokens yet — create one above.",
+    "colName": "Name",
+    "colPrefix": "Prefix",
+    "colCreated": "Created",
+    "colLastUsed": "Last used",
+    "colActions": "Actions",
+    "neverUsed": "Never",
+    "revokeAria": "Revoke {{name}}",
+    "revokeTitle": "Revoke \"{{name}}\"?",
+    "revokeBody": "This is irreversible. Any client using this token will start receiving 401 immediately.",
+    "revokeCancel": "Cancel",
+    "revokeConfirm": "Revoke token"
   }
 }
