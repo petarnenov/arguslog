@@ -1,4 +1,5 @@
 import { ArgusClient } from './client.js';
+import { installGlobalHandlers } from './integrations/global-handlers.js';
 import type { ArgusOptions, Breadcrumb, Level, User } from './types.js';
 
 export type { ArgusOptions, Breadcrumb, EventPayload, Level, StackFrame, User } from './types.js';
@@ -6,9 +7,20 @@ export { ArgusClient } from './client.js';
 export { parseDsn, InvalidDsnError } from './dsn.js';
 
 let currentClient: ArgusClient | undefined;
+let uninstallGlobalHandlers: (() => void) | undefined;
 
 export function init(options: ArgusOptions): ArgusClient {
+  // Tear down a prior init's handlers before swapping the client — otherwise a hot-reload can
+  // accumulate listeners that point at a stale ArgusClient.
+  uninstallGlobalHandlers?.();
+  uninstallGlobalHandlers = undefined;
+
   currentClient = new ArgusClient(options);
+
+  if (options.integrations?.includes('globalHandlers')) {
+    uninstallGlobalHandlers = installGlobalHandlers(currentClient);
+  }
+
   return currentClient;
 }
 
@@ -49,5 +61,7 @@ export function flush(): Promise<void> {
 
 /** Test-only: reset the singleton client between tests. */
 export function __resetForTests(): void {
+  uninstallGlobalHandlers?.();
+  uninstallGlobalHandlers = undefined;
   currentClient = undefined;
 }
