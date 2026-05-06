@@ -34,6 +34,7 @@ import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.application.port.ProjectRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
+import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -72,6 +73,7 @@ class AlertRuleControllerTest {
   @MockitoBean OrgWriteRepository orgWriteRepository;
   @MockitoBean ProjectWriteRepository projectWriteRepository;
   @MockitoBean UserRepository userRepository;
+  @MockitoBean ReleaseRepository releaseRepository;
 
   @Test
   void listReturnsTheRules() throws Exception {
