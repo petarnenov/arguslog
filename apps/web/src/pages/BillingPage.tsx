@@ -1,0 +1,174 @@
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Loader,
+  Progress,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core';
+import { useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router';
+
+import { openPortal, startCheckout } from '../api/billing';
+import { ApiError } from '../api/client';
+import { useMyOrgs, useUsage } from '../api/queries';
+
+export function BillingPage() {
+  const { t } = useTranslation();
+  const { orgSlug } = useParams();
+  const orgs = useMyOrgs();
+  const org = orgs.data?.find((o) => o.slug === orgSlug);
+  const usage = useUsage(org?.id);
+
+  const checkout = useMutation({
+    mutationFn: () => startCheckout(org!.id),
+    onSuccess: ({ url }) => {
+      window.location.assign(url);
+    },
+  });
+  const portal = useMutation({
+    mutationFn: () => openPortal(org!.id),
+    onSuccess: ({ url }) => {
+      window.location.assign(url);
+    },
+  });
+
+  if (orgs.isLoading || usage.isLoading) {
+    return (
+      <Group p="md">
+        <Loader size="sm" />
+      </Group>
+    );
+  }
+  if (!org) {
+    return (
+      <Alert color="red" variant="light">
+        {t('projects.orgNotFound')}
+      </Alert>
+    );
+  }
+  if (usage.isError || !usage.data) {
+    return (
+      <Alert color="red" variant="light">
+        {t('errors.generic')}
+      </Alert>
+    );
+  }
+
+  const snapshot = usage.data;
+  const isPro = snapshot.plan === 'pro';
+  const percent = Math.min(100, Math.round(snapshot.ratio * 100));
+  const progressColor = snapshot.exceeded ? 'red' : percent >= 80 ? 'yellow' : 'teal';
+  const priceLabel =
+    snapshot.monthlyPriceCents > 0 ? `$${(snapshot.monthlyPriceCents / 100).toFixed(0)}/mo` : null;
+
+  const checkoutError = errorMessage(checkout.error);
+  const portalError = errorMessage(portal.error);
+
+  return (
+    <Stack maw={760}>
+      <Title order={3}>{t('billing.title')}</Title>
+
+      <Card withBorder padding="lg" radius="md">
+        <Stack gap="md">
+          <Group justify="space-between" align="flex-start">
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                {t('billing.currentPlan')}
+              </Text>
+              <Group gap="xs" align="center">
+                <Title order={2} tt="capitalize">
+                  {snapshot.plan}
+                </Title>
+                {priceLabel && (
+                  <Badge variant="light" color="blue">
+                    {priceLabel}
+                  </Badge>
+                )}
+              </Group>
+            </Stack>
+            <Group gap="xs">
+              {!isPro && (
+                <Button
+                  loading={checkout.isPending}
+                  onClick={() => checkout.mutate()}
+                  data-testid="upgrade-button"
+                >
+                  {t('billing.upgrade')}
+                </Button>
+              )}
+              {isPro && (
+                <Button
+                  variant="default"
+                  loading={portal.isPending}
+                  onClick={() => portal.mutate()}
+                  data-testid="manage-button"
+                >
+                  {t('billing.manage')}
+                </Button>
+              )}
+            </Group>
+          </Group>
+
+          <Stack gap={4}>
+            <Group justify="space-between">
+              <Text size="sm" fw={500}>
+                {t('billing.eventsThisMonth')}
+              </Text>
+              <Text size="sm" c="dimmed" data-testid="usage-ratio">
+                {formatNumber(snapshot.eventsUsed)} / {formatNumber(snapshot.eventCap)}
+              </Text>
+            </Group>
+            <Progress value={percent} color={progressColor} size="lg" radius="sm" />
+            {snapshot.exceeded && (
+              <Text size="xs" c="red.7" fw={500}>
+                {t('billing.capExceeded')}
+              </Text>
+            )}
+          </Stack>
+
+          <Group gap="xl">
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                {t('billing.projectCap')}
+              </Text>
+              <Text size="sm">{snapshot.projectCap}</Text>
+            </Stack>
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                {t('billing.retention')}
+              </Text>
+              <Text size="sm">{t('billing.retentionDays', { days: snapshot.retentionDays })}</Text>
+            </Stack>
+          </Group>
+
+          {checkoutError && (
+            <Alert color="red" variant="light">
+              {checkoutError}
+            </Alert>
+          )}
+          {portalError && (
+            <Alert color="red" variant="light">
+              {portalError}
+            </Alert>
+          )}
+        </Stack>
+      </Card>
+    </Stack>
+  );
+}
+
+function errorMessage(err: unknown): string | null {
+  if (!err) return null;
+  if (err instanceof ApiError) return err.problem.detail ?? err.problem.title;
+  return String(err);
+}
+
+function formatNumber(n: number): string {
+  return new Intl.NumberFormat('en-US').format(n);
+}

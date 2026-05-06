@@ -165,5 +165,16 @@
     "errorConditionsJson": "Conditions must be valid JSON",
     "errorConditionsShape": "Conditions must be a JSON object",
     "errorThrottle": "Throttle must be 0 or greater"
+  },
+  "billing": {
+    "title": "Billing",
+    "currentPlan": "Current plan",
+    "eventsThisMonth": "Events this month",
+    "projectCap": "Project cap",
+    "retention": "Retention",
+    "retentionDays": "{{days}} days",
+    "upgrade": "Upgrade to Pro",
+    "manage": "Manage subscription",
+    "capExceeded": "Monthly event cap exceeded — new events are dropped until next renewal."
   }
 }

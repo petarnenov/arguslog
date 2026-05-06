@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { listAlertDestinations, listAlertRules } from './alerts';
+import { getUsage } from './billing';
 import {
   getIssue,
   listIssueEvents,
@@ -19,6 +20,7 @@ export const queryKeys = {
   issueEvents: (params: ListIssueEventsParams) => ['issueEvents', params] as const,
   alertRules: (projectId: number) => ['alert-rules', projectId] as const,
   alertDestinations: (orgId: number) => ['alert-destinations', orgId] as const,
+  usage: (orgId: number) => ['usage', orgId] as const,
 };
 
 export function useMyOrgs(options: { enabled?: boolean } = {}) {
@@ -87,5 +89,15 @@ export function useAlertDestinations(
     queryFn: () => listAlertDestinations(orgId as number),
     enabled: (options.enabled ?? true) && orgId != null,
     staleTime: 30_000,
+  });
+}
+
+export function useUsage(orgId: number | undefined, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.usage(orgId ?? -1),
+    queryFn: () => getUsage(orgId as number),
+    enabled: (options.enabled ?? true) && orgId != null,
+    // 60s — usage moves slowly and the API doc commits to a once-per-minute poll.
+    staleTime: 60_000,
   });
 }
