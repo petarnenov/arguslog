@@ -1,6 +1,7 @@
 package org.arguslog.api.billing.adapter.out.postgres;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -113,6 +114,82 @@ class JdbcBillingCustomerRepositoryTest {
       rs.next();
       assertThat(rs.getString(1)).isEqualTo("free");
       assertThat(rs.getTimestamp(2)).isNull();
+    }
+  }
+
+  @Test
+  void openPaymentGraceWritesWhenColumnIsNull() throws Exception {
+    Instant graceUntil = Instant.now().plusSeconds(7 * 24 * 3600);
+
+    boolean written = repo.openPaymentGrace(1L, graceUntil);
+
+    assertThat(written).isTrue();
+    assertThat(readGrace(1L))
+        .isCloseTo(graceUntil, within(1, java.time.temporal.ChronoUnit.SECONDS));
+  }
+
+  @Test
+  void openPaymentGraceIsAnIdempotentNoOpWhileWindowIsActive() throws Exception {
+    Instant first = Instant.now().plusSeconds(7 * 24 * 3600);
+    boolean firstWrite = repo.openPaymentGrace(1L, first);
+    Instant second = first.plusSeconds(7 * 24 * 3600);
+
+    boolean secondWrite = repo.openPaymentGrace(1L, second);
+
+    assertThat(firstWrite).isTrue();
+    assertThat(secondWrite).isFalse();
+    // Stored value must still be the first deadline — Smart Retries cannot extend the window.
+    assertThat(readGrace(1L)).isCloseTo(first, within(1, java.time.temporal.ChronoUnit.SECONDS));
+  }
+
+  @Test
+  void openPaymentGraceReopensAfterPreviousLapsed() throws Exception {
+    // Seed an already-lapsed grace timestamp directly.
+    setGrace(1L, Instant.now().minusSeconds(60));
+    Instant fresh = Instant.now().plusSeconds(7 * 24 * 3600);
+
+    boolean written = repo.openPaymentGrace(1L, fresh);
+
+    assertThat(written).isTrue();
+    assertThat(readGrace(1L)).isCloseTo(fresh, within(1, java.time.temporal.ChronoUnit.SECONDS));
+  }
+
+  @Test
+  void clearPaymentGraceResetsTheColumn() throws Exception {
+    setGrace(1L, Instant.now().plusSeconds(3600));
+
+    repo.clearPaymentGrace(1L);
+
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement stmt =
+            conn.prepareStatement("SELECT payment_grace_until FROM organizations WHERE id = 1");
+        ResultSet rs = stmt.executeQuery()) {
+      rs.next();
+      assertThat(rs.getTimestamp(1)).isNull();
+    }
+  }
+
+  private static Instant readGrace(long orgId) throws Exception {
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement stmt =
+            conn.prepareStatement("SELECT payment_grace_until FROM organizations WHERE id = ?")) {
+      stmt.setLong(1, orgId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        rs.next();
+        Timestamp ts = rs.getTimestamp(1);
+        return ts == null ? null : ts.toInstant();
+      }
+    }
+  }
+
+  private static void setGrace(long orgId, Instant value) throws Exception {
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement stmt =
+            conn.prepareStatement(
+                "UPDATE organizations SET payment_grace_until = ? WHERE id = ?")) {
+      stmt.setTimestamp(1, Timestamp.from(value));
+      stmt.setLong(2, orgId);
+      stmt.execute();
     }
   }
 }

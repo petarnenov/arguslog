@@ -1585,6 +1585,10 @@
           },
           "exceeded" : {
             "type" : "boolean"
+          },
+          "paymentGraceUntil" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       }

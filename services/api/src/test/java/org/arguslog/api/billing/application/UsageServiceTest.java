@@ -74,4 +74,24 @@ class UsageServiceTest {
     UsageSnapshot snap = service.snapshot(1L).orElseThrow();
     assertThat(snap.eventsUsed()).isEqualTo(1L);
   }
+
+  @Test
+  void noGraceReturnsNullPaymentGraceUntil() {
+    when(plans.findPlan(1L)).thenReturn(Optional.of(PlanTier.PRO));
+    when(usage.currentEventCount(1L, PERIOD)).thenReturn(10L);
+
+    UsageSnapshot snap = service.snapshot(1L).orElseThrow();
+    assertThat(snap.paymentGraceUntil()).isNull();
+  }
+
+  @Test
+  void openGraceFlowsThroughToTheSnapshot() {
+    Instant graceUntil = Instant.parse("2026-05-22T14:00:00Z");
+    when(plans.findPlan(1L)).thenReturn(Optional.of(PlanTier.PRO));
+    when(usage.currentEventCount(1L, PERIOD)).thenReturn(10L);
+    when(plans.findPaymentGraceUntil(1L)).thenReturn(Optional.of(graceUntil));
+
+    UsageSnapshot snap = service.snapshot(1L).orElseThrow();
+    assertThat(snap.paymentGraceUntil()).isEqualTo(graceUntil);
+  }
 }

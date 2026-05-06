@@ -142,6 +142,75 @@ describe('BillingPage', () => {
     expect(screen.queryByTestId('upgrade-button')).not.toBeInTheDocument();
   });
 
+  it('shows the payment-grace banner with countdown when the api returns a deadline', async () => {
+    const deadline = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([{ ...ORG, plan: 'pro' }]);
+      if (url.endsWith('/api/v1/orgs/1/usage')) {
+        return jsonResponse({
+          plan: 'pro',
+          monthlyPriceCents: 900,
+          eventsUsed: 100,
+          eventCap: 100000,
+          projectCap: 10,
+          retentionDays: 30,
+          ratio: 0.001,
+          exceeded: false,
+          paymentGraceUntil: deadline,
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    renderAt();
+
+    const banner = await screen.findByTestId('payment-grace-banner');
+    expect(banner).toHaveTextContent(/payment failed/i);
+    // Math.ceil on 5d - epsilon → "5 day(s) remaining"
+    expect(banner).toHaveTextContent(/5/);
+  });
+
+  it('opens the Stripe portal when Update payment method is clicked', async () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, assign },
+      writable: true,
+      configurable: true,
+    });
+    const deadline = new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString();
+    globalThis.fetch = vi.fn(async (input, init) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([{ ...ORG, plan: 'pro' }]);
+      if (url.endsWith('/api/v1/orgs/1/usage')) {
+        return jsonResponse({
+          plan: 'pro',
+          monthlyPriceCents: 900,
+          eventsUsed: 0,
+          eventCap: 100000,
+          projectCap: 10,
+          retentionDays: 30,
+          ratio: 0,
+          exceeded: false,
+          paymentGraceUntil: deadline,
+        });
+      }
+      if (url.endsWith('/api/v1/orgs/1/billing/portal') && init?.method === 'POST') {
+        return jsonResponse({ url: 'https://billing.stripe.com/p/sess_grace' });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    renderAt();
+
+    const update = await screen.findByTestId('update-payment-button');
+    await userEvent.click(update);
+
+    await waitFor(() =>
+      expect(assign).toHaveBeenCalledWith('https://billing.stripe.com/p/sess_grace'),
+    );
+  });
+
   it('shows the cap-exceeded banner when the api flags it', async () => {
     globalThis.fetch = vi.fn(async (input) => {
       const url = typeof input === 'string' ? input : (input as Request).url;

@@ -9,6 +9,8 @@ export interface UsageSnapshot {
   retentionDays: number;
   ratio: number;
   exceeded: boolean;
+  /** ISO-8601 timestamp; absent unless a Stripe `invoice.payment_failed` opened a grace window. */
+  paymentGraceUntil?: string;
 }
 
 export interface CheckoutResponse {

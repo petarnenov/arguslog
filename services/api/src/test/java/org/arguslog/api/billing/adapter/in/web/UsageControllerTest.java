@@ -87,7 +87,8 @@ class UsageControllerTest {
   @Test
   void getReturnsSerializedSnapshot() throws Exception {
     when(useCase.snapshot(1L))
-        .thenReturn(Optional.of(new UsageSnapshot(PlanTier.PRO, 25_000L, 100_000L, 0.25, false)));
+        .thenReturn(
+            Optional.of(new UsageSnapshot(PlanTier.PRO, 25_000L, 100_000L, 0.25, false, null)));
 
     mvc.perform(get("/api/v1/orgs/1/usage").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
@@ -98,7 +99,21 @@ class UsageControllerTest {
         .andExpect(jsonPath("$.projectCap").value(10))
         .andExpect(jsonPath("$.retentionDays").value(30))
         .andExpect(jsonPath("$.ratio").value(0.25))
-        .andExpect(jsonPath("$.exceeded").value(false));
+        .andExpect(jsonPath("$.exceeded").value(false))
+        // No grace open → field omitted by @JsonInclude(NON_NULL).
+        .andExpect(jsonPath("$.paymentGraceUntil").doesNotExist());
+  }
+
+  @Test
+  void getReturnsGraceWhenSet() throws Exception {
+    java.time.Instant grace = java.time.Instant.parse("2026-05-22T14:00:00Z");
+    when(useCase.snapshot(1L))
+        .thenReturn(
+            Optional.of(new UsageSnapshot(PlanTier.PRO, 100L, 100_000L, 0.001, false, grace)));
+
+    mvc.perform(get("/api/v1/orgs/1/usage").contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.paymentGraceUntil").value("2026-05-22T14:00:00Z"));
   }
 
   @Test

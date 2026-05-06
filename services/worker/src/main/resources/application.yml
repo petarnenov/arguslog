@@ -43,6 +43,10 @@ arguslog:
     dry-run: ${RETENTION_DRY_RUN:true}
     batch-size: ${RETENTION_BATCH_SIZE:10000}
     cron: ${RETENTION_CRON:0 0 3 * * *}
+  billing:
+    # 04:00 UTC sits an hour after the retention job — keeps the two daily passes from
+    # competing for connection-pool slots on a small Railway box.
+    downgrade-cron: ${BILLING_DOWNGRADE_CRON:0 0 4 * * *}
   r2:
     endpoint: ${R2_ENDPOINT:http://localhost:9000}
     bucket: ${R2_BUCKET:arguslog-sourcemaps}
