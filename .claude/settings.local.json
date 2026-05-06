@@ -118,7 +118,21 @@
       "Bash(grep *)",
       "Bash(git -c core.editor=true rebase --continue)",
       "Bash(git -c core.pager=cat log --oneline -6)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(./gradlew :services:api:tasks --group=flyway)",
+      "Bash(docker exec arguslog-postgres *)",
+      "Bash(./gradlew :services:api:bootRun)",
+      "Bash(curl -sS -m 3 -o /dev/null -w \"api:8081 -> HTTP %{http_code}\\\\n\" http://localhost:8081/actuator/health)",
+      "Bash(curl -sS -m 3 -o /dev/null -w \"web:5173 -> HTTP %{http_code}\\\\n\" http://localhost:5173)",
+      "Bash(curl -sS -m 5 -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"foo-test-from-claude\"}' http://localhost:8081/api/v1/orgs)",
+      "Bash(curl -sS -m 5 -o /dev/null -w \"%{http_code}\\\\n\" -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"foo-test-from-claude\"}' http://localhost:8081/api/v1/orgs)",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__list_console_messages",
+      "mcp__chrome-devtools__list_network_requests",
+      "mcp__chrome-devtools__get_network_request",
+      "Bash(./gradlew --stop)",
+      "Bash(./gradlew :services:api:test --tests \"*OrgController*\" --tests \"*FlywayMigration*\")",
+      "Bash(./gradlew :services:api:test --rerun-tasks)"
     ]
   }
 }
