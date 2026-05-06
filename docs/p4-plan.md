@@ -31,8 +31,8 @@ hard downgrade is a P5 decision.
 
 | #   | Milestone                                                                                                   | Status  | Commit    |
 | --- | ----------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| 1   | API: Plan catalog — single source of truth for per-plan limits (events/mo, projects, retention).            | ⏳ next | —         |
-| 2   | API: Bucket4j-on-Redis `RedisQuotaEnforcer` — per-project burst + per-org monthly event cap.                | pending | —         |
+| 1   | API: Plan catalog + `GET /api/v1/orgs/{id}/usage` for the BillingPage banner.                               | ✅ done | _pending_ |
+| 2   | API: Bucket4j-on-Redis `RedisQuotaEnforcer` — per-project burst + per-org monthly event cap.                | ⏳ next | —         |
 | 3   | API: Stripe Checkout endpoint — `POST /api/v1/orgs/{id}/billing/checkout-session`.                          | pending | —         |
 | 4   | API: Stripe Customer Portal endpoint — `POST /api/v1/orgs/{id}/billing/portal`.                             | pending | —         |
 | 5   | API: Stripe webhook handler — `checkout.session.completed`, `subscription.{updated,deleted}`, `invoice.payment_failed`. | pending | —         |

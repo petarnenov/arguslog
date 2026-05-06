@@ -20,6 +20,8 @@ import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
+import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.application.port.UsageRepository;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
 import org.arguslog.api.releases.application.port.SourceMapStorage;
@@ -79,6 +81,8 @@ class OpenApiContractTest {
   @MockitoBean SourceMapStorage sourceMapStorage;
   @MockitoBean PatRepository patRepository;
   @MockitoBean TokenHasher tokenHasher;
+  @MockitoBean UsageRepository usageRepository;
+  @MockitoBean OrgPlanRepository orgPlanRepository;
 
   @Test
   void generatedSpecMatchesTheCommittedSnapshot() throws Exception {

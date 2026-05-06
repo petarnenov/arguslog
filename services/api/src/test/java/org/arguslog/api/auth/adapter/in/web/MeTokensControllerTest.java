@@ -32,6 +32,8 @@ import org.arguslog.api.auth.application.PatUseCase.Issued;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
+import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.application.port.UsageRepository;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
 import org.arguslog.api.releases.application.port.SourceMapStorage;
@@ -81,6 +83,8 @@ class MeTokensControllerTest {
   @MockitoBean ReleaseRepository releaseRepository;
   @MockitoBean SourceMapArtifactRepository sourceMapArtifactRepository;
   @MockitoBean SourceMapStorage sourceMapStorage;
+  @MockitoBean UsageRepository usageRepository;
+  @MockitoBean OrgPlanRepository orgPlanRepository;
 
   @Test
   @WithMockUser(username = "00000000-0000-0000-0000-000000000001")
