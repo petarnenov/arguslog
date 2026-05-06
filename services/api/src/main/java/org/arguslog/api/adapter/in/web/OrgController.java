@@ -54,7 +54,7 @@ public class OrgController {
   ResponseEntity<ProblemDetail> handleInvalid(InvalidOrgException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid org");
-    body.setType(URI.create("https://argus.dev/problems/invalid-org"));
+    body.setType(URI.create("https://arguslog.dev/problems/invalid-org"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -70,8 +70,10 @@ public class OrgController {
   }
 
   private static String firstNonBlank(String a, String b) {
-    if (a != null && !a.isBlank()) return a;
-    if (b != null && !b.isBlank()) return b;
+    if (a != null && !a.isBlank())
+      return a;
+    if (b != null && !b.isBlank())
+      return b;
     return null;
   }
 }

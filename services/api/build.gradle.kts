@@ -1,5 +1,5 @@
 plugins {
-    id("argus.spring-service")
+    id("arguslog.spring-service")
 }
 
 description = "Argus API — REST API, Stripe webhooks, admin, Flyway owner"
@@ -10,7 +10,7 @@ val libs = the<org.gradle.accessors.dm.LibrariesForLibs>()
 // JSON on the test classpath. Copy it from the canonical location (services/keycloak/realm) at
 // processTestResources time so the test never silently runs against a stale duplicate.
 tasks.named<Copy>("processTestResources") {
-    from("../keycloak/realm/argus-realm.json")
+    from("../keycloak/realm/arguslog-realm.json")
 }
 
 dependencies {

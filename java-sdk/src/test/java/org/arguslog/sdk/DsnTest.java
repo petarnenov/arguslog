@@ -9,11 +9,11 @@ class DsnTest {
 
   @Test
   void parsesValidHttpsDsn() {
-    Dsn dsn = Dsn.parse("https://abc123@ingest.argus.io/42");
+    Dsn dsn = Dsn.parse("https://abc123@ingest.arguslog.io/42");
     assertThat(dsn.publicKey()).isEqualTo("abc123");
-    assertThat(dsn.host()).isEqualTo("ingest.argus.io");
+    assertThat(dsn.host()).isEqualTo("ingest.arguslog.io");
     assertThat(dsn.projectId()).isEqualTo("42");
-    assertThat(dsn.ingestUrl()).isEqualTo("https://ingest.argus.io/api/42/events");
+    assertThat(dsn.ingestUrl()).isEqualTo("https://ingest.arguslog.io/api/42/events");
   }
 
   @Test

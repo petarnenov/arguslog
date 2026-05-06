@@ -1,4 +1,4 @@
-import { __resetForTests, init } from '@argus/sdk-browser';
+import { __resetForTests, init } from '@arguslog/sdk-browser';
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

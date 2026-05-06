@@ -18,17 +18,17 @@ on:
   workflow_dispatch:
     inputs:
       services:
-        description: 'Service(s) to deploy'
+        description: "Service(s) to deploy"
         required: true
-        default: 'all'
+        default: "all"
         type: choice
-        options: [all, api, ingest, worker, web]
+        options: [ all, api, ingest, worker, web ]
       environment:
-        description: 'Target Railway environment'
+        description: "Target Railway environment"
         required: true
-        default: 'production'
+        default: "production"
         type: choice
-        options: [production, staging]
+        options: [ production, staging ]
 
 concurrency:
   group: deploy-${{ inputs.environment }}
@@ -83,7 +83,7 @@ jobs:
       - name: Verify CLI
         run: railway --version
 
-      - name: Deploy argus-${{ matrix.service }}
+      - name: Deploy arguslog-${{ matrix.service }}
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service argus-${{ matrix.service }} --detach
+        run: railway up --service arguslog-${{ matrix.service }} --detach

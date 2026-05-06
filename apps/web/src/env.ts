@@ -4,8 +4,8 @@ const envSchema = z.object({
   VITE_API_BASE_URL: z.string().url().default('http://localhost:8081'),
   VITE_INGEST_BASE_URL: z.string().url().default('http://localhost:8080'),
   VITE_KEYCLOAK_URL: z.string().url().default('http://localhost:8180'),
-  VITE_KEYCLOAK_REALM: z.string().default('argus'),
-  VITE_KEYCLOAK_CLIENT_ID: z.string().default('argus-web'),
+  VITE_KEYCLOAK_REALM: z.string().default('arguslog'),
+  VITE_KEYCLOAK_CLIENT_ID: z.string().default('arguslog-web'),
   VITE_DOGFOOD_DSN: z.string().optional(),
   VITE_RELEASE: z.string().default('dev'),
 });

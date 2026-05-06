@@ -12,25 +12,32 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
-@TestPropertySource(
-    properties = {
-      "spring.autoconfigure.exclude="
-          + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration",
-      "argus.worker.stream-enabled=false",
-      "argus.worker.alerts.stream-enabled=false"
-    })
+@TestPropertySource(properties = {
+    "spring.autoconfigure.exclude="
+        + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
+        + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration",
+    "arguslog.worker.stream-enabled=false",
+    "arguslog.worker.alerts.stream-enabled=false"
+})
 class WorkerApplicationTests {
 
-  // Mock every DB/Redis-bound port so the smoke test stays pure-context. Telegram dispatcher is
+  // Mock every DB/Redis-bound port so the smoke test stays pure-context. Telegram
+  // dispatcher is
   // fine to instantiate (no token => log-and-drop) so we don't mock it here.
-  @MockitoBean EventStore eventStore;
-  @MockitoBean AlertRuleRepository alertRuleRepository;
-  @MockitoBean AlertDestinationRepository alertDestinationRepository;
-  @MockitoBean AlertContextResolver alertContextResolver;
-  @MockitoBean PersistedEventPublisher persistedEventPublisher;
-  @MockitoBean RuleThrottle ruleThrottle;
+  @MockitoBean
+  EventStore eventStore;
+  @MockitoBean
+  AlertRuleRepository alertRuleRepository;
+  @MockitoBean
+  AlertDestinationRepository alertDestinationRepository;
+  @MockitoBean
+  AlertContextResolver alertContextResolver;
+  @MockitoBean
+  PersistedEventPublisher persistedEventPublisher;
+  @MockitoBean
+  RuleThrottle ruleThrottle;
 
   @Test
-  void contextLoads() {}
+  void contextLoads() {
+  }
 }

@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "argus"
+rootProject.name = "arguslog"
 
 include(
     ":services:ingest",

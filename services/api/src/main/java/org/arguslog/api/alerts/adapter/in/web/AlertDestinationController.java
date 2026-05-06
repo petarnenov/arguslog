@@ -24,9 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(
-    value = "/api/v1/orgs/{orgId}/alert-destinations",
-    produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/v1/orgs/{orgId}/alert-destinations", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AlertDestinationController {
 
   private final AlertDestinationUseCase useCase;
@@ -87,7 +85,7 @@ public class AlertDestinationController {
   ResponseEntity<ProblemDetail> handleBadConfig(InvalidDestinationConfigException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid alert destination");
-    body.setType(URI.create("https://argus.dev/problems/invalid-alert-destination"));
+    body.setType(URI.create("https://arguslog.dev/problems/invalid-alert-destination"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);

@@ -49,9 +49,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * P1 milestone #4 — exercises the full Java ingest → Redis → worker → Postgres chain in a single
- * JVM, against real TimescaleDB and Redis containers. The SDK ↔ ingest HTTP wire format is covered
- * separately (Pact contract tests) so this stays focused on the back-end pipeline.
+ * P1 milestone #4 — exercises the full Java ingest → Redis → worker → Postgres
+ * chain in a single
+ * JVM, against real TimescaleDB and Redis containers. The SDK ↔ ingest HTTP
+ * wire format is covered
+ * separately (Pact contract tests) so this stays focused on the back-end
+ * pipeline.
  */
 @Testcontainers
 class IngestToPostgresEndToEndTest {
@@ -61,26 +64,23 @@ class IngestToPostgresEndToEndTest {
   private static final String DSN_PUBLIC = "e2e-public-key";
   private static final long PROJECT_ID = 101L;
 
-  private static final DockerImageName TIMESCALE_IMAGE =
-      DockerImageName.parse("timescale/timescaledb:latest-pg16")
-          .asCompatibleSubstituteFor("postgres");
+  private static final DockerImageName TIMESCALE_IMAGE = DockerImageName.parse("timescale/timescaledb:latest-pg16")
+      .asCompatibleSubstituteFor("postgres");
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>(TIMESCALE_IMAGE)
-          .withDatabaseName("argus")
-          .withUsername("argus")
-          .withPassword("argus");
+  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(TIMESCALE_IMAGE)
+      .withDatabaseName("arguslog")
+      .withUsername("arguslog")
+      .withPassword("arguslog");
 
   @Container
-  static final GenericContainer<?> REDIS =
-      new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+  static final GenericContainer<?> REDIS = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
+      .withExposedPorts(6379);
 
   private static HikariDataSource dataSource;
   private static LettuceConnectionFactory redisFactory;
   private static StringRedisTemplate redis;
-  private static StreamMessageListenerContainer<String, MapRecord<String, String, String>>
-      listenerContainer;
+  private static StreamMessageListenerContainer<String, MapRecord<String, String, String>> listenerContainer;
   private static IngestEventUseCase ingest;
 
   @BeforeAll
@@ -106,26 +106,25 @@ class IngestToPostgresEndToEndTest {
     // Worker side --------------------------------------------------------
     JdbcEventStore rawStore = new JdbcEventStore(dataSource);
     TransactionTemplate tx = new TransactionTemplate(new JdbcTransactionManager(dataSource));
-    // Alerts pipeline is exercised in its own tests; here we only care about the persist path.
-    ProcessEventService unwrapped =
-        new ProcessEventService(
-            new PayloadFingerprinter(new ObjectMapper()), rawStore, persisted -> {});
+    // Alerts pipeline is exercised in its own tests; here we only care about the
+    // persist path.
+    ProcessEventService unwrapped = new ProcessEventService(
+        new PayloadFingerprinter(new ObjectMapper()), rawStore, persisted -> {
+        });
     ProcessEventUseCase wrapped = event -> tx.execute(status -> unwrapped.process(event));
 
-    RedisStreamProperties props =
-        new RedisStreamProperties(
-            STREAM_KEY, CONSUMER_GROUP, "e2e-worker", 50, Duration.ofMillis(200));
+    RedisStreamProperties props = new RedisStreamProperties(
+        STREAM_KEY, CONSUMER_GROUP, "e2e-worker", 50, Duration.ofMillis(200));
     RedisStreamEventListener listener = new RedisStreamEventListener(wrapped, redis, props);
 
     redis.opsForStream().createGroup(STREAM_KEY, ReadOffset.from("0"), CONSUMER_GROUP);
 
-    listenerContainer =
-        StreamMessageListenerContainer.create(
-            redisFactory,
-            StreamMessageListenerContainer.StreamMessageListenerContainerOptions.builder()
-                .pollTimeout(Duration.ofMillis(200))
-                .batchSize(50)
-                .build());
+    listenerContainer = StreamMessageListenerContainer.create(
+        redisFactory,
+        StreamMessageListenerContainer.StreamMessageListenerContainerOptions.builder()
+            .pollTimeout(Duration.ofMillis(200))
+            .batchSize(50)
+            .build());
     listenerContainer.receive(
         Consumer.from(CONSUMER_GROUP, "e2e-worker"),
         StreamOffset.create(STREAM_KEY, ReadOffset.lastConsumed()),
@@ -133,19 +132,21 @@ class IngestToPostgresEndToEndTest {
     listenerContainer.start();
 
     // Ingest side --------------------------------------------------------
-    ingest =
-        new IngestEventService(
-            new PostgresProjectAuthenticator(dataSource),
-            new AllowAllQuotaEnforcer(),
-            new RedisStreamEventPublisher(redis, STREAM_KEY),
-            Clock.systemUTC());
+    ingest = new IngestEventService(
+        new PostgresProjectAuthenticator(dataSource),
+        new AllowAllQuotaEnforcer(),
+        new RedisStreamEventPublisher(redis, STREAM_KEY),
+        Clock.systemUTC());
   }
 
   @AfterAll
   static void stop() {
-    if (listenerContainer != null) listenerContainer.stop();
-    if (redisFactory != null) redisFactory.destroy();
-    if (dataSource != null) dataSource.close();
+    if (listenerContainer != null)
+      listenerContainer.stop();
+    if (redisFactory != null)
+      redisFactory.destroy();
+    if (dataSource != null)
+      dataSource.close();
   }
 
   @AfterEach
@@ -157,16 +158,14 @@ class IngestToPostgresEndToEndTest {
 
   @Test
   void typeErrorEventLandsInPostgresWithMatchingIssue() {
-    String payload =
-        """
+    String payload = """
         {"level":"error","exception":{"values":[
           {"type":"TypeError","value":"x is undefined",
            "stacktrace":{"frames":[{"filename":"app.js","function":"render","lineno":42}]}}
         ]}}
         """;
 
-    Result result =
-        ingest.ingest(new Command(PROJECT_ID, DSN_PUBLIC, payload, "127.0.0.1", "junit"));
+    Result result = ingest.ingest(new Command(PROJECT_ID, DSN_PUBLIC, payload, "127.0.0.1", "junit"));
     assertThat(result).isInstanceOf(Result.Accepted.class);
 
     await()
@@ -187,8 +186,7 @@ class IngestToPostgresEndToEndTest {
 
   @Test
   void twoEventsWithSameSignatureLandUnderTheSameIssue() {
-    String payload =
-        """
+    String payload = """
         {"level":"warning","exception":{"values":[
           {"type":"NetworkError","value":"timeout"}
         ]}}
@@ -227,8 +225,7 @@ class IngestToPostgresEndToEndTest {
   }
 
   private static EventRow lastEventRow() {
-    String sql =
-        "SELECT issue_id, project_id, payload::text FROM events ORDER BY received_at DESC LIMIT 1";
+    String sql = "SELECT issue_id, project_id, payload::text FROM events ORDER BY received_at DESC LIMIT 1";
     try (Connection conn = dataSource.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql);
         ResultSet rs = stmt.executeQuery()) {
@@ -253,15 +250,16 @@ class IngestToPostgresEndToEndTest {
     }
   }
 
-  private record EventRow(long issueId, long projectId, String payload) {}
+  private record EventRow(long issueId, long projectId, String payload) {
+  }
 
-  private record IssueRow(String title, String culprit, String level, long occurrenceCount) {}
+  private record IssueRow(String title, String culprit, String level, long occurrenceCount) {
+  }
 
   private static String resolveMigrationsLocation() {
-    List<Path> candidates =
-        List.of(
-            Path.of("../api/src/main/resources/db/migration"),
-            Path.of("services/api/src/main/resources/db/migration"));
+    List<Path> candidates = List.of(
+        Path.of("../api/src/main/resources/db/migration"),
+        Path.of("services/api/src/main/resources/db/migration"));
     return candidates.stream()
         .map(Path::toAbsolutePath)
         .filter(Files::isDirectory)
@@ -278,9 +276,8 @@ class IngestToPostgresEndToEndTest {
           "INSERT INTO projects (id, org_id, slug, name, platform) VALUES ("
               + PROJECT_ID
               + ", 1, 'web', 'Web', 'javascript')");
-      try (PreparedStatement stmt =
-          conn.prepareStatement(
-              "INSERT INTO project_keys (project_id, dsn_public, dsn_secret_hash, active) VALUES (?, ?, NULL, TRUE)")) {
+      try (PreparedStatement stmt = conn.prepareStatement(
+          "INSERT INTO project_keys (project_id, dsn_public, dsn_secret_hash, active) VALUES (?, ?, NULL, TRUE)")) {
         stmt.setLong(1, PROJECT_ID);
         stmt.setString(2, DSN_PUBLIC);
         stmt.execute();

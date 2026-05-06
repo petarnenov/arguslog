@@ -1,6 +1,6 @@
 {
   "consumer": {
-    "name": "argus-sdk-browser"
+    "name": "arguslog-sdk-browser"
   },
   "interactions": [
     {
@@ -23,7 +23,7 @@
           "level": "error",
           "platform": "javascript",
           "sdk": {
-            "name": "argus.javascript",
+            "name": "arguslog.javascript",
             "version": "0.0.0"
           },
           "timestamp": 1730000000000
@@ -132,7 +132,7 @@
           "message": "config drift detected",
           "platform": "javascript",
           "sdk": {
-            "name": "argus.javascript",
+            "name": "arguslog.javascript",
             "version": "0.0.0"
           },
           "timestamp": 1730000000000
@@ -229,6 +229,6 @@
     }
   },
   "provider": {
-    "name": "argus-ingest"
+    "name": "arguslog-ingest"
   }
 }

@@ -2,9 +2,9 @@ name: PR
 
 on:
   pull_request:
-    branches: [main]
+    branches: [ main ]
   push:
-    branches: [main]
+    branches: [ main ]
 
 concurrency:
   group: pr-${{ github.ref }}
@@ -30,12 +30,12 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - name: Regenerate Pact contracts (sdk-browser → ingest)
-        run: pnpm --filter @argus/sdk-browser test:pact
+        run: pnpm --filter @arguslog/sdk-browser test:pact
       - name: Verify committed Pacts match the SDK
         run: |
           if ! git diff --exit-code pacts/; then
             echo "::error::pacts/ drifted — the sdk-browser contract changed but the committed Pact JSON is stale."
-            echo "Run 'pnpm --filter @argus/sdk-browser test:pact' locally and commit the diff."
+            echo "Run 'pnpm --filter @arguslog/sdk-browser test:pact' locally and commit the diff."
             exit 1
           fi
       - name: Upload coverage
@@ -84,7 +84,7 @@ jobs:
         with:
           scan-type: fs
           severity: HIGH,CRITICAL
-          exit-code: '1'
+          exit-code: "1"
           ignore-unfixed: true
 
   openapi-diff:
@@ -102,7 +102,8 @@ jobs:
         # OpenApiContractTest hits /v3/api-docs and asserts the result matches the committed
         # services/api/openapi.json byte-for-byte. A drift fails the test and writes the new
         # spec to services/api/build/openapi/openapi.json, which the upload below preserves.
-        run: ./gradlew :services:api:test --tests "org.arguslog.api.openapi.OpenApiContractTest"
+        run: ./gradlew :services:api:test --tests
+          "org.arguslog.api.openapi.OpenApiContractTest"
       - name: Verify committed spec matches the api
         if: always()
         run: |

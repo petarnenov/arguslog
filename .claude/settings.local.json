@@ -96,7 +96,8 @@
       "Bash(awk -F: '{sum+=$2} END {print \"TOTAL:\", sum}')",
       "Bash(pnpm build *)",
       "Bash(pnpm prettier *)",
-      "Bash(grep -rn *)"
+      "Bash(grep -rn *)",
+      "Bash(grep -n *)"
     ]
   }
 }

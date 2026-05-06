@@ -34,10 +34,10 @@ public class JdbcAlertDestinationRepository implements AlertDestinationRepositor
     byte[] encrypted = cipher.encrypt(configJson.getBytes(StandardCharsets.UTF_8));
     return jdbc.queryForObject(
         """
-        INSERT INTO alert_destinations (org_id, kind, name, config_encrypted)
-             VALUES (?, ?::destination_kind, ?, ?)
-          RETURNING id, org_id, kind::text, name, config_encrypted, created_at
-        """,
+            INSERT INTO alert_destinations (org_id, kind, name, config_encrypted)
+                 VALUES (?, ?::destination_kind, ?, ?)
+              RETURNING id, org_id, kind::text, name, config_encrypted, created_at
+            """,
         rowMapper,
         orgId,
         kind.dbValue(),
@@ -50,11 +50,11 @@ public class JdbcAlertDestinationRepository implements AlertDestinationRepositor
     pinOrgContextForRls();
     return jdbc.query(
         """
-        SELECT id, org_id, kind::text, name, config_encrypted, created_at
-          FROM alert_destinations
-         WHERE org_id = ?
-         ORDER BY created_at DESC, id DESC
-        """,
+            SELECT id, org_id, kind::text, name, config_encrypted, created_at
+              FROM alert_destinations
+             WHERE org_id = ?
+             ORDER BY created_at DESC, id DESC
+            """,
         rowMapper,
         orgId);
   }
@@ -66,10 +66,10 @@ public class JdbcAlertDestinationRepository implements AlertDestinationRepositor
       return Optional.ofNullable(
           jdbc.queryForObject(
               """
-              SELECT id, org_id, kind::text, name, config_encrypted, created_at
-                FROM alert_destinations
-               WHERE org_id = ? AND id = ?
-              """,
+                  SELECT id, org_id, kind::text, name, config_encrypted, created_at
+                    FROM alert_destinations
+                   WHERE org_id = ? AND id = ?
+                  """,
               rowMapper,
               orgId,
               id));
@@ -82,18 +82,18 @@ public class JdbcAlertDestinationRepository implements AlertDestinationRepositor
   public Optional<AlertDestination> update(long orgId, long id, String name, String configJson) {
     pinOrgContextForRls();
     byte[] encrypted = cipher.encrypt(configJson.getBytes(StandardCharsets.UTF_8));
-    int updated =
-        jdbc.update(
-            """
+    int updated = jdbc.update(
+        """
             UPDATE alert_destinations
                SET name = ?, config_encrypted = ?
              WHERE org_id = ? AND id = ?
             """,
-            name,
-            encrypted,
-            orgId,
-            id);
-    if (updated == 0) return Optional.empty();
+        name,
+        encrypted,
+        orgId,
+        id);
+    if (updated == 0)
+      return Optional.empty();
     return find(orgId, id);
   }
 
@@ -106,7 +106,7 @@ public class JdbcAlertDestinationRepository implements AlertDestinationRepositor
   private void pinOrgContextForRls() {
     long orgId = OrgContext.requireCurrent();
     jdbc.queryForObject(
-        "SELECT set_config('argus.org_id', ?, true)", String.class, String.valueOf(orgId));
+        "SELECT set_config('arguslog.org_id', ?, true)", String.class, String.valueOf(orgId));
   }
 
   private AlertDestination mapRow(ResultSet rs, int rowNum) throws SQLException {

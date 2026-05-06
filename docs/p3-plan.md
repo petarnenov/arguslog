@@ -22,8 +22,8 @@
 | 4b  | Worker: dispatch fan-out — email (Resend) + Slack/webhook.                                                  | ✅ done | `e4c12fb` |
 | 5   | Worker: throttling — Redis-backed `last_fired_at` per rule, skip if within `throttle_seconds`.              | ✅ done | `b7042d8` |
 | 6   | Web: AlertRulesPage + AlertDestinationsPage under project / org settings.                                   | ✅ done | `509af8e` |
-| 7   | CLI: `argus releases new <version>` — POST a release row.                                                   | pending | —         |
-| 8   | CLI: `argus sourcemaps upload <release> <path>` — multipart upload to R2 via api signed URL.                | pending | —         |
+| 7   | CLI: `arguslog releases new <version>` — POST a release row.                                                | pending | —         |
+| 8   | CLI: `arguslog sourcemaps upload <release> <path>` — multipart upload to R2 via api signed URL.             | pending | —         |
 | 9   | API: signed-URL endpoint for sourcemap PUTs; persists to `source_map_artifacts`.                            | pending | —         |
 | 10  | Worker: symbolication — for JS events, fetch matching sourcemap from R2, decode top frames before persist.  | pending | —         |
 | 11  | Web: surface symbolicated frames on IssueDetailPage; show a "raw" toggle for the minified version.          | pending | —         |
@@ -60,7 +60,7 @@ The two tracks are independent until #6 / #11 (web). Either can ship first.
   in `source_map_artifacts.r2_key`.
 - **Sourcemap fetch:** worker uses Caffeine + R2 client; LRU bounded to 256 maps to keep heap
   predictable. Cache miss → R2 GET via SDK presigned URL (or direct if same VPC).
-- **CLI auth:** uses an Argus PAT (created via web app, stored in `~/.argus/credentials`). API
+- **CLI auth:** uses an Argus PAT (created via web app, stored in `~/.arguslog/credentials`). API
   exchanges PAT for a short-lived JWT for upload URL signing.
 
 ## Carry-forwards from P1 / P2

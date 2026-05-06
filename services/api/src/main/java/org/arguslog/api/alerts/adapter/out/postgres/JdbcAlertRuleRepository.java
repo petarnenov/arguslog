@@ -40,16 +40,16 @@ public class JdbcAlertRuleRepository implements AlertRuleRepository {
     pinOrgContextForRls();
     return jdbc.queryForObject(
         """
-        INSERT INTO alert_rules (project_id, name, conditions, actions, throttle_seconds, enabled)
-             VALUES (?, ?, ?::jsonb, ?::jsonb, ?, ?)
-          RETURNING id, project_id, name, conditions::text, actions::text,
-                    throttle_seconds, enabled, created_at
-        """,
+            INSERT INTO alert_rules (project_id, name, conditions, actions, throttle_seconds, enabled)
+                 VALUES (?, ?, ?::jsonb, ?::jsonb, ?, ?)
+              RETURNING id, project_id, name, conditions::text, actions::text,
+                        throttle_seconds, enabled, created_at
+            """,
         new Object[] {
-          projectId, name, serialize(conditions), serialize(actions), throttleSeconds, enabled
+            projectId, name, serialize(conditions), serialize(actions), throttleSeconds, enabled
         },
         new int[] {
-          Types.BIGINT, Types.VARCHAR, Types.OTHER, Types.OTHER, Types.INTEGER, Types.BOOLEAN,
+            Types.BIGINT, Types.VARCHAR, Types.OTHER, Types.OTHER, Types.INTEGER, Types.BOOLEAN,
         },
         rowMapper);
   }
@@ -59,12 +59,12 @@ public class JdbcAlertRuleRepository implements AlertRuleRepository {
     pinOrgContextForRls();
     return jdbc.query(
         """
-        SELECT id, project_id, name, conditions::text, actions::text,
-               throttle_seconds, enabled, created_at
-          FROM alert_rules
-         WHERE project_id = ?
-         ORDER BY created_at DESC, id DESC
-        """,
+            SELECT id, project_id, name, conditions::text, actions::text,
+                   throttle_seconds, enabled, created_at
+              FROM alert_rules
+             WHERE project_id = ?
+             ORDER BY created_at DESC, id DESC
+            """,
         rowMapper,
         projectId);
   }
@@ -76,11 +76,11 @@ public class JdbcAlertRuleRepository implements AlertRuleRepository {
       return Optional.ofNullable(
           jdbc.queryForObject(
               """
-              SELECT id, project_id, name, conditions::text, actions::text,
-                     throttle_seconds, enabled, created_at
-                FROM alert_rules
-               WHERE project_id = ? AND id = ?
-              """,
+                  SELECT id, project_id, name, conditions::text, actions::text,
+                         throttle_seconds, enabled, created_at
+                    FROM alert_rules
+                   WHERE project_id = ? AND id = ?
+                  """,
               rowMapper,
               projectId,
               id));
@@ -99,36 +99,35 @@ public class JdbcAlertRuleRepository implements AlertRuleRepository {
       int throttleSeconds,
       boolean enabled) {
     pinOrgContextForRls();
-    int updated =
-        jdbc.update(
-            """
+    int updated = jdbc.update(
+        """
             UPDATE alert_rules
                SET name = ?, conditions = ?::jsonb, actions = ?::jsonb,
                    throttle_seconds = ?, enabled = ?
              WHERE project_id = ? AND id = ?
             """,
-            name,
-            serialize(conditions),
-            serialize(actions),
-            throttleSeconds,
-            enabled,
-            projectId,
-            id);
-    if (updated == 0) return Optional.empty();
+        name,
+        serialize(conditions),
+        serialize(actions),
+        throttleSeconds,
+        enabled,
+        projectId,
+        id);
+    if (updated == 0)
+      return Optional.empty();
     return find(projectId, id);
   }
 
   @Override
   public boolean delete(long projectId, long id) {
     pinOrgContextForRls();
-    return jdbc.update("DELETE FROM alert_rules WHERE project_id = ? AND id = ?", projectId, id)
-        > 0;
+    return jdbc.update("DELETE FROM alert_rules WHERE project_id = ? AND id = ?", projectId, id) > 0;
   }
 
   private void pinOrgContextForRls() {
     long orgId = OrgContext.requireCurrent();
     jdbc.queryForObject(
-        "SELECT set_config('argus.org_id', ?, true)", String.class, String.valueOf(orgId));
+        "SELECT set_config('arguslog.org_id', ?, true)", String.class, String.valueOf(orgId));
   }
 
   private AlertRule mapRow(ResultSet rs, int rowNum) throws SQLException {

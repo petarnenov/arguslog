@@ -1,5 +1,5 @@
 plugins {
-    id("argus.spring-service")
+    id("arguslog.spring-service")
 }
 
 description = "Argus ingest — public HTTP event endpoint, Redis Streams writer"

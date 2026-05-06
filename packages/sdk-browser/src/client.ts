@@ -5,7 +5,7 @@ import { parseStack } from './stack-parser.js';
 import { Transport } from './transport.js';
 import type { ArgusOptions, Breadcrumb, EventPayload, Level, ParsedDsn, User } from './types.js';
 
-const SDK_NAME = 'argus.javascript';
+const SDK_NAME = 'arguslog.javascript';
 const SDK_VERSION = '0.0.0';
 
 export class ArgusClient {

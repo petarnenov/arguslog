@@ -48,7 +48,7 @@
 - Source map symbolication (P3).
 - Alerts / destinations (P3).
 - Bucket4j rate limiting (P4) — `AllowAllQuotaEnforcer` stays.
-- Sourcemap upload via `@argus/cli` (P3).
+- Sourcemap upload via `@arguslog/cli` (P3).
 - Caffeine cache in front of `PostgresProjectAuthenticator` (P4 perf pass).
 - Continuous aggregate `issue_stats_5m` is created by V1 migration but
   unused until the dashboard hits it (P2).

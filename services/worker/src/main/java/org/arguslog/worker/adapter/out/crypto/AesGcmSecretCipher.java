@@ -17,8 +17,11 @@ import org.springframework.stereotype.Component;
  *   [13..]   ciphertext + auth tag
  * </pre>
  *
- * <p>Same env var name ({@code argus.alerts.secret-key}) so api and worker share one key. TODO(P4):
- * extract this and the api copy to a shared module — the wire format is the contract today, which
+ * <p>
+ * Same env var name ({@code arguslog.alerts.secret-key}) so api and worker
+ * share one key. TODO(P4):
+ * extract this and the api copy to a shared module — the wire format is the
+ * contract today, which
  * is fragile.
  */
 @Component
@@ -31,24 +34,24 @@ public class AesGcmSecretCipher implements SecretCipher {
 
   private final SecretKeySpec key;
 
-  public AesGcmSecretCipher(@Value("${argus.alerts.secret-key:}") String base64Key) {
+  public AesGcmSecretCipher(@Value("${arguslog.alerts.secret-key:}") String base64Key) {
     if (base64Key == null || base64Key.isBlank()) {
-      // Same dev fallback as api so both sides can decrypt each other's writes in dev.
-      byte[] devKey =
-          "argus-dev-fallback-key-32-bytes!".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      // Same dev fallback as api so both sides can decrypt each other's writes in
+      // dev.
+      byte[] devKey = "arguslog-dev-fallback-key-32byte".getBytes(java.nio.charset.StandardCharsets.UTF_8);
       if (devKey.length != 32) {
         throw new IllegalStateException("dev fallback key must be 32 bytes; got " + devKey.length);
       }
       this.key = new SecretKeySpec(devKey, "AES");
       org.slf4j.LoggerFactory.getLogger(AesGcmSecretCipher.class)
           .warn(
-              "argus.alerts.secret-key is empty — using the built-in dev key. DO NOT run prod like this.");
+              "arguslog.alerts.secret-key is empty — using the built-in dev key. DO NOT run prod like this.");
       return;
     }
     byte[] decoded = Base64.getDecoder().decode(base64Key);
     if (decoded.length != 32) {
       throw new IllegalArgumentException(
-          "argus.alerts.secret-key must decode to 32 bytes (AES-256); got " + decoded.length);
+          "arguslog.alerts.secret-key must decode to 32 bytes (AES-256); got " + decoded.length);
     }
     this.key = new SecretKeySpec(decoded, "AES");
   }
@@ -61,7 +64,7 @@ public class AesGcmSecretCipher implements SecretCipher {
     byte version = ciphertext[0];
     if (version != CURRENT_VERSION) {
       throw new IllegalArgumentException(
-          "unknown key version " + version + "; rotate argus.alerts.secret-key");
+          "unknown key version " + version + "; rotate arguslog.alerts.secret-key");
     }
     try {
       byte[] iv = new byte[IV_LEN];

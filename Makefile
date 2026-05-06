@@ -63,17 +63,17 @@ ps: ## Show infra container status
 
 ## ─── Individual services (run in foreground) ───────────────────────────────
 
-api: ## Run argus-api in foreground (port 8081)
+api: ## Run arguslog-api in foreground (port 8081)
 	@$(GRADLE) :services:api:bootRun
 
-ingest: ## Run argus-ingest in foreground (port 8080)
+ingest: ## Run arguslog-ingest in foreground (port 8080)
 	@$(GRADLE) :services:ingest:bootRun
 
-worker: ## Run argus-worker in foreground (port 8082)
+worker: ## Run arguslog-worker in foreground (port 8082)
 	@$(GRADLE) :services:worker:bootRun
 
 web: ## Run web app in foreground (Vite, port 5173)
-	@$(PNPM) --filter @argus/web dev
+	@$(PNPM) --filter @arguslog/web dev
 
 ## ─── Setup / dependencies ──────────────────────────────────────────────────
 

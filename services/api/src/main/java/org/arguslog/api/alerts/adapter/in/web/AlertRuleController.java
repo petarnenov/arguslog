@@ -23,9 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(
-    value = "/api/v1/projects/{projectId}/alert-rules",
-    produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/v1/projects/{projectId}/alert-rules", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AlertRuleController {
 
   private final AlertRuleUseCase useCase;
@@ -42,14 +40,13 @@ public class AlertRuleController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<AlertRuleResponse> create(
       @PathVariable long projectId, @RequestBody AlertRuleRequest body) {
-    AlertRule created =
-        useCase.create(
-            projectId,
-            body.name(),
-            body.conditions(),
-            body.actions(),
-            body.throttleOrDefault(),
-            body.enabledOrDefault());
+    AlertRule created = useCase.create(
+        projectId,
+        body.name(),
+        body.conditions(),
+        body.actions(),
+        body.throttleOrDefault(),
+        body.enabledOrDefault());
     return ResponseEntity.created(URI.create(String.valueOf(created.id())))
         .body(AlertRuleResponse.from(created));
   }
@@ -90,7 +87,7 @@ public class AlertRuleController {
   ResponseEntity<ProblemDetail> handleInvalid(InvalidAlertRuleException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid alert rule");
-    body.setType(URI.create("https://argus.dev/problems/invalid-alert-rule"));
+    body.setType(URI.create("https://arguslog.dev/problems/invalid-alert-rule"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
