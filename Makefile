@@ -1,4 +1,4 @@
-# Argus — dev orchestration
+# Arguslog — dev orchestration
 #
 # Single entry point: `make dev` brings up infra, then opens an mprocs TUI
 # with api, ingest, worker, and web panels. Quit mprocs with `q` to stop the

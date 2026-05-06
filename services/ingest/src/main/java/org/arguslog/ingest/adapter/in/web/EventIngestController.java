@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "/api/{projectId}/events", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EventIngestController {
 
-  private static final String AUTH_HEADER = "X-Argus-Auth";
-  private static final String AUTH_PREFIX = "Argus DSN ";
+  private static final String AUTH_HEADER = "X-Arguslog-Auth";
+  private static final String AUTH_PREFIX = "Arguslog DSN ";
 
   private final IngestEventUseCase ingest;
 

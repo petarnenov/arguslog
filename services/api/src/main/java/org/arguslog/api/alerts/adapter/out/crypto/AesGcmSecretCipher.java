@@ -18,11 +18,8 @@ import org.springframework.stereotype.Component;
  *   [13..]   ciphertext + auth tag
  * </pre>
  *
- * <p>
- * A version byte means rotation is just a config bump + a background re-encrypt
- * of rows whose
- * first byte is the old version. Real KMS / Cloudflare Workers Secrets
- * integration is the P4
+ * <p>A version byte means rotation is just a config bump + a background re-encrypt of rows whose
+ * first byte is the old version. Real KMS / Cloudflare Workers Secrets integration is the P4
  * billing-setup landing zone — the abstraction stays {@link SecretCipher}.
  */
 @Component
@@ -43,7 +40,8 @@ public class AesGcmSecretCipher implements SecretCipher {
       // want a hidden key-size mismatch in dev silently turning into AES-128. Loud
       // warning so
       // this never makes it to prod.
-      byte[] devKey = "arguslog-dev-fallback-key-32byte".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      byte[] devKey =
+          "arguslog-dev-fallback-key-32byte".getBytes(java.nio.charset.StandardCharsets.UTF_8);
       if (devKey.length != 32) {
         throw new IllegalStateException("dev fallback key must be 32 bytes; got " + devKey.length);
       }
@@ -87,7 +85,9 @@ public class AesGcmSecretCipher implements SecretCipher {
     byte version = ciphertext[0];
     if (version != CURRENT_VERSION) {
       throw new IllegalArgumentException(
-          "unknown key version " + version + "; rotate the master key in arguslog.alerts.secret-key");
+          "unknown key version "
+              + version
+              + "; rotate the master key in arguslog.alerts.secret-key");
     }
     try {
       byte[] iv = new byte[IV_LEN];

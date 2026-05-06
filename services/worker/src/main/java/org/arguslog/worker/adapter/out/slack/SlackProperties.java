@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Slack only needs a HTTP timeout and a dashboard base url for deep-links — the actual webhook URL
  * is per-destination, stored encrypted in {@code alert_destinations.config_encrypted}.
  */
-@ConfigurationProperties(prefix = "argus.alerts.slack")
+@ConfigurationProperties(prefix = "arguslog.alerts.slack")
 public record SlackProperties(String dashboardBaseUrl, Duration timeout) {
 
   public SlackProperties {

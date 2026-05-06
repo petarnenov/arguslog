@@ -30,14 +30,16 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 class JdbcIssueRepositoryTest {
 
-  private static final DockerImageName TIMESCALE_IMAGE = DockerImageName.parse("timescale/timescaledb:latest-pg16")
-      .asCompatibleSubstituteFor("postgres");
+  private static final DockerImageName TIMESCALE_IMAGE =
+      DockerImageName.parse("timescale/timescaledb:latest-pg16")
+          .asCompatibleSubstituteFor("postgres");
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(TIMESCALE_IMAGE)
-      .withDatabaseName("arguslog")
-      .withUsername("arguslog")
-      .withPassword("arguslog");
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>(TIMESCALE_IMAGE)
+          .withDatabaseName("arguslog")
+          .withUsername("arguslog")
+          .withPassword("arguslog");
 
   private static HikariDataSource dataSource;
   private static IssueRepository repository;
@@ -62,28 +64,28 @@ class JdbcIssueRepositoryTest {
     // connections — flaky tests in disguise.
     TransactionTemplate tx = new TransactionTemplate(new JdbcTransactionManager(dataSource));
     JdbcIssueRepository raw = new JdbcIssueRepository(dataSource);
-    repository = new IssueRepository() {
-      @Override
-      public List<Issue> page(
-          long projectId,
-          Optional<Issue.Status> status,
-          Optional<Issue.Level> level,
-          Optional<LongCursor> cursor,
-          int limit) {
-        return tx.execute(s -> raw.page(projectId, status, level, cursor, limit));
-      }
+    repository =
+        new IssueRepository() {
+          @Override
+          public List<Issue> page(
+              long projectId,
+              Optional<Issue.Status> status,
+              Optional<Issue.Level> level,
+              Optional<LongCursor> cursor,
+              int limit) {
+            return tx.execute(s -> raw.page(projectId, status, level, cursor, limit));
+          }
 
-      @Override
-      public Optional<Issue> findByProjectAndId(long projectId, long issueId) {
-        return tx.execute(s -> raw.findByProjectAndId(projectId, issueId));
-      }
-    };
+          @Override
+          public Optional<Issue> findByProjectAndId(long projectId, long issueId) {
+            return tx.execute(s -> raw.findByProjectAndId(projectId, issueId));
+          }
+        };
   }
 
   @AfterAll
   static void stop() {
-    if (dataSource != null)
-      dataSource.close();
+    if (dataSource != null) dataSource.close();
   }
 
   @BeforeEach
@@ -105,7 +107,8 @@ class JdbcIssueRepositoryTest {
     insertIssue("b", "error", "unresolved", Instant.parse("2026-05-05T12:00:00Z"));
     insertIssue("c", "error", "unresolved", Instant.parse("2026-05-05T11:00:00Z"));
 
-    List<Issue> page = repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+    List<Issue> page =
+        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 10);
     assertThat(page).extracting(Issue::fingerprint).containsExactly("b", "c", "a");
   }
 
@@ -114,7 +117,8 @@ class JdbcIssueRepositoryTest {
     insertIssue("acme", "error", "unresolved", Instant.now(), 101L);
     insertIssue("other", "error", "unresolved", Instant.now(), 102L);
 
-    List<Issue> page = repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+    List<Issue> page =
+        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 10);
     assertThat(page).extracting(Issue::fingerprint).containsExactly("acme");
   }
 
@@ -124,8 +128,9 @@ class JdbcIssueRepositoryTest {
     insertIssue("r", "error", "resolved", Instant.now().minusSeconds(60));
     insertIssue("i", "error", "ignored", Instant.now().minusSeconds(120));
 
-    List<Issue> resolved = repository.page(
-        101L, Optional.of(Issue.Status.RESOLVED), Optional.empty(), Optional.empty(), 10);
+    List<Issue> resolved =
+        repository.page(
+            101L, Optional.of(Issue.Status.RESOLVED), Optional.empty(), Optional.empty(), 10);
     assertThat(resolved).extracting(Issue::fingerprint).containsExactly("r");
   }
 
@@ -134,8 +139,9 @@ class JdbcIssueRepositoryTest {
     insertIssue("err", "error", "unresolved", Instant.now());
     insertIssue("warn", "warning", "unresolved", Instant.now().minusSeconds(60));
 
-    List<Issue> warnings = repository.page(
-        101L, Optional.empty(), Optional.of(Issue.Level.WARNING), Optional.empty(), 10);
+    List<Issue> warnings =
+        repository.page(
+            101L, Optional.empty(), Optional.of(Issue.Level.WARNING), Optional.empty(), 10);
     assertThat(warnings).extracting(Issue::fingerprint).containsExactly("warn");
   }
 
@@ -146,16 +152,18 @@ class JdbcIssueRepositoryTest {
     insertIssue("b", "error", "unresolved", t); // same timestamp; tiebreak by id desc
     insertIssue("c", "error", "unresolved", t);
 
-    List<Issue> first = repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 2);
+    List<Issue> first =
+        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 2);
     assertThat(first).hasSize(2);
     Issue last = first.get(1);
 
-    List<Issue> next = repository.page(
-        101L,
-        Optional.empty(),
-        Optional.empty(),
-        Optional.of(new LongCursor(last.lastSeenAt(), last.id())),
-        10);
+    List<Issue> next =
+        repository.page(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of(new LongCursor(last.lastSeenAt(), last.id())),
+            10);
     assertThat(next).hasSize(1);
     assertThat(next.get(0).id()).isLessThan(last.id());
   }
@@ -165,7 +173,8 @@ class JdbcIssueRepositoryTest {
     for (int i = 0; i < 5; i++) {
       insertIssue("fp-" + i, "error", "unresolved", Instant.now().plusSeconds(i));
     }
-    List<Issue> page = repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 3);
+    List<Issue> page =
+        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 3);
     assertThat(page).hasSize(3);
   }
 
@@ -177,7 +186,8 @@ class JdbcIssueRepositoryTest {
 
   private void insertIssue(
       String fingerprint, String level, String status, Instant lastSeen, long projectId) {
-    String sql = """
+    String sql =
+        """
         INSERT INTO issues (project_id, environment_id, fingerprint, status, level, title,
                             culprit, first_seen_at, last_seen_at, occurrence_count)
              VALUES (?, NULL, ?, ?::issue_status, ?::event_level, ?, NULL, ?, ?, 1)

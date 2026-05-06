@@ -47,10 +47,11 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
     KeyHolder keys = new GeneratedKeyHolder();
     jdbc.update(
         connection -> {
-          var ps = connection.prepareStatement(
-              "INSERT INTO projects (org_id, slug, name, platform) VALUES (?, ?, ?, ?) "
-                  + "RETURNING id, created_at",
-              new String[] { "id", "created_at" });
+          var ps =
+              connection.prepareStatement(
+                  "INSERT INTO projects (org_id, slug, name, platform) VALUES (?, ?, ?, ?) "
+                      + "RETURNING id, created_at",
+                  new String[] {"id", "created_at"});
           ps.setLong(1, orgId);
           ps.setString(2, slug);
           ps.setString(3, name);
@@ -77,13 +78,14 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
              WHERE org_id = ?
              ORDER BY slug ASC
             """,
-        (rs, rowNum) -> new Project(
-            rs.getLong("id"),
-            rs.getLong("org_id"),
-            rs.getString("slug"),
-            rs.getString("name"),
-            rs.getString("platform"),
-            rs.getTimestamp("created_at").toInstant()),
+        (rs, rowNum) ->
+            new Project(
+                rs.getLong("id"),
+                rs.getLong("org_id"),
+                rs.getString("slug"),
+                rs.getString("name"),
+                rs.getString("platform"),
+                rs.getTimestamp("created_at").toInstant()),
         orgId);
   }
 
@@ -91,21 +93,23 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
   public Optional<Project> find(long orgId, long projectId) {
     pinOrg();
     try {
-      Project project = jdbc.queryForObject(
-          """
+      Project project =
+          jdbc.queryForObject(
+              """
               SELECT id, org_id, slug, name, platform, created_at
                 FROM projects
                WHERE org_id = ? AND id = ?
               """,
-          (rs, rowNum) -> new Project(
-              rs.getLong("id"),
-              rs.getLong("org_id"),
-              rs.getString("slug"),
-              rs.getString("name"),
-              rs.getString("platform"),
-              rs.getTimestamp("created_at").toInstant()),
-          orgId,
-          projectId);
+              (rs, rowNum) ->
+                  new Project(
+                      rs.getLong("id"),
+                      rs.getLong("org_id"),
+                      rs.getString("slug"),
+                      rs.getString("name"),
+                      rs.getString("platform"),
+                      rs.getTimestamp("created_at").toInstant()),
+              orgId,
+              projectId);
       return Optional.ofNullable(project);
     } catch (EmptyResultDataAccessException e) {
       return Optional.empty();

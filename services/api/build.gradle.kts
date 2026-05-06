@@ -2,7 +2,7 @@ plugins {
     id("arguslog.spring-service")
 }
 
-description = "Argus API — REST API, Stripe webhooks, admin, Flyway owner"
+description = "Arguslog API — REST API, Stripe webhooks, admin, Flyway owner"
 
 val libs = the<org.gradle.accessors.dm.LibrariesForLibs>()
 

@@ -24,16 +24,17 @@ public class RedisStreamEventPublisher implements EventStreamPublisher {
 
   @Override
   public void publish(EventEnvelope envelope) {
-    MapRecord<String, String, String> record = StreamRecords.mapBacked(
-        Map.of(
-            "eventId", envelope.eventId().toString(),
-            "projectId", String.valueOf(envelope.projectId()),
-            "dsnPublicKey", envelope.dsnPublicKey(),
-            "receivedAt", envelope.receivedAt().toString(),
-            "rawPayload", envelope.rawPayload(),
-            "clientIp", nullSafe(envelope.clientIp()),
-            "userAgent", nullSafe(envelope.userAgent())))
-        .withStreamKey(streamKey);
+    MapRecord<String, String, String> record =
+        StreamRecords.mapBacked(
+                Map.of(
+                    "eventId", envelope.eventId().toString(),
+                    "projectId", String.valueOf(envelope.projectId()),
+                    "dsnPublicKey", envelope.dsnPublicKey(),
+                    "receivedAt", envelope.receivedAt().toString(),
+                    "rawPayload", envelope.rawPayload(),
+                    "clientIp", nullSafe(envelope.clientIp()),
+                    "userAgent", nullSafe(envelope.userAgent())))
+            .withStreamKey(streamKey);
     redis.opsForStream().add(record);
   }
 

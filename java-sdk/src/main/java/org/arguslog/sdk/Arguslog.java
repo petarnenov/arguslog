@@ -3,11 +3,11 @@ package org.arguslog.sdk;
 import java.util.Objects;
 
 /** Static-facing facade around the configured {@link ArgusClient}. */
-public final class Argus {
+public final class Arguslog {
 
   private static volatile ArgusClient client;
 
-  private Argus() {}
+  private Arguslog() {}
 
   public static synchronized void init(ArgusOptions options) {
     Objects.requireNonNull(options, "options");

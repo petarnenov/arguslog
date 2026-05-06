@@ -12,14 +12,10 @@ public record RedisStreamProperties(
     Duration pollTimeout) {
 
   public RedisStreamProperties {
-    if (streamKey == null || streamKey.isBlank())
-      streamKey = "events:incoming";
-    if (consumerGroup == null || consumerGroup.isBlank())
-      consumerGroup = "worker";
-    if (consumerName == null || consumerName.isBlank())
-      consumerName = "worker-1";
-    if (batchSize <= 0)
-      batchSize = 50;
+    if (streamKey == null || streamKey.isBlank()) streamKey = "events:incoming";
+    if (consumerGroup == null || consumerGroup.isBlank()) consumerGroup = "worker";
+    if (consumerName == null || consumerName.isBlank()) consumerName = "worker-1";
+    if (batchSize <= 0) batchSize = 50;
     if (pollTimeout == null || pollTimeout.isZero() || pollTimeout.isNegative()) {
       pollTimeout = Duration.ofMillis(1000);
     }

@@ -3,7 +3,7 @@ package org.arguslog.worker.adapter.out.webhook;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "argus.alerts.webhook")
+@ConfigurationProperties(prefix = "arguslog.alerts.webhook")
 public record WebhookProperties(String dashboardBaseUrl, Duration timeout) {
 
   public WebhookProperties {

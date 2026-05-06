@@ -50,8 +50,8 @@ publishing {
         create<MavenPublication>("maven") {
             from(components["java"])
             pom {
-                name.set("Argus Java SDK")
-                description.set("Argus error tracking SDK for Java and Spring Boot.")
+                name.set("Arguslog Java SDK")
+                description.set("Arguslog error tracking SDK for Java and Spring Boot.")
                 url.set("https://github.com/arguslog/arguslog")
                 licenses {
                     license {

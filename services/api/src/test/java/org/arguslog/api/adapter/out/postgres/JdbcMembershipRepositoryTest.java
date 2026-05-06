@@ -25,12 +25,13 @@ class JdbcMembershipRepositoryTest {
   private static final UUID BOB = UUID.fromString("00000000-0000-0000-0000-000000000002");
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
-      DockerImageName.parse("timescale/timescaledb:latest-pg16")
-          .asCompatibleSubstituteFor("postgres"))
-      .withDatabaseName("arguslog")
-      .withUsername("arguslog")
-      .withPassword("arguslog");
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>(
+              DockerImageName.parse("timescale/timescaledb:latest-pg16")
+                  .asCompatibleSubstituteFor("postgres"))
+          .withDatabaseName("arguslog")
+          .withUsername("arguslog")
+          .withPassword("arguslog");
 
   private static HikariDataSource dataSource;
   private static MembershipRepository repository;
@@ -49,8 +50,7 @@ class JdbcMembershipRepositoryTest {
 
   @AfterAll
   static void stop() {
-    if (dataSource != null)
-      dataSource.close();
+    if (dataSource != null) dataSource.close();
   }
 
   @Test
@@ -71,8 +71,8 @@ class JdbcMembershipRepositoryTest {
   private static void seed(DataSource ds) throws Exception {
     try (Connection conn = ds.getConnection()) {
       exec(conn, "INSERT INTO organizations (id, slug, name) VALUES (1, 'acme', 'Acme')");
-      try (PreparedStatement stmt = conn
-          .prepareStatement("INSERT INTO users (id, email, display_name) VALUES (?, ?, ?)")) {
+      try (PreparedStatement stmt =
+          conn.prepareStatement("INSERT INTO users (id, email, display_name) VALUES (?, ?, ?)")) {
         stmt.setObject(1, ALICE);
         stmt.setString(2, "alice@example.com");
         stmt.setString(3, "Alice");
@@ -82,8 +82,9 @@ class JdbcMembershipRepositoryTest {
         stmt.setString(3, "Bob");
         stmt.execute();
       }
-      try (PreparedStatement stmt = conn.prepareStatement(
-          "INSERT INTO org_members (org_id, user_id, role) VALUES (?, ?, 'member'::org_role)")) {
+      try (PreparedStatement stmt =
+          conn.prepareStatement(
+              "INSERT INTO org_members (org_id, user_id, role) VALUES (?, ?, 'member'::org_role)")) {
         stmt.setLong(1, 1L);
         stmt.setObject(2, ALICE);
         stmt.execute();

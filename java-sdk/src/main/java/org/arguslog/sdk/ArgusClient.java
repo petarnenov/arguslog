@@ -14,11 +14,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class ArgusClient implements AutoCloseable {
 
   private static final AtomicLong THREAD_INDEX = new AtomicLong();
-  private static final ThreadFactory FACTORY = r -> {
-    Thread t = new Thread(r, "arguslog-sender-" + THREAD_INDEX.incrementAndGet());
-    t.setDaemon(true);
-    return t;
-  };
+  private static final ThreadFactory FACTORY =
+      r -> {
+        Thread t = new Thread(r, "arguslog-sender-" + THREAD_INDEX.incrementAndGet());
+        t.setDaemon(true);
+        return t;
+      };
 
   private final ArgusOptions options;
   private final Dsn dsn;
@@ -39,25 +40,20 @@ public final class ArgusClient implements AutoCloseable {
   }
 
   public String captureException(Throwable error, ArgusContext context) {
-    if (!shouldSample())
-      return null;
+    if (!shouldSample()) return null;
     Map<String, Object> event = baseEvent(context == null ? Level.ERROR : context.level());
     event.put("exception", exceptionPayload(error));
     if (context != null) {
-      if (!context.tags().isEmpty())
-        event.put("tags", context.tags());
-      if (!context.extra().isEmpty())
-        event.put("extra", context.extra());
-      if (context.userId() != null)
-        event.put("user", Map.of("id", context.userId()));
+      if (!context.tags().isEmpty()) event.put("tags", context.tags());
+      if (!context.extra().isEmpty()) event.put("extra", context.extra());
+      if (context.userId() != null) event.put("user", Map.of("id", context.userId()));
     }
     enqueue(event);
     return (String) event.get("eventId");
   }
 
   public String captureMessage(String message, Level level) {
-    if (!shouldSample())
-      return null;
+    if (!shouldSample()) return null;
     Map<String, Object> event = baseEvent(level == null ? Level.INFO : level);
     event.put("message", scrubber.scrub(message));
     enqueue(event);
@@ -85,10 +81,8 @@ public final class ArgusClient implements AutoCloseable {
 
   private boolean shouldSample() {
     double rate = options.sampleRate();
-    if (rate >= 1.0)
-      return true;
-    if (rate <= 0.0)
-      return false;
+    if (rate >= 1.0) return true;
+    if (rate <= 0.0) return false;
     return Math.random() < rate;
   }
 
@@ -99,10 +93,8 @@ public final class ArgusClient implements AutoCloseable {
     event.put("platform", "java");
     event.put("level", level.toWire());
     event.put("sdk", Map.of("name", "arguslog.java", "version", "0.0.1"));
-    if (options.environment() != null)
-      event.put("environment", options.environment());
-    if (options.release() != null)
-      event.put("release", options.release());
+    if (options.environment() != null) event.put("environment", options.environment());
+    if (options.release() != null) event.put("release", options.release());
     return event;
   }
 

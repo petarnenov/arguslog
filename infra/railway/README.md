@@ -1,6 +1,6 @@
 # Railway deployment
 
-Argus production runs on a single Railway project (`arguslog-prod`) with one
+Arguslog production runs on a single Railway project (`arguslog-prod`) with one
 service per process and Railway-managed Postgres + Redis. This file is a
 P0 placeholder; real provisioning lands in **P5 (Launch readiness)**.
 

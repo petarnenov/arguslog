@@ -97,7 +97,13 @@
       "Bash(pnpm build *)",
       "Bash(pnpm prettier *)",
       "Bash(grep -rn *)",
-      "Bash(grep -n *)"
+      "Bash(grep -n *)",
+      "Bash(grep -c \"^=======$\" /Users/petarpetrov/vite/argus/.claude/settings.local.json)",
+      "Bash(grep -oE \"[A-Z][a-zA-Z]+Exception:[^<]{0,150}\" /Users/petarpetrov/vite/argus/services/api/build/test-results/test/TEST-org.arguslog.api.keycloak.KeycloakRealmImportTest.xml)",
+      "Bash(git mv *)",
+      "Bash(grep -oE \"[A-Z][a-zA-Z]+Exception:[^<]{0,150}\" /Users/petarpetrov/vite/argus/services/api/build/test-results/test/TEST-org.arguslog.api.adapter.in.web.IssueControllerTest.xml)",
+      "Bash(xargs -I {} basename {} .java)",
+      "Bash(echo \"---tracked? \\($?\\)---\")"
     ]
   }
 }

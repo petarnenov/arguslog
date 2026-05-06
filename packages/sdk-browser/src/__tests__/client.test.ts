@@ -100,7 +100,7 @@ describe('ArgusClient', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       'http://localhost:8080/api/1/events',
       expect.objectContaining({
-        headers: expect.objectContaining({ 'X-Argus-Auth': 'Argus DSN k' }),
+        headers: expect.objectContaining({ 'X-Arguslog-Auth': 'Arguslog DSN k' }),
       }),
     );
   });

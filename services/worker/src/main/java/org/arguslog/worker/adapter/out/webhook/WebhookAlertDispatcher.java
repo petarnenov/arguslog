@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
  * <ul>
  *   <li>{@code url} (required) — POST target
  *   <li>{@code secret} (optional) — if set, body is HMAC-SHA256-signed and the digest is sent in
- *       {@code X-Argus-Signature: sha256=<hex>}. Receivers MUST verify before trusting payload.
+ *       {@code X-Arguslog-Signature: sha256=<hex>}. Receivers MUST verify before trusting payload.
  * </ul>
  *
  * Body is a stable structured JSON envelope — no Markdown, since webhook receivers parse not read.
@@ -71,12 +71,12 @@ public class WebhookAlertDispatcher implements AlertDispatcher {
         HttpRequest.newBuilder(URI.create(cfg.url))
             .timeout(props.timeout())
             .header("Content-Type", "application/json")
-            .header("User-Agent", "Argus/1.0")
+            .header("User-Agent", "Arguslog/1.0")
             .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8));
 
     if (cfg.secret != null) {
       String signature = sign(body, cfg.secret);
-      if (signature != null) req.header("X-Argus-Signature", "sha256=" + signature);
+      if (signature != null) req.header("X-Arguslog-Signature", "sha256=" + signature);
     }
 
     try {

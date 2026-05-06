@@ -4,7 +4,7 @@ const DSN_RE = /^(https?):\/\/([^@]+)@([^/]+)\/([^/?#]+)$/;
 
 export class InvalidDsnError extends Error {
   constructor(dsn: string) {
-    super(`Invalid Argus DSN: ${dsn}`);
+    super(`Invalid Arguslog DSN: ${dsn}`);
     this.name = 'InvalidDsnError';
   }
 }

@@ -23,10 +23,14 @@ import org.arguslog.api.alerts.application.AlertDestinationUseCase;
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
 import org.arguslog.api.alerts.domain.AlertDestination;
 import org.arguslog.api.alerts.domain.DestinationKind;
+import org.arguslog.api.application.port.DsnRepository;
 import org.arguslog.api.application.port.EventRepository;
 import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.application.port.MembershipRepository;
+import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.application.port.ProjectRepository;
+import org.arguslog.api.application.port.ProjectWriteRepository;
+import org.arguslog.api.application.port.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -63,6 +67,10 @@ class AlertDestinationControllerTest {
   @MockitoBean EventRepository eventRepository;
   @MockitoBean ProjectRepository projectRepository;
   @MockitoBean MembershipRepository membershipRepository;
+  @MockitoBean DsnRepository dsnRepository;
+  @MockitoBean OrgWriteRepository orgWriteRepository;
+  @MockitoBean ProjectWriteRepository projectWriteRepository;
+  @MockitoBean UserRepository userRepository;
 
   @Test
   void listReturnsScrubbedMetadataNeverConfig() throws Exception {

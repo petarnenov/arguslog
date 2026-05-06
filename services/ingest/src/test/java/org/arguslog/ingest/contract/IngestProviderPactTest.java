@@ -30,33 +30,32 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * Provider-side Pact verification: replays every interaction recorded by
- * sdk-browser's pact test
- * (pacts/arguslog-sdk-browser-arguslog-ingest.json) against the real ingest
- * HTTP layer running on a
- * random port, with TimescaleDB behind it. EventStreamPublisher is mocked
- * because the contract is
- * about the SDK ↔ ingest wire format, not what ingest does with Redis
- * afterwards (that is covered
+ * Provider-side Pact verification: replays every interaction recorded by sdk-browser's pact test
+ * (pacts/arguslog-sdk-browser-arguslog-ingest.json) against the real ingest HTTP layer running on a
+ * random port, with TimescaleDB behind it. EventStreamPublisher is mocked because the contract is
+ * about the SDK ↔ ingest wire format, not what ingest does with Redis afterwards (that is covered
  * by IngestToPostgresEndToEndTest in the worker module).
  */
 @Provider("arguslog-ingest")
 @PactFolder("../../pacts")
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = {
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration"
-})
+@TestPropertySource(
+    properties = {
+      "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration"
+    })
 @Testcontainers
 class IngestProviderPactTest {
 
-  private static final DockerImageName TIMESCALE_IMAGE = DockerImageName.parse("timescale/timescaledb:latest-pg16")
-      .asCompatibleSubstituteFor("postgres");
+  private static final DockerImageName TIMESCALE_IMAGE =
+      DockerImageName.parse("timescale/timescaledb:latest-pg16")
+          .asCompatibleSubstituteFor("postgres");
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(TIMESCALE_IMAGE)
-      .withDatabaseName("arguslog")
-      .withUsername("arguslog")
-      .withPassword("arguslog");
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>(TIMESCALE_IMAGE)
+          .withDatabaseName("arguslog")
+          .withUsername("arguslog")
+          .withPassword("arguslog");
 
   @DynamicPropertySource
   static void datasource(DynamicPropertyRegistry registry) {
@@ -65,14 +64,11 @@ class IngestProviderPactTest {
     registry.add("spring.datasource.password", POSTGRES::getPassword);
   }
 
-  @MockitoBean
-  EventStreamPublisher eventStreamPublisher;
+  @MockitoBean EventStreamPublisher eventStreamPublisher;
 
-  @LocalServerPort
-  int port;
+  @LocalServerPort int port;
 
-  @Autowired
-  DataSource dataSource;
+  @Autowired DataSource dataSource;
 
   private static volatile boolean migrated = false;
 
@@ -101,9 +97,10 @@ class IngestProviderPactTest {
   }
 
   private static String resolveMigrationsLocation() {
-    List<Path> candidates = List.of(
-        Path.of("../api/src/main/resources/db/migration"),
-        Path.of("services/api/src/main/resources/db/migration"));
+    List<Path> candidates =
+        List.of(
+            Path.of("../api/src/main/resources/db/migration"),
+            Path.of("services/api/src/main/resources/db/migration"));
     return candidates.stream()
         .map(Path::toAbsolutePath)
         .filter(Files::isDirectory)

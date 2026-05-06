@@ -30,7 +30,7 @@
         },
         "headers": {
           "Content-Type": "application/json",
-          "X-Argus-Auth": "Argus DSN public-key-active"
+          "X-Arguslog-Auth": "Arguslog DSN public-key-active"
         },
         "matchingRules": {
           "body": {
@@ -139,7 +139,7 @@
         },
         "headers": {
           "Content-Type": "application/json",
-          "X-Argus-Auth": "Argus DSN public-key-active"
+          "X-Arguslog-Auth": "Arguslog DSN public-key-active"
         },
         "matchingRules": {
           "body": {

@@ -1,4 +1,4 @@
-# Argus
+# Arguslog
 
 Multi-tenant error tracking platform. Sentry-like, hosted on Railway.
 
@@ -35,7 +35,7 @@ Flyway migrations are owned by `services/api` and live in
 ### Naming
 
 Java packages and Maven `groupId` use `org.arguslog.*` — reverse-DNS of
-the project domain `arguslog.org`. The product name is still **Argus**;
+the project domain `arguslog.org`. The product name is still **Arguslog**;
 `arguslog` only appears in coordinates and the public domain (the short
 domain `arguslog.org` was unavailable at registration time).
 

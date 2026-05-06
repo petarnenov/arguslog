@@ -17,12 +17,9 @@ import org.springframework.stereotype.Component;
  *   [13..]   ciphertext + auth tag
  * </pre>
  *
- * <p>
- * Same env var name ({@code arguslog.alerts.secret-key}) so api and worker
- * share one key. TODO(P4):
- * extract this and the api copy to a shared module — the wire format is the
- * contract today, which
- * is fragile.
+ * <p>Same env var name ({@code arguslog.alerts.secret-key}) so api and worker share one key.
+ * TODO(P4): extract this and the api copy to a shared module — the wire format is the contract
+ * today, which is fragile.
  */
 @Component
 public class AesGcmSecretCipher implements SecretCipher {
@@ -38,7 +35,8 @@ public class AesGcmSecretCipher implements SecretCipher {
     if (base64Key == null || base64Key.isBlank()) {
       // Same dev fallback as api so both sides can decrypt each other's writes in
       // dev.
-      byte[] devKey = "arguslog-dev-fallback-key-32byte".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      byte[] devKey =
+          "arguslog-dev-fallback-key-32byte".getBytes(java.nio.charset.StandardCharsets.UTF_8);
       if (devKey.length != 32) {
         throw new IllegalStateException("dev fallback key must be 32 bytes; got " + devKey.length);
       }

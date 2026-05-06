@@ -20,12 +20,13 @@ final class Transport {
 
   void send(String body) {
     try {
-      HttpRequest request = HttpRequest.newBuilder(URI.create(dsn.ingestUrl()))
-          .timeout(Duration.ofSeconds(5))
-          .header("Content-Type", "application/json")
-          .header("X-Argus-Auth", "Argus DSN " + dsn.publicKey())
-          .POST(HttpRequest.BodyPublishers.ofString(body))
-          .build();
+      HttpRequest request =
+          HttpRequest.newBuilder(URI.create(dsn.ingestUrl()))
+              .timeout(Duration.ofSeconds(5))
+              .header("Content-Type", "application/json")
+              .header("X-Arguslog-Auth", "Arguslog DSN " + dsn.publicKey())
+              .POST(HttpRequest.BodyPublishers.ofString(body))
+              .build();
       HttpResponse<Void> response = http.send(request, HttpResponse.BodyHandlers.discarding());
       if (debug && response.statusCode() >= 300) {
         System.err.println("[arguslog] non-2xx response: " + response.statusCode());

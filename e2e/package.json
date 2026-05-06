@@ -1,7 +1,7 @@
 {
   "name": "@arguslog/e2e",
   "version": "0.0.0",
-  "description": "Argus end-to-end tests (Playwright). Real suites land alongside the P2 dashboard.",
+  "description": "Arguslog end-to-end tests (Playwright). Real suites land alongside the P2 dashboard.",
   "private": true,
   "license": "MIT",
   "type": "module",

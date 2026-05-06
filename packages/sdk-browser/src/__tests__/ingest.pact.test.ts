@@ -37,7 +37,7 @@ describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
   // already flushing). Tracked in the SDK; remove the delays once the SDK awaits the
   // pending send promise instead of fire-and-forgetting.
 
-  it('captureException(TypeError) → POST /api/{projectId}/events with X-Argus-Auth + EventPayload, expect 202', async () => {
+  it('captureException(TypeError) → POST /api/{projectId}/events with X-Arguslog-Auth + EventPayload, expect 202', async () => {
     const p = provider()
       .uponReceiving('a TypeError captured by the browser SDK')
       .withRequest({
@@ -45,7 +45,7 @@ describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
         path: `/api/${PROJECT_ID}/events`,
         headers: {
           'Content-Type': 'application/json',
-          'X-Argus-Auth': `Argus DSN ${PUBLIC_KEY}`,
+          'X-Arguslog-Auth': `Arguslog DSN ${PUBLIC_KEY}`,
         },
         body: like({
           eventId: regex('^[0-9a-f]{32}$', 'aabbccddeeff00112233445566778899'),
@@ -92,7 +92,7 @@ describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
         path: `/api/${PROJECT_ID}/events`,
         headers: {
           'Content-Type': 'application/json',
-          'X-Argus-Auth': `Argus DSN ${PUBLIC_KEY}`,
+          'X-Arguslog-Auth': `Arguslog DSN ${PUBLIC_KEY}`,
         },
         body: like({
           eventId: regex('^[0-9a-f]{32}$', 'aabbccddeeff00112233445566778899'),

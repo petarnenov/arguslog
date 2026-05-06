@@ -34,7 +34,7 @@
   context-loads smoke test, not an integration test. Do not wire a real
   `DataSource` / Redis there — keep the `DataSourceAutoConfiguration` +
   `RedisAutoConfiguration` exclusions in place.
-- **DSN auth contract (current).** `X-Argus-Auth: Argus DSN <publicKey>`.
+- **DSN auth contract (current).** `X-Arguslog-Auth: Arguslog DSN <publicKey>`.
   Public-key-only; `dsn_secret_hash IS NULL` enforced. Secret-bearing
   DSNs (for backend SDKs) come in a follow-up: extend `Command` with
   `dsnSecret`, verify with argon2 against `dsn_secret_hash`.
