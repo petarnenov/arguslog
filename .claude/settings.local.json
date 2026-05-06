@@ -115,7 +115,9 @@
       "Bash(awk -F: '{sum+=$2} END {print \"API TOTAL:\", sum}')",
       "Bash(grep -oE \"[A-Z][a-zA-Z]+Exception:[^<]{0,250}\" /Users/petarpetrov/vite/argus/services/api/build/test-results/test/TEST-org.arguslog.api.ApiApplicationTests.xml)",
       "Bash(awk -F: '{sum+=$2} END {print \"API:\", sum}')",
-      "Bash(awk -F: '{sum+=$2} END {print \"WORKER TOTAL:\", sum}')"
+      "Bash(awk -F: '{sum+=$2} END {print \"WORKER TOTAL:\", sum}')",
+      "Bash(pnpm -r --filter \"@arguslog/sdk-browser\" --filter \"@arguslog/sdk-react\" build)",
+      "Bash(awk -F: '{sum+=$2} END {print \"API:\",sum}')"
     ]
   }
 }
