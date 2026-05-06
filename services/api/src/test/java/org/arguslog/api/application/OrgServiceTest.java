@@ -3,6 +3,7 @@ package org.arguslog.api.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -10,8 +11,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.arguslog.api.application.OrgUseCase.InvalidOrgException;
+import org.arguslog.api.application.OrgUseCase.OrgAccessDeniedException;
+import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.domain.Org;
@@ -26,6 +30,7 @@ class OrgServiceTest {
 
   @Mock OrgWriteRepository orgs;
   @Mock UserRepository users;
+  @Mock MembershipRepository memberships;
 
   OrgService service;
 
@@ -33,7 +38,7 @@ class OrgServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new OrgService(orgs, users);
+    service = new OrgService(orgs, users, memberships);
   }
 
   @Test
@@ -95,5 +100,31 @@ class OrgServiceTest {
     assertThatThrownBy(() -> service.create(null, "a@b.com", "Alice", "Acme"))
         .isInstanceOf(IllegalStateException.class);
     verify(orgs, never()).create(anyString(), anyString());
+  }
+
+  @Test
+  void deleteRejectsNonMembers() {
+    when(memberships.userRoleInOrg(ACTOR, 1L)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service.delete(ACTOR, 1L))
+        .isInstanceOf(OrgAccessDeniedException.class)
+        .hasMessageContaining("not a member");
+    verify(orgs, never()).delete(anyLong());
+  }
+
+  @Test
+  void deleteRejectsAdmins() {
+    when(memberships.userRoleInOrg(ACTOR, 1L)).thenReturn(Optional.of("admin"));
+    assertThatThrownBy(() -> service.delete(ACTOR, 1L))
+        .isInstanceOf(OrgAccessDeniedException.class)
+        .hasMessageContaining("owners");
+    verify(orgs, never()).delete(anyLong());
+  }
+
+  @Test
+  void deleteAllowsOwners() {
+    when(memberships.userRoleInOrg(ACTOR, 1L)).thenReturn(Optional.of("owner"));
+    when(orgs.delete(1L)).thenReturn(true);
+    assertThat(service.delete(ACTOR, 1L)).isTrue();
+    verify(orgs).delete(1L);
   }
 }

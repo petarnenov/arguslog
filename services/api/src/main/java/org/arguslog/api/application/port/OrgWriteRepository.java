@@ -20,4 +20,11 @@ public interface OrgWriteRepository {
 
   /** Returns every org {@code userId} is a member of, ordered by org slug ascending. */
   List<Org> listForUser(UUID userId);
+
+  /**
+   * Hard-deletes an org. {@code ON DELETE CASCADE} on every dependent FK propagates the removal to
+   * memberships, projects (and their issues/events/keys/etc), alert rules and destinations,
+   * releases, and source-map artifacts. Returns {@code false} if the org did not exist.
+   */
+  boolean delete(long orgId);
 }

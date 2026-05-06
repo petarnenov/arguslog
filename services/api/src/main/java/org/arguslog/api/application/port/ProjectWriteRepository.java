@@ -13,4 +13,7 @@ public interface ProjectWriteRepository {
   List<Project> listForOrg(long orgId);
 
   Optional<Project> find(long orgId, long projectId);
+
+  /** Soft-archives a live project. Returns {@code false} if it was already archived or absent. */
+  boolean archive(long orgId, long projectId);
 }

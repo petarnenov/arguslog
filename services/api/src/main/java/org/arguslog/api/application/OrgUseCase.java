@@ -10,6 +10,13 @@ public interface OrgUseCase {
 
   List<Org> listForUser(UUID userId);
 
+  /**
+   * Hard-deletes an org. Caller must be {@code owner}. Returns {@code false} if the org does not
+   * exist (after the membership check, so non-members are still rejected with 404 by the access
+   * guard).
+   */
+  boolean delete(UUID actorId, long orgId);
+
   /** Thrown when create input fails surface-level validation. */
   final class InvalidOrgException extends RuntimeException {
     private static final long serialVersionUID = 1L;
@@ -24,6 +31,15 @@ public interface OrgUseCase {
     private static final long serialVersionUID = 1L;
 
     public DuplicateOrgException(String message) {
+      super(message);
+    }
+  }
+
+  /** Thrown when the actor's role is insufficient to delete an org. */
+  final class OrgAccessDeniedException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    public OrgAccessDeniedException(String message) {
       super(message);
     }
   }

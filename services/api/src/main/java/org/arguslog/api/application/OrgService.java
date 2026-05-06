@@ -2,6 +2,7 @@ package org.arguslog.api.application;
 
 import java.util.List;
 import java.util.UUID;
+import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.domain.Org;
@@ -16,10 +17,13 @@ public class OrgService implements OrgUseCase {
 
   private final OrgWriteRepository orgs;
   private final UserRepository users;
+  private final MembershipRepository memberships;
 
-  public OrgService(OrgWriteRepository orgs, UserRepository users) {
+  public OrgService(
+      OrgWriteRepository orgs, UserRepository users, MembershipRepository memberships) {
     this.orgs = orgs;
     this.users = users;
+    this.memberships = memberships;
   }
 
   @Override
@@ -42,6 +46,21 @@ public class OrgService implements OrgUseCase {
   @Transactional(readOnly = true)
   public List<Org> listForUser(UUID userId) {
     return orgs.listForUser(userId);
+  }
+
+  @Override
+  @Transactional
+  public boolean delete(UUID actorId, long orgId) {
+    String role =
+        memberships
+            .userRoleInOrg(actorId, orgId)
+            .orElseThrow(
+                () ->
+                    new OrgAccessDeniedException("You are not a member of this organization."));
+    if (!"owner".equals(role)) {
+      throw new OrgAccessDeniedException("Only org owners can delete an organization.");
+    }
+    return orgs.delete(orgId);
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────

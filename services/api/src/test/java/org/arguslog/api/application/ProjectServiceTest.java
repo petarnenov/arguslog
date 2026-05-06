@@ -10,7 +10,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 import org.arguslog.api.application.ProjectUseCase.InvalidProjectException;
+import org.arguslog.api.application.ProjectUseCase.ProjectAccessDeniedException;
+import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.domain.Project;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,12 +27,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProjectServiceTest {
 
   @Mock ProjectWriteRepository projects;
+  @Mock MembershipRepository memberships;
 
   ProjectService service;
 
   @BeforeEach
   void setUp() {
-    service = new ProjectService(projects);
+    service = new ProjectService(projects, memberships);
   }
 
   @Test
@@ -68,5 +73,37 @@ class ProjectServiceTest {
     service.create(1L, "ok", "javascript");
     service.create(1L, "ok", "react");
     service.create(1L, "ok", "java-spring");
+  }
+
+  @Test
+  void archiveRejectsNonMembers() {
+    UUID actor = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    when(memberships.userRoleInOrg(actor, 1L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.archive(actor, 1L, 7L))
+        .isInstanceOf(ProjectAccessDeniedException.class)
+        .hasMessageContaining("not a member");
+    verify(projects, never()).archive(anyLong(), anyLong());
+  }
+
+  @Test
+  void archiveRejectsPlainMembers() {
+    UUID actor = UUID.fromString("22222222-2222-2222-2222-222222222222");
+    when(memberships.userRoleInOrg(actor, 1L)).thenReturn(Optional.of("member"));
+
+    assertThatThrownBy(() -> service.archive(actor, 1L, 7L))
+        .isInstanceOf(ProjectAccessDeniedException.class)
+        .hasMessageContaining("owners and admins");
+    verify(projects, never()).archive(anyLong(), anyLong());
+  }
+
+  @Test
+  void archiveAllowsOwnersAndAdmins() {
+    UUID actor = UUID.fromString("33333333-3333-3333-3333-333333333333");
+    when(memberships.userRoleInOrg(actor, 1L)).thenReturn(Optional.of("admin"));
+    when(projects.archive(1L, 7L)).thenReturn(true);
+
+    assertThat(service.archive(actor, 1L, 7L)).isTrue();
+    verify(projects).archive(1L, 7L);
   }
 }

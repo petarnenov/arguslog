@@ -8,6 +8,8 @@ import org.arguslog.api.adapter.in.web.dto.OrgResponse;
 import org.arguslog.api.application.OrgUseCase;
 import org.arguslog.api.application.OrgUseCase.DuplicateOrgException;
 import org.arguslog.api.application.OrgUseCase.InvalidOrgException;
+import org.arguslog.api.application.OrgUseCase.OrgAccessDeniedException;
+import org.arguslog.api.security.AccessException;
 import org.arguslog.api.domain.Org;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,8 +17,10 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,6 +55,20 @@ public class OrgController {
         .body(OrgResponse.from(created));
   }
 
+  /**
+   * Hard-deletes an org. Owner-only; non-owners get 403 (vs 404 from non-members earlier in the
+   * filter chain — non-existence and not-a-member already collapse there). Cascades remove every
+   * project/issue/event/key/destination/rule/release.
+   */
+  @DeleteMapping("/{orgId}")
+  public ResponseEntity<Void> delete(@PathVariable long orgId, JwtAuthenticationToken token) {
+    UUID actorId = parseSubject(token);
+    if (!useCase.delete(actorId, orgId)) {
+      throw AccessException.notFound(orgId);
+    }
+    return ResponseEntity.noContent().build();
+  }
+
   @ExceptionHandler(InvalidOrgException.class)
   ResponseEntity<ProblemDetail> handleInvalid(InvalidOrgException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -67,6 +85,16 @@ public class OrgController {
     body.setTitle("Duplicate org");
     body.setType(URI.create("https://arguslog.dev/problems/duplicate-org"));
     return ResponseEntity.status(HttpStatus.CONFLICT)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(OrgAccessDeniedException.class)
+  ResponseEntity<ProblemDetail> handleForbidden(OrgAccessDeniedException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+    body.setTitle("Forbidden");
+    body.setType(URI.create("https://arguslog.dev/problems/org-access-denied"));
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }

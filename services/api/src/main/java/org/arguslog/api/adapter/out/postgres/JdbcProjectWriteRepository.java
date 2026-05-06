@@ -56,11 +56,13 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
   @Override
   public List<Project> listForOrg(long orgId) {
     pinOrg();
+    // archived_at IS NULL hides soft-archived projects from the default list;
+    // the partial index idx_projects_org_live keeps this index-only.
     return jdbc.query(
         """
             SELECT id, org_id, slug, name, platform, created_at
               FROM projects
-             WHERE org_id = ?
+             WHERE org_id = ? AND archived_at IS NULL
              ORDER BY slug ASC
             """,
         (rs, rowNum) ->
@@ -75,15 +77,32 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
   }
 
   @Override
+  public boolean archive(long orgId, long projectId) {
+    pinOrg();
+    return jdbc.update(
+            """
+            UPDATE projects
+               SET archived_at = NOW()
+             WHERE org_id = ? AND id = ? AND archived_at IS NULL
+            """,
+            orgId,
+            projectId)
+        > 0;
+  }
+
+  @Override
   public Optional<Project> find(long orgId, long projectId) {
     pinOrg();
+    // Treat archived projects as "not found" for application-level lookups so a
+    // bookmarked URL stops resolving once a project is archived; raw history
+    // (issues/events) is still queryable directly by project_id from the worker.
     try {
       Project project =
           jdbc.queryForObject(
               """
               SELECT id, org_id, slug, name, platform, created_at
                 FROM projects
-               WHERE org_id = ? AND id = ?
+               WHERE org_id = ? AND id = ? AND archived_at IS NULL
               """,
               (rs, rowNum) ->
                   new Project(
