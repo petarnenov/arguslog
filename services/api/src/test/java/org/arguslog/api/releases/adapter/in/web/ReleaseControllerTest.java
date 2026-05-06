@@ -28,6 +28,8 @@ import org.arguslog.api.releases.application.ReleaseUseCase;
 import org.arguslog.api.releases.application.ReleaseUseCase.DuplicateReleaseException;
 import org.arguslog.api.releases.application.ReleaseUseCase.InvalidReleaseException;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
+import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
+import org.arguslog.api.releases.application.port.SourceMapStorage;
 import org.arguslog.api.releases.domain.Release;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +61,8 @@ class ReleaseControllerTest {
   // @Component JDBC adapters need a DataSource (excluded above) — mock every port so the
   // application context still wires.
   @MockitoBean ReleaseRepository releaseRepository;
+  @MockitoBean SourceMapArtifactRepository sourceMapArtifactRepository;
+  @MockitoBean SourceMapStorage sourceMapStorage;
   @MockitoBean IssueRepository issueRepository;
   @MockitoBean EventRepository eventRepository;
   @MockitoBean ProjectRepository projectRepository;

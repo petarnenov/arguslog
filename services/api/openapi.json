@@ -282,10 +282,91 @@
         }
       }
     },
+    "/api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps" : {
+      "get" : {
+        "tags" : [ "source-map-artifact-controller" ],
+        "operationId" : "list_1",
+        "parameters" : [ {
+          "name" : "projectId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "releaseId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SourceMapArtifactResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "source-map-artifact-controller" ],
+        "operationId" : "create_1",
+        "parameters" : [ {
+          "name" : "projectId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "releaseId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SourceMapArtifactRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SourceMapUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{projectId}/keys" : {
       "get" : {
         "tags" : [ "dsn-controller" ],
-        "operationId" : "list_1",
+        "operationId" : "list_2",
         "parameters" : [ {
           "name" : "projectId",
           "in" : "path",
@@ -313,7 +394,7 @@
       },
       "post" : {
         "tags" : [ "dsn-controller" ],
-        "operationId" : "create_1",
+        "operationId" : "create_2",
         "parameters" : [ {
           "name" : "projectId",
           "in" : "path",
@@ -340,7 +421,7 @@
     "/api/v1/projects/{projectId}/alert-rules" : {
       "get" : {
         "tags" : [ "alert-rule-controller" ],
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "parameters" : [ {
           "name" : "projectId",
           "in" : "path",
@@ -368,7 +449,7 @@
       },
       "post" : {
         "tags" : [ "alert-rule-controller" ],
-        "operationId" : "create_2",
+        "operationId" : "create_3",
         "parameters" : [ {
           "name" : "projectId",
           "in" : "path",
@@ -424,7 +505,7 @@
       },
       "post" : {
         "tags" : [ "org-controller" ],
-        "operationId" : "create_3",
+        "operationId" : "create_4",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -452,7 +533,7 @@
     "/api/v1/orgs/{orgId}/projects" : {
       "get" : {
         "tags" : [ "project-controller" ],
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "name" : "orgId",
           "in" : "path",
@@ -480,7 +561,7 @@
       },
       "post" : {
         "tags" : [ "project-controller" ],
-        "operationId" : "create_4",
+        "operationId" : "create_5",
         "parameters" : [ {
           "name" : "orgId",
           "in" : "path",
@@ -517,7 +598,7 @@
     "/api/v1/orgs/{orgId}/alert-destinations" : {
       "get" : {
         "tags" : [ "alert-destination-controller" ],
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "parameters" : [ {
           "name" : "orgId",
           "in" : "path",
@@ -545,7 +626,7 @@
       },
       "post" : {
         "tags" : [ "alert-destination-controller" ],
-        "operationId" : "create_5",
+        "operationId" : "create_6",
         "parameters" : [ {
           "name" : "orgId",
           "in" : "path",
@@ -617,7 +698,7 @@
     "/api/v1/projects/{projectId}/issues" : {
       "get" : {
         "tags" : [ "issue-controller" ],
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "name" : "projectId",
           "in" : "path",
@@ -933,6 +1014,67 @@
             "type" : "string"
           },
           "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SourceMapArtifactRequest" : {
+        "type" : "object",
+        "properties" : {
+          "originalPath" : {
+            "type" : "string"
+          },
+          "sha256" : {
+            "type" : "string"
+          },
+          "sizeBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "SourceMapArtifactResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "releaseId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "r2Key" : {
+            "type" : "string"
+          },
+          "originalPath" : {
+            "type" : "string"
+          },
+          "sha256" : {
+            "type" : "string"
+          },
+          "sizeBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SourceMapUploadResponse" : {
+        "type" : "object",
+        "properties" : {
+          "artifact" : {
+            "$ref" : "#/components/schemas/SourceMapArtifactResponse"
+          },
+          "uploadUrl" : {
+            "type" : "string",
+            "format" : "uri"
+          },
+          "expiresAt" : {
             "type" : "string",
             "format" : "date-time"
           }
