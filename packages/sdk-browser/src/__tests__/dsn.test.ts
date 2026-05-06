@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { InvalidDsnError, parseDsn } from '../dsn.js';
 
 describe('parseDsn', () => {
-  it('parses a valid https DSN', () => {
-    const dsn = parseDsn('https://abc123@ingest.arguslog.io/42');
+  it('parses a production DSN and picks https transport for non-loopback hosts', () => {
+    const dsn = parseDsn('arguslog://abc123@ingest.arguslog.io/api/42');
     expect(dsn).toEqual({
       protocol: 'https',
       publicKey: 'abc123',
@@ -14,17 +14,27 @@ describe('parseDsn', () => {
     });
   });
 
-  it('parses a valid http DSN (local dev)', () => {
-    const dsn = parseDsn('http://key@localhost:8080/1');
+  it('picks http transport for localhost', () => {
+    const dsn = parseDsn('arguslog://key@localhost:8080/api/1');
+    expect(dsn.protocol).toBe('http');
     expect(dsn.ingestUrl).toBe('http://localhost:8080/api/1/events');
+  });
+
+  it('picks http transport for 127.0.0.1', () => {
+    expect(parseDsn('arguslog://k@127.0.0.1:8080/api/1').protocol).toBe('http');
   });
 
   it.each([
     'not-a-dsn',
     '',
-    'https://arguslog.io/42',
-    'ftp://key@arguslog.io/42',
-    'https://key@arguslog.io/',
+    // missing public key
+    'arguslog://@arguslog.io/api/42',
+    // wrong scheme
+    'https://key@arguslog.io/api/42',
+    // wrong path prefix
+    'arguslog://key@arguslog.io/42',
+    // empty project id
+    'arguslog://key@arguslog.io/api/',
   ])('rejects invalid DSN: %s', (bad) => {
     expect(() => parseDsn(bad)).toThrow(InvalidDsnError);
   });

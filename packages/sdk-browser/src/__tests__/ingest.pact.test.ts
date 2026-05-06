@@ -22,10 +22,11 @@ function provider(): PactV3 {
 }
 
 function dsnFor(mockServerUrl: string): string {
-  // PactV3 returns http://127.0.0.1:<port>; reshape into the DSN the SDK parses
-  // back into the same ingest URL the contract pins.
+  // PactV3 returns http://127.0.0.1:<port>; reshape into the user-facing
+  // arguslog:// DSN the SDK parses. The loopback check turns 127.0.0.1 into
+  // an http transport, matching what PactV3 actually serves.
   const u = new URL(mockServerUrl);
-  return `${u.protocol}//${PUBLIC_KEY}@${u.host}/${PROJECT_ID}`;
+  return `arguslog://${PUBLIC_KEY}@${u.host}/api/${PROJECT_ID}`;
 }
 
 describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
