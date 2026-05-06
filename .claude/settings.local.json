@@ -116,7 +116,9 @@
       "Bash(git -c core.pager=cat log --oneline -3)",
       "Bash(python3 -c \"import json; json.load\\(open\\('/Users/petarnenov/argus/.claude/settings.local.json'\\)\\)\")",
       "Bash(grep *)",
-      "Bash(git -c core.editor=true rebase --continue)"
+      "Bash(git -c core.editor=true rebase --continue)",
+      "Bash(git -c core.pager=cat log --oneline -6)",
+      "Bash(git *)"
     ]
   }
 }
