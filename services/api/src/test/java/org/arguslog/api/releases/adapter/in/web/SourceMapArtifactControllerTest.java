@@ -22,6 +22,8 @@ import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.application.port.ProjectRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
+import org.arguslog.api.auth.application.port.PatRepository;
+import org.arguslog.api.auth.application.port.TokenHasher;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase.CreatedUpload;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase.InvalidSourceMapException;
@@ -72,6 +74,8 @@ class SourceMapArtifactControllerTest {
   @MockitoBean OrgWriteRepository orgWriteRepository;
   @MockitoBean ProjectWriteRepository projectWriteRepository;
   @MockitoBean UserRepository userRepository;
+  @MockitoBean PatRepository patRepository;
+  @MockitoBean TokenHasher tokenHasher;
 
   @Test
   void postReturnsArtifactPlusUploadUrl() throws Exception {
