@@ -12,6 +12,7 @@ import org.arguslog.worker.application.ProcessEventUseCase.Result;
 import org.arguslog.worker.application.port.EventStore;
 import org.arguslog.worker.application.port.Fingerprinter;
 import org.arguslog.worker.application.port.PersistedEventPublisher;
+import org.arguslog.worker.application.port.Symbolicator;
 import org.arguslog.worker.domain.Fingerprint;
 import org.arguslog.worker.domain.IncomingEvent;
 import org.arguslog.worker.domain.PersistedEvent;
@@ -29,6 +30,7 @@ class ProcessEventServiceTest {
   @Mock Fingerprinter fingerprinter;
   @Mock EventStore store;
   @Mock PersistedEventPublisher publisher;
+  @Mock Symbolicator symbolicator;
 
   ProcessEventService service;
 
@@ -38,10 +40,12 @@ class ProcessEventServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new ProcessEventService(fingerprinter, store, publisher);
+    service = new ProcessEventService(fingerprinter, store, publisher, symbolicator);
     event =
         new IncomingEvent(
             UUID.randomUUID(), 101L, "pk", Instant.parse("2026-05-05T12:00:00Z"), "{}", "ip", "ua");
+    // Default: symbolicator is a no-op pass-through. Tests that care can override.
+    when(symbolicator.symbolicate(101L, "{}")).thenReturn("{}");
     fingerprint = new Fingerprint("abc123", "TypeError: x", null, Fingerprint.Level.ERROR);
     sampleResult =
         new EventStore.PersistResult(
@@ -121,6 +125,33 @@ class ProcessEventServiceTest {
     assertThat(result).isInstanceOf(Result.Retryable.class);
     assertThat(((Result.Retryable) result).reason()).contains("connection lost");
     verify(publisher, never()).publish(any());
+  }
+
+  @Test
+  void symbolicatesBeforeFingerprintingAndPersists() {
+    String enriched = "{\"release\":\"1.0.0\",\"originalFilename\":\"app.js\"}";
+    when(symbolicator.symbolicate(101L, "{}")).thenReturn(enriched);
+    when(fingerprinter.compute(enriched)).thenReturn(fingerprint);
+    ArgumentCaptor<IncomingEvent> captor = ArgumentCaptor.forClass(IncomingEvent.class);
+    when(store.persist(captor.capture(), any())).thenReturn(sampleResult);
+
+    Result result = service.process(event);
+
+    assertThat(result).isEqualTo(new Result.Persisted(7L, true));
+    assertThat(captor.getValue().rawPayload()).isEqualTo(enriched);
+    assertThat(captor.getValue().eventId()).isEqualTo(event.eventId());
+  }
+
+  @Test
+  void noChangeFromSymbolicatorReusesOriginalEvent() {
+    when(fingerprinter.compute("{}")).thenReturn(fingerprint);
+    ArgumentCaptor<IncomingEvent> captor = ArgumentCaptor.forClass(IncomingEvent.class);
+    when(store.persist(captor.capture(), any())).thenReturn(sampleResult);
+
+    service.process(event);
+
+    // Same instance — symbolicator returned the input unchanged so we skipped the rebuild.
+    assertThat(captor.getValue()).isSameAs(event);
   }
 
   @Test

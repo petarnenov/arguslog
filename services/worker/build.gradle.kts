@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.spring.boot.starter.aop)
     implementation(libs.postgres.driver)
     implementation(libs.aws.s3)
+    implementation(libs.caffeine)
     // TODO(P3): telegram-bot, resend-java, OTel starter.
 
     testImplementation(libs.spring.boot.starter.test)
