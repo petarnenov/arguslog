@@ -24,6 +24,7 @@
 | 6   | Web: AlertRulesPage + AlertDestinationsPage under project / org settings.                                   | ✅ done | `509af8e` |
 | 7a  | API: `releases` endpoint (CRUD, RLS) backing the CLI release-new command.                                   | ✅ done | `cbf6902` |
 | 7b  | CLI: `arguslog releases new <version>` (PAT auth) — POST to /api/v1/projects/.../releases.                  | pending | —         |
+| 7c  | API: PAT auth — `personal_access_tokens` table + `/api/v1/me/tokens` + Spring Security PAT filter.          | ✅ done | `a313415` |
 | 8   | CLI: `arguslog sourcemaps upload <release> <path>` — multipart upload to R2 via api signed URL.             | pending | —         |
 | 9   | API: signed-URL endpoint for sourcemap PUTs; persists to `source_map_artifacts`.                            | ✅ done | `22d598b` |
 | 10  | Worker: symbolication — for JS events, fetch matching sourcemap from R2, decode top frames before persist.  | pending | —         |
