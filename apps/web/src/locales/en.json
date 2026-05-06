@@ -13,6 +13,11 @@
     "billing": "Billing",
     "logout": "Log out"
   },
+  "orgSwitcher": {
+    "label": "Organization",
+    "noneSelected": "Select organization",
+    "create": "New organization"
+  },
   "auth": {
     "login": "Sign in",
     "loginHint": "Sign in with your organization account",
@@ -23,7 +28,7 @@
     "logout": "Log out"
   },
   "onboarding": {
-    "title": "Create your first project",
+    "title": "Create a project",
     "orgName": "Organization name",
     "projectName": "Project name",
     "platform": "Platform",
