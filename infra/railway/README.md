@@ -25,6 +25,34 @@ there's no per-service dashboard config to drift.
 | Redis                | `railway add redis`                    | Used by ingest (Streams) + worker (consumer group) + api (cache). |
 | Cloudflare R2        | external (S3-compatible)               | Source maps + attachments.                                        |
 
+## Current state (P5 #4)
+
+Staging environment is live. Project id `f24cb7e5-c1fd-4520-a04d-dea1acd0d309`.
+
+| Service           | Status                | Public URL                                       |
+| ----------------- | --------------------- | ------------------------------------------------ |
+| `arguslog-api`    | ✅ deployed           | https://arguslog-api-staging.up.railway.app      |
+| `arguslog-ingest` | ✅ deployed           | https://arguslog-ingest-staging.up.railway.app   |
+| `arguslog-worker` | ✅ deployed           | _internal — no public domain_                    |
+| `arguslog-web`    | ✅ deployed           | https://arguslog-web-staging.up.railway.app      |
+| `timescaledb`     | ✅ running (image)    | _internal — `timescaledb.railway.internal:5432`_ |
+| `Redis`           | ✅ running (template) | _internal — `redis.railway.internal:6379`_       |
+
+Open follow-ups (deferred — none block #5/#6 starting):
+
+- **Keycloak service.** Auth flow can't end-to-end work without a Keycloak realm. Add as
+  another image-based service (`quay.io/keycloak/keycloak`) with its own Postgres backing
+  store + realm import; tackled as part of #6 dogfood when a real user actually logs in.
+- **Stale plain Postgres service.** `railway add --database postgres` left an unused service
+  alongside `timescaledb`. CLI doesn't expose `service delete`; remove via the dashboard.
+- **Stripe + R2 secrets.** Placeholders; populate when Stripe live keys + a Cloudflare R2
+  bucket are minted (production cutover, #7).
+- **Production environment.** All services exist there but with no variables and no first
+  deploy. Mirror staging's `railway variables --set` calls under `--environment production`
+  before promoting (#7).
+- **`RAILWAY_TOKEN_STAGING` GitHub Action secret.** Generate a project-scoped token in the
+  dashboard and add it to repo secrets so `.github/workflows/deploy-staging.yml` can run.
+
 ## First-time setup (operator runbook)
 
 The production project is provisioned by hand once. Subsequent deploys are tag- or push-driven.
