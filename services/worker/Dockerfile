@@ -7,13 +7,13 @@ WORKDIR /workspace
 COPY settings.gradle.kts build.gradle.kts gradlew gradlew.bat ./
 COPY gradle ./gradle
 COPY buildSrc ./buildSrc
-RUN --mount=type=cache,target=/root/.gradle \
+RUN --mount=type=cache,id=gradle-cache,target=/root/.gradle \
     ./gradlew --version --no-daemon
 
 COPY services ./services
 COPY java-sdk ./java-sdk
 
-RUN --mount=type=cache,target=/root/.gradle \
+RUN --mount=type=cache,id=gradle-cache,target=/root/.gradle \
     ./gradlew :services:worker:bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre AS runtime
