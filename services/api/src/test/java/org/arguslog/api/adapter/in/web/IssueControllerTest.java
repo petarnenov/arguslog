@@ -31,6 +31,8 @@ import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.domain.Event;
 import org.arguslog.api.domain.Issue;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
+import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
+import org.arguslog.api.releases.application.port.SourceMapStorage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -75,6 +77,8 @@ class IssueControllerTest {
   @MockitoBean ProjectWriteRepository projectWriteRepository;
   @MockitoBean UserRepository userRepository;
   @MockitoBean ReleaseRepository releaseRepository;
+  @MockitoBean SourceMapArtifactRepository sourceMapArtifactRepository;
+  @MockitoBean SourceMapStorage sourceMapStorage;
 
   // ── list ─────────────────────────────────────────────────────────────────
 

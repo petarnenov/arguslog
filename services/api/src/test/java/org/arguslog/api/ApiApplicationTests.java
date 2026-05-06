@@ -11,6 +11,8 @@ import org.arguslog.api.application.port.ProjectRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
+import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
+import org.arguslog.api.releases.application.port.SourceMapStorage;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -43,6 +45,8 @@ class ApiApplicationTests {
   @MockitoBean ProjectWriteRepository projectWriteRepository;
   @MockitoBean DsnRepository dsnRepository;
   @MockitoBean ReleaseRepository releaseRepository;
+  @MockitoBean SourceMapArtifactRepository sourceMapArtifactRepository;
+  @MockitoBean SourceMapStorage sourceMapStorage;
 
   @Test
   void contextLoads() {}
