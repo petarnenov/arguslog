@@ -1,0 +1,20 @@
+# Railway service config for Keycloak. Built from services/keycloak/Dockerfile (multi-stage,
+# realm baked in). Backing store is the existing managed Postgres (auto-injected as DATABASE_URL
+# in environments that have the plugin) — Keycloak's KC_DB_URL etc. variables resolve against
+# Reference Variables wired in the dashboard.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "services/keycloak/Dockerfile"
+watchPatterns = [
+  "services/keycloak/**",
+]
+
+[deploy]
+# Keycloak's built-in /health/ready endpoint goes up after realm import + DB schema migration.
+# Cold-start can hit ~60 s on a small box; bump if stuck.
+healthcheckPath = "/health/ready"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+numReplicas = 1
