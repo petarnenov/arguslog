@@ -7,12 +7,13 @@ image built by their per-service Dockerfile.
 
 ## Services
 
-| Railway service   | Source path        | Builder    | Health check                    |
-| ----------------- | ------------------ | ---------- | ------------------------------- |
-| `arguslog-api`    | `services/api/`    | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-ingest` | `services/ingest/` | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-worker` | `services/worker/` | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-web`    | `apps/web/`        | Dockerfile | `/healthz` (Caddy `respond ok`) |
+| Railway service     | Source path           | Builder    | Health check                    |
+| ------------------- | --------------------- | ---------- | ------------------------------- |
+| `arguslog-api`      | `services/api/`       | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-ingest`   | `services/ingest/`    | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-worker`   | `services/worker/`    | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-web`      | `apps/web/`           | Dockerfile | `/healthz` (Caddy `respond ok`) |
+| `arguslog-keycloak` | `services/keycloak/`  | Dockerfile | `/realms/master` (8080)         |
 
 Each service has a `railway.toml` co-located with its source — Railway auto-detects them so
 there's no per-service dashboard config to drift.
@@ -25,9 +26,29 @@ there's no per-service dashboard config to drift.
 | Redis                | `railway add redis`                    | Used by ingest (Streams) + worker (consumer group) + api (cache). |
 | Cloudflare R2        | external (S3-compatible)               | Source maps + attachments.                                        |
 
-## Current state (P5 #4)
+## Current state (P5 #7 in progress)
 
-Staging environment is live. Project id `f24cb7e5-c1fd-4520-a04d-dea1acd0d309`.
+Both environments are deployed; cert provisioning on the production custom domains is the only
+piece still pending (Railway's Let's Encrypt issuance has been stuck on `VALIDATING_OWNERSHIP`
+after multiple add/remove cycles). Project id `f24cb7e5-c1fd-4520-a04d-dea1acd0d309`.
+
+| Subdomain               | DNS in Cloudflare                       | Railway domain | TLS         | HTTP                          |
+| ----------------------- | --------------------------------------- | -------------- | ----------- | ----------------------------- |
+| `app.arguslog.org`      | CNAME → b452yzy1.up.railway.app (proxy) | added          | CF Universal| 404 (Railway routing pending) |
+| `api.arguslog.org`      | CNAME → 4j1n7gex.up.railway.app (proxy) | added          | CF Universal| 404 (Railway routing pending) |
+| `auth.arguslog.org`     | CNAME → cymu37i0.up.railway.app (proxy) | added          | CF Universal| 404 (Railway routing pending) |
+| `ingest.arguslog.org`   | CNAME → d9fz3gra.up.railway.app (no cf) | added          | pending     | 000 (cert not issued)         |
+
+Railway-issued URLs work in the meantime (use these for end-to-end testing until cutover):
+
+| Service           | Direct URL (no domain)                                 |
+| ----------------- | ------------------------------------------------------ |
+| `arguslog-api`    | https://arguslog-api-production.up.railway.app         |
+| `arguslog-ingest` | https://arguslog-ingest-production.up.railway.app      |
+| `arguslog-web`    | https://arguslog-web-production.up.railway.app         |
+| `arguslog-keycloak` | https://arguslog-keycloak-production.up.railway.app  |
+
+## Staging
 
 | Service           | Status                | Public URL                                       |
 | ----------------- | --------------------- | ------------------------------------------------ |
