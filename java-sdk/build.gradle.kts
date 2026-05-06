@@ -8,9 +8,8 @@ plugins {
     id("io.spring.dependency-management")
 }
 
-group = "org.arguslog"
-// Version is overridden by the release workflow via -Pversion=<x.y.z> when publishing.
-version = "0.0.1-SNAPSHOT"
+// group + version inherited from root build.gradle.kts. The root respects -Pversion=<x.y.z>
+// passed by the release workflow, so this script doesn't need to override either.
 
 java {
     toolchain {
