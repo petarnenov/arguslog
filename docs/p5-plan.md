@@ -47,7 +47,7 @@
 | 3   | SDKs: GitHub Actions release workflow — `sdk-browser-v*` / `sdk-react-v*` → npm publish, `java-sdk-v*` → Maven Central via OSSRH (signed). Tag-driven.                                                             | ✅ done | `fbceb9d` |
 | 4   | INFRA: Railway staging environment — services (api/ingest/worker/web) + managed Postgres+Timescale + Redis + R2 bucket + Keycloak. Secrets wiring + first deploy from `main`.                                      | ✅ done | `4e05f06` |
 | 5   | INFRA: k6 load testing — ingest hot path (events POST), api login + dashboard read, recorded baseline (p95/p99/err-rate at target RPS) against staging.                                                            | ✅ done | `bbd83dc` |
-| 6   | DOGFOOD: api/ingest/worker import published `java-sdk`, web imports `@arguslog/sdk-browser` + `@arguslog/sdk-react`. Dedicated `arguslog-internal` org with one project per service.                               | pending | —         |
+| 6   | DOGFOOD: api/ingest/worker import published `java-sdk`, web imports `@arguslog/sdk-browser` + `@arguslog/sdk-react`. Dedicated `arguslog-internal` org with one project per service.                               | ✅ done | `664b43b` |
 | 7   | INFRA: Railway production deploy + DNS cutover — promote staging build to production env, point `arguslog.org` subdomains at Railway, TLS via Railway, Cloudflare proxy decision per subdomain.                    | pending | —         |
 
 ## Architecture decisions to lock in
