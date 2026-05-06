@@ -18,3 +18,8 @@ export function createOrg(name: string): Promise<Org> {
     body: JSON.stringify({ name }),
   });
 }
+
+/** Hard delete; cascades through projects/issues/events/etc. Owner only. */
+export function deleteOrg(orgId: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/orgs/${orgId}`, { method: 'DELETE' });
+}

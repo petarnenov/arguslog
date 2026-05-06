@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Button,
   Card,
@@ -14,13 +15,14 @@ import {
   Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
-import { createProject } from '../api/projects';
+import { archiveProject, createProject, type Project } from '../api/projects';
 import { queryKeys, useMyOrgs, useProjects } from '../api/queries';
 
 export function ProjectsPage() {
@@ -33,6 +35,8 @@ export function ProjectsPage() {
   const projectsQuery = useProjects(org?.id);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<Project | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm({
@@ -57,6 +61,25 @@ export function ProjectsPage() {
     },
     onError: (err: unknown) => {
       setError(err instanceof ApiError ? err.problem.detail ?? err.problem.title : String(err));
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: (project: Project) => {
+      if (!org) throw new Error('org missing');
+      return archiveProject(org.id, project.id);
+    },
+    onSuccess: async () => {
+      if (org) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.projects(org.id) });
+      }
+      setArchiveTarget(null);
+      setArchiveError(null);
+    },
+    onError: (err: unknown) => {
+      setArchiveError(
+        err instanceof ApiError ? err.problem.detail ?? err.problem.title : String(err),
+      );
     },
   });
 
@@ -116,28 +139,87 @@ export function ProjectsPage() {
       ) : (
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
           {projectsQuery.data?.map((p) => (
-            <Card
-              key={p.id}
-              component={Link}
-              to={`/orgs/${org.slug}/projects/${p.id}/issues`}
-              shadow="xs"
-              padding="lg"
-              radius="md"
-              withBorder
-            >
-              <Group justify="space-between">
-                <Title order={5}>{p.name}</Title>
-                <Text size="xs" c="dimmed">
-                  {p.platform}
+            <Card key={p.id} shadow="xs" padding="lg" radius="md" withBorder pos="relative">
+              <Card.Section
+                component={Link}
+                to={`/orgs/${org.slug}/projects/${p.id}/issues`}
+                inheritPadding
+                py="lg"
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <Group justify="space-between" wrap="nowrap">
+                  <Title order={5}>{p.name}</Title>
+                  <Text size="xs" c="dimmed">
+                    {p.platform}
+                  </Text>
+                </Group>
+                <Text size="sm" c="dimmed">
+                  {p.slug}
                 </Text>
-              </Group>
-              <Text size="sm" c="dimmed">
-                {p.slug}
-              </Text>
+              </Card.Section>
+              <ActionIcon
+                variant="subtle"
+                color="red"
+                size="sm"
+                pos="absolute"
+                top={8}
+                right={8}
+                aria-label={t('projects.archiveAria', { name: p.name })}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setArchiveError(null);
+                  setArchiveTarget(p);
+                }}
+              >
+                <IconTrash size={14} />
+              </ActionIcon>
             </Card>
           ))}
         </SimpleGrid>
       )}
+
+      <Modal
+        opened={archiveTarget !== null}
+        onClose={() => {
+          if (!archiveMutation.isPending) {
+            setArchiveTarget(null);
+            setArchiveError(null);
+          }
+        }}
+        title={t('projects.archiveTitle')}
+        size="md"
+      >
+        <Stack>
+          <Text size="sm">
+            {t('projects.archiveBody', { name: archiveTarget?.name ?? '' })}
+          </Text>
+          <Text size="xs" c="dimmed">
+            {t('projects.archiveHint')}
+          </Text>
+          {archiveError ? (
+            <Alert color="red" variant="light">
+              {archiveError}
+            </Alert>
+          ) : null}
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={() => setArchiveTarget(null)}
+              disabled={archiveMutation.isPending}
+            >
+              {t('projects.archiveCancel')}
+            </Button>
+            <Button
+              color="red"
+              loading={archiveMutation.isPending}
+              onClick={() => archiveTarget && archiveMutation.mutate(archiveTarget)}
+            >
+              {t('projects.archiveConfirm')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={createOpen}

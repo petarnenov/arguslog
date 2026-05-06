@@ -22,3 +22,10 @@ export function createProject(
     body: JSON.stringify(body),
   });
 }
+
+/** Soft-archive: server flips archived_at, project disappears from the live list. */
+export function archiveProject(orgId: number, projectId: number): Promise<void> {
+  return apiFetch<void>(`/api/v1/orgs/${orgId}/projects/${projectId}`, {
+    method: 'DELETE',
+  });
+}

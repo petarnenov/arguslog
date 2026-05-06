@@ -1,14 +1,18 @@
 import {
   ActionIcon,
+  Alert,
   AppShell,
   Burger,
+  Button,
   Divider,
   Group,
   Menu,
+  Modal,
   NavLink,
   ScrollArea,
   Stack,
   Text,
+  TextInput,
   Title,
   UnstyledButton,
 } from '@mantine/core';
@@ -25,17 +29,24 @@ import {
   IconSend,
   IconSettings,
   IconShieldLock,
+  IconTrash,
   IconUser,
 } from '@tabler/icons-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Outlet, useParams } from 'react-router';
+import { Link, Outlet, useNavigate, useParams } from 'react-router';
 
-import { useMyOrgs } from '../api/queries';
+import { ApiError } from '../api/client';
+import { deleteOrg } from '../api/orgs';
+import { queryKeys, useMyOrgs } from '../api/queries';
 import { useAuth } from '../auth/useAuth';
 
 export function AppShellLayout() {
   const [opened, { toggle }] = useDisclosure();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { orgSlug: urlOrgSlug, projectId } = useParams();
   const orgs = useMyOrgs();
   // When the URL doesn't carry an org slug yet (e.g. /onboarding), fall back to the user's first
@@ -45,6 +56,33 @@ export function AppShellLayout() {
   const currentOrg = orgs.data?.find((o) => o.slug === orgSlug);
   const { user, signOut } = useAuth();
   const userLabel = user?.name ?? user?.email ?? user?.id;
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmName, setConfirmName] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => {
+      if (!currentOrg) throw new Error('no current org');
+      return deleteOrg(currentOrg.id);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.myOrgs() });
+      setDeleteOpen(false);
+      setConfirmName('');
+      setDeleteError(null);
+      // Land on /orgs — the landing page redirects to /onboarding if no orgs left,
+      // or the user's first remaining org otherwise.
+      navigate('/orgs', { replace: true });
+    },
+    onError: (err: unknown) => {
+      setDeleteError(
+        err instanceof ApiError ? err.problem.detail ?? err.problem.title : String(err),
+      );
+    },
+  });
+
+  const canDelete = Boolean(currentOrg) && confirmName.trim() === (currentOrg?.name ?? '');
 
   return (
     <AppShell
@@ -131,6 +169,19 @@ export function AppShellLayout() {
               >
                 {t('orgSwitcher.create')}
               </Menu.Item>
+              {currentOrg && (
+                <Menu.Item
+                  color="red"
+                  leftSection={<IconTrash size={14} />}
+                  onClick={() => {
+                    setDeleteError(null);
+                    setConfirmName('');
+                    setDeleteOpen(true);
+                  }}
+                >
+                  {t('orgSwitcher.delete')}
+                </Menu.Item>
+              )}
             </Menu.Dropdown>
           </Menu>
           <Divider my="xs" />
@@ -186,6 +237,57 @@ export function AppShellLayout() {
       <AppShell.Main>
         <Outlet />
       </AppShell.Main>
+
+      <Modal
+        opened={deleteOpen}
+        onClose={() => {
+          if (!deleteMutation.isPending) {
+            setDeleteOpen(false);
+            setConfirmName('');
+            setDeleteError(null);
+          }
+        }}
+        title={t('orgSwitcher.deleteTitle', { name: currentOrg?.name ?? '' })}
+        size="md"
+      >
+        <Stack>
+          <Text size="sm" c="red.7" fw={500}>
+            {t('orgSwitcher.deleteWarning')}
+          </Text>
+          <Text size="sm">
+            {t('orgSwitcher.deleteBody')}
+          </Text>
+          <TextInput
+            label={t('orgSwitcher.deleteConfirmLabel', { name: currentOrg?.name ?? '' })}
+            value={confirmName}
+            onChange={(e) => setConfirmName(e.currentTarget.value)}
+            disabled={deleteMutation.isPending}
+            autoFocus
+          />
+          {deleteError ? (
+            <Alert color="red" variant="light">
+              {deleteError}
+            </Alert>
+          ) : null}
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleteMutation.isPending}
+            >
+              {t('orgSwitcher.deleteCancel')}
+            </Button>
+            <Button
+              color="red"
+              loading={deleteMutation.isPending}
+              disabled={!canDelete}
+              onClick={() => deleteMutation.mutate()}
+            >
+              {t('orgSwitcher.deleteConfirm')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </AppShell>
   );
 }
