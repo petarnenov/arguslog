@@ -14,7 +14,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 public class SecurityConfig {
 
-  @Value("${argus.cors.allowed-origins:http://localhost:5173}")
+  @Value("${arguslog.cors.allowed-origins:http://localhost:5173}")
   private String allowedOrigins;
 
   @Bean
@@ -24,16 +24,16 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsSource()))
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
-            authz ->
-                authz
-                    .requestMatchers(
-                        "/actuator/health/**", "/api/v1/info", "/v3/api-docs/**", "/swagger-ui/**")
-                    .permitAll()
-                    .requestMatchers("/api/v1/webhooks/stripe")
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-        .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
+            authz -> authz
+                .requestMatchers(
+                    "/actuator/health/**", "/api/v1/info", "/v3/api-docs/**", "/swagger-ui/**")
+                .permitAll()
+                .requestMatchers("/api/v1/webhooks/stripe")
+                .permitAll()
+                .anyRequest()
+                .authenticated())
+        .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
+        }));
     return http.build();
   }
 

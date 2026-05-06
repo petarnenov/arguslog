@@ -1,6 +1,6 @@
 # Railway deployment
 
-Argus production runs on a single Railway project (`argus-prod`) with one
+Argus production runs on a single Railway project (`arguslog-prod`) with one
 service per process and Railway-managed Postgres + Redis. This file is a
 P0 placeholder; real provisioning lands in **P5 (Launch readiness)**.
 
@@ -8,11 +8,11 @@ P0 placeholder; real provisioning lands in **P5 (Launch readiness)**.
 
 | Service          | Source path        | Builder  | Health check                  |
 | ---------------- | ------------------ | -------- | ----------------------------- |
-| `argus-api`      | `services/api/`    | Nixpacks | `/actuator/health/readiness`  |
-| `argus-ingest`   | `services/ingest/` | Nixpacks | `/actuator/health/readiness`  |
-| `argus-worker`   | `services/worker/` | Nixpacks | `/actuator/health/readiness`  |
-| `argus-web`      | `apps/web/`        | Nixpacks | `/`                           |
-| `argus-keycloak` | _Keycloak image_   | Docker   | `/health/ready` (port `9000`) |
+| `arguslog-api`      | `services/api/`    | Nixpacks | `/actuator/health/readiness`  |
+| `arguslog-ingest`   | `services/ingest/` | Nixpacks | `/actuator/health/readiness`  |
+| `arguslog-worker`   | `services/worker/` | Nixpacks | `/actuator/health/readiness`  |
+| `arguslog-web`      | `apps/web/`        | Nixpacks | `/`                           |
+| `arguslog-keycloak` | _Keycloak image_   | Docker   | `/health/ready` (port `9000`) |
 
 Each service has a per-directory `railway.toml` co-located with its source so
 Railway picks up the right build/start commands when its **Watch Paths**
@@ -37,22 +37,22 @@ match.
 Wire shared variables via Railway **Service Variables → Reference Variables**
 so a single `${{Postgres.DATABASE_URL}}` propagates everywhere.
 
-### `argus-api`
+### `arguslog-api`
 
 ```
 DATABASE_URL              = ${{Postgres.DATABASE_URL}}
 REDIS_URL                 = ${{Redis.REDIS_URL}}
-KEYCLOAK_ISSUER           = https://auth.argus.example/realms/argus
+KEYCLOAK_ISSUER           = https://auth.arguslog.example/realms/arguslog
 R2_ACCESS_KEY             = (from secrets manager)
 R2_SECRET_KEY             = (from secrets manager)
-R2_BUCKET                 = argus-attachments
+R2_BUCKET                 = arguslog-attachments
 STRIPE_API_KEY            = (live)
 STRIPE_WEBHOOK_SECRET     = (live)
 RESEND_API_KEY            = (live)
 JAVA_TOOL_OPTIONS         = -XX:MaxRAMPercentage=75
 ```
 
-### `argus-ingest`
+### `arguslog-ingest`
 
 ```
 REDIS_URL                 = ${{Redis.REDIS_URL}}
@@ -60,7 +60,7 @@ DATABASE_URL              = ${{Postgres.DATABASE_URL}}   # read-only DSN auth
 JAVA_TOOL_OPTIONS         = -XX:MaxRAMPercentage=75
 ```
 
-### `argus-worker`
+### `arguslog-worker`
 
 ```
 DATABASE_URL              = ${{Postgres.DATABASE_URL}}
@@ -68,12 +68,12 @@ REDIS_URL                 = ${{Redis.REDIS_URL}}
 JAVA_TOOL_OPTIONS         = -XX:MaxRAMPercentage=75
 ```
 
-### `argus-web`
+### `arguslog-web`
 
 ```
-VITE_API_URL              = https://api.argus.example
-VITE_KEYCLOAK_URL         = https://auth.argus.example
-VITE_KEYCLOAK_REALM       = argus
+VITE_API_URL              = https://api.arguslog.example
+VITE_KEYCLOAK_URL         = https://auth.arguslog.example
+VITE_KEYCLOAK_REALM       = arguslog
 ```
 
 ## Deploy flow
@@ -81,7 +81,7 @@ VITE_KEYCLOAK_REALM       = argus
 1. `main` is protected; merges trigger Railway via the Railway GitHub App
    (Watch Paths split per service to avoid full-repo rebuilds).
 2. CI must be green (PR workflow) before Railway will deploy.
-3. Migrations run as part of `argus-api` start (`flyway.enabled=true`),
+3. Migrations run as part of `arguslog-api` start (`flyway.enabled=true`),
    gated by an advisory lock so multiple replicas can't race.
 4. Health checks must pass within `healthcheck.timeout` for the deploy to
    be promoted.

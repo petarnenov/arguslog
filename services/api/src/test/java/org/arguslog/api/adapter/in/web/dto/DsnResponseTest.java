@@ -9,18 +9,18 @@ class DsnResponseTest {
   @Test
   void formatsDsnStrippingScheme() {
     assertThat(DsnResponse.formatDsn("ABC123", "http://localhost:8080", 42))
-        .isEqualTo("argus://ABC123@localhost:8080/api/42");
+        .isEqualTo("arguslog://ABC123@localhost:8080/api/42");
   }
 
   @Test
   void formatsDsnWhenHostHasNoScheme() {
-    assertThat(DsnResponse.formatDsn("KEY", "argus.example.com", 7))
-        .isEqualTo("argus://KEY@argus.example.com/api/7");
+    assertThat(DsnResponse.formatDsn("KEY", "arguslog.example.com", 7))
+        .isEqualTo("arguslog://KEY@arguslog.example.com/api/7");
   }
 
   @Test
   void formatsDsnWithHttpsScheme() {
-    assertThat(DsnResponse.formatDsn("PK", "https://ingest.argus.example", 99))
-        .isEqualTo("argus://PK@ingest.argus.example/api/99");
+    assertThat(DsnResponse.formatDsn("PK", "https://ingest.arguslog.example", 99))
+        .isEqualTo("arguslog://PK@ingest.arguslog.example/api/99");
   }
 }

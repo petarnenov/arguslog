@@ -4,13 +4,13 @@ import { InvalidDsnError, parseDsn } from '../dsn.js';
 
 describe('parseDsn', () => {
   it('parses a valid https DSN', () => {
-    const dsn = parseDsn('https://abc123@ingest.argus.io/42');
+    const dsn = parseDsn('https://abc123@ingest.arguslog.io/42');
     expect(dsn).toEqual({
       protocol: 'https',
       publicKey: 'abc123',
-      host: 'ingest.argus.io',
+      host: 'ingest.arguslog.io',
       projectId: '42',
-      ingestUrl: 'https://ingest.argus.io/api/42/events',
+      ingestUrl: 'https://ingest.arguslog.io/api/42/events',
     });
   });
 
@@ -22,9 +22,9 @@ describe('parseDsn', () => {
   it.each([
     'not-a-dsn',
     '',
-    'https://argus.io/42',
-    'ftp://key@argus.io/42',
-    'https://key@argus.io/',
+    'https://arguslog.io/42',
+    'ftp://key@arguslog.io/42',
+    'https://key@arguslog.io/',
   ])('rejects invalid DSN: %s', (bad) => {
     expect(() => parseDsn(bad)).toThrow(InvalidDsnError);
   });

@@ -1,5 +1,5 @@
 {
-  "name": "@argus/e2e",
+  "name": "@arguslog/e2e",
   "version": "0.0.0",
   "description": "Argus end-to-end tests (Playwright). Real suites land alongside the P2 dashboard.",
   "private": true,
@@ -14,8 +14,8 @@
     "clean": "rm -rf playwright-report test-results .turbo"
   },
   "devDependencies": {
-    "@argus/eslint-config": "workspace:*",
-    "@argus/tsconfig": "workspace:*",
+    "@arguslog/eslint-config": "workspace:*",
+    "@arguslog/tsconfig": "workspace:*",
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.0",
     "eslint": "^9.18.0",

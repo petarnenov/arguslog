@@ -1,5 +1,5 @@
 {
-  "name": "@argus/sdk-react",
+  "name": "@arguslog/sdk-react",
   "version": "0.0.0",
   "description": "Argus React 19 SDK — ErrorBoundary, hooks, RR/RQ adapters",
   "license": "MIT",
@@ -27,14 +27,14 @@
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
-    "@argus/sdk-browser": "workspace:*"
+    "@arguslog/sdk-browser": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0"
   },
   "devDependencies": {
-    "@argus/eslint-config": "workspace:*",
-    "@argus/tsconfig": "workspace:*",
+    "@arguslog/eslint-config": "workspace:*",
+    "@arguslog/tsconfig": "workspace:*",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

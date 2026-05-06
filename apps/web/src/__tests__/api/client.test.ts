@@ -62,13 +62,13 @@ describe('apiFetch', () => {
 
   it('returns parsed JSON for 2xx', async () => {
     globalThis.fetch = (async () =>
-      new Response(JSON.stringify({ name: 'argus' }), {
+      new Response(JSON.stringify({ name: 'arguslog' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       })) as typeof fetch;
 
     const out = await apiFetch<{ name: string }>('/api/v1/info');
-    expect(out).toEqual({ name: 'argus' });
+    expect(out).toEqual({ name: 'arguslog' });
   });
 
   it('throws ApiError carrying the problem+json body for non-2xx', async () => {

@@ -21,9 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(
-    value = "/api/v1/orgs/{orgId}/projects",
-    produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/v1/orgs/{orgId}/projects", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ProjectController {
 
   private final ProjectUseCase useCase;
@@ -57,7 +55,7 @@ public class ProjectController {
   ResponseEntity<ProblemDetail> handleInvalid(InvalidProjectException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid project");
-    body.setType(URI.create("https://argus.dev/problems/invalid-project"));
+    body.setType(URI.create("https://arguslog.dev/problems/invalid-project"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);

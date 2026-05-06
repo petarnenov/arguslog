@@ -1,5 +1,5 @@
 {
-  "name": "@argus/eslint-config",
+  "name": "@arguslog/eslint-config",
   "version": "0.0.0",
   "private": true,
   "type": "module",

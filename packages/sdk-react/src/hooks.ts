@@ -6,7 +6,7 @@ import {
   setContext,
   setTag,
   setUser,
-} from '@argus/sdk-browser';
+} from '@arguslog/sdk-browser';
 import { useMemo } from 'react';
 
 export function useArgus() {

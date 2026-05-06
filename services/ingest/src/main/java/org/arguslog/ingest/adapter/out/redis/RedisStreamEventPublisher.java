@@ -17,24 +17,23 @@ public class RedisStreamEventPublisher implements EventStreamPublisher {
 
   public RedisStreamEventPublisher(
       StringRedisTemplate redis,
-      @Value("${argus.ingest.stream-key:events:incoming}") String streamKey) {
+      @Value("${arguslog.ingest.stream-key:events:incoming}") String streamKey) {
     this.redis = redis;
     this.streamKey = streamKey;
   }
 
   @Override
   public void publish(EventEnvelope envelope) {
-    MapRecord<String, String, String> record =
-        StreamRecords.mapBacked(
-                Map.of(
-                    "eventId", envelope.eventId().toString(),
-                    "projectId", String.valueOf(envelope.projectId()),
-                    "dsnPublicKey", envelope.dsnPublicKey(),
-                    "receivedAt", envelope.receivedAt().toString(),
-                    "rawPayload", envelope.rawPayload(),
-                    "clientIp", nullSafe(envelope.clientIp()),
-                    "userAgent", nullSafe(envelope.userAgent())))
-            .withStreamKey(streamKey);
+    MapRecord<String, String, String> record = StreamRecords.mapBacked(
+        Map.of(
+            "eventId", envelope.eventId().toString(),
+            "projectId", String.valueOf(envelope.projectId()),
+            "dsnPublicKey", envelope.dsnPublicKey(),
+            "receivedAt", envelope.receivedAt().toString(),
+            "rawPayload", envelope.rawPayload(),
+            "clientIp", nullSafe(envelope.clientIp()),
+            "userAgent", nullSafe(envelope.userAgent())))
+        .withStreamKey(streamKey);
     redis.opsForStream().add(record);
   }
 

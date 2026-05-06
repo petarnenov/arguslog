@@ -1,4 +1,4 @@
-# Railway config for the argus-ingest service.
+# Railway config for the arguslog-ingest service.
 # Built with Nixpacks (auto-detects Java 21 + Gradle).
 # Provisioned in P5 alongside the other services.
 

@@ -9,6 +9,6 @@ public class HealthInfoController {
 
   @GetMapping("/api/v1/info")
   public Map<String, String> info() {
-    return Map.of("name", "argus-api", "version", "0.0.1-SNAPSHOT");
+    return Map.of("name", "arguslog-api", "version", "0.0.1-SNAPSHOT");
   }
 }

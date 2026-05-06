@@ -1,5 +1,5 @@
 {
-  "realm": "argus",
+  "realm": "arguslog",
   "enabled": true,
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
@@ -14,30 +14,34 @@
   "smtpServer": {
     "host": "mailhog",
     "port": "1025",
-    "from": "noreply@argus.local",
+    "from": "noreply@arguslog.local",
     "fromDisplayName": "Argus",
     "starttls": "false",
     "auth": "false"
   },
   "clients": [
     {
-      "clientId": "argus-web",
+      "clientId": "arguslog-web",
       "enabled": true,
       "publicClient": true,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
-      "redirectUris": ["http://localhost:5173/*"],
-      "webOrigins": ["http://localhost:5173"],
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:5173/*"
       }
     },
     {
-      "clientId": "argus-api",
+      "clientId": "arguslog-api",
       "enabled": true,
       "publicClient": false,
-      "secret": "argus-api-dev-secret",
+      "secret": "arguslog-api-dev-secret",
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
@@ -46,21 +50,37 @@
   ],
   "roles": {
     "realm": [
-      { "name": "argus:user", "description": "Standard end-user" },
-      { "name": "argus:staff", "description": "Internal Argus operator" }
+      {
+        "name": "arguslog:user",
+        "description": "Standard end-user"
+      },
+      {
+        "name": "arguslog:staff",
+        "description": "Internal Argus operator"
+      }
     ]
   },
-  "defaultRoles": ["argus:user"],
+  "defaultRoles": [
+    "arguslog:user"
+  ],
   "users": [
     {
-      "username": "demo@argus.local",
-      "email": "demo@argus.local",
+      "username": "demo@arguslog.local",
+      "email": "demo@arguslog.local",
       "emailVerified": true,
       "enabled": true,
       "firstName": "Demo",
       "lastName": "User",
-      "credentials": [{ "type": "password", "value": "demo", "temporary": false }],
-      "realmRoles": ["argus:user"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "arguslog:user"
+      ]
     }
   ]
 }

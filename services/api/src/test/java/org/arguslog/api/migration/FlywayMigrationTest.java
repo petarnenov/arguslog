@@ -18,31 +18,30 @@ import org.testcontainers.utility.DockerImageName;
 
 /**
  * Locks in the V1 schema as a contract: every migration in
- * services/api/src/main/resources/db/migration must apply cleanly to a fresh TimescaleDB instance,
- * and the headline tables/extensions must end up wired. This is the single gate that catches "I
+ * services/api/src/main/resources/db/migration must apply cleanly to a fresh
+ * TimescaleDB instance,
+ * and the headline tables/extensions must end up wired. This is the single gate
+ * that catches "I
  * broke the schema" PRs in CI.
  */
 @Testcontainers
 class FlywayMigrationTest {
 
-  private static final DockerImageName TIMESCALE_IMAGE =
-      DockerImageName.parse("timescale/timescaledb:latest-pg16")
-          .asCompatibleSubstituteFor("postgres");
+  private static final DockerImageName TIMESCALE_IMAGE = DockerImageName.parse("timescale/timescaledb:latest-pg16")
+      .asCompatibleSubstituteFor("postgres");
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>(TIMESCALE_IMAGE)
-          .withDatabaseName("argus")
-          .withUsername("argus")
-          .withPassword("argus");
+  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(TIMESCALE_IMAGE)
+      .withDatabaseName("arguslog")
+      .withUsername("arguslog")
+      .withPassword("arguslog");
 
   @Test
   void appliesCleanlyAndIsIdempotent() throws Exception {
-    Flyway flyway =
-        Flyway.configure()
-            .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
-            .locations("classpath:db/migration")
-            .load();
+    Flyway flyway = Flyway.configure()
+        .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+        .locations("classpath:db/migration")
+        .load();
 
     MigrateResult first = flyway.migrate();
     assertThat(first.success).isTrue();
@@ -52,9 +51,8 @@ class FlywayMigrationTest {
     assertThat(second.success).isTrue();
     assertThat(second.migrationsExecuted).isZero();
 
-    try (Connection conn =
-        DriverManager.getConnection(
-            POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())) {
+    try (Connection conn = DriverManager.getConnection(
+        POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())) {
       assertThat(extensions(conn)).contains("timescaledb", "pgcrypto", "citext");
       assertThat(tables(conn))
           .contains(

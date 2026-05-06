@@ -14,4 +14,4 @@ export {
   type ArgusOptions,
   type Level,
   type EventPayload,
-} from '@argus/sdk-browser';
+} from '@arguslog/sdk-browser';
