@@ -142,7 +142,8 @@
       "mcp__chrome-devtools__get_network_request",
       "Bash(./gradlew --stop)",
       "Bash(./gradlew :services:api:test --tests \"*OrgController*\" --tests \"*FlywayMigration*\")",
-      "Bash(./gradlew :services:api:test --rerun-tasks)"
+      "Bash(./gradlew :services:api:test --rerun-tasks)",
+      "Bash(./gradlew :services:api:test --tests \"*FlywayMigration*\")"
     ]
   }
 }
