@@ -26,7 +26,6 @@ RUN pnpm install --frozen-lockfile
 # Now bring in sources and build.
 COPY apps/web ./apps/web
 COPY packages ./packages
-COPY tsconfig.json ./
 
 # Build-time public env — Railway injects these via VITE_* build args. The values are baked into
 # the static bundle; rebuilds are required to change them.
