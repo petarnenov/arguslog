@@ -16,8 +16,8 @@ cutover week.
 | # | Item                                                                                          | Trigger                                  |
 | - | --------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | 1 | Stripe live keys (`STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`) on prod api. | Ready to charge real cards.              |
-| 2 | First SDK publish: `sdk-browser-v0.1.0`, `sdk-react-v0.1.0`, `java-sdk-v0.1.0` tags.          | Ready to share install path with users.  |
-| 3 | NPM\_TOKEN + Maven Central creds + GPG key as repo secrets before the tags above land.       | Same trigger as #2.                      |
+| ~~2~~ | ~~First SDK publish~~ — `@arguslog/sdk-browser@0.1.1`, `@arguslog/sdk-react@0.1.1`, `org.arguslog:java-sdk:0.1.0` are live (Maven Central sync ~hours). | Done 2026-05-07. |
+| ~~3~~ | ~~NPM\_TOKEN + Maven Central creds + GPG key as repo secrets~~ — wired and rotated through the first publish. | Done 2026-05-07. |
 | 4 | Marketing / landing page on apex `arguslog.org` (currently 404).                              | Public launch.                           |
 | 5 | Status page (Better Stack or self-hosted).                                                    | First customer asks "is it down?".       |
 | 6 | Email-verification end-to-end smoke from real registration flow.                              | Before second real user registers.       |
