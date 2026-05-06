@@ -43,6 +43,7 @@ import { ApiError } from '../api/client';
 import { deleteOrg } from '../api/orgs';
 import { queryKeys, useMyOrgs } from '../api/queries';
 import { useAuth } from '../auth/useAuth';
+import { DevErrorMenu } from '../components/DevErrorMenu';
 
 export function AppShellLayout() {
   const [opened, { toggle }] = useDisclosure();
@@ -99,12 +100,14 @@ export function AppShellLayout() {
             <Title order={4}>{t('app.name')}</Title>
           </Group>
           {user && (
-            <Menu position="bottom-end" withArrow>
-              <Menu.Target>
-                <ActionIcon variant="subtle" aria-label={userLabel} size="lg">
-                  <IconUser size={18} />
-                </ActionIcon>
-              </Menu.Target>
+            <Group gap="xs">
+              <DevErrorMenu />
+              <Menu position="bottom-end" withArrow>
+                <Menu.Target>
+                  <ActionIcon variant="subtle" aria-label={userLabel} size="lg">
+                    <IconUser size={18} />
+                  </ActionIcon>
+                </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Label>
                   <Text size="xs" c="dimmed">
@@ -123,6 +126,7 @@ export function AppShellLayout() {
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
+            </Group>
           )}
         </Group>
       </AppShell.Header>
