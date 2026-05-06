@@ -33,13 +33,12 @@ import org.testcontainers.utility.DockerImageName;
 class JdbcAlertDestinationRepositoryTest {
 
   @Container
-  static final PostgreSQLContainer<?> POSTGRES =
-      new PostgreSQLContainer<>(
-              DockerImageName.parse("timescale/timescaledb:latest-pg16")
-                  .asCompatibleSubstituteFor("postgres"))
-          .withDatabaseName("argus")
-          .withUsername("argus")
-          .withPassword("argus");
+  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
+      DockerImageName.parse("timescale/timescaledb:latest-pg16")
+          .asCompatibleSubstituteFor("postgres"))
+      .withDatabaseName("arguslog")
+      .withUsername("arguslog")
+      .withPassword("arguslog");
 
   private static HikariDataSource dataSource;
   private static AlertDestinationRepository repository;
@@ -64,7 +63,8 @@ class JdbcAlertDestinationRepositoryTest {
 
   @AfterAll
   static void stop() {
-    if (dataSource != null) dataSource.close();
+    if (dataSource != null)
+      dataSource.close();
   }
 
   @BeforeEach
@@ -77,8 +77,7 @@ class JdbcAlertDestinationRepositoryTest {
   @Test
   void decryptsConfigAndPreservesInputOrder() throws Exception {
     long a = insertDestination(1L, "telegram", "ops-chat", "{\"chatId\":\"-1001\"}");
-    long b =
-        insertDestination(1L, "slack", "alerts", "{\"webhookUrl\":\"https://hook.example/x\"}");
+    long b = insertDestination(1L, "slack", "alerts", "{\"webhookUrl\":\"https://hook.example/x\"}");
 
     List<AlertDestination> ordered = repository.findAllById(List.of(b, a));
 
@@ -115,10 +114,9 @@ class JdbcAlertDestinationRepositoryTest {
   // ── helpers ─────────────────────────────────────────────────────────────
 
   private static String resolveMigrationsLocation() {
-    List<Path> candidates =
-        List.of(
-            Path.of("../api/src/main/resources/db/migration"),
-            Path.of("services/api/src/main/resources/db/migration"));
+    List<Path> candidates = List.of(
+        Path.of("../api/src/main/resources/db/migration"),
+        Path.of("services/api/src/main/resources/db/migration"));
     return candidates.stream()
         .map(Path::toAbsolutePath)
         .filter(Files::isDirectory)
@@ -139,10 +137,9 @@ class JdbcAlertDestinationRepositoryTest {
       throws Exception {
     byte[] ciphertext = encryptWithDevKey(configJson.getBytes(StandardCharsets.UTF_8));
     try (Connection conn = dataSource.getConnection();
-        PreparedStatement stmt =
-            conn.prepareStatement(
-                "INSERT INTO alert_destinations (org_id, kind, name, config_encrypted)"
-                    + " VALUES (?, ?::destination_kind, ?, ?) RETURNING id")) {
+        PreparedStatement stmt = conn.prepareStatement(
+            "INSERT INTO alert_destinations (org_id, kind, name, config_encrypted)"
+                + " VALUES (?, ?::destination_kind, ?, ?) RETURNING id")) {
       stmt.setLong(1, orgId);
       stmt.setString(2, kind);
       stmt.setString(3, name);
@@ -161,10 +158,9 @@ class JdbcAlertDestinationRepositoryTest {
     new SecureRandom().nextBytes(junk);
     junk[0] = 1; // pretend version 1 so the version check passes
     try (Connection conn = dataSource.getConnection();
-        PreparedStatement stmt =
-            conn.prepareStatement(
-                "INSERT INTO alert_destinations (org_id, kind, name, config_encrypted)"
-                    + " VALUES (?, ?::destination_kind, ?, ?) RETURNING id")) {
+        PreparedStatement stmt = conn.prepareStatement(
+            "INSERT INTO alert_destinations (org_id, kind, name, config_encrypted)"
+                + " VALUES (?, ?::destination_kind, ?, ?) RETURNING id")) {
       stmt.setLong(1, orgId);
       stmt.setString(2, kind);
       stmt.setString(3, name);
@@ -176,12 +172,12 @@ class JdbcAlertDestinationRepositoryTest {
     }
   }
 
-  // Mirror of the dev-fallback key in AesGcmSecretCipher so we can produce wire-compatible bytes
+  // Mirror of the dev-fallback key in AesGcmSecretCipher so we can produce
+  // wire-compatible bytes
   // without depending on the api module from worker tests.
   private static byte[] encryptWithDevKey(byte[] plaintext) throws Exception {
-    SecretKeySpec key =
-        new SecretKeySpec(
-            "argus-dev-fallback-key-32-bytes!".getBytes(StandardCharsets.UTF_8), "AES");
+    SecretKeySpec key = new SecretKeySpec(
+        "arguslog-dev-fallback-key-32byte".getBytes(StandardCharsets.UTF_8), "AES");
     byte[] iv = new byte[12];
     new SecureRandom().nextBytes(iv);
     Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
