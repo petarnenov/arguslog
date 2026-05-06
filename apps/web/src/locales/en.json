@@ -4,6 +4,7 @@
     "tagline": "Error tracking for modern teams"
   },
   "nav": {
+    "projects": "Projects",
     "issues": "Issues",
     "alerts": "Alerts",
     "alertRules": "Alert rules",

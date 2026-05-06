@@ -24,7 +24,7 @@ import {
   IconCheck,
   IconChevronDown,
   IconCreditCard,
-  IconHome,
+  IconFolders,
   IconKey,
   IconLogout,
   IconPlus,
@@ -204,8 +204,8 @@ export function AppShellLayout() {
             <NavLink
               component={Link}
               to={`/orgs/${orgSlug}/projects`}
-              label={t('nav.issues')}
-              leftSection={<IconHome size={16} />}
+              label={t('nav.projects')}
+              leftSection={<IconFolders size={16} />}
             />
           )}
           {orgSlug && (
