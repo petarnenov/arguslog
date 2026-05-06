@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- See services/api/src/main/resources/logback-spring.xml for rationale. -->
+<configuration>
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+  <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+  <appender name="ARGUSLOG" class="org.arguslog.sdk.logback.ArgusLogbackAppender">
+    <minLevel>ERROR</minLevel>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="ARGUSLOG"/>
+  </root>
+</configuration>

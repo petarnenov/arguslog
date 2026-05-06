@@ -31,9 +31,14 @@ dependencies {
     compileOnly("org.springframework:spring-web")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
+    // Optional Logback bridge — emits ERROR-level events with throwables. Logback is shipped
+    // by every Spring Boot starter, so consumers that already use Spring get this for free.
+    compileOnly("ch.qos.logback:logback-classic")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-aop")
     testImplementation("org.springframework:spring-web")
+    testImplementation("ch.qos.logback:logback-classic")
     testImplementation("org.assertj:assertj-core")
     testImplementation("org.mockito:mockito-junit-jupiter")
     testImplementation("org.wiremock:wiremock-standalone:3.10.0")

@@ -34,6 +34,9 @@ dependencies {
     // runtime but doesn't expose it through its POM as a compile-scope dep).
     implementation(libs.gson)
     implementation(libs.argon2.jvm)
+    // Dogfood — emits the api's own errors back into Arguslog via the Logback appender. SDK
+    // is no-op until ARGUS_DSN is configured (always unset in tests + local dev).
+    implementation(project(":java-sdk"))
     // TODO(P4): bucket4j-redis for quotas; OTel starter; Pact contracts.
 
     testImplementation(libs.spring.boot.starter.test)

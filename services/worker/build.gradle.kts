@@ -15,6 +15,9 @@ dependencies {
     implementation(libs.postgres.driver)
     implementation(libs.aws.s3)
     implementation(libs.caffeine)
+    // Dogfood — Logback appender emits the worker's own errors back into Arguslog. No-op
+    // until ARGUS_DSN is configured.
+    implementation(project(":java-sdk"))
     // TODO(P3): telegram-bot, resend-java, OTel starter.
 
     testImplementation(libs.spring.boot.starter.test)
