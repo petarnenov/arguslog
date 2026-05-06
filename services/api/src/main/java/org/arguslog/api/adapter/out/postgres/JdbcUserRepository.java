@@ -18,10 +18,22 @@ public class JdbcUserRepository implements UserRepository {
 
   @Override
   public void upsertFromJwt(UUID id, String email, String displayName) {
-    // The JWT subject is the canonical identity. If an older row exists for this email
-    // under a different id (e.g. the Keycloak realm was reseeded and the user's sub
-    // rotated), realign the stored id rather than letting the unique-on-email constraint
-    // abort the whole transaction with a bare 500.
+    // 1. Common path — user already known under this JWT sub. UPDATE-by-PK keeps the row in sync
+    //    with whatever Keycloak now reports (email rename, display-name change). Survives the case
+    //    where Keycloak admin rewrites the user's email between sessions, since we don't depend on
+    //    email-stability to identify them.
+    int updated =
+        jdbc.update(
+            "UPDATE users SET email = ?, display_name = ?, last_seen_at = NOW() WHERE id = ?",
+            email,
+            displayName,
+            id);
+    if (updated > 0) return;
+
+    // 2. No row for this sub. If a stale row exists for this email (Keycloak realm was reseeded
+    //    and the sub rotated), realign its id to the new sub. V6's ON UPDATE CASCADE on
+    //    org_members / project_members / personal_access_tokens carries the memberships over so
+    //    the user keeps their orgs.
     List<UUID> staleIds =
         jdbc.queryForList(
             "SELECT id FROM users WHERE email = ? AND id <> ?", UUID.class, email, id);
@@ -33,14 +45,14 @@ public class JdbcUserRepository implements UserRepository {
           email);
       return;
     }
+
+    // 3. Genuinely first-time login. INSERT with ON CONFLICT (id) DO NOTHING in case a concurrent
+    //    request beats us to it (cheap insurance — the matching row will be picked up next call).
     jdbc.update(
         """
         INSERT INTO users (id, email, display_name, last_seen_at)
         VALUES (?, ?, ?, NOW())
-        ON CONFLICT (id) DO UPDATE
-          SET email = EXCLUDED.email,
-              display_name = EXCLUDED.display_name,
-              last_seen_at = NOW()
+        ON CONFLICT (id) DO NOTHING
         """,
         id,
         email,
