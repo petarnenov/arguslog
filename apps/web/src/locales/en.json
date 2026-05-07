@@ -27,6 +27,12 @@
     "deleteCancel": "Cancel",
     "deleteConfirm": "Delete organization"
   },
+  "projectSwitcher": {
+    "label": "Project",
+    "loading": "Loading project…",
+    "unknown": "Unknown project",
+    "switch": "Switch project…"
+  },
   "auth": {
     "login": "Sign in",
     "loginHint": "Sign in with your organization account",
