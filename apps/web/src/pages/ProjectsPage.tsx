@@ -4,6 +4,8 @@ import {
   Button,
   Card,
   Center,
+  Code,
+  CopyButton,
   Group,
   Loader,
   Modal,
@@ -22,8 +24,19 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
+import { createDsn, type Dsn } from '../api/keys';
 import { archiveProject, createProject, type Project } from '../api/projects';
 import { queryKeys, useMyOrgs, useProjects } from '../api/queries';
+
+interface DsnSuccess {
+  project: Project;
+  dsn: Dsn | null;
+  dsnError: string | null;
+}
+
+function describeApiError(err: unknown): string {
+  return err instanceof ApiError ? err.problem.detail ?? err.problem.title : String(err);
+}
 
 export function ProjectsPage() {
   const { orgSlug } = useParams();
@@ -38,6 +51,7 @@ export function ProjectsPage() {
   const [archiveTarget, setArchiveTarget] = useState<Project | null>(null);
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dsnSuccess, setDsnSuccess] = useState<DsnSuccess | null>(null);
 
   const form = useForm({
     initialValues: { name: '', platform: 'javascript' },
@@ -47,20 +61,42 @@ export function ProjectsPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: (values: { name: string; platform: string }) => {
+    mutationFn: async (values: { name: string; platform: string }): Promise<DsnSuccess> => {
       if (!org) throw new Error('org missing');
-      return createProject(org.id, values);
+      const project = await createProject(org.id, values);
+      try {
+        const dsn = await createDsn(project.id);
+        return { project, dsn, dsnError: null };
+      } catch (err) {
+        // Project row exists but key issuance failed — surface the error in the success modal so
+        // the user can retry without losing the (already created) project.
+        return { project, dsn: null, dsnError: describeApiError(err) };
+      }
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       if (org) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.projects(org.id) });
       }
       setCreateOpen(false);
       form.reset();
       setError(null);
+      setDsnSuccess(result);
     },
     onError: (err: unknown) => {
-      setError(err instanceof ApiError ? err.problem.detail ?? err.problem.title : String(err));
+      setError(describeApiError(err));
+    },
+  });
+
+  const dsnRetryMutation = useMutation({
+    mutationFn: async (project: Project) => {
+      const dsn = await createDsn(project.id);
+      return { project, dsn };
+    },
+    onSuccess: ({ project, dsn }) => {
+      setDsnSuccess({ project, dsn, dsnError: null });
+    },
+    onError: (err: unknown) => {
+      setDsnSuccess((prev) => (prev ? { ...prev, dsnError: describeApiError(err) } : prev));
     },
   });
 
@@ -253,6 +289,74 @@ export function ProjectsPage() {
             </Button>
           </Stack>
         </form>
+      </Modal>
+
+      <Modal
+        opened={dsnSuccess !== null}
+        onClose={() => {
+          if (dsnRetryMutation.isPending) return;
+          setDsnSuccess(null);
+          dsnRetryMutation.reset();
+        }}
+        title={t('projects.dsnTitle')}
+        size="lg"
+        closeOnClickOutside={false}
+        closeOnEscape={false}
+      >
+        {dsnSuccess ? (
+          <Stack>
+            {dsnSuccess.dsn ? (
+              <>
+                <Text size="sm">{t('projects.dsnHint')}</Text>
+                <Code block>{dsnSuccess.dsn.dsn}</Code>
+                <Group>
+                  <CopyButton value={dsnSuccess.dsn.dsn}>
+                    {({ copied, copy }) => (
+                      <Button onClick={copy} variant="light">
+                        {copied ? t('projects.copied') : t('projects.copyDsn')}
+                      </Button>
+                    )}
+                  </CopyButton>
+                  <Button
+                    onClick={() => {
+                      setDsnSuccess(null);
+                      dsnRetryMutation.reset();
+                    }}
+                  >
+                    {t('projects.continue')}
+                  </Button>
+                </Group>
+              </>
+            ) : (
+              <>
+                <Text size="sm">{t('projects.dsnRetryHint')}</Text>
+                {dsnSuccess.dsnError ? (
+                  <Alert color="red" variant="light">
+                    {dsnSuccess.dsnError}
+                  </Alert>
+                ) : null}
+                <Group>
+                  <Button
+                    loading={dsnRetryMutation.isPending}
+                    onClick={() => dsnRetryMutation.mutate(dsnSuccess.project)}
+                  >
+                    {t('projects.dsnRetry')}
+                  </Button>
+                  <Button
+                    variant="default"
+                    disabled={dsnRetryMutation.isPending}
+                    onClick={() => {
+                      setDsnSuccess(null);
+                      dsnRetryMutation.reset();
+                    }}
+                  >
+                    {t('projects.continue')}
+                  </Button>
+                </Group>
+              </>
+            )}
+          </Stack>
+        ) : null}
       </Modal>
     </Stack>
   );
