@@ -41,7 +41,7 @@ import { Link, Outlet, useNavigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
 import { deleteOrg } from '../api/orgs';
-import { queryKeys, useMyOrgs } from '../api/queries';
+import { queryKeys, useMyOrgs, useProjects } from '../api/queries';
 import { useAuth } from '../auth/useAuth';
 import { DevErrorMenu } from '../components/DevErrorMenu';
 
@@ -57,6 +57,10 @@ export function AppShellLayout() {
   // hard-coded 'demo' default which sent users to an org they don't belong to.
   const orgSlug = urlOrgSlug ?? orgs.data?.[0]?.slug;
   const currentOrg = orgs.data?.find((o) => o.slug === orgSlug);
+  const projects = useProjects(currentOrg?.id, { enabled: Boolean(currentOrg && projectId) });
+  const currentProject = projectId
+    ? projects.data?.find((p) => String(p.id) === projectId)
+    : undefined;
   const { user, signOut } = useAuth();
   const userLabel = user?.name ?? user?.email ?? user?.id;
 
@@ -95,9 +99,18 @@ export function AppShellLayout() {
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
-          <Group>
+          <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Title order={4}>{t('app.name')}</Title>
+            <Title order={4} style={{ whiteSpace: 'nowrap' }}>
+              {t('app.name')}
+            </Title>
+            {currentOrg && (
+              <Text size="sm" c="dimmed" truncate data-testid="header-context">
+                {' / '}
+                {currentOrg.name}
+                {currentProject ? ` / ${currentProject.name}` : ''}
+              </Text>
+            )}
           </Group>
           {user && (
             <Group gap="xs">
@@ -226,6 +239,38 @@ export function AppShellLayout() {
           )}
           {orgSlug && projectId && (
             <>
+              <Divider
+                my="xs"
+                label={t('projectSwitcher.label')}
+                labelPosition="left"
+              />
+              <Group
+                gap="xs"
+                wrap="nowrap"
+                px={10}
+                pb={6}
+                aria-label={t('projectSwitcher.label')}
+              >
+                <IconFolders size={16} />
+                <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+                  <Text size="sm" fw={600} truncate data-testid="current-project-name">
+                    {projects.isLoading
+                      ? t('projectSwitcher.loading')
+                      : (currentProject?.name ?? t('projectSwitcher.unknown'))}
+                  </Text>
+                  {currentProject?.slug ? (
+                    <Text size="xs" c="dimmed" truncate>
+                      {currentProject.slug}
+                    </Text>
+                  ) : null}
+                </Stack>
+              </Group>
+              <NavLink
+                component={Link}
+                to={`/orgs/${orgSlug}/projects`}
+                label={t('projectSwitcher.switch')}
+                leftSection={<IconFolders size={16} />}
+              />
               <NavLink
                 component={Link}
                 to={`/orgs/${orgSlug}/projects/${projectId}/issues`}
