@@ -1,0 +1,14 @@
+{
+  "name": "arguslog-figma-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Figma plugin that generates the Arguslog mobile-first design system in the active file.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.108.0",
+    "typescript": "^5.5.4"
+  }
+}
