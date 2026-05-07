@@ -6,15 +6,17 @@ import {
   Group,
   Loader,
   Progress,
+  SegmentedControl,
   Stack,
   Text,
   Title,
 } from '@mantine/core';
 import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
-import { openPortal, startCheckout } from '../api/billing';
+import { openPortal, startCheckout, type BillingInterval } from '../api/billing';
 import { ApiError } from '../api/client';
 import { useMyOrgs, useUsage } from '../api/queries';
 
@@ -25,8 +27,13 @@ export function BillingPage() {
   const org = orgs.data?.find((o) => o.slug === orgSlug);
   const usage = useUsage(org?.id);
 
+  // The picker is only visible BEFORE checkout (free → pro). Once subscribed, switching
+  // monthly↔annual goes through the Stripe Customer Portal so we don't have to write proration
+  // logic ourselves; the webhook informs us of the new cadence.
+  const [interval, setInterval] = useState<BillingInterval>('monthly');
+
   const checkout = useMutation({
-    mutationFn: () => startCheckout(org!.id),
+    mutationFn: () => startCheckout(org!.id, interval),
     onSuccess: ({ url }) => {
       window.location.assign(url);
     },
@@ -64,8 +71,9 @@ export function BillingPage() {
   const isPro = snapshot.plan === 'pro';
   const percent = Math.min(100, Math.round(snapshot.ratio * 100));
   const progressColor = snapshot.exceeded ? 'red' : percent >= 80 ? 'yellow' : 'teal';
-  const priceLabel =
-    snapshot.monthlyPriceCents > 0 ? `$${(snapshot.monthlyPriceCents / 100).toFixed(0)}/mo` : null;
+  const priceLabel = formatPriceLabel(snapshot.monthlyPriceCents, snapshot.billingInterval, isPro);
+  const renewsLabel =
+    isPro && snapshot.renewsAt ? formatRenewalDate(snapshot.renewsAt) : null;
 
   const checkoutError = errorMessage(checkout.error);
   const portalError = errorMessage(portal.error);
@@ -114,16 +122,32 @@ export function BillingPage() {
                   </Badge>
                 )}
               </Group>
+              {renewsLabel && (
+                <Text size="xs" c="dimmed" data-testid="renews-at">
+                  {t('billing.renewsOn', { date: renewsLabel })}
+                </Text>
+              )}
             </Stack>
             <Group gap="xs">
               {!isPro && (
-                <Button
-                  loading={checkout.isPending}
-                  onClick={() => checkout.mutate()}
-                  data-testid="upgrade-button"
-                >
-                  {t('billing.upgrade')}
-                </Button>
+                <Stack gap="xs" align="flex-end">
+                  <SegmentedControl
+                    value={interval}
+                    onChange={(v) => setInterval(v as BillingInterval)}
+                    data-testid="billing-interval-toggle"
+                    data={[
+                      { label: t('billing.intervalMonthly'), value: 'monthly' },
+                      { label: t('billing.intervalAnnualSave'), value: 'annual' },
+                    ]}
+                  />
+                  <Button
+                    loading={checkout.isPending}
+                    onClick={() => checkout.mutate()}
+                    data-testid="upgrade-button"
+                  >
+                    {t('billing.upgrade')}
+                  </Button>
+                </Stack>
               )}
               {isPro && (
                 <Button
@@ -201,4 +225,24 @@ function daysUntil(iso: string): number {
   // Math.ceil so the banner reads "1 day remaining" until the deadline actually passes,
   // and clamps to 0 once expired (worker hasn't run the downgrade yet).
   return Math.max(0, Math.ceil(ms / (24 * 3600 * 1000)));
+}
+
+function formatPriceLabel(
+  monthlyPriceCents: number,
+  interval: BillingInterval,
+  isPro: boolean,
+): string | null {
+  if (monthlyPriceCents <= 0) return null;
+  // For an active Pro subscriber, surface their actual cadence ($9/mo or $90/yr). For a free-tier
+  // viewer, the badge is a teaser of the monthly Pro price — annual pricing is reserved for the
+  // segmented-control row beside the upgrade button.
+  if (isPro && interval === 'annual') {
+    const annual = (monthlyPriceCents * 10) / 100; // ~10× monthly = 17% off 12×, rounded to a whole dollar
+    return `$${annual.toFixed(0)}/yr`;
+  }
+  return `$${(monthlyPriceCents / 100).toFixed(0)}/mo`;
+}
+
+function formatRenewalDate(iso: string): string {
+  return new Date(iso).toLocaleDateString();
 }

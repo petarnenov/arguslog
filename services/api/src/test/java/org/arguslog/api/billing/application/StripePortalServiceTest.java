@@ -38,7 +38,8 @@ class StripePortalServiceTest {
 
   @BeforeEach
   void setUp() {
-    props = new StripeProperties("sk_test_123", "whsec_x", "price_pro_test", "https://app.example");
+    props =
+        new StripeProperties("sk_test_123", "whsec_x", "price_pro_test", "", "https://app.example");
     service = new StripePortalService(stripe, props, customers);
     org.mockito.Mockito.lenient().when(stripe.billingPortal()).thenReturn(billingPortal);
     org.mockito.Mockito.lenient().when(billingPortal.sessions()).thenReturn(sessions);
@@ -46,7 +47,7 @@ class StripePortalServiceTest {
 
   @Test
   void unconfiguredStripeThrows503Exception() {
-    StripeProperties bad = new StripeProperties("", "", "", "https://app.example");
+    StripeProperties bad = new StripeProperties("", "", "", "", "https://app.example");
     StripePortalService unconfigured = new StripePortalService(stripe, bad, customers);
     assertThatThrownBy(() -> unconfigured.createPortalUrl(1L))
         .isInstanceOf(StripeNotConfiguredException.class);

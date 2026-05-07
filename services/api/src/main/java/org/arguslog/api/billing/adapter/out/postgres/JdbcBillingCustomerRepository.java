@@ -63,6 +63,15 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
   }
 
   @Override
+  public void updateBillingInterval(long orgId, String intervalDbValue) {
+    jdbc.update(
+        "UPDATE organizations SET billing_interval = ?::billing_interval_t, updated_at = NOW()"
+            + " WHERE id = ?",
+        new Object[] {intervalDbValue, orgId},
+        new int[] {Types.OTHER, Types.BIGINT});
+  }
+
+  @Override
   public boolean openPaymentGrace(long orgId, Instant graceUntil) {
     int rows =
         jdbc.update(

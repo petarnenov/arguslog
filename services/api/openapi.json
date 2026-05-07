@@ -670,6 +670,14 @@
             "type" : "integer",
             "format" : "int64"
           }
+        }, {
+          "name" : "interval",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "monthly"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -1599,6 +1607,13 @@
             "type" : "boolean"
           },
           "paymentGraceUntil" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "billingInterval" : {
+            "type" : "string"
+          },
+          "renewsAt" : {
             "type" : "string",
             "format" : "date-time"
           }

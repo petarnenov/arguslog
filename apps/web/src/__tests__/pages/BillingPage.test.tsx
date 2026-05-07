@@ -97,7 +97,10 @@ describe('BillingPage', () => {
           exceeded: false,
         });
       }
-      if (url.endsWith('/api/v1/orgs/1/billing/checkout-session') && init?.method === 'POST') {
+      if (
+        url.includes('/api/v1/orgs/1/billing/checkout-session') &&
+        init?.method === 'POST'
+      ) {
         return jsonResponse({ url: 'https://checkout.stripe.com/c/sess_abc' });
       }
       throw new Error(`unexpected fetch: ${url}`);
@@ -111,6 +114,75 @@ describe('BillingPage', () => {
     await waitFor(() =>
       expect(assign).toHaveBeenCalledWith('https://checkout.stripe.com/c/sess_abc'),
     );
+  });
+
+  it('passes the chosen interval to checkout when Annual is selected', async () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, assign },
+      writable: true,
+      configurable: true,
+    });
+    let checkoutUrl: string | undefined;
+    globalThis.fetch = vi.fn(async (input, init) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/usage')) {
+        return jsonResponse({
+          plan: 'free',
+          monthlyPriceCents: 0,
+          eventsUsed: 0,
+          eventCap: 5000,
+          projectCap: 1,
+          retentionDays: 7,
+          ratio: 0,
+          exceeded: false,
+          billingInterval: 'monthly',
+        });
+      }
+      if (url.includes('/api/v1/orgs/1/billing/checkout-session') && init?.method === 'POST') {
+        checkoutUrl = url;
+        return jsonResponse({ url: 'https://checkout.stripe.com/c/sess_annual' });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    renderAt();
+
+    // Toggle annual then click Upgrade.
+    const toggle = await screen.findByTestId('billing-interval-toggle');
+    await userEvent.click(toggle.querySelector('input[value="annual"]')!);
+    await userEvent.click(screen.getByTestId('upgrade-button'));
+
+    await waitFor(() => expect(assign).toHaveBeenCalled());
+    expect(checkoutUrl).toContain('interval=annual');
+  });
+
+  it('shows renewal date for an annual Pro org', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([{ ...ORG, plan: 'pro' }]);
+      if (url.endsWith('/api/v1/orgs/1/usage')) {
+        return jsonResponse({
+          plan: 'pro',
+          monthlyPriceCents: 900,
+          eventsUsed: 1000,
+          eventCap: 100000,
+          projectCap: 10,
+          retentionDays: 30,
+          ratio: 0.01,
+          exceeded: false,
+          billingInterval: 'annual',
+          renewsAt: '2027-05-06T00:00:00Z',
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    renderAt();
+
+    await waitFor(() => expect(screen.getByText(/\$90\/yr/)).toBeInTheDocument());
+    expect(screen.getByTestId('renews-at')).toHaveTextContent(/renews on/i);
   });
 
   it('renders the PRO plan with a Manage subscription CTA', async () => {

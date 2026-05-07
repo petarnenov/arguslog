@@ -11,6 +11,9 @@ import org.arguslog.api.billing.application.UsageUseCase.UsageSnapshot;
  *
  * <p>{@code paymentGraceUntil} is omitted from the JSON when no grace is open (most orgs, most of
  * the time) so existing dashboards that haven't learned the field treat absence as "no banner".
+ *
+ * <p>{@code billingInterval} is always present (defaults to {@code "monthly"} via the migration);
+ * {@code renewsAt} is omitted for free-tier orgs.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record UsageResponse(
@@ -22,7 +25,9 @@ public record UsageResponse(
     @JsonProperty("retentionDays") long retentionDays,
     double ratio,
     boolean exceeded,
-    @JsonProperty("paymentGraceUntil") Instant paymentGraceUntil) {
+    @JsonProperty("paymentGraceUntil") Instant paymentGraceUntil,
+    @JsonProperty("billingInterval") String billingInterval,
+    @JsonProperty("renewsAt") Instant renewsAt) {
 
   public static UsageResponse from(UsageSnapshot s) {
     return new UsageResponse(
@@ -34,6 +39,8 @@ public record UsageResponse(
         s.plan().retention().toDays(),
         s.ratio(),
         s.exceeded(),
-        s.paymentGraceUntil());
+        s.paymentGraceUntil(),
+        s.billingInterval().dbValue(),
+        s.renewsAt());
   }
 }

@@ -17,6 +17,7 @@ import org.arguslog.api.billing.adapter.out.stripe.StripeProperties;
 import org.arguslog.api.billing.application.CheckoutUseCase.CheckoutFailedException;
 import org.arguslog.api.billing.application.CheckoutUseCase.StripeNotConfiguredException;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
+import org.arguslog.api.billing.domain.BillingInterval;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +38,13 @@ class StripeCheckoutServiceTest {
 
   @BeforeEach
   void setUp() {
-    props = new StripeProperties("sk_test_123", "whsec_x", "price_pro_test", "https://app.example");
+    props =
+        new StripeProperties(
+            "sk_test_123",
+            "whsec_x",
+            "price_pro_test",
+            "price_pro_annual_test",
+            "https://app.example");
     service = new StripeCheckoutService(stripe, props, customers);
     // lenient — unconfigured-key test never reaches the Stripe SDK so the stubs go unused there.
     org.mockito.Mockito.lenient().when(stripe.checkout()).thenReturn(checkout);
@@ -46,10 +53,36 @@ class StripeCheckoutServiceTest {
 
   @Test
   void unconfiguredKeyOrPriceRaises503Exception() {
-    StripeProperties bad = new StripeProperties("", "", "", "https://app.example");
+    StripeProperties bad = new StripeProperties("", "", "", "", "https://app.example");
     StripeCheckoutService unconfigured = new StripeCheckoutService(stripe, bad, customers);
-    assertThatThrownBy(() -> unconfigured.createCheckoutUrl(1L, "user@example.com"))
+    assertThatThrownBy(
+            () -> unconfigured.createCheckoutUrl(1L, "user@example.com", BillingInterval.MONTHLY))
         .isInstanceOf(StripeNotConfiguredException.class);
+  }
+
+  @Test
+  void annualWithoutAnnualPriceConfiguredRaises503() {
+    StripeProperties noAnnual =
+        new StripeProperties("sk_test_123", "whsec_x", "price_pro_test", "", "https://app.example");
+    StripeCheckoutService monthlyOnly = new StripeCheckoutService(stripe, noAnnual, customers);
+    assertThatThrownBy(
+            () -> monthlyOnly.createCheckoutUrl(1L, "user@example.com", BillingInterval.ANNUAL))
+        .isInstanceOf(StripeNotConfiguredException.class)
+        .hasMessageContaining("annual");
+  }
+
+  @Test
+  void annualUsesAnnualPriceId() throws Exception {
+    when(customers.findCustomerId(1L)).thenReturn(Optional.empty());
+    Session fake = mock(Session.class);
+    when(fake.getUrl()).thenReturn("https://checkout.stripe.com/c/annual");
+    when(sessions.create(any(SessionCreateParams.class))).thenReturn(fake);
+
+    service.createCheckoutUrl(1L, "user@example.com", BillingInterval.ANNUAL);
+
+    ArgumentCaptor<SessionCreateParams> cap = ArgumentCaptor.forClass(SessionCreateParams.class);
+    org.mockito.Mockito.verify(sessions).create(cap.capture());
+    assertThat(cap.getValue().getLineItems().get(0).getPrice()).isEqualTo("price_pro_annual_test");
   }
 
   @Test
@@ -59,7 +92,7 @@ class StripeCheckoutServiceTest {
     when(fake.getUrl()).thenReturn("https://checkout.stripe.com/c/abc");
     when(sessions.create(any(SessionCreateParams.class))).thenReturn(fake);
 
-    String url = service.createCheckoutUrl(1L, "user@example.com");
+    String url = service.createCheckoutUrl(1L, "user@example.com", BillingInterval.MONTHLY);
 
     assertThat(url).isEqualTo("https://checkout.stripe.com/c/abc");
     ArgumentCaptor<SessionCreateParams> cap = ArgumentCaptor.forClass(SessionCreateParams.class);
@@ -83,7 +116,7 @@ class StripeCheckoutServiceTest {
     when(fake.getUrl()).thenReturn("https://checkout.stripe.com/c/xyz");
     when(sessions.create(any(SessionCreateParams.class))).thenReturn(fake);
 
-    service.createCheckoutUrl(1L, "user@example.com");
+    service.createCheckoutUrl(1L, "user@example.com", BillingInterval.MONTHLY);
 
     ArgumentCaptor<SessionCreateParams> cap = ArgumentCaptor.forClass(SessionCreateParams.class);
     org.mockito.Mockito.verify(sessions).create(cap.capture());
@@ -98,7 +131,8 @@ class StripeCheckoutServiceTest {
     when(sessions.create(any(SessionCreateParams.class)))
         .thenThrow(new TestStripeException("rate-limited", null));
 
-    assertThatThrownBy(() -> service.createCheckoutUrl(1L, "user@example.com"))
+    assertThatThrownBy(
+            () -> service.createCheckoutUrl(1L, "user@example.com", BillingInterval.MONTHLY))
         .isInstanceOf(CheckoutFailedException.class)
         .hasMessageContaining("rate-limited");
   }

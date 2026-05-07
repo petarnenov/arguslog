@@ -1,12 +1,14 @@
 package org.arguslog.api.billing.adapter.in.web;
 
 import java.net.URI;
+import java.util.Locale;
 import org.arguslog.api.billing.adapter.in.web.dto.CheckoutResponse;
 import org.arguslog.api.billing.application.CheckoutUseCase;
 import org.arguslog.api.billing.application.CheckoutUseCase.CheckoutFailedException;
 import org.arguslog.api.billing.application.CheckoutUseCase.StripeNotConfiguredException;
 import org.arguslog.api.billing.application.PortalUseCase;
 import org.arguslog.api.billing.application.PortalUseCase.NoCustomerException;
+import org.arguslog.api.billing.domain.BillingInterval;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -43,8 +46,32 @@ public class CheckoutController {
   }
 
   @PostMapping("/checkout-session")
-  public CheckoutResponse start(@PathVariable long orgId) {
-    return new CheckoutResponse(checkout.createCheckoutUrl(orgId, currentUserEmail()));
+  public CheckoutResponse start(
+      @PathVariable long orgId,
+      @RequestParam(name = "interval", required = false, defaultValue = "monthly")
+          String interval) {
+    BillingInterval billingInterval = parseInterval(interval);
+    return new CheckoutResponse(
+        checkout.createCheckoutUrl(orgId, currentUserEmail(), billingInterval));
+  }
+
+  private static BillingInterval parseInterval(String raw) {
+    // Reject typos with 400 instead of silently defaulting — accidentally signing up annual
+    // customers on monthly (or vice versa) creates support tickets, not customers.
+    if (raw == null) return BillingInterval.MONTHLY;
+    try {
+      return BillingInterval.valueOf(raw.toUpperCase(Locale.ROOT));
+    } catch (IllegalArgumentException e) {
+      throw new InvalidIntervalException("Unknown interval: " + raw);
+    }
+  }
+
+  static final class InvalidIntervalException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    InvalidIntervalException(String message) {
+      super(message);
+    }
   }
 
   @PostMapping("/portal")
@@ -81,6 +108,16 @@ public class CheckoutController {
     body.setTitle("Stripe checkout failed");
     body.setType(URI.create("https://arguslog.dev/problems/stripe-checkout-failed"));
     return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(InvalidIntervalException.class)
+  ResponseEntity<ProblemDetail> handleInvalidInterval(InvalidIntervalException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    body.setTitle("Invalid billing interval");
+    body.setType(URI.create("https://arguslog.dev/problems/invalid-billing-interval"));
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }

@@ -192,7 +192,10 @@
     "capExceeded": "Monthly event cap exceeded — new events are dropped until next renewal.",
     "paymentFailedTitle": "Payment failed",
     "paymentFailedBody": "Update your payment method within {{days}} day(s) — otherwise your plan will be downgraded to Free.",
-    "updatePayment": "Update payment method"
+    "updatePayment": "Update payment method",
+    "intervalMonthly": "Monthly",
+    "intervalAnnualSave": "Annual (save 17%)",
+    "renewsOn": "Renews on {{date}}"
   },
   "tokens": {
     "title": "Personal access tokens",

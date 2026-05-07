@@ -6,6 +6,7 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.application.port.UsageRepository;
+import org.arguslog.api.billing.domain.BillingInterval;
 import org.arguslog.api.billing.domain.PlanTier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +35,10 @@ public class UsageService implements UsageUseCase {
     double ratio = cap == 0 ? 1.0 : (double) used / (double) cap;
     boolean exceeded = used >= cap;
     var graceUntil = plans.findPaymentGraceUntil(orgId).orElse(null);
-    return Optional.of(new UsageSnapshot(tier, used, cap, ratio, exceeded, graceUntil));
+    BillingInterval interval = plans.findBillingInterval(orgId).orElse(BillingInterval.MONTHLY);
+    var renewsAt = plans.findRenewsAt(orgId).orElse(null);
+    return Optional.of(
+        new UsageSnapshot(tier, used, cap, ratio, exceeded, graceUntil, interval, renewsAt));
   }
 
   private LocalDate periodStartUtc() {
