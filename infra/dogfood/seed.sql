@@ -18,12 +18,14 @@ INSERT INTO projects (id, org_id, slug, name, platform)
     (204, 2, 'arguslog-web',    'Arguslog Web',    'javascript')
   ON CONFLICT (id) DO NOTHING;
 
+-- DSN public keys are opaque random IDs — kept stable across the argus → arguslog rename so
+-- live dogfood DBs (and the Railway service env vars consuming them) didn't need rotation.
 INSERT INTO project_keys (project_id, dsn_public, dsn_secret_hash, active)
   VALUES
-    (201, 'arglog_dogfood_pk_API_01HXYZARGUSLOGAPI00000001',    NULL, TRUE),
-    (202, 'arglog_dogfood_pk_INGEST_01HXYZARGUSLOGINGEST0001',  NULL, TRUE),
-    (203, 'arglog_dogfood_pk_WORKER_01HXYZARGUSLOGWORKER0001',  NULL, TRUE),
-    (204, 'arglog_dogfood_pk_WEB_01HXYZARGUSLOGWEB00000001',    NULL, TRUE)
+    (201, 'arglog_dogfood_pk_API_01HXYZARGUSAPI00000001',       NULL, TRUE),
+    (202, 'arglog_dogfood_pk_INGEST_01HXYZARGUSINGEST0001',     NULL, TRUE),
+    (203, 'arglog_dogfood_pk_WORKER_01HXYZARGUSWORKER0001',     NULL, TRUE),
+    (204, 'arglog_dogfood_pk_WEB_01HXYZARGUSWEB00000001',       NULL, TRUE)
   ON CONFLICT (dsn_public) DO NOTHING;
 
 SELECT pk.dsn_public, p.slug
