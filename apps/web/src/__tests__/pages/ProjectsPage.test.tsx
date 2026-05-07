@@ -18,6 +18,10 @@ function renderAt(path: string) {
         <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route path="/orgs/:orgSlug/projects" element={<ProjectsPage />} />
+            <Route
+              path="/orgs/:orgSlug/projects/:projectId/issues"
+              element={<div data-testid="issues-page" />}
+            />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
@@ -104,6 +108,12 @@ describe('ProjectsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('arguslog://PUB@localhost:8080/api/9')).toBeInTheDocument();
+    });
+
+    // Continue navigates to the new project's issues page.
+    await user.click(screen.getByRole('button', { name: /Open project/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('issues-page')).toBeInTheDocument();
     });
 
     // Both endpoints were hit.

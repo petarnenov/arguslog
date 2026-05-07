@@ -21,7 +21,7 @@ import { IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate, useParams } from 'react-router';
+import { Link, Navigate, useNavigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
 import { createDsn, type Dsn } from '../api/keys';
@@ -42,6 +42,7 @@ export function ProjectsPage() {
   const { orgSlug } = useParams();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const orgsQuery = useMyOrgs();
   const org = orgsQuery.data?.find((o) => o.slug === orgSlug);
@@ -118,6 +119,19 @@ export function ProjectsPage() {
       );
     },
   });
+
+  const closeDsnModal = () => {
+    if (dsnRetryMutation.isPending) return;
+    setDsnSuccess(null);
+    dsnRetryMutation.reset();
+  };
+
+  const openProjectAndClose = (project: Project) => {
+    if (!org) return;
+    setDsnSuccess(null);
+    dsnRetryMutation.reset();
+    navigate(`/orgs/${org.slug}/projects/${project.id}/issues`);
+  };
 
   if (orgsQuery.isLoading) {
     return (
@@ -293,11 +307,7 @@ export function ProjectsPage() {
 
       <Modal
         opened={dsnSuccess !== null}
-        onClose={() => {
-          if (dsnRetryMutation.isPending) return;
-          setDsnSuccess(null);
-          dsnRetryMutation.reset();
-        }}
+        onClose={closeDsnModal}
         title={t('projects.dsnTitle')}
         size="lg"
         closeOnClickOutside={false}
@@ -317,12 +327,7 @@ export function ProjectsPage() {
                       </Button>
                     )}
                   </CopyButton>
-                  <Button
-                    onClick={() => {
-                      setDsnSuccess(null);
-                      dsnRetryMutation.reset();
-                    }}
-                  >
+                  <Button onClick={() => openProjectAndClose(dsnSuccess.project)}>
                     {t('projects.continue')}
                   </Button>
                 </Group>
@@ -345,10 +350,7 @@ export function ProjectsPage() {
                   <Button
                     variant="default"
                     disabled={dsnRetryMutation.isPending}
-                    onClick={() => {
-                      setDsnSuccess(null);
-                      dsnRetryMutation.reset();
-                    }}
+                    onClick={() => openProjectAndClose(dsnSuccess.project)}
                   >
                     {t('projects.continue')}
                   </Button>
