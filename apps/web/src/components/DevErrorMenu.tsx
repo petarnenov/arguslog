@@ -1,6 +1,6 @@
+import { captureException } from '@arguslog/sdk-react';
 import { ActionIcon, Menu, Tooltip } from '@mantine/core';
 import { IconBug, IconBolt, IconAlertOctagon, IconBrandReact, IconWand } from '@tabler/icons-react';
-import { captureException } from '@arguslog/sdk-react';
 import { useState } from 'react';
 
 /**
