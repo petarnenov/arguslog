@@ -85,12 +85,12 @@ class KeycloakRealmImportTest {
   }
 
   @Test
-  void demoUserIsPreVerifiedAndCarriesTheDefaultRealmRole() {
-    JsonNode user = findUser("demo@arguslog.local");
-    assertThat(user.path("email").asText()).isEqualTo("demo@arguslog.local");
-    assertThat(user.path("emailVerified").asBoolean()).isTrue();
-    assertThat(user.path("enabled").asBoolean()).isTrue();
-    assertThat(asTextList(user.path("realmRoles"))).contains("arguslog:user");
+  void realmShipsWithoutSeedUsers() {
+    // Production realm import must not seed demo / staff accounts — the platform expects real
+    // users to register through the Keycloak signup flow. Removed in the P5 launch hygiene pass
+    // after the original demo user (demo@arguslog.local / demo) was deleted from production.
+    JsonNode users = realmJson.path("users");
+    assertThat(users.isMissingNode() || (users.isArray() && users.size() == 0)).isTrue();
   }
 
   @Test
@@ -131,17 +131,6 @@ class KeycloakRealmImportTest {
       }
     }
     throw new AssertionError("client not found in realm: " + clientId);
-  }
-
-  private static JsonNode findUser(String username) {
-    JsonNode users = realmJson.path("users");
-    assertThat(users.isArray()).isTrue();
-    for (JsonNode user : users) {
-      if (username.equals(user.path("username").asText())) {
-        return user;
-      }
-    }
-    throw new AssertionError("user not found in realm: " + username);
   }
 
   private static List<String> asTextList(JsonNode array) {

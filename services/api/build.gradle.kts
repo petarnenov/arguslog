@@ -34,6 +34,10 @@ dependencies {
     // runtime but doesn't expose it through its POM as a compile-scope dep).
     implementation(libs.gson)
     implementation(libs.argon2.jvm)
+    // Per-IP / per-JWT rate limit on the api surface (in-memory Bucket4j + Caffeine LRU
+    // of buckets). bucket4j-redis is the followup for cross-instance limits.
+    implementation(libs.bucket4j.core)
+    implementation(libs.caffeine)
     // Dogfood — emits the api's own errors back into Arguslog via the Logback appender. SDK
     // is no-op until ARGUS_DSN is configured (always unset in tests + local dev).
     implementation(project(":java-sdk"))
