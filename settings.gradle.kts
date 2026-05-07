@@ -21,4 +21,5 @@ include(
     ":services:worker",
     ":services:api",
     ":java-sdk",
+    ":lib:crypto-aes-gcm",
 )
