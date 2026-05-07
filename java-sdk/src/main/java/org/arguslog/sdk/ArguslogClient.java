@@ -11,7 +11,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
-public final class ArgusClient implements AutoCloseable {
+public final class ArguslogClient implements AutoCloseable {
 
   private static final AtomicLong THREAD_INDEX = new AtomicLong();
   private static final ThreadFactory FACTORY =
@@ -21,7 +21,7 @@ public final class ArgusClient implements AutoCloseable {
         return t;
       };
 
-  private final ArgusOptions options;
+  private final ArguslogOptions options;
   private final Dsn dsn;
   private final Transport transport;
   private final Scrubber scrubber;
@@ -29,7 +29,7 @@ public final class ArgusClient implements AutoCloseable {
   private final Thread worker;
   private volatile boolean running = true;
 
-  ArgusClient(ArgusOptions options) {
+  ArguslogClient(ArguslogOptions options) {
     this.options = options;
     this.dsn = Dsn.parse(options.dsn());
     this.transport = new Transport(dsn, options.debug());
@@ -39,7 +39,7 @@ public final class ArgusClient implements AutoCloseable {
     this.worker.start();
   }
 
-  public String captureException(Throwable error, ArgusContext context) {
+  public String captureException(Throwable error, ArguslogContext context) {
     if (!shouldSample()) return null;
     Map<String, Object> event = baseEvent(context == null ? Level.ERROR : context.level());
     event.put("exception", exceptionPayload(error));

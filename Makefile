@@ -24,7 +24,7 @@ PNPM           := pnpm
 ## ─── Top-level ─────────────────────────────────────────────────────────────
 
 help: ## Show this help
-	@awk 'BEGIN{FS=":.*##"; printf "\nArgus dev targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN{FS=":.*##"; printf "\nArguslog dev targets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo ""
 
 dev: doctor install build-sdks up ## Start the full stack: doctor → install → build-sdks → up → mprocs

@@ -110,7 +110,7 @@ class OpenApiContractTest {
     String pretty = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(spec) + "\n";
 
     Path snapshot = resolveSnapshotPath();
-    if (Boolean.parseBoolean(System.getenv().getOrDefault("ARGUS_OPENAPI_WRITE", "false"))) {
+    if (Boolean.parseBoolean(System.getenv().getOrDefault("ARGUSLOG_OPENAPI_WRITE", "false"))) {
       Files.writeString(
           snapshot, pretty, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
       return;
@@ -132,7 +132,7 @@ class OpenApiContractTest {
               + drift
               + ".\n"
               + "If the change is intentional, regenerate with: "
-              + "ARGUS_OPENAPI_WRITE=true ./gradlew :services:api:test "
+              + "ARGUSLOG_OPENAPI_WRITE=true ./gradlew :services:api:test "
               + "--tests org.arguslog.api.openapi.OpenApiContractTest");
     }
   }

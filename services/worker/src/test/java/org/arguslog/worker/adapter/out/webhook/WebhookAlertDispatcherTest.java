@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 class WebhookAlertDispatcherTest {
 
-  private static final String HOOK_PATH = "/argus/inbound";
+  private static final String HOOK_PATH = "/arguslog/inbound";
 
   private WireMockServer wm;
   private WebhookAlertDispatcher dispatcher;
@@ -51,7 +51,7 @@ class WebhookAlertDispatcherTest {
     wm.start();
     dispatcher =
         new WebhookAlertDispatcher(
-            new WebhookProperties("https://argus.example", Duration.ofSeconds(2)), mapper);
+            new WebhookProperties("https://arguslog.example", Duration.ofSeconds(2)), mapper);
   }
 
   @AfterEach
@@ -77,7 +77,7 @@ class WebhookAlertDispatcherTest {
     assertThat(a.path("level").asText()).isEqualTo("error");
     assertThat(a.path("occurrenceCount").asLong()).isEqualTo(5L);
     assertThat(a.path("url").asText())
-        .isEqualTo("https://argus.example/orgs/acme/projects/web/issues/42");
+        .isEqualTo("https://arguslog.example/orgs/acme/projects/web/issues/42");
     assertThat(requests.get(0).getHeader("X-Arguslog-Signature")).isNull();
   }
 

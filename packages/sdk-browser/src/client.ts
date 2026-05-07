@@ -3,13 +3,13 @@ import { parseDsn } from './dsn.js';
 import { Scrubber } from './scrubber.js';
 import { parseStack } from './stack-parser.js';
 import { Transport } from './transport.js';
-import type { ArgusOptions, Breadcrumb, EventPayload, Level, ParsedDsn, User } from './types.js';
+import type { ArguslogOptions, Breadcrumb, EventPayload, Level, ParsedDsn, User } from './types.js';
 
 const SDK_NAME = 'arguslog.javascript';
 const SDK_VERSION = '0.0.0';
 
-export class ArgusClient {
-  private readonly options: ArgusOptions;
+export class ArguslogClient {
+  private readonly options: ArguslogOptions;
   private readonly dsn: ParsedDsn;
   private readonly transport: Transport;
   private readonly scrubber: Scrubber;
@@ -20,7 +20,7 @@ export class ArgusClient {
   private readonly contexts: Map<string, Record<string, unknown>> = new Map();
   private pending: Set<Promise<void>> = new Set();
 
-  constructor(options: ArgusOptions) {
+  constructor(options: ArguslogOptions) {
     this.options = options;
     this.dsn = parseDsn(options.dsn);
     this.scrubber = new Scrubber(options.scrubbing);

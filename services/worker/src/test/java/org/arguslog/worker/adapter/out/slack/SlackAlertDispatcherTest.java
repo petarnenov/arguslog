@@ -47,7 +47,7 @@ class SlackAlertDispatcherTest {
     wm.start();
     dispatcher =
         new SlackAlertDispatcher(
-            new SlackProperties("https://argus.example", Duration.ofSeconds(2)), mapper);
+            new SlackProperties("https://arguslog.example", Duration.ofSeconds(2)), mapper);
   }
 
   @AfterEach
@@ -71,7 +71,7 @@ class SlackAlertDispatcherTest {
         .contains("error")
         .contains("web")
         .contains("TypeError")
-        .contains("https://argus.example/orgs/acme/projects/web/issues/42")
+        .contains("https://arguslog.example/orgs/acme/projects/web/issues/42")
         .contains("rule: errors-in-prod");
   }
 
@@ -103,7 +103,7 @@ class SlackAlertDispatcherTest {
             .willReturn(aResponse().withStatus(200).withFixedDelay(5_000)));
     SlackAlertDispatcher fast =
         new SlackAlertDispatcher(
-            new SlackProperties("https://argus.example", Duration.ofMillis(150)), mapper);
+            new SlackProperties("https://arguslog.example", Duration.ofMillis(150)), mapper);
     fast.dispatch(alert, slackDestination("{\"webhookUrl\":\"" + wm.baseUrl() + HOOK_PATH + "\"}"));
     // Reaching this line is the assertion: dispatcher absorbed the timeout.
   }

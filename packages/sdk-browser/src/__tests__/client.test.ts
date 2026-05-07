@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ArgusClient } from '../client.js';
-import type { ArgusOptions, EventPayload } from '../types.js';
+import { ArguslogClient } from '../client.js';
+import type { ArguslogOptions, EventPayload } from '../types.js';
 
-describe('ArgusClient', () => {
+describe('ArguslogClient', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   let sent: EventPayload[];
 
@@ -17,8 +17,8 @@ describe('ArgusClient', () => {
 
   afterEach(() => vi.restoreAllMocks());
 
-  function makeClient(extra: Partial<ArgusOptions> = {}): ArgusClient {
-    return new ArgusClient({
+  function makeClient(extra: Partial<ArguslogOptions> = {}): ArguslogClient {
+    return new ArguslogClient({
       dsn: 'arguslog://k@localhost:8080/api/1',
       environment: 'test',
       release: '0.0.0',

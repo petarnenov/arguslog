@@ -6,9 +6,9 @@
 // table itself.
 //
 // Run:
-//   ARGUS_INGEST_URL=https://arguslog-ingest-staging.up.railway.app \
-//   ARGUS_PROJECT_ID=101 \
-//   ARGUS_DSN=k6_bench_pk_01HXYZK6BENCHPUBLIC0001 \
+//   ARGUSLOG_INGEST_URL=https://arguslog-ingest-staging.up.railway.app \
+//   ARGUSLOG_PROJECT_ID=101 \
+//   ARGUSLOG_DSN=k6_bench_pk_01HXYZK6BENCHPUBLIC0001 \
 //   k6 run infra/k6/ingest-hot-path.js
 //
 // Default scenario ramps to 500 RPS sustained for 1 minute. Adjust via VUS / RATE / DURATION
@@ -17,9 +17,9 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { randomString } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
-const INGEST_URL = __ENV.ARGUS_INGEST_URL;
-const PROJECT_ID = __ENV.ARGUS_PROJECT_ID || '101';
-const DSN = __ENV.ARGUS_DSN;
+const INGEST_URL = __ENV.ARGUSLOG_INGEST_URL;
+const PROJECT_ID = __ENV.ARGUSLOG_PROJECT_ID || '101';
+const DSN = __ENV.ARGUSLOG_DSN;
 // 60 tokens / 10 s = 6 RPS sustained per project (Bucket4jBurstLimiter is hardcoded). Default
 // RATE stays a hair below that ceiling — anything higher is testing the rate limiter not the
 // happy path. Override with RATE=N for protocol-level stress runs.
@@ -27,8 +27,8 @@ const VUS = parseInt(__ENV.VUS || '5', 10);
 const RATE = parseInt(__ENV.RATE || '5', 10); // requests / second
 const DURATION = __ENV.DURATION || '1m';
 
-if (!INGEST_URL) throw new Error('ARGUS_INGEST_URL is required');
-if (!DSN) throw new Error('ARGUS_DSN is required');
+if (!INGEST_URL) throw new Error('ARGUSLOG_INGEST_URL is required');
+if (!DSN) throw new Error('ARGUSLOG_DSN is required');
 
 export const options = {
   scenarios: {

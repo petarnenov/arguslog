@@ -11,7 +11,7 @@ interface State {
   error: Error | null;
 }
 
-export class ArgusErrorBoundary extends Component<Props, State> {
+export class ArguslogErrorBoundary extends Component<Props, State> {
   override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {

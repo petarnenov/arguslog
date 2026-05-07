@@ -49,7 +49,7 @@ export type BeforeSend = (
   event: EventPayload,
 ) => EventPayload | null | Promise<EventPayload | null>;
 
-export interface ArgusOptions {
+export interface ArguslogOptions {
   dsn: string;
   release?: string;
   environment?: string;

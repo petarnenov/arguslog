@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = process.env.ARGUS_E2E_BASE_URL ?? 'http://localhost:5173';
+const baseURL = process.env.ARGUSLOG_E2E_BASE_URL ?? 'http://localhost:5173';
 const isCI = Boolean(process.env.CI);
 
 export default defineConfig({

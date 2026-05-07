@@ -26,7 +26,7 @@ describe('parseTag', () => {
 describe('readPackageVersion', () => {
   let tmpDir;
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'argus-pkg-'));
+    tmpDir = mkdtempSync(join(tmpdir(), 'arguslog-pkg-'));
   });
   afterEach(() => {
     rmSync(tmpDir, { recursive: true });
@@ -48,7 +48,7 @@ describe('readPackageVersion', () => {
 describe('verify (end-to-end)', () => {
   let tmpDir;
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'argus-pkg-'));
+    tmpDir = mkdtempSync(join(tmpdir(), 'arguslog-pkg-'));
   });
   afterEach(() => {
     rmSync(tmpDir, { recursive: true });

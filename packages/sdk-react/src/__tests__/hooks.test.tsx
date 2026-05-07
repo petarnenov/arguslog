@@ -2,9 +2,9 @@ import { __resetForTests, init } from '@arguslog/sdk-browser';
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useArgus } from '../hooks.js';
+import { useArguslog } from '../hooks.js';
 
-describe('useArgus', () => {
+describe('useArguslog', () => {
   beforeEach(() => {
     __resetForTests();
   });
@@ -15,7 +15,7 @@ describe('useArgus', () => {
   });
 
   it('exposes the SDK surface', () => {
-    const { result } = renderHook(() => useArgus());
+    const { result } = renderHook(() => useArguslog());
     expect(typeof result.current.captureException).toBe('function');
     expect(typeof result.current.captureMessage).toBe('function');
     expect(typeof result.current.addBreadcrumb).toBe('function');
@@ -26,14 +26,14 @@ describe('useArgus', () => {
   });
 
   it('returns a stable object across re-renders', () => {
-    const { result, rerender } = renderHook(() => useArgus());
+    const { result, rerender } = renderHook(() => useArguslog());
     const first = result.current;
     rerender();
     expect(result.current).toBe(first);
   });
 
   it('isInitialized reflects client state', () => {
-    const { result } = renderHook(() => useArgus());
+    const { result } = renderHook(() => useArguslog());
     expect(result.current.isInitialized()).toBe(false);
 
     init({

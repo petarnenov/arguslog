@@ -71,7 +71,7 @@ jobs:
       - name: Deploy
         env:
           # Project-scoped token from the Railway dashboard (not the account token). Read-only
-          # to other projects so a leak doesn't escalate beyond Argus.
+          # to other projects so a leak doesn't escalate beyond Arguslog.
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
         run: |
           # `railway up --detach` queues the build then exits — we don't tail logs from CI to

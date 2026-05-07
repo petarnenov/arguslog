@@ -1,4 +1,4 @@
-import { ArgusErrorBoundary, init as initArgus } from '@arguslog/sdk-react';
+import { ArguslogErrorBoundary, init as initArguslog } from '@arguslog/sdk-react';
 import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import '@mantine/charts/styles.css';
@@ -30,7 +30,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (env.VITE_DOGFOOD_DSN) {
-      initArgus({
+      initArguslog({
         dsn: env.VITE_DOGFOOD_DSN,
         environment: import.meta.env.MODE,
         release: env.VITE_RELEASE,
@@ -44,9 +44,9 @@ export function Providers({ children }: { children: ReactNode }) {
       <Notifications position="top-right" />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <ArgusErrorBoundary fallback={<div role="alert">Something went wrong.</div>}>
+          <ArguslogErrorBoundary fallback={<div role="alert">Something went wrong.</div>}>
             {children}
-          </ArgusErrorBoundary>
+          </ArguslogErrorBoundary>
         </AuthProvider>
       </QueryClientProvider>
     </MantineProvider>

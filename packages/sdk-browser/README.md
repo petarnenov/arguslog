@@ -1,7 +1,7 @@
 # @arguslog/sdk-browser
 
 [![npm version](https://img.shields.io/npm/v/@arguslog/sdk-browser.svg)](https://www.npmjs.com/package/@arguslog/sdk-browser)
-[![license](https://img.shields.io/npm/l/@arguslog/sdk-browser.svg)](https://github.com/petarnenov/argus/blob/main/LICENSE)
+[![license](https://img.shields.io/npm/l/@arguslog/sdk-browser.svg)](https://github.com/petarnenov/arguslog/blob/main/LICENSE)
 
 Browser SDK for [Arguslog](https://arguslog.org) — a multi-tenant error tracking platform.
 Captures unhandled exceptions, promise rejections, and manually-reported errors from any
@@ -53,7 +53,7 @@ against the project ID + key combo and rejects unknown pairs with HTTP 401.
 
 ## API
 
-### `init(options): ArgusClient`
+### `init(options): ArguslogClient`
 
 Configures and starts the client. Re-initializing tears down the previous handlers cleanly,
 so hot-reload during dev doesn't accumulate stale listeners.
@@ -152,8 +152,8 @@ when you control the input shape and want full fidelity.
 ## React?
 
 Use [`@arguslog/sdk-react`](https://www.npmjs.com/package/@arguslog/sdk-react) — it
-re-exports this SDK plus a `<ArgusErrorBoundary>` and `useArgus()` hook.
+re-exports this SDK plus a `<ArguslogErrorBoundary>` and `useArguslog()` hook.
 
 ## License
 
-MIT — see [LICENSE](https://github.com/petarnenov/argus/blob/main/LICENSE).
+MIT — see [LICENSE](https://github.com/petarnenov/arguslog/blob/main/LICENSE).

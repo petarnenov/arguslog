@@ -1,4 +1,4 @@
-import type { ArgusClient } from '../client.js';
+import type { ArguslogClient } from '../client.js';
 
 /**
  * Global handler integration: forwards errors that escape user code to the SDK so they don't
@@ -14,7 +14,7 @@ import type { ArgusClient } from '../client.js';
  * (e.g. between unit tests) re-installs handlers idempotently because {@code addEventListener}
  * de-dupes by the same handler reference.
  */
-export function installGlobalHandlers(client: ArgusClient): () => void {
+export function installGlobalHandlers(client: ArguslogClient): () => void {
   if (typeof window === 'undefined') {
     // Jest/SSR — nothing to install.
     return () => {};

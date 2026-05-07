@@ -1,21 +1,21 @@
-import { ArgusClient } from './client.js';
+import { ArguslogClient } from './client.js';
 import { installGlobalHandlers } from './integrations/global-handlers.js';
-import type { ArgusOptions, Breadcrumb, Level, User } from './types.js';
+import type { ArguslogOptions, Breadcrumb, Level, User } from './types.js';
 
-export type { ArgusOptions, Breadcrumb, EventPayload, Level, StackFrame, User } from './types.js';
-export { ArgusClient } from './client.js';
+export type { ArguslogOptions, Breadcrumb, EventPayload, Level, StackFrame, User } from './types.js';
+export { ArguslogClient } from './client.js';
 export { parseDsn, InvalidDsnError } from './dsn.js';
 
-let currentClient: ArgusClient | undefined;
+let currentClient: ArguslogClient | undefined;
 let uninstallGlobalHandlers: (() => void) | undefined;
 
-export function init(options: ArgusOptions): ArgusClient {
+export function init(options: ArguslogOptions): ArguslogClient {
   // Tear down a prior init's handlers before swapping the client — otherwise a hot-reload can
-  // accumulate listeners that point at a stale ArgusClient.
+  // accumulate listeners that point at a stale ArguslogClient.
   uninstallGlobalHandlers?.();
   uninstallGlobalHandlers = undefined;
 
-  currentClient = new ArgusClient(options);
+  currentClient = new ArguslogClient(options);
 
   if (options.integrations?.includes('globalHandlers')) {
     uninstallGlobalHandlers = installGlobalHandlers(currentClient);
@@ -24,7 +24,7 @@ export function init(options: ArgusOptions): ArgusClient {
   return currentClient;
 }
 
-export function getClient(): ArgusClient | undefined {
+export function getClient(): ArguslogClient | undefined {
   return currentClient;
 }
 

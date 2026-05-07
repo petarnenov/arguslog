@@ -42,7 +42,7 @@ dependencies {
     // the api/worker copies from drifting on the at-rest secret format.
     implementation(project(":lib:crypto-aes-gcm"))
     // Dogfood — emits the api's own errors back into Arguslog via the Logback appender. SDK
-    // is no-op until ARGUS_DSN is configured (always unset in tests + local dev).
+    // is no-op until ARGUSLOG_DSN is configured (always unset in tests + local dev).
     implementation(project(":java-sdk"))
     // TODO(P4): bucket4j-redis for quotas; OTel starter; Pact contracts.
 

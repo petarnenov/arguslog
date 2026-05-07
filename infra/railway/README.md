@@ -1,6 +1,6 @@
 # Railway deployment
 
-Argus runs on Railway: one project (`arguslog`) with two environments (`staging`, `production`),
+Arguslog runs on Railway: one project (`arguslog`) with two environments (`staging`, `production`),
 four service deployments per environment, plus managed Postgres+Timescale and Redis. Web is
 served by Caddy from a multi-stage Docker build; the three Spring Boot services run from a JRE
 image built by their per-service Dockerfile.
@@ -98,7 +98,7 @@ The production project is provisioned by hand once. Subsequent deploys are tag- 
 railway login
 
 # 2. Create the project + link this repo to it.
-cd /path/to/argus
+cd /path/to/arguslog
 railway init --name arguslog
 # Pick "empty project". The `railway link` step happens automatically after init.
 

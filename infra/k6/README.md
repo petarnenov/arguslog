@@ -14,13 +14,13 @@ once against staging (committed to the live timescaledb pod). Running it again i
 
 ```bash
 # Hot path (events POST). Defaults to 500 RPS for 1 minute.
-ARGUS_INGEST_URL=https://arguslog-ingest-staging.up.railway.app \
-ARGUS_PROJECT_ID=101 \
-ARGUS_DSN=k6_bench_pk_01HXYZK6BENCHPUBLIC0001 \
+ARGUSLOG_INGEST_URL=https://arguslog-ingest-staging.up.railway.app \
+ARGUSLOG_PROJECT_ID=101 \
+ARGUSLOG_DSN=k6_bench_pk_01HXYZK6BENCHPUBLIC0001 \
 k6 run infra/k6/ingest-hot-path.js
 
 # Dashboard reads.
-ARGUS_API_URL=https://arguslog-api-staging.up.railway.app \
+ARGUSLOG_API_URL=https://arguslog-api-staging.up.railway.app \
 k6 run infra/k6/dashboard-read.js
 ```
 

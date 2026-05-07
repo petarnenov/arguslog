@@ -49,10 +49,10 @@ dependencies {
 
 ```java
 import org.arguslog.sdk.Arguslog;
-import org.arguslog.sdk.ArgusOptions;
+import org.arguslog.sdk.ArguslogOptions;
 
 Arguslog.init(
-    ArgusOptions.builder()
+    ArguslogOptions.builder()
         .dsn("https://<publicKey>@ingest.arguslog.org/<projectId>")
         .environment("production")
         .release("1.4.0")
@@ -75,9 +75,9 @@ Add the dependency, set one property, done. The autoconfig wires the client at
 
 ```yaml
 arguslog:
-  dsn: ${ARGUS_DSN:}        # empty value → SDK is a no-op (safe for local dev / tests)
+  dsn: ${ARGUSLOG_DSN:}        # empty value → SDK is a no-op (safe for local dev / tests)
   environment: ${SPRING_PROFILES_ACTIVE:dev}
-  release: ${ARGUS_RELEASE:0.0.1-SNAPSHOT}
+  release: ${ARGUSLOG_RELEASE:0.0.1-SNAPSHOT}
   sample-rate: 1.0
   scrubbing: true           # built-in PII scrubbing on messages + stacks
 ```
@@ -112,7 +112,7 @@ via the Spring autoconfig above), so it's safe to declare in shared base configs
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
-    <appender name="ARGUSLOG" class="org.arguslog.sdk.logback.ArgusLogbackAppender">
+    <appender name="ARGUSLOG" class="org.arguslog.sdk.logback.ArguslogLogbackAppender">
         <minLevel>ERROR</minLevel>     <!-- or WARN to widen the funnel -->
     </appender>
 
@@ -138,7 +138,7 @@ safe to embed in env vars — it doesn't grant any read access.
 
 ## API reference
 
-### `Arguslog.init(ArgusOptions)`
+### `Arguslog.init(ArguslogOptions)`
 
 | Builder field        | Type                | Default      | Notes                                                                |
 | -------------------- | ------------------- | ------------ | -------------------------------------------------------------------- |
@@ -157,12 +157,12 @@ safe to embed in env vars — it doesn't grant any read access.
 Captures a thrown exception and returns the generated event id. Returns `null` if the SDK
 isn't initialized — call sites can stay unconditional.
 
-### `Arguslog.captureException(Throwable, ArgusContext)`
+### `Arguslog.captureException(Throwable, ArguslogContext)`
 
 Same as above, with extra context: tags, structured `extra` data, user id, and event level.
 
 ```java
-Arguslog.captureException(e, ArgusContext.empty()
+Arguslog.captureException(e, ArguslogContext.empty()
     .withLevel(Level.ERROR)
     .withTag("feature", "checkout")
     .withTag("region", "eu-west-1"));
@@ -193,7 +193,7 @@ on the builder. Disable entirely with `scrubbingEnabled(false)` when you control
 
 ## License
 
-Apache-2.0 — see [LICENSE](https://github.com/petarnenov/argus/blob/main/LICENSE) and
-[NOTICE](https://github.com/petarnenov/argus/blob/main/NOTICE) for attribution. Apache-2.0
+Apache-2.0 — see [LICENSE](https://github.com/petarnenov/arguslog/blob/main/LICENSE) and
+[NOTICE](https://github.com/petarnenov/arguslog/blob/main/NOTICE) for attribution. Apache-2.0
 was chosen specifically for the Java SDK to provide an explicit patent grant; the JS SDKs
 ship under MIT.

@@ -1,10 +1,10 @@
 # @arguslog/sdk-react
 
 [![npm version](https://img.shields.io/npm/v/@arguslog/sdk-react.svg)](https://www.npmjs.com/package/@arguslog/sdk-react)
-[![license](https://img.shields.io/npm/l/@arguslog/sdk-react.svg)](https://github.com/petarnenov/argus/blob/main/LICENSE)
+[![license](https://img.shields.io/npm/l/@arguslog/sdk-react.svg)](https://github.com/petarnenov/arguslog/blob/main/LICENSE)
 
 React 19 bindings for [Arguslog](https://arguslog.org) error tracking. Adds an
-`<ArgusErrorBoundary>` that captures render-time errors plus a `useArgus()` hook for
+`<ArguslogErrorBoundary>` that captures render-time errors plus a `useArguslog()` hook for
 imperative reporting from inside components.
 
 Re-exports the entire [`@arguslog/sdk-browser`](https://www.npmjs.com/package/@arguslog/sdk-browser)
@@ -27,10 +27,10 @@ install required.
 
 ## Quick start
 
-Initialize once at app boot, then wrap your component tree in `<ArgusErrorBoundary>`:
+Initialize once at app boot, then wrap your component tree in `<ArguslogErrorBoundary>`:
 
 ```tsx
-import { init, ArgusErrorBoundary } from '@arguslog/sdk-react';
+import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react';
 import { createRoot } from 'react-dom/client';
 
 init({
@@ -41,9 +41,9 @@ init({
 });
 
 createRoot(document.getElementById('root')!).render(
-  <ArgusErrorBoundary fallback={<div role="alert">Something went wrong.</div>}>
+  <ArguslogErrorBoundary fallback={<div role="alert">Something went wrong.</div>}>
     <App />
-  </ArgusErrorBoundary>,
+  </ArguslogErrorBoundary>,
 );
 ```
 
@@ -57,14 +57,14 @@ boundaries don't see those by design.
 Everything the browser SDK exports is re-exported from this package — see the
 [browser SDK README](https://www.npmjs.com/package/@arguslog/sdk-browser) for `init`,
 `captureException`, `captureMessage`, `setUser`, `setTag`, `setContext`, `addBreadcrumb`,
-`flush`, and the `ArgusOptions` shape.
+`flush`, and the `ArguslogOptions` shape.
 
-### `<ArgusErrorBoundary>`
+### `<ArguslogErrorBoundary>`
 
 ```tsx
-<ArgusErrorBoundary fallback={…} onError={(error, info) => …}>
+<ArguslogErrorBoundary fallback={…} onError={(error, info) => …}>
   <App />
-</ArgusErrorBoundary>
+</ArguslogErrorBoundary>
 ```
 
 | Prop       | Type                                                                            | Notes                                                                  |
@@ -73,15 +73,15 @@ Everything the browser SDK exports is re-exported from this package — see the
 | `onError`  | `(error: Error, info: ErrorInfo) => void`                                       | Side-channel — fires AFTER the SDK reports. Useful for custom logging. |
 | `children` | `ReactNode`                                                                     | Subtree to protect.                                                    |
 
-### `useArgus()`
+### `useArguslog()`
 
 Stable bag of imperative helpers — same identity across renders, no `useEffect` needed.
 
 ```tsx
-import { useArgus } from '@arguslog/sdk-react';
+import { useArguslog } from '@arguslog/sdk-react';
 
 function CheckoutButton() {
-  const argus = useArgus();
+  const arguslog = useArguslog();
 
   return (
     <button
@@ -89,7 +89,7 @@ function CheckoutButton() {
         try {
           await pay();
         } catch (err) {
-          argus.captureException(err, { tags: { feature: 'checkout' } });
+          arguslog.captureException(err, { tags: { feature: 'checkout' } });
         }
       }}
     >
@@ -113,7 +113,7 @@ The returned object exposes:
 ### Reset after a recoverable error
 
 ```tsx
-<ArgusErrorBoundary
+<ArguslogErrorBoundary
   fallback={({ error, reset }) => (
     <div role="alert">
       <p>{error.message}</p>
@@ -122,7 +122,7 @@ The returned object exposes:
   )}
 >
   <App />
-</ArgusErrorBoundary>
+</ArguslogErrorBoundary>
 ```
 
 ### Per-route boundaries
@@ -134,9 +134,9 @@ shell:
 <Route
   path="/orders/:id"
   element={
-    <ArgusErrorBoundary fallback={<OrderErrorFallback />}>
+    <ArguslogErrorBoundary fallback={<OrderErrorFallback />}>
       <OrderDetail />
-    </ArgusErrorBoundary>
+    </ArguslogErrorBoundary>
   }
 />
 ```
@@ -144,7 +144,7 @@ shell:
 ### Tag the user on login
 
 ```tsx
-const { setUser } = useArgus();
+const { setUser } = useArguslog();
 useEffect(() => {
   if (auth.user) setUser({ id: auth.user.id, email: auth.user.email });
   return () => setUser(undefined);
@@ -159,4 +159,4 @@ typically want a separate Node SDK — coming in a future release.
 
 ## License
 
-MIT — see [LICENSE](https://github.com/petarnenov/argus/blob/main/LICENSE).
+MIT — see [LICENSE](https://github.com/petarnenov/arguslog/blob/main/LICENSE).
