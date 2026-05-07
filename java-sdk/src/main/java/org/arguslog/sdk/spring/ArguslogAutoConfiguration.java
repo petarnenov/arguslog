@@ -2,8 +2,8 @@ package org.arguslog.sdk.spring;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import org.arguslog.sdk.ArguslogOptions;
 import org.arguslog.sdk.Arguslog;
+import org.arguslog.sdk.ArguslogOptions;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
