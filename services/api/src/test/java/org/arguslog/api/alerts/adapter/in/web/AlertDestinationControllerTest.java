@@ -16,91 +16,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.stripe.StripeClient;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.arguslog.api.alerts.application.AlertDestinationUseCase;
-import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
 import org.arguslog.api.alerts.domain.AlertDestination;
 import org.arguslog.api.alerts.domain.DestinationKind;
-import org.arguslog.api.application.port.DsnRepository;
-import org.arguslog.api.application.port.EventRepository;
-import org.arguslog.api.application.port.IssueRepository;
-import org.arguslog.api.application.port.MembershipRepository;
-import org.arguslog.api.application.port.OrgWriteRepository;
-import org.arguslog.api.application.port.ProjectRepository;
-import org.arguslog.api.application.port.ProjectWriteRepository;
-import org.arguslog.api.application.port.UserRepository;
-import org.arguslog.api.auth.application.port.PatRepository;
-import org.arguslog.api.auth.application.port.TokenHasher;
-import org.arguslog.api.billing.application.PortalUseCase;
-import org.arguslog.api.billing.application.StripeWebhookUseCase;
-import org.arguslog.api.billing.application.port.BillingCustomerRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
-import org.arguslog.api.billing.application.port.StripeEventLog;
-import org.arguslog.api.billing.application.port.StripeEventVerifier;
-import org.arguslog.api.billing.application.port.UsageRepository;
-import org.arguslog.api.releases.application.port.ReleaseRepository;
-import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
-import org.arguslog.api.releases.application.port.SourceMapStorage;
+import org.arguslog.api.testsupport.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@TestPropertySource(
-    properties = {
-      "spring.autoconfigure.exclude="
-          + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration"
-    })
-class AlertDestinationControllerTest {
-
-  @Autowired MockMvc mvc;
-
-  @MockitoBean AlertDestinationUseCase useCase;
-  // Repository ports must still be mocked because their @Component implementations want
-  // a DataSource (excluded above). OrgAccessGuard is @Profile("!test"), so the guard
-  // doesn't fire either.
-  @MockitoBean AlertDestinationRepository alertDestinationRepository;
-  @MockitoBean org.arguslog.api.alerts.application.port.AlertRuleRepository alertRuleRepository;
-  @MockitoBean IssueRepository issueRepository;
-  @MockitoBean EventRepository eventRepository;
-  @MockitoBean ProjectRepository projectRepository;
-  @MockitoBean MembershipRepository membershipRepository;
-  @MockitoBean DsnRepository dsnRepository;
-  @MockitoBean OrgWriteRepository orgWriteRepository;
-  @MockitoBean ProjectWriteRepository projectWriteRepository;
-  @MockitoBean UserRepository userRepository;
-  @MockitoBean ReleaseRepository releaseRepository;
-  @MockitoBean SourceMapArtifactRepository sourceMapArtifactRepository;
-  @MockitoBean SourceMapStorage sourceMapStorage;
-  @MockitoBean PatRepository patRepository;
-  @MockitoBean TokenHasher tokenHasher;
-  @MockitoBean UsageRepository usageRepository;
-  @MockitoBean OrgPlanRepository orgPlanRepository;
-  @MockitoBean BillingCustomerRepository billingCustomerRepository;
-  @MockitoBean PortalUseCase portalUseCase;
-  @MockitoBean StripeWebhookUseCase stripeWebhookUseCase;
-  @MockitoBean StripeEventLog stripeEventLog;
-  @MockitoBean StripeEventVerifier stripeEventVerifier;
-  @MockitoBean StripeClient stripeClient;
+class AlertDestinationControllerTest extends AbstractControllerTest {
 
   @Test
   void listReturnsScrubbedMetadataNeverConfig() throws Exception {
-    when(useCase.list(1L))
+    when(alertDestinationUseCase.list(1L))
         .thenReturn(
             List.of(
                 new AlertDestination(
@@ -128,7 +58,7 @@ class AlertDestinationControllerTest {
 
   @Test
   void postCreatesAndReturns201() throws Exception {
-    when(useCase.create(eq(1L), eq(DestinationKind.TELEGRAM), eq("ops"), any()))
+    when(alertDestinationUseCase.create(eq(1L), eq(DestinationKind.TELEGRAM), eq("ops"), any()))
         .thenReturn(
             new AlertDestination(
                 7L,
@@ -167,7 +97,7 @@ class AlertDestinationControllerTest {
 
   @Test
   void postPropagatesValidationFromUseCase() throws Exception {
-    when(useCase.create(anyLong(), any(), anyString(), any()))
+    when(alertDestinationUseCase.create(anyLong(), any(), anyString(), any()))
         .thenThrow(
             new AlertDestinationUseCase.InvalidDestinationConfigException(
                 "telegram destination requires a non-empty string 'botToken'"));
@@ -182,7 +112,7 @@ class AlertDestinationControllerTest {
 
   @Test
   void getOneReturnsTheRowWhenFound() throws Exception {
-    when(useCase.get(1L, 7L))
+    when(alertDestinationUseCase.get(1L, 7L))
         .thenReturn(
             Optional.of(
                 new AlertDestination(
@@ -199,7 +129,7 @@ class AlertDestinationControllerTest {
 
   @Test
   void getOneIs404WhenMissing() throws Exception {
-    when(useCase.get(1L, 999L)).thenReturn(Optional.empty());
+    when(alertDestinationUseCase.get(1L, 999L)).thenReturn(Optional.empty());
     mvc.perform(get("/api/v1/orgs/1/alert-destinations/999"))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.title").value("Not found"));
@@ -207,7 +137,7 @@ class AlertDestinationControllerTest {
 
   @Test
   void putUpdatesAndReturns200() throws Exception {
-    when(useCase.update(eq(1L), eq(7L), eq("renamed"), any()))
+    when(alertDestinationUseCase.update(eq(1L), eq(7L), eq("renamed"), any()))
         .thenReturn(
             Optional.of(
                 new AlertDestination(
@@ -228,14 +158,14 @@ class AlertDestinationControllerTest {
 
   @Test
   void deleteReturns204AndCallsUseCase() throws Exception {
-    when(useCase.delete(1L, 7L)).thenReturn(true);
+    when(alertDestinationUseCase.delete(1L, 7L)).thenReturn(true);
     mvc.perform(delete("/api/v1/orgs/1/alert-destinations/7")).andExpect(status().isNoContent());
-    verify(useCase).delete(1L, 7L);
+    verify(alertDestinationUseCase).delete(1L, 7L);
   }
 
   @Test
   void deleteIs404WhenMissing() throws Exception {
-    when(useCase.delete(1L, 999L)).thenReturn(false);
+    when(alertDestinationUseCase.delete(1L, 999L)).thenReturn(false);
     mvc.perform(delete("/api/v1/orgs/1/alert-destinations/999")).andExpect(status().isNotFound());
   }
 }

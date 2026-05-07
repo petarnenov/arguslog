@@ -18,90 +18,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.stripe.StripeClient;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import org.arguslog.api.alerts.application.AlertRuleUseCase;
 import org.arguslog.api.alerts.application.AlertRuleUseCase.InvalidAlertRuleException;
-import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
-import org.arguslog.api.alerts.application.port.AlertRuleRepository;
 import org.arguslog.api.alerts.domain.AlertRule;
-import org.arguslog.api.application.port.DsnRepository;
-import org.arguslog.api.application.port.EventRepository;
-import org.arguslog.api.application.port.IssueRepository;
-import org.arguslog.api.application.port.MembershipRepository;
-import org.arguslog.api.application.port.OrgWriteRepository;
-import org.arguslog.api.application.port.ProjectRepository;
-import org.arguslog.api.application.port.ProjectWriteRepository;
-import org.arguslog.api.application.port.UserRepository;
-import org.arguslog.api.auth.application.port.PatRepository;
-import org.arguslog.api.auth.application.port.TokenHasher;
-import org.arguslog.api.billing.application.PortalUseCase;
-import org.arguslog.api.billing.application.StripeWebhookUseCase;
-import org.arguslog.api.billing.application.port.BillingCustomerRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
-import org.arguslog.api.billing.application.port.StripeEventLog;
-import org.arguslog.api.billing.application.port.StripeEventVerifier;
-import org.arguslog.api.billing.application.port.UsageRepository;
-import org.arguslog.api.releases.application.port.ReleaseRepository;
-import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
-import org.arguslog.api.releases.application.port.SourceMapStorage;
+import org.arguslog.api.testsupport.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@TestPropertySource(
-    properties = {
-      "spring.autoconfigure.exclude="
-          + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration"
-    })
-class AlertRuleControllerTest {
+class AlertRuleControllerTest extends AbstractControllerTest {
 
-  @Autowired MockMvc mvc;
   @Autowired ObjectMapper mapper;
-
-  @MockitoBean AlertRuleUseCase useCase;
-  @MockitoBean AlertRuleRepository alertRuleRepository;
-  @MockitoBean AlertDestinationRepository alertDestinationRepository;
-  @MockitoBean IssueRepository issueRepository;
-  @MockitoBean EventRepository eventRepository;
-  @MockitoBean ProjectRepository projectRepository;
-  @MockitoBean MembershipRepository membershipRepository;
-  @MockitoBean DsnRepository dsnRepository;
-  @MockitoBean OrgWriteRepository orgWriteRepository;
-  @MockitoBean ProjectWriteRepository projectWriteRepository;
-  @MockitoBean UserRepository userRepository;
-  @MockitoBean ReleaseRepository releaseRepository;
-  @MockitoBean SourceMapArtifactRepository sourceMapArtifactRepository;
-  @MockitoBean SourceMapStorage sourceMapStorage;
-  @MockitoBean PatRepository patRepository;
-  @MockitoBean TokenHasher tokenHasher;
-  @MockitoBean UsageRepository usageRepository;
-  @MockitoBean OrgPlanRepository orgPlanRepository;
-  @MockitoBean BillingCustomerRepository billingCustomerRepository;
-  @MockitoBean PortalUseCase portalUseCase;
-  @MockitoBean StripeWebhookUseCase stripeWebhookUseCase;
-  @MockitoBean StripeEventLog stripeEventLog;
-  @MockitoBean StripeEventVerifier stripeEventVerifier;
-  @MockitoBean StripeClient stripeClient;
 
   @Test
   void listReturnsTheRules() throws Exception {
-    when(useCase.list(101L)).thenReturn(List.of(sample(7L, "fatals")));
+    when(alertRuleUseCase.list(101L)).thenReturn(List.of(sample(7L, "fatals")));
 
     mvc.perform(get("/api/v1/projects/101/alert-rules"))
         .andExpect(status().isOk())
@@ -116,7 +49,7 @@ class AlertRuleControllerTest {
 
   @Test
   void postCreatesAndReturns201() throws Exception {
-    when(useCase.create(eq(101L), eq("fatals"), any(), any(), eq(300), eq(true)))
+    when(alertRuleUseCase.create(eq(101L), eq("fatals"), any(), any(), eq(300), eq(true)))
         .thenReturn(sample(7L, "fatals"));
 
     String body =
@@ -138,7 +71,7 @@ class AlertRuleControllerTest {
 
   @Test
   void postOmittingOptionalFieldsAppliesDefaults() throws Exception {
-    when(useCase.create(eq(101L), eq("x"), any(), any(), eq(300), eq(true)))
+    when(alertRuleUseCase.create(eq(101L), eq("x"), any(), any(), eq(300), eq(true)))
         .thenReturn(sample(7L, "x"));
     String body =
         """
@@ -151,12 +84,12 @@ class AlertRuleControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isCreated());
-    verify(useCase).create(eq(101L), eq("x"), any(), any(), eq(300), eq(true));
+    verify(alertRuleUseCase).create(eq(101L), eq("x"), any(), any(), eq(300), eq(true));
   }
 
   @Test
   void invalidRuleSurfacesAsProblemJson() throws Exception {
-    when(useCase.create(anyLong(), anyString(), any(), any(), anyInt(), anyBoolean()))
+    when(alertRuleUseCase.create(anyLong(), anyString(), any(), any(), anyInt(), anyBoolean()))
         .thenThrow(new InvalidAlertRuleException("conditions.level.in entries must be one of …"));
     String body =
         """
@@ -175,7 +108,7 @@ class AlertRuleControllerTest {
 
   @Test
   void getOneReturnsTheRow() throws Exception {
-    when(useCase.get(101L, 7L)).thenReturn(Optional.of(sample(7L, "fatals")));
+    when(alertRuleUseCase.get(101L, 7L)).thenReturn(Optional.of(sample(7L, "fatals")));
     mvc.perform(get("/api/v1/projects/101/alert-rules/7"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(7));
@@ -183,13 +116,13 @@ class AlertRuleControllerTest {
 
   @Test
   void getOneIs404WhenMissing() throws Exception {
-    when(useCase.get(101L, 999L)).thenReturn(Optional.empty());
+    when(alertRuleUseCase.get(101L, 999L)).thenReturn(Optional.empty());
     mvc.perform(get("/api/v1/projects/101/alert-rules/999")).andExpect(status().isNotFound());
   }
 
   @Test
   void putUpdatesAndReturns200() throws Exception {
-    when(useCase.update(eq(101L), eq(7L), eq("renamed"), any(), any(), eq(600), eq(false)))
+    when(alertRuleUseCase.update(eq(101L), eq(7L), eq("renamed"), any(), any(), eq(600), eq(false)))
         .thenReturn(Optional.of(sampleWith(7L, "renamed", 600, false)));
     String body =
         """
@@ -211,13 +144,13 @@ class AlertRuleControllerTest {
 
   @Test
   void deleteReturns204() throws Exception {
-    when(useCase.delete(101L, 7L)).thenReturn(true);
+    when(alertRuleUseCase.delete(101L, 7L)).thenReturn(true);
     mvc.perform(delete("/api/v1/projects/101/alert-rules/7")).andExpect(status().isNoContent());
   }
 
   @Test
   void deleteIs404WhenMissing() throws Exception {
-    when(useCase.delete(101L, 999L)).thenReturn(false);
+    when(alertRuleUseCase.delete(101L, 999L)).thenReturn(false);
     mvc.perform(delete("/api/v1/projects/101/alert-rules/999")).andExpect(status().isNotFound());
   }
 

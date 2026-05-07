@@ -10,101 +10,29 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.stripe.StripeClient;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
-import org.arguslog.api.alerts.application.port.AlertRuleRepository;
 import org.arguslog.api.application.CursorCodec.InvalidCursorException;
-import org.arguslog.api.application.GetIssueUseCase;
 import org.arguslog.api.application.ListIssueEventsUseCase;
 import org.arguslog.api.application.ListIssuesUseCase;
-import org.arguslog.api.application.port.DsnRepository;
-import org.arguslog.api.application.port.EventRepository;
-import org.arguslog.api.application.port.IssueRepository;
-import org.arguslog.api.application.port.MembershipRepository;
-import org.arguslog.api.application.port.OrgWriteRepository;
-import org.arguslog.api.application.port.ProjectRepository;
-import org.arguslog.api.application.port.ProjectWriteRepository;
-import org.arguslog.api.application.port.UserRepository;
-import org.arguslog.api.auth.application.port.PatRepository;
-import org.arguslog.api.auth.application.port.TokenHasher;
-import org.arguslog.api.billing.application.PortalUseCase;
-import org.arguslog.api.billing.application.StripeWebhookUseCase;
-import org.arguslog.api.billing.application.port.BillingCustomerRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
-import org.arguslog.api.billing.application.port.StripeEventLog;
-import org.arguslog.api.billing.application.port.StripeEventVerifier;
-import org.arguslog.api.billing.application.port.UsageRepository;
 import org.arguslog.api.domain.Event;
 import org.arguslog.api.domain.Issue;
-import org.arguslog.api.releases.application.port.ReleaseRepository;
-import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
-import org.arguslog.api.releases.application.port.SourceMapStorage;
+import org.arguslog.api.testsupport.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@TestPropertySource(
-    properties = {
-      "spring.autoconfigure.exclude="
-          + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration"
-    })
-class IssueControllerTest {
+class IssueControllerTest extends AbstractControllerTest {
 
-  @Autowired MockMvc mvc;
   @Autowired ObjectMapper json;
-
-  // Use cases mocked so the request never reaches the JDBC adapters; ports mocked because
-  // the @Component adapters still need a DataSource at wiring time. ProjectAccessGuard is
-  // @Profile("!test"), so it doesn't register here either.
-  @MockitoBean ListIssuesUseCase listIssues;
-  @MockitoBean GetIssueUseCase getIssue;
-  @MockitoBean ListIssueEventsUseCase listEvents;
-  @MockitoBean IssueRepository issueRepository;
-  @MockitoBean EventRepository eventRepository;
-  @MockitoBean ProjectRepository projectRepository;
-  @MockitoBean MembershipRepository membershipRepository;
-  @MockitoBean AlertDestinationRepository alertDestinationRepository;
-  @MockitoBean AlertRuleRepository alertRuleRepository;
-  @MockitoBean DsnRepository dsnRepository;
-  @MockitoBean OrgWriteRepository orgWriteRepository;
-  @MockitoBean ProjectWriteRepository projectWriteRepository;
-  @MockitoBean UserRepository userRepository;
-  @MockitoBean ReleaseRepository releaseRepository;
-  @MockitoBean SourceMapArtifactRepository sourceMapArtifactRepository;
-  @MockitoBean SourceMapStorage sourceMapStorage;
-  @MockitoBean PatRepository patRepository;
-  @MockitoBean TokenHasher tokenHasher;
-  @MockitoBean UsageRepository usageRepository;
-  @MockitoBean OrgPlanRepository orgPlanRepository;
-  @MockitoBean BillingCustomerRepository billingCustomerRepository;
-  @MockitoBean PortalUseCase portalUseCase;
-  @MockitoBean StripeWebhookUseCase stripeWebhookUseCase;
-  @MockitoBean StripeEventLog stripeEventLog;
-  @MockitoBean StripeEventVerifier stripeEventVerifier;
-  @MockitoBean StripeClient stripeClient;
 
   // ── list ─────────────────────────────────────────────────────────────────
 
   @Test
   void returnsPaginatedEnvelope() throws Exception {
-    when(listIssues.list(any()))
+    when(listIssuesUseCase.list(any()))
         .thenReturn(new ListIssuesUseCase.Page(List.of(sampleIssue(7L)), Optional.of("Mi4yLjI=")));
 
     mvc.perform(get("/api/v1/projects/101/issues").contentType(MediaType.APPLICATION_JSON))
@@ -124,7 +52,7 @@ class IssueControllerTest {
 
   @Test
   void omitsNextWhenLastPage() throws Exception {
-    when(listIssues.list(any()))
+    when(listIssuesUseCase.list(any()))
         .thenReturn(new ListIssuesUseCase.Page(List.of(), Optional.empty()));
     mvc.perform(get("/api/v1/projects/101/issues"))
         .andExpect(status().isOk())
@@ -134,7 +62,8 @@ class IssueControllerTest {
 
   @Test
   void invalidCursorIsRejectedAsProblemJson() throws Exception {
-    when(listIssues.list(any())).thenThrow(new InvalidCursorException("cursor missing separator"));
+    when(listIssuesUseCase.list(any()))
+        .thenThrow(new InvalidCursorException("cursor missing separator"));
     mvc.perform(get("/api/v1/projects/101/issues?cursor=garbage"))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
@@ -160,7 +89,7 @@ class IssueControllerTest {
 
   @Test
   void issueDetailReturnsTheRow() throws Exception {
-    when(getIssue.get(101L, 7L)).thenReturn(Optional.of(sampleIssue(7L)));
+    when(getIssueUseCase.get(101L, 7L)).thenReturn(Optional.of(sampleIssue(7L)));
     mvc.perform(get("/api/v1/projects/101/issues/7"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(7))
@@ -170,7 +99,7 @@ class IssueControllerTest {
 
   @Test
   void unknownIssueIs404ProblemJson() throws Exception {
-    when(getIssue.get(eq(101L), eq(999L))).thenReturn(Optional.empty());
+    when(getIssueUseCase.get(eq(101L), eq(999L))).thenReturn(Optional.empty());
     mvc.perform(get("/api/v1/projects/101/issues/999"))
         .andExpect(status().isNotFound())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
@@ -182,8 +111,8 @@ class IssueControllerTest {
   @Test
   void issueEventsReturnsEnvelopeWithPayloadPassedThrough() throws Exception {
     UUID eventId = UUID.fromString("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
-    when(getIssue.get(101L, 7L)).thenReturn(Optional.of(sampleIssue(7L)));
-    when(listEvents.list(any()))
+    when(getIssueUseCase.get(101L, 7L)).thenReturn(Optional.of(sampleIssue(7L)));
+    when(listIssueEventsUseCase.list(any()))
         .thenReturn(
             new ListIssueEventsUseCase.Page(
                 List.of(
@@ -208,8 +137,8 @@ class IssueControllerTest {
 
   @Test
   void issueEventsForUnknownIssueIs404() throws Exception {
-    when(getIssue.get(101L, 999L)).thenReturn(Optional.empty());
-    when(listEvents.list(any()))
+    when(getIssueUseCase.get(101L, 999L)).thenReturn(Optional.empty());
+    when(listIssueEventsUseCase.list(any()))
         .thenReturn(new ListIssueEventsUseCase.Page(List.of(), Optional.empty()));
     mvc.perform(get("/api/v1/projects/101/issues/999/events"))
         .andExpect(status().isNotFound())
