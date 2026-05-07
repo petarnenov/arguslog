@@ -38,6 +38,9 @@ dependencies {
     // of buckets). bucket4j-redis is the followup for cross-instance limits.
     implementation(libs.bucket4j.core)
     implementation(libs.caffeine)
+    // Shared AES-256-GCM wire format with worker — bytes-in/bytes-out, no Spring leak. Stops
+    // the api/worker copies from drifting on the at-rest secret format.
+    implementation(project(":lib:crypto-aes-gcm"))
     // Dogfood — emits the api's own errors back into Arguslog via the Logback appender. SDK
     // is no-op until ARGUS_DSN is configured (always unset in tests + local dev).
     implementation(project(":java-sdk"))

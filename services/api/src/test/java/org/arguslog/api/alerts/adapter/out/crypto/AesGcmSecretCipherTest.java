@@ -56,7 +56,7 @@ class AesGcmSecretCipherTest {
     String shortKey = Base64.getEncoder().encodeToString("too-short".getBytes());
     assertThatThrownBy(() -> new AesGcmSecretCipher(shortKey))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("32 bytes");
+        .hasMessageContaining("32-byte key");
   }
 
   @Test
