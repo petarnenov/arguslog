@@ -14,13 +14,16 @@ import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.arguslog.api.auth.application.PatUseCase.InvalidPatException;
 import org.arguslog.api.auth.application.PatUseCase.Issued;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.PatRepository.PatRow;
 import org.arguslog.api.auth.application.port.TokenHasher;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,13 +54,13 @@ class PatServiceTest {
   @Test
   void mintReturnsPlaintextOnceAndPersistsArgon2HashOfFullToken() {
     when(hasher.hash(anyString())).thenReturn("$argon2id$v=19$...");
-    when(repository.create(eq(USER), eq("ci-bot"), anyString(), anyString(), eq(null)))
+    when(repository.create(eq(USER), eq("ci-bot"), anyString(), anyString(), eq(null), eq(null)))
         .thenAnswer(
             inv ->
                 new PersonalAccessToken(
-                    7L, USER, inv.getArgument(1), inv.getArgument(2), null, null, NOW));
+                    7L, USER, inv.getArgument(1), inv.getArgument(2), null, null, NOW, null));
 
-    Issued out = service.create(USER, "ci-bot", null);
+    Issued out = service.create(USER, "ci-bot", null, null);
 
     assertThat(out.plaintext()).startsWith("arglog_pat_");
     String[] parts = out.plaintext().substring("arglog_pat_".length()).split("_");
@@ -72,8 +75,38 @@ class PatServiceTest {
   }
 
   @Test
+  void mintWithExplicitScopesPassesThemToRepository() {
+    when(hasher.hash(anyString())).thenReturn("$argon2id$v=19$...");
+    Set<PatScope> requested = EnumSet.of(PatScope.RELEASES_WRITE, PatScope.SOURCEMAPS_WRITE);
+    when(repository.create(
+            eq(USER), eq("ci-bot"), anyString(), anyString(), eq(null), eq(requested)))
+        .thenAnswer(
+            inv ->
+                new PersonalAccessToken(
+                    7L,
+                    USER,
+                    inv.getArgument(1),
+                    inv.getArgument(2),
+                    null,
+                    null,
+                    NOW,
+                    inv.getArgument(5)));
+
+    Issued out = service.create(USER, "ci-bot", null, requested);
+    assertThat(out.token().scopes()).containsExactlyInAnyOrderElementsOf(requested);
+  }
+
+  @Test
+  void mintWithEmptyScopeSetIsRejected() {
+    assertThatThrownBy(() -> service.create(USER, "ci-bot", null, Set.of()))
+        .isInstanceOf(InvalidPatException.class)
+        .hasMessageContaining("scopes");
+    verify(hasher, never()).hash(any());
+  }
+
+  @Test
   void blankNameRejectedBeforeHash() {
-    assertThatThrownBy(() -> service.create(USER, "  ", null))
+    assertThatThrownBy(() -> service.create(USER, "  ", null, null))
         .isInstanceOf(InvalidPatException.class);
     verify(hasher, never()).hash(any());
   }
@@ -81,7 +114,7 @@ class PatServiceTest {
   @Test
   void overlongNameRejected() {
     String tooLong = "a".repeat(PatService.MAX_NAME_LENGTH + 1);
-    assertThatThrownBy(() -> service.create(USER, tooLong, null))
+    assertThatThrownBy(() -> service.create(USER, tooLong, null, null))
         .isInstanceOf(InvalidPatException.class);
   }
 
@@ -89,7 +122,7 @@ class PatServiceTest {
   void verifyReturnsTokenAndBumpsLastUsedOnSuccess() {
     String wire = "arglog_pat_AAAAAAAA_" + "x".repeat(48);
     PersonalAccessToken stored =
-        new PersonalAccessToken(7L, USER, "ci", "AAAAAAAA", null, null, NOW.minusSeconds(60));
+        new PersonalAccessToken(7L, USER, "ci", "AAAAAAAA", null, null, NOW.minusSeconds(60), null);
     when(repository.findByPrefix("AAAAAAAA")).thenReturn(Optional.of(new PatRow(stored, "$h$")));
     when(hasher.matches(wire, "$h$")).thenReturn(true);
 
@@ -103,7 +136,7 @@ class PatServiceTest {
     String wire = "arglog_pat_AAAAAAAA_" + "x".repeat(48);
     PersonalAccessToken expired =
         new PersonalAccessToken(
-            7L, USER, "ci", "AAAAAAAA", NOW.minusSeconds(1), null, NOW.minusSeconds(60));
+            7L, USER, "ci", "AAAAAAAA", NOW.minusSeconds(1), null, NOW.minusSeconds(60), null);
     when(repository.findByPrefix("AAAAAAAA")).thenReturn(Optional.of(new PatRow(expired, "$h$")));
 
     assertThat(service.verify(wire, NOW)).isEmpty();
@@ -115,7 +148,7 @@ class PatServiceTest {
   void verifyRejectsHashMismatch() {
     String wire = "arglog_pat_AAAAAAAA_" + "x".repeat(48);
     PersonalAccessToken stored =
-        new PersonalAccessToken(7L, USER, "ci", "AAAAAAAA", null, null, NOW);
+        new PersonalAccessToken(7L, USER, "ci", "AAAAAAAA", null, null, NOW, null);
     when(repository.findByPrefix("AAAAAAAA")).thenReturn(Optional.of(new PatRow(stored, "$h$")));
     when(hasher.matches(wire, "$h$")).thenReturn(false);
 

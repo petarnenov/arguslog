@@ -122,6 +122,61 @@ describe('PersonalAccessTokensPage', () => {
     await waitFor(() => expect(screen.getByText('ci-deploy')).toBeInTheDocument());
   });
 
+  it('mints a token with explicit scopes when the all-scopes toggle is off', async () => {
+    let postBody: unknown;
+    let listCalls = 0;
+    globalThis.fetch = vi.fn(async (input, init) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/me/tokens') && (!init || init.method === undefined)) {
+        listCalls += 1;
+        if (listCalls === 1) return jsonResponse([]);
+        return jsonResponse([
+          {
+            id: 11,
+            name: 'release-bot',
+            prefix: 'arglog_r',
+            createdAt: '2026-05-06T12:00:00Z',
+            scopes: ['releases:write', 'sourcemaps:write'],
+          },
+        ]);
+      }
+      if (url.endsWith('/api/v1/me/tokens') && init?.method === 'POST') {
+        postBody = JSON.parse(init.body as string);
+        return jsonResponse(
+          {
+            id: 11,
+            name: 'release-bot',
+            prefix: 'arglog_r',
+            token: 'arglog_pat_abcdef12_secretSecretSecret',
+            createdAt: '2026-05-06T12:00:00Z',
+            scopes: ['releases:write', 'sourcemaps:write'],
+          },
+          201,
+        );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    renderAt();
+
+    await screen.findByText(/no tokens yet/i);
+    await userEvent.type(screen.getByTestId('pat-name-input'), 'release-bot');
+    await userEvent.click(screen.getByTestId('pat-scope-all-toggle'));
+    await userEvent.click(screen.getByTestId('pat-scope-releases:write'));
+    await userEvent.click(screen.getByTestId('pat-scope-sourcemaps:write'));
+    await userEvent.click(screen.getByTestId('pat-create-button'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pat-plaintext')).toHaveTextContent(
+        'arglog_pat_abcdef12_secretSecretSecret',
+      ),
+    );
+    expect(postBody).toMatchObject({
+      name: 'release-bot',
+      scopes: ['releases:write', 'sourcemaps:write'],
+    });
+  });
+
   it('revokes a token after confirmation', async () => {
     let listCalls = 0;
     const deleteCalls: string[] = [];

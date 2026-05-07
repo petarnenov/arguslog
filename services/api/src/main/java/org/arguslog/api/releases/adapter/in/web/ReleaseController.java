@@ -2,6 +2,8 @@ package org.arguslog.api.releases.adapter.in.web;
 
 import java.net.URI;
 import java.util.List;
+import org.arguslog.api.auth.PatScopeGuard;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.releases.adapter.in.web.dto.ReleaseRequest;
 import org.arguslog.api.releases.adapter.in.web.dto.ReleaseResponse;
 import org.arguslog.api.releases.application.ReleaseUseCase;
@@ -41,6 +43,7 @@ public class ReleaseController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ReleaseResponse> create(
       @PathVariable long projectId, @RequestBody ReleaseRequest body) {
+    PatScopeGuard.require(PatScope.RELEASES_WRITE);
     Release created = useCase.create(projectId, body == null ? null : body.version());
     return ResponseEntity.created(URI.create(String.valueOf(created.id())))
         .body(ReleaseResponse.from(created));

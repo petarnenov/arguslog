@@ -14,10 +14,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.arguslog.api.auth.application.PatUseCase.InvalidPatException;
 import org.arguslog.api.auth.application.PatUseCase.Issued;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
 import org.arguslog.api.testsupport.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
@@ -33,8 +36,8 @@ class MeTokensControllerTest extends AbstractControllerTest {
   @WithMockUser(username = "00000000-0000-0000-0000-000000000001")
   void postReturnsPlaintextOnceWithCreatedRow() throws Exception {
     PersonalAccessToken stored =
-        new PersonalAccessToken(7L, USER, "ci-bot", "ABCDEFGH", null, null, NOW);
-    when(patUseCase.create(eq(USER), eq("ci-bot"), isNull()))
+        new PersonalAccessToken(7L, USER, "ci-bot", "ABCDEFGH", null, null, NOW, null);
+    when(patUseCase.create(eq(USER), eq("ci-bot"), isNull(), isNull()))
         .thenReturn(new Issued(stored, "arglog_pat_ABCDEFGH_" + "x".repeat(48)));
 
     mvc.perform(
@@ -49,10 +52,42 @@ class MeTokensControllerTest extends AbstractControllerTest {
 
   @Test
   @WithMockUser(username = "00000000-0000-0000-0000-000000000001")
+  void postWithScopesPlumbsThemThroughAndEchoesOnResponse() throws Exception {
+    Set<PatScope> requested = EnumSet.of(PatScope.RELEASES_WRITE, PatScope.SOURCEMAPS_WRITE);
+    PersonalAccessToken stored =
+        new PersonalAccessToken(8L, USER, "ci-bot", "ABCDEFGH", null, null, NOW, requested);
+    when(patUseCase.create(eq(USER), eq("ci-bot"), isNull(), eq(requested)))
+        .thenReturn(new Issued(stored, "arglog_pat_ABCDEFGH_" + "x".repeat(48)));
+
+    mvc.perform(
+            post("/api/v1/me/tokens")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"name\":\"ci-bot\",\"scopes\":[\"releases:write\",\"sourcemaps:write\"]}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.scopes[0]").value("releases:write"))
+        .andExpect(jsonPath("$.scopes[1]").value("sourcemaps:write"));
+  }
+
+  @Test
+  @WithMockUser(username = "00000000-0000-0000-0000-000000000001")
+  void postWithUnknownScopeReturns400() throws Exception {
+    mvc.perform(
+            post("/api/v1/me/tokens")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"ci-bot\",\"scopes\":[\"galaxy:nuke\"]}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.detail").value(startsWith("Unknown scope")));
+  }
+
+  @Test
+  @WithMockUser(username = "00000000-0000-0000-0000-000000000001")
   void getListOmitsTheTokenField() throws Exception {
     when(patUseCase.list(USER))
         .thenReturn(
-            List.of(new PersonalAccessToken(7L, USER, "ci-bot", "ABCDEFGH", null, null, NOW)));
+            List.of(
+                new PersonalAccessToken(7L, USER, "ci-bot", "ABCDEFGH", null, null, NOW, null)));
 
     mvc.perform(get("/api/v1/me/tokens"))
         .andExpect(status().isOk())
@@ -79,7 +114,7 @@ class MeTokensControllerTest extends AbstractControllerTest {
   @Test
   @WithMockUser(username = "00000000-0000-0000-0000-000000000001")
   void blankNameReturns400ProblemJson() throws Exception {
-    when(patUseCase.create(eq(USER), eq(""), any()))
+    when(patUseCase.create(eq(USER), eq(""), any(), any()))
         .thenThrow(new InvalidPatException("name is required"));
 
     mvc.perform(

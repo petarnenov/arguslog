@@ -2,6 +2,8 @@ package org.arguslog.api.releases.adapter.in.web;
 
 import java.net.URI;
 import java.util.List;
+import org.arguslog.api.auth.PatScopeGuard;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.releases.adapter.in.web.dto.SourceMapArtifactRequest;
 import org.arguslog.api.releases.adapter.in.web.dto.SourceMapArtifactResponse;
 import org.arguslog.api.releases.adapter.in.web.dto.SourceMapUploadResponse;
@@ -46,6 +48,7 @@ public class SourceMapArtifactController {
       @PathVariable long projectId,
       @PathVariable long releaseId,
       @RequestBody SourceMapArtifactRequest body) {
+    PatScopeGuard.require(PatScope.SOURCEMAPS_WRITE);
     SourceMapArtifactRequest req =
         body == null ? new SourceMapArtifactRequest(null, null, 0L) : body;
     CreatedUpload created =

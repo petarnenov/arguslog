@@ -215,6 +215,23 @@
     "revokeTitle": "Revoke \"{{name}}\"?",
     "revokeBody": "This is irreversible. Any client using this token will start receiving 401 immediately.",
     "revokeCancel": "Cancel",
-    "revokeConfirm": "Revoke token"
+    "revokeConfirm": "Revoke token",
+    "scopesLabel": "Scopes",
+    "scopesHint": "Restrict what this token can do. Leaving every scope checked is the same as a fully-privileged token.",
+    "scopesAllToggle": "All scopes (full access)",
+    "scopesEmptyError": "Pick at least one scope.",
+    "colScopes": "Scopes",
+    "scopeAll": "All",
+    "scope_orgs:read": "Read organizations",
+    "scope_orgs:write": "Manage organizations",
+    "scope_projects:read": "Read projects",
+    "scope_projects:write": "Manage projects",
+    "scope_issues:read": "Read issues",
+    "scope_events:read": "Read events",
+    "scope_releases:read": "Read releases",
+    "scope_releases:write": "Create releases",
+    "scope_sourcemaps:write": "Upload source maps",
+    "scope_alerts:read": "Read alert rules",
+    "scope_alerts:write": "Manage alert rules"
   }
 }

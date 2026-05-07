@@ -1,13 +1,16 @@
 package org.arguslog.api.auth.adapter.in.web;
 
 import java.net.URI;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.arguslog.api.auth.adapter.in.web.dto.PatRequest;
 import org.arguslog.api.auth.adapter.in.web.dto.PatResponse;
 import org.arguslog.api.auth.application.PatUseCase;
 import org.arguslog.api.auth.application.PatUseCase.InvalidPatException;
 import org.arguslog.api.auth.application.PatUseCase.Issued;
+import org.arguslog.api.auth.domain.PatScope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -45,10 +48,27 @@ public class MeTokensController {
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<PatResponse> create(@RequestBody PatRequest body) {
-    PatRequest req = body == null ? new PatRequest(null, null) : body;
-    Issued issued = useCase.create(currentUserId(), req.name(), req.expiresAt());
+    PatRequest req = body == null ? new PatRequest(null, null, null) : body;
+    Set<PatScope> scopes = parseScopes(req.scopes());
+    Issued issued = useCase.create(currentUserId(), req.name(), req.expiresAt(), scopes);
     return ResponseEntity.created(URI.create(String.valueOf(issued.token().id())))
         .body(PatResponse.fromIssued(issued.token(), issued.plaintext()));
+  }
+
+  // null wire input → null domain set ("implicit-all", back-compat with pre-V12 callers).
+  // An explicit list pins the token to those scopes; unknown wire strings 400 here so a typo
+  // can't silently mint an over-scoped token.
+  private static Set<PatScope> parseScopes(List<String> wire) {
+    if (wire == null) return null;
+    Set<PatScope> out = new LinkedHashSet<>();
+    for (String w : wire) {
+      try {
+        out.add(PatScope.fromWire(w));
+      } catch (IllegalArgumentException e) {
+        throw new InvalidPatException("Unknown scope: " + w);
+      }
+    }
+    return out;
   }
 
   @DeleteMapping("/{id}")
