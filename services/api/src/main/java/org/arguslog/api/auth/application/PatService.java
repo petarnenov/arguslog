@@ -5,10 +5,12 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.PatRepository.PatRow;
 import org.arguslog.api.auth.application.port.TokenHasher;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,13 +56,15 @@ public class PatService implements PatUseCase {
 
   @Override
   @Transactional
-  public Issued create(UUID userId, String name, Instant expiresAt) {
+  public Issued create(UUID userId, String name, Instant expiresAt, Set<PatScope> scopes) {
     String trimmedName = requireName(name);
+    Set<PatScope> normalisedScopes = normaliseScopes(scopes);
     String prefix = randomString(PREFIX_LENGTH);
     String secret = randomString(SECRET_LENGTH);
     String wireToken = TOKEN_PREFIX + prefix + "_" + secret;
     String hash = hasher.hash(wireToken);
-    PersonalAccessToken stored = repository.create(userId, trimmedName, prefix, hash, expiresAt);
+    PersonalAccessToken stored =
+        repository.create(userId, trimmedName, prefix, hash, expiresAt, normalisedScopes);
     return new Issued(stored, wireToken);
   }
 
@@ -104,6 +108,16 @@ public class PatService implements PatUseCase {
       throw new InvalidPatException("name must be " + MAX_NAME_LENGTH + " characters or fewer");
     }
     return trimmed;
+  }
+
+  // null → null (implicit-all, back-compat). An EXPLICIT empty list is rejected — minting a
+  // token that authorises nothing is almost certainly a UI bug, not a deliberate ask.
+  private static Set<PatScope> normaliseScopes(Set<PatScope> scopes) {
+    if (scopes == null) return null;
+    if (scopes.isEmpty()) {
+      throw new InvalidPatException("scopes must not be empty");
+    }
+    return scopes;
   }
 
   private String randomString(int length) {

@@ -3,7 +3,9 @@ package org.arguslog.api.auth.application;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
 
 public interface PatUseCase {
@@ -11,8 +13,11 @@ public interface PatUseCase {
   /**
    * Mints a new PAT for the user. Plaintext is in {@link Issued#plaintext} — only time the api ever
    * returns it; caller MUST surface to the user immediately and discard.
+   *
+   * <p>{@code scopes} of {@code null} means "all scopes" (implicit-all, used by tokens minted
+   * before V12). An explicit set restricts the token to those scopes.
    */
-  Issued create(UUID userId, String name, Instant expiresAt);
+  Issued create(UUID userId, String name, Instant expiresAt, Set<PatScope> scopes);
 
   List<PersonalAccessToken> list(UUID userId);
 

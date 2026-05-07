@@ -6,9 +6,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.arguslog.api.auth.application.PatUseCase;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -63,17 +66,28 @@ public class PatAuthenticationFilter extends OncePerRequestFilter {
   public static final class PatAuthentication extends AbstractAuthenticationToken {
 
     private static final long serialVersionUID = 1L;
-    private static final List<GrantedAuthority> AUTHORITIES =
-        List.of(new SimpleGrantedAuthority("ROLE_USER"));
 
     // PersonalAccessToken is not Serializable. Marking transient because Spring's session
     // serialization is irrelevant in our stateless setup, but the lint check still wants it.
     private final transient PersonalAccessToken token;
 
     public PatAuthentication(PersonalAccessToken token) {
-      super(AUTHORITIES);
+      super(authoritiesFor(token));
       this.token = token;
       setAuthenticated(true);
+    }
+
+    // ROLE_USER keeps PAT auth interchangeable with JWT auth for everything that just wants a
+    // logged-in user. SCOPE_* authorities back
+    // @PreAuthorize("hasAuthority('SCOPE_releases:write')")
+    // gates so a token without the scope 403s instead of silently going through.
+    private static Collection<GrantedAuthority> authoritiesFor(PersonalAccessToken token) {
+      List<GrantedAuthority> out = new ArrayList<>();
+      out.add(new SimpleGrantedAuthority("ROLE_USER"));
+      for (PatScope scope : token.effectiveScopes()) {
+        out.add(new SimpleGrantedAuthority(scope.authority()));
+      }
+      return out;
     }
 
     @Override

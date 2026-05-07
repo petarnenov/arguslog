@@ -3,14 +3,26 @@ package org.arguslog.api.auth.application.port;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
 
 /** Persistence port for {@code personal_access_tokens}. */
 public interface PatRepository {
 
+  /**
+   * Persists a new token. {@code scopes} of {@code null} maps to a NULL DB column (implicit-all);
+   * an explicit empty set is treated the same. Otherwise the wire strings of each {@link PatScope}
+   * get stored in the {@code scopes} TEXT[] column.
+   */
   PersonalAccessToken create(
-      UUID userId, String name, String prefix, String tokenHash, Instant expiresAt);
+      UUID userId,
+      String name,
+      String prefix,
+      String tokenHash,
+      Instant expiresAt,
+      Set<PatScope> scopes);
 
   List<PersonalAccessToken> listForUser(UUID userId);
 

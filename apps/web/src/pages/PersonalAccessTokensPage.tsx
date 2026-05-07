@@ -1,13 +1,16 @@
 import {
   ActionIcon,
   Alert,
+  Badge,
   Button,
+  Checkbox,
   Code,
   CopyButton,
   Group,
   Loader,
   Modal,
   Stack,
+  Switch,
   Table,
   Text,
   TextInput,
@@ -16,12 +19,18 @@ import {
 } from '@mantine/core';
 import { IconCheck, IconCopy, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '../api/client';
 import { queryKeys, useMyTokens } from '../api/queries';
-import { createMyToken, revokeMyToken, type PersonalAccessToken } from '../api/tokens';
+import {
+  createMyToken,
+  revokeMyToken,
+  PAT_SCOPES,
+  type PatScope,
+  type PersonalAccessToken,
+} from '../api/tokens';
 
 export function PersonalAccessTokensPage() {
   const { t } = useTranslation();
@@ -32,11 +41,28 @@ export function PersonalAccessTokensPage() {
   const [issued, setIssued] = useState<PersonalAccessToken | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<PersonalAccessToken | null>(null);
 
+  // "All scopes" is the default — sending undefined keeps the implicit-all contract on the
+  // wire and avoids fanning out an 11-element array for the typical case. Toggling off lets
+  // the user pick individual scopes.
+  const [allScopes, setAllScopes] = useState(true);
+  const [pickedScopes, setPickedScopes] = useState<PatScope[]>([]);
+
+  const submitScopes = useMemo<PatScope[] | undefined>(
+    () => (allScopes ? undefined : pickedScopes),
+    [allScopes, pickedScopes],
+  );
+
   const createMutation = useMutation({
-    mutationFn: () => createMyToken({ name: name.trim() }),
+    mutationFn: () =>
+      createMyToken({
+        name: name.trim(),
+        scopes: submitScopes,
+      }),
     onSuccess: async (created) => {
       setIssued(created);
       setName('');
+      setAllScopes(true);
+      setPickedScopes([]);
       await queryClient.invalidateQueries({ queryKey: queryKeys.myTokens() });
     },
   });
@@ -52,7 +78,14 @@ export function PersonalAccessTokensPage() {
   const createError = errorMessage(createMutation.error);
   const revokeError = errorMessage(revokeMutation.error);
   const trimmed = name.trim();
-  const canCreate = trimmed.length >= 2 && !createMutation.isPending;
+  const scopesValid = allScopes || pickedScopes.length > 0;
+  const canCreate = trimmed.length >= 2 && scopesValid && !createMutation.isPending;
+
+  function toggleScope(scope: PatScope, checked: boolean) {
+    setPickedScopes((prev) =>
+      checked ? [...prev, scope] : prev.filter((s) => s !== scope),
+    );
+  }
 
   return (
     <Stack maw={900}>
@@ -67,25 +100,69 @@ export function PersonalAccessTokensPage() {
           if (canCreate) createMutation.mutate();
         }}
       >
-        <Group align="flex-end">
+        <Stack gap="sm">
           <TextInput
             label={t('tokens.nameLabel')}
             placeholder={t('tokens.namePlaceholder')}
             value={name}
             onChange={(e) => setName(e.currentTarget.value)}
             disabled={createMutation.isPending}
-            style={{ flex: 1 }}
             data-testid="pat-name-input"
           />
-          <Button
-            type="submit"
-            loading={createMutation.isPending}
-            disabled={!canCreate}
-            data-testid="pat-create-button"
-          >
-            {t('tokens.create')}
-          </Button>
-        </Group>
+          <Stack gap="xs">
+            <Group justify="space-between" align="center">
+              <Text size="sm" fw={500}>
+                {t('tokens.scopesLabel')}
+              </Text>
+              <Switch
+                checked={allScopes}
+                onChange={(e) => setAllScopes(e.currentTarget.checked)}
+                label={t('tokens.scopesAllToggle')}
+                disabled={createMutation.isPending}
+                data-testid="pat-scope-all-toggle"
+              />
+            </Group>
+            <Text size="xs" c="dimmed">
+              {t('tokens.scopesHint')}
+            </Text>
+            {!allScopes && (
+              <Stack gap={4} pl="md" data-testid="pat-scope-list">
+                {PAT_SCOPES.map((scope) => (
+                  <Checkbox
+                    key={scope}
+                    label={
+                      <Group gap="xs">
+                        <Code>{scope}</Code>
+                        <Text size="sm" c="dimmed">
+                          {t(`tokens.scope_${scope}`)}
+                        </Text>
+                      </Group>
+                    }
+                    checked={pickedScopes.includes(scope)}
+                    onChange={(e) => toggleScope(scope, e.currentTarget.checked)}
+                    disabled={createMutation.isPending}
+                    data-testid={`pat-scope-${scope}`}
+                  />
+                ))}
+                {!scopesValid && (
+                  <Text size="xs" c="red">
+                    {t('tokens.scopesEmptyError')}
+                  </Text>
+                )}
+              </Stack>
+            )}
+          </Stack>
+          <Group justify="flex-end">
+            <Button
+              type="submit"
+              loading={createMutation.isPending}
+              disabled={!canCreate}
+              data-testid="pat-create-button"
+            >
+              {t('tokens.create')}
+            </Button>
+          </Group>
+        </Stack>
       </form>
 
       {createError && (
@@ -142,6 +219,7 @@ export function PersonalAccessTokensPage() {
             <Table.Tr>
               <Table.Th>{t('tokens.colName')}</Table.Th>
               <Table.Th>{t('tokens.colPrefix')}</Table.Th>
+              <Table.Th>{t('tokens.colScopes')}</Table.Th>
               <Table.Th>{t('tokens.colCreated')}</Table.Th>
               <Table.Th>{t('tokens.colLastUsed')}</Table.Th>
               <Table.Th aria-label={t('tokens.colActions')} />
@@ -153,6 +231,21 @@ export function PersonalAccessTokensPage() {
                 <Table.Td>{tok.name}</Table.Td>
                 <Table.Td>
                   <Code>{tok.prefix}…</Code>
+                </Table.Td>
+                <Table.Td>
+                  {tok.scopes === undefined ? (
+                    <Badge variant="light" color="blue">
+                      {t('tokens.scopeAll')}
+                    </Badge>
+                  ) : (
+                    <Group gap={4}>
+                      {tok.scopes.map((scope) => (
+                        <Badge key={scope} variant="light" color="gray">
+                          {scope}
+                        </Badge>
+                      ))}
+                    </Group>
+                  )}
                 </Table.Td>
                 <Table.Td>{formatDate(tok.createdAt)}</Table.Td>
                 <Table.Td>

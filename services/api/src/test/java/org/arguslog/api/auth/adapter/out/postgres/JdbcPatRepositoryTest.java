@@ -7,12 +7,15 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.PatRepository.PatRow;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
@@ -69,26 +72,38 @@ class JdbcPatRepositoryTest {
   @Test
   void createReturnsPersistedRow() {
     PersonalAccessToken out =
-        repository.create(USER, "ci-bot", "PREFIX01", "$argon2id$v=19$...", null);
+        repository.create(USER, "ci-bot", "PREFIX01", "$argon2id$v=19$...", null, null);
     assertThat(out.id()).isPositive();
     assertThat(out.userId()).isEqualTo(USER);
     assertThat(out.name()).isEqualTo("ci-bot");
     assertThat(out.prefix()).isEqualTo("PREFIX01");
     assertThat(out.expiresAt()).isNull();
     assertThat(out.lastUsedAt()).isNull();
+    // null scopes on the wire round-trips as null (implicit-all contract).
+    assertThat(out.scopes()).isNull();
+  }
+
+  @Test
+  void createWithExplicitScopesRoundTripsThroughTextArray() {
+    Set<PatScope> requested = EnumSet.of(PatScope.RELEASES_WRITE, PatScope.SOURCEMAPS_WRITE);
+    PersonalAccessToken out = repository.create(USER, "ci-bot", "PREFIXSC", "$h$", null, requested);
+
+    assertThat(out.scopes()).containsExactlyInAnyOrderElementsOf(requested);
+    PatRow round = repository.findByPrefix("PREFIXSC").orElseThrow();
+    assertThat(round.token().scopes()).containsExactlyInAnyOrderElementsOf(requested);
   }
 
   @Test
   void duplicatePrefixIsRejected() {
-    repository.create(USER, "a", "DUPLICATE01".substring(0, 8), "$h$", null);
+    repository.create(USER, "a", "DUPLICATE01".substring(0, 8), "$h$", null, null);
     org.assertj.core.api.Assertions.assertThatThrownBy(
-            () -> repository.create(USER, "b", "DUPLICATE01".substring(0, 8), "$h$", null))
+            () -> repository.create(USER, "b", "DUPLICATE01".substring(0, 8), "$h$", null, null))
         .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
   }
 
   @Test
   void findByPrefixReturnsTokenAndStoredHash() {
-    repository.create(USER, "ci", "FINDABLE", "$h$found", null);
+    repository.create(USER, "ci", "FINDABLE", "$h$found", null, null);
     Optional<PatRow> found = repository.findByPrefix("FINDABLE");
     assertThat(found).isPresent();
     assertThat(found.orElseThrow().tokenHash()).isEqualTo("$h$found");
@@ -96,7 +111,7 @@ class JdbcPatRepositoryTest {
 
   @Test
   void recordUsageBumpsLastUsedAt() {
-    PersonalAccessToken created = repository.create(USER, "ci", "USAGE001", "$h$", null);
+    PersonalAccessToken created = repository.create(USER, "ci", "USAGE001", "$h$", null, null);
     Instant when = Instant.parse("2026-05-05T12:00:00Z");
     repository.recordUsage(created.id(), when);
 
@@ -106,7 +121,7 @@ class JdbcPatRepositoryTest {
 
   @Test
   void deleteScopedToOwner() {
-    PersonalAccessToken created = repository.create(USER, "ci", "DEL00001", "$h$", null);
+    PersonalAccessToken created = repository.create(USER, "ci", "DEL00001", "$h$", null, null);
     assertThat(repository.deleteForUser(OTHER, created.id())).isFalse();
     assertThat(repository.deleteForUser(USER, created.id())).isTrue();
     assertThat(repository.findByPrefix("DEL00001")).isEmpty();
@@ -114,10 +129,10 @@ class JdbcPatRepositoryTest {
 
   @Test
   void listForUserReturnsOnlyOwnTokensNewestFirst() throws Exception {
-    repository.create(USER, "old", "OLDPREF1", "$h$", null);
+    repository.create(USER, "old", "OLDPREF1", "$h$", null, null);
     Thread.sleep(5);
-    repository.create(USER, "new", "NEWPREF1", "$h$", null);
-    repository.create(OTHER, "other", "OTHEPREF", "$h$", null);
+    repository.create(USER, "new", "NEWPREF1", "$h$", null, null);
+    repository.create(OTHER, "other", "OTHEPREF", "$h$", null, null);
 
     List<PersonalAccessToken> mine = repository.listForUser(USER);
     assertThat(mine).extracting(PersonalAccessToken::name).containsExactly("new", "old");

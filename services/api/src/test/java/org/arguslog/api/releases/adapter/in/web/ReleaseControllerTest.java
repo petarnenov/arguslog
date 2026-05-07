@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -12,8 +13,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import org.arguslog.api.auth.adapter.in.web.PatAuthenticationFilter.PatAuthentication;
+import org.arguslog.api.auth.domain.PatScope;
+import org.arguslog.api.auth.domain.PersonalAccessToken;
 import org.arguslog.api.releases.application.ReleaseUseCase.DuplicateReleaseException;
 import org.arguslog.api.releases.application.ReleaseUseCase.InvalidReleaseException;
 import org.arguslog.api.releases.domain.Release;
@@ -89,6 +95,52 @@ class ReleaseControllerTest extends AbstractControllerTest {
     when(releaseUseCase.get(101L, 9999L)).thenReturn(Optional.empty());
 
     mvc.perform(get("/api/v1/projects/101/releases/9999")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  void postWithPatLackingReleasesWriteIs403() throws Exception {
+    PatAuthentication patWithoutScope =
+        new PatAuthentication(
+            new PersonalAccessToken(
+                7L,
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                "ci",
+                "ABCDEFGH",
+                null,
+                null,
+                Instant.parse("2026-05-05T12:00:00Z"),
+                EnumSet.of(PatScope.ISSUES_READ)));
+
+    mvc.perform(
+            post("/api/v1/projects/101/releases")
+                .with(authentication(patWithoutScope))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"version\":\"1.2.3\"}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void postWithPatHoldingReleasesWriteSucceeds() throws Exception {
+    PatAuthentication patWithScope =
+        new PatAuthentication(
+            new PersonalAccessToken(
+                7L,
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                "ci",
+                "ABCDEFGH",
+                null,
+                null,
+                Instant.parse("2026-05-05T12:00:00Z"),
+                EnumSet.of(PatScope.RELEASES_WRITE)));
+    when(releaseUseCase.create(eq(101L), eq("1.2.3")))
+        .thenReturn(new Release(7L, 101L, "1.2.3", Instant.parse("2026-05-05T12:00:00Z")));
+
+    mvc.perform(
+            post("/api/v1/projects/101/releases")
+                .with(authentication(patWithScope))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"version\":\"1.2.3\"}"))
+        .andExpect(status().isCreated());
   }
 
   @Test
