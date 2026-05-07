@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.Invoice;
+import com.stripe.model.Price;
 import com.stripe.model.Subscription;
 import com.stripe.model.SubscriptionItem;
 import com.stripe.model.SubscriptionItemCollection;
@@ -19,9 +20,11 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import org.arguslog.api.billing.adapter.out.stripe.StripeProperties;
 import org.arguslog.api.billing.application.StripeWebhookUseCase.Outcome;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.application.port.StripeEventLog;
+import org.arguslog.api.billing.domain.BillingInterval;
 import org.arguslog.api.billing.domain.PlanTier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,10 +48,13 @@ class StripeWebhookServiceTest {
   private static final Instant NOW = Instant.parse("2026-05-06T14:00:00Z");
   private static final Clock FIXED = Clock.fixed(NOW, ZoneOffset.UTC);
   private static final Duration GRACE = Duration.ofDays(7);
+  private static final StripeProperties PROPS =
+      new StripeProperties(
+          "sk_test_123", "whsec_x", "price_pro_monthly", "price_pro_annual", "https://app.example");
 
   @BeforeEach
   void setUp() {
-    service = new StripeWebhookService(eventLog, customers, FIXED, GRACE);
+    service = new StripeWebhookService(eventLog, customers, PROPS, FIXED, GRACE);
   }
 
   @Test
@@ -108,6 +114,45 @@ class StripeWebhookServiceTest {
     assertThat(service.handle(event)).isEqualTo(Outcome.PROCESSED);
     verify(customers)
         .updatePlanAndRenewal(42L, PlanTier.PRO.dbValue(), Instant.ofEpochSecond(renewalEpoch));
+  }
+
+  @Test
+  void subscriptionUpdatedAnnualPriceFlipsBillingIntervalToAnnual() {
+    long renewalEpoch = Instant.parse("2027-05-06T00:00:00Z").getEpochSecond();
+    Subscription sub = stubSubscription("cus_xyz", "active", renewalEpoch, "price_pro_annual");
+
+    Event event = stubEvent("evt_annual", "customer.subscription.updated", sub);
+    when(eventLog.recordIfNew("evt_annual", "customer.subscription.updated")).thenReturn(true);
+    when(customers.findOrgIdByCustomerId("cus_xyz")).thenReturn(Optional.of(42L));
+
+    assertThat(service.handle(event)).isEqualTo(Outcome.PROCESSED);
+    verify(customers).updateBillingInterval(42L, BillingInterval.ANNUAL.dbValue());
+  }
+
+  @Test
+  void subscriptionUpdatedMonthlyPriceWritesMonthlyInterval() {
+    Subscription sub = stubSubscription("cus_xyz", "active", 0L, "price_pro_monthly");
+
+    Event event = stubEvent("evt_monthly", "customer.subscription.updated", sub);
+    when(eventLog.recordIfNew("evt_monthly", "customer.subscription.updated")).thenReturn(true);
+    when(customers.findOrgIdByCustomerId("cus_xyz")).thenReturn(Optional.of(42L));
+
+    assertThat(service.handle(event)).isEqualTo(Outcome.PROCESSED);
+    verify(customers).updateBillingInterval(42L, BillingInterval.MONTHLY.dbValue());
+  }
+
+  @Test
+  void subscriptionUpdatedUnknownPriceFallsBackToMonthly() {
+    // Orphaned price (env mismatch or manual-portal-edit on Stripe) shouldn't crash; defaults to
+    // monthly so nobody loses access — same defensive default as PlanTier.fromDbValue.
+    Subscription sub = stubSubscription("cus_xyz", "active", 0L, "price_unknown");
+
+    Event event = stubEvent("evt_unknown", "customer.subscription.updated", sub);
+    when(eventLog.recordIfNew("evt_unknown", "customer.subscription.updated")).thenReturn(true);
+    when(customers.findOrgIdByCustomerId("cus_xyz")).thenReturn(Optional.of(42L));
+
+    assertThat(service.handle(event)).isEqualTo(Outcome.PROCESSED);
+    verify(customers).updateBillingInterval(42L, BillingInterval.MONTHLY.dbValue());
   }
 
   @Test
@@ -234,12 +279,22 @@ class StripeWebhookServiceTest {
   }
 
   private static Subscription stubSubscription(String customerId, String status, Long periodEnd) {
+    return stubSubscription(customerId, status, periodEnd, null);
+  }
+
+  private static Subscription stubSubscription(
+      String customerId, String status, Long periodEnd, String priceId) {
     Subscription sub = mock(Subscription.class);
     when(sub.getCustomer()).thenReturn(customerId);
     when(sub.getStatus()).thenReturn(status);
-    if (periodEnd != null) {
+    if (periodEnd != null || priceId != null) {
       SubscriptionItem item = mock(SubscriptionItem.class);
-      when(item.getCurrentPeriodEnd()).thenReturn(periodEnd);
+      if (periodEnd != null) when(item.getCurrentPeriodEnd()).thenReturn(periodEnd);
+      if (priceId != null) {
+        Price price = mock(Price.class);
+        when(price.getId()).thenReturn(priceId);
+        when(item.getPrice()).thenReturn(price);
+      }
       SubscriptionItemCollection items = mock(SubscriptionItemCollection.class);
       when(items.getData()).thenReturn(List.of(item));
       when(sub.getItems()).thenReturn(items);

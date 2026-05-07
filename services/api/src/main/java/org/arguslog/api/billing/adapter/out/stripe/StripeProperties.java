@@ -13,12 +13,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "arguslog.stripe")
 public record StripeProperties(
-    String apiKey, String webhookSecret, String priceProId, String dashboardBaseUrl) {
+    String apiKey,
+    String webhookSecret,
+    String priceProId,
+    String priceProAnnualId,
+    String dashboardBaseUrl) {
 
   public StripeProperties {
     if (apiKey == null) apiKey = "";
     if (webhookSecret == null) webhookSecret = "";
     if (priceProId == null) priceProId = "";
+    if (priceProAnnualId == null) priceProAnnualId = "";
     if (dashboardBaseUrl == null || dashboardBaseUrl.isBlank()) {
       dashboardBaseUrl = "http://localhost:5173";
     }
@@ -26,6 +31,11 @@ public record StripeProperties(
 
   public boolean configured() {
     return !apiKey.isBlank() && !priceProId.isBlank();
+  }
+
+  /** Annual billing requires its own Price ID; opt-in per deployment. */
+  public boolean annualConfigured() {
+    return configured() && !priceProAnnualId.isBlank();
   }
 
   /** Where Stripe redirects after a successful checkout — back to the org's billing page. */

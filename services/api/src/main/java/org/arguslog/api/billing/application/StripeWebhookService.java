@@ -4,13 +4,16 @@ import com.stripe.model.Event;
 import com.stripe.model.Invoice;
 import com.stripe.model.StripeObject;
 import com.stripe.model.Subscription;
+import com.stripe.model.SubscriptionItem;
 import com.stripe.model.checkout.Session;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import org.arguslog.api.billing.adapter.out.stripe.StripeProperties;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.application.port.StripeEventLog;
+import org.arguslog.api.billing.domain.BillingInterval;
 import org.arguslog.api.billing.domain.PlanTier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,16 +50,19 @@ public class StripeWebhookService implements StripeWebhookUseCase {
 
   private final StripeEventLog eventLog;
   private final BillingCustomerRepository customers;
+  private final StripeProperties props;
   private final Clock clock;
   private final Duration gracePeriod;
 
   public StripeWebhookService(
       StripeEventLog eventLog,
       BillingCustomerRepository customers,
+      StripeProperties props,
       Clock clock,
       @Value("${arguslog.billing.grace-period:P7D}") Duration gracePeriod) {
     this.eventLog = eventLog;
     this.customers = customers;
+    this.props = props;
     this.clock = clock;
     this.gracePeriod = gracePeriod;
   }
@@ -133,21 +139,44 @@ public class StripeWebhookService implements StripeWebhookUseCase {
     // Stripe 2025-03 API moved current_period_end off Subscription onto its line items; pick the
     // first item's renewal as the org's. We bill a single line per subscription so this is the
     // org-wide value.
-    Instant renewsAt =
+    Optional<SubscriptionItem> firstItem =
         Optional.ofNullable(sub.getItems())
             .map(items -> items.getData())
             .filter(list -> !list.isEmpty())
-            .map(list -> list.get(0).getCurrentPeriodEnd())
+            .map(list -> list.get(0));
+    Instant renewsAt =
+        firstItem
+            .map(SubscriptionItem::getCurrentPeriodEnd)
             .map(Instant::ofEpochSecond)
             .orElse(null);
     customers.updatePlanAndRenewal(orgId.get(), planValue, renewsAt);
+
+    // Refresh billing cadence from the price the customer is on. Customer Portal allows switching
+    // between monthly and annual; this is the event that informs us. Falls back to monthly when
+    // the price doesn't match either configured id (env mismatch / orphaned customer) — same
+    // defensive default as PlanTier#fromDbValue.
+    BillingInterval interval =
+        firstItem
+            .map(item -> item.getPrice() == null ? null : item.getPrice().getId())
+            .map(this::intervalForPriceId)
+            .orElse(BillingInterval.MONTHLY);
+    customers.updateBillingInterval(orgId.get(), interval.dbValue());
     log.info(
-        "subscription updated: org {} status={} plan={} renews={}",
+        "subscription updated: org {} status={} plan={} interval={} renews={}",
         orgId.get(),
         sub.getStatus(),
         planValue,
+        interval.dbValue(),
         renewsAt);
     return Outcome.PROCESSED;
+  }
+
+  private BillingInterval intervalForPriceId(String priceId) {
+    if (priceId == null) return BillingInterval.MONTHLY;
+    if (priceId.equals(props.priceProAnnualId()) && !props.priceProAnnualId().isBlank()) {
+      return BillingInterval.ANNUAL;
+    }
+    return BillingInterval.MONTHLY;
   }
 
   private Outcome handleSubscriptionDeleted(Event event) {

@@ -30,6 +30,13 @@ public interface BillingCustomerRepository {
   void updatePlanAndRenewal(long orgId, String planDbValue, Instant renewsAt);
 
   /**
+   * Persists the billing cadence (monthly / annual) the org is on. Called from {@code
+   * checkout.session.completed} and {@code customer.subscription.updated}, where the chosen Stripe
+   * Price tells us which cadence the customer just committed to. Idempotent.
+   */
+  void updateBillingInterval(long orgId, String intervalDbValue);
+
+  /**
    * Opens a payment grace window. The write is conditional — only takes effect when no grace is
    * currently open or the previous one already lapsed, so Stripe Smart Retries (which fire repeated
    * {@code invoice.payment_failed} events over ~4 weeks) cannot keep extending the window past the

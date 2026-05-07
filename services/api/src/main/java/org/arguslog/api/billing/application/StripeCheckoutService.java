@@ -7,6 +7,7 @@ import com.stripe.param.checkout.SessionCreateParams;
 import java.util.Optional;
 import org.arguslog.api.billing.adapter.out.stripe.StripeProperties;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
+import org.arguslog.api.billing.domain.BillingInterval;
 import org.springframework.stereotype.Service;
 
 /**
@@ -33,12 +34,20 @@ public class StripeCheckoutService implements CheckoutUseCase {
   }
 
   @Override
-  public String createCheckoutUrl(long orgId, String userEmail) {
+  public String createCheckoutUrl(long orgId, String userEmail, BillingInterval interval) {
     if (!props.configured()) {
       throw new StripeNotConfiguredException(
           "Stripe is not configured on this deployment — set arguslog.stripe.api-key and"
               + " arguslog.stripe.price-pro-id to enable checkout.");
     }
+    if (interval == BillingInterval.ANNUAL && !props.annualConfigured()) {
+      throw new StripeNotConfiguredException(
+          "Annual billing is not configured on this deployment — set"
+              + " arguslog.stripe.price-pro-annual-id to enable annual checkout.");
+    }
+
+    String priceId =
+        interval == BillingInterval.ANNUAL ? props.priceProAnnualId() : props.priceProId();
 
     SessionCreateParams.Builder params =
         SessionCreateParams.builder()
@@ -47,10 +56,7 @@ public class StripeCheckoutService implements CheckoutUseCase {
             .setCancelUrl(props.cancelUrl(orgId))
             .setClientReferenceId(String.valueOf(orgId))
             .addLineItem(
-                SessionCreateParams.LineItem.builder()
-                    .setPrice(props.priceProId())
-                    .setQuantity(1L)
-                    .build());
+                SessionCreateParams.LineItem.builder().setPrice(priceId).setQuantity(1L).build());
 
     Optional<String> existing = customers.findCustomerId(orgId);
     if (existing.isPresent()) {

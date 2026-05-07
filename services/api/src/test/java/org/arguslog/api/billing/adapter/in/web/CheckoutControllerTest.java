@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.arguslog.api.billing.application.CheckoutUseCase.CheckoutFailedException;
 import org.arguslog.api.billing.application.CheckoutUseCase.StripeNotConfiguredException;
 import org.arguslog.api.billing.application.PortalUseCase.NoCustomerException;
+import org.arguslog.api.billing.domain.BillingInterval;
 import org.arguslog.api.testsupport.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +22,7 @@ class CheckoutControllerTest extends AbstractControllerTest {
   void postReturnsCheckoutUrl() throws Exception {
     // Test profile has SecurityConfig in permit-all mode → no JWT in the security context, so
     // currentUserEmail() returns null. The use case still receives the orgId either way.
-    when(checkoutUseCase.createCheckoutUrl(eq(1L), any()))
+    when(checkoutUseCase.createCheckoutUrl(eq(1L), any(), any()))
         .thenReturn("https://checkout.stripe.com/c/abc");
 
     mvc.perform(post("/api/v1/orgs/1/billing/checkout-session"))
@@ -31,7 +32,7 @@ class CheckoutControllerTest extends AbstractControllerTest {
 
   @Test
   void unconfiguredStripeReturns503ProblemJson() throws Exception {
-    when(checkoutUseCase.createCheckoutUrl(eq(1L), any()))
+    when(checkoutUseCase.createCheckoutUrl(eq(1L), any(), any()))
         .thenThrow(new StripeNotConfiguredException("Stripe is not configured"));
 
     mvc.perform(post("/api/v1/orgs/1/billing/checkout-session"))
@@ -42,13 +43,31 @@ class CheckoutControllerTest extends AbstractControllerTest {
 
   @Test
   void stripeRejectionReturns502ProblemJson() throws Exception {
-    when(checkoutUseCase.createCheckoutUrl(eq(1L), any()))
+    when(checkoutUseCase.createCheckoutUrl(eq(1L), any(), any()))
         .thenThrow(new CheckoutFailedException("rate-limited", new RuntimeException()));
 
     mvc.perform(post("/api/v1/orgs/1/billing/checkout-session"))
         .andExpect(status().isBadGateway())
         .andExpect(content().contentType("application/problem+json"))
         .andExpect(jsonPath("$.title").value(startsWith("Stripe checkout failed")));
+  }
+
+  @Test
+  void postWithAnnualIntervalForwardsItToTheUseCase() throws Exception {
+    when(checkoutUseCase.createCheckoutUrl(eq(1L), any(), eq(BillingInterval.ANNUAL)))
+        .thenReturn("https://checkout.stripe.com/c/annual");
+
+    mvc.perform(post("/api/v1/orgs/1/billing/checkout-session?interval=annual"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.url").value("https://checkout.stripe.com/c/annual"));
+  }
+
+  @Test
+  void postWithUnknownIntervalReturns400() throws Exception {
+    mvc.perform(post("/api/v1/orgs/1/billing/checkout-session?interval=quarterly"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType("application/problem+json"))
+        .andExpect(jsonPath("$.title").value(startsWith("Invalid billing interval")));
   }
 
   @Test
