@@ -77,11 +77,11 @@ arguslog:
     strict:
       tokens: ${RATELIMIT_STRICT_TOKENS:30}
       window: ${RATELIMIT_STRICT_WINDOW:PT1M}
-  # Dogfood — when ARGUS_DSN is set the SDK auto-init forwards ERROR-level Logback events
+  # Dogfood — when ARGUSLOG_DSN is set the SDK auto-init forwards ERROR-level Logback events
   # back into Arguslog itself. Empty in dev/test → SDK is a no-op so log lines stay local.
-  dsn: ${ARGUS_DSN:}
-  environment: ${ARGUS_ENVIRONMENT:dev}
-  release: ${ARGUS_RELEASE:0.0.1-SNAPSHOT}
+  dsn: ${ARGUSLOG_DSN:}
+  environment: ${ARGUSLOG_ENVIRONMENT:dev}
+  release: ${ARGUSLOG_RELEASE:0.0.1-SNAPSHOT}
   r2:
     endpoint: ${R2_ENDPOINT:http://localhost:9000}
     bucket: ${R2_BUCKET:arguslog-sourcemaps}

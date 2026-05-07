@@ -64,7 +64,7 @@ class KeycloakRealmImportTest {
   }
 
   @Test
-  void argusWebClientIsPublicPkceWithLocalDevRedirects() {
+  void arguslogWebClientIsPublicPkceWithLocalDevRedirects() {
     JsonNode client = findClient("arguslog-web");
     assertThat(client.path("publicClient").asBoolean()).isTrue();
     assertThat(client.path("standardFlowEnabled").asBoolean()).isTrue();
@@ -76,7 +76,7 @@ class KeycloakRealmImportTest {
   }
 
   @Test
-  void argusApiClientIsBearerOnlyWithNoFlows() {
+  void arguslogApiClientIsBearerOnlyWithNoFlows() {
     JsonNode client = findClient("arguslog-api");
     assertThat(client.path("bearerOnly").asBoolean()).isTrue();
     assertThat(client.path("publicClient").asBoolean()).isFalse();

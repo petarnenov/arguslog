@@ -50,8 +50,8 @@ class ResendEmailDispatcherTest {
             new EmailProperties(
                 wm.baseUrl(),
                 "re_test_key",
-                "alerts@argus.example",
-                "https://argus.example",
+                "alerts@arguslog.example",
+                "https://arguslog.example",
                 Duration.ofSeconds(2)),
             mapper);
   }
@@ -73,7 +73,7 @@ class ResendEmailDispatcherTest {
     assertThat(requests).hasSize(1);
     assertThat(requests.get(0).getHeader("Authorization")).isEqualTo("Bearer re_test_key");
     JsonNode body = mapper.readTree(requests.get(0).getBodyAsString());
-    assertThat(body.path("from").asText()).isEqualTo("alerts@argus.example");
+    assertThat(body.path("from").asText()).isEqualTo("alerts@arguslog.example");
     assertThat(body.path("to").get(0).asText()).isEqualTo("ops@example.com");
     assertThat(body.path("subject").asText())
         .contains("[Arguslog]")
@@ -84,7 +84,7 @@ class ResendEmailDispatcherTest {
     assertThat(text)
         .contains("TypeError")
         .contains("Project:    web")
-        .contains("https://argus.example/orgs/acme/projects/web/issues/42")
+        .contains("https://arguslog.example/orgs/acme/projects/web/issues/42")
         .contains("rule: errors-in-prod");
   }
 
@@ -116,8 +116,8 @@ class ResendEmailDispatcherTest {
             new EmailProperties(
                 wm.baseUrl(),
                 "",
-                "alerts@argus.example",
-                "https://argus.example",
+                "alerts@arguslog.example",
+                "https://arguslog.example",
                 Duration.ofSeconds(2)),
             mapper);
     unconfigured.dispatch(alert, emailDestination("{\"to\":\"ops@example.com\"}"));

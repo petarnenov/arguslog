@@ -1,4 +1,4 @@
-# Caddy config for the Argus dashboard SPA.
+# Caddy config for the Arguslog dashboard SPA.
 #
 # Listens on $PORT (Railway injects), serves /srv, and rewrites every miss to /index.html so
 # client-side routing works on hard reloads. Static assets keep their natural 404 because the

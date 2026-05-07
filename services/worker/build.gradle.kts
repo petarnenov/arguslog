@@ -19,7 +19,7 @@ dependencies {
     // the api/worker copies from drifting on the at-rest secret format.
     implementation(project(":lib:crypto-aes-gcm"))
     // Dogfood — Logback appender emits the worker's own errors back into Arguslog. No-op
-    // until ARGUS_DSN is configured.
+    // until ARGUSLOG_DSN is configured.
     implementation(project(":java-sdk"))
     // TODO(P3): telegram-bot, resend-java, OTel starter.
 

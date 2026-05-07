@@ -19,7 +19,7 @@ dependencies {
     implementation(libs.bucket4j.core)
     implementation(libs.caffeine)
     // Dogfood — Logback appender emits ingest's own errors back into Arguslog. No-op until
-    // ARGUS_DSN is configured.
+    // ARGUSLOG_DSN is configured.
     implementation(project(":java-sdk"))
     // TODO(P5): bucket4j-redis for cross-instance burst limiting; OTel starter for traces.
 

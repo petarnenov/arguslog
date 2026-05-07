@@ -1,5 +1,5 @@
-export { ArgusErrorBoundary } from './error-boundary.js';
-export { useArgus } from './hooks.js';
+export { ArguslogErrorBoundary } from './error-boundary.js';
+export { useArguslog } from './hooks.js';
 
 export {
   init,
@@ -11,7 +11,7 @@ export {
   addBreadcrumb,
   flush,
   getClient,
-  type ArgusOptions,
+  type ArguslogOptions,
   type Level,
   type EventPayload,
 } from '@arguslog/sdk-browser';

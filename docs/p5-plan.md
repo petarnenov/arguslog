@@ -11,7 +11,7 @@
 >   period.
 > - `sdk-browser` + `sdk-react` are on npm, `java-sdk` is on Maven Central, all
 >   under semver-tagged GitHub releases.
-> - Argus monitors itself: api/ingest/worker emit events via the published
+> - Arguslog monitors itself: api/ingest/worker emit events via the published
 >   `java-sdk`, web emits via the published `sdk-browser` + `sdk-react`.
 > - k6 baseline numbers (p95, p99, error rate at target RPS) recorded for the
 >   ingest hot path + api login flow against staging.
@@ -104,9 +104,9 @@ public` with `NODE_AUTH_TOKEN` from secrets; mirror tag to GitHub
      Stripe keys, Keycloak admin creds, R2 credentials, JWT signing key.
 - **Dogfood SDK install:**
   1. Dedicated `arguslog-internal` org created by hand on first prod
-     boot, with three projects: `argus-api`, `argus-ingest`,
-     `argus-worker`, `argus-web`.
-  2. Each service gets a DSN env var (`ARGUS_DSN`) — when unset (e.g.
+     boot, with three projects: `arguslog-api`, `arguslog-ingest`,
+     `arguslog-worker`, `arguslog-web`.
+  2. Each service gets a DSN env var (`ARGUSLOG_DSN`) — when unset (e.g.
      local dev), the SDK no-ops. When set, errors flow through the same
      ingest path real customers use.
   3. Web emits both unhandled errors (sdk-browser default) and

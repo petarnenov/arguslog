@@ -3,7 +3,7 @@ package org.arguslog.sdk.spring;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "arguslog")
-public class ArgusProperties {
+public class ArguslogProperties {
 
   private String dsn;
   private String environment;

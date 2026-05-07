@@ -4,7 +4,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.classic.spi.ThrowableProxyUtil;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
-import org.arguslog.sdk.ArgusContext;
+import org.arguslog.sdk.ArguslogContext;
 import org.arguslog.sdk.Arguslog;
 import org.arguslog.sdk.Level;
 
@@ -20,7 +20,7 @@ import org.arguslog.sdk.Level;
  * lock; the SDK's own queue is the serialization point and dropping under contention is preferred
  * to blocking the application thread that emitted the log.
  */
-public class ArgusLogbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
+public class ArguslogLogbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
 
   /** Minimum logback level to forward. Anything below is silently dropped. */
   private String minLevel = "ERROR";
@@ -44,7 +44,7 @@ public class ArgusLogbackAppender extends UnsynchronizedAppenderBase<ILoggingEve
       // reference by the time the appender fires, so we hand the SDK a synthetic with the
       // same shape. The SDK turns this into the same JSON payload as a real captureException.
       Throwable rebuilt = new ReconstructedThrowable(throwable);
-      Arguslog.captureException(rebuilt, ArgusContext.empty().withLevel(mapLevel(event)));
+      Arguslog.captureException(rebuilt, ArguslogContext.empty().withLevel(mapLevel(event)));
     } else {
       Arguslog.captureMessage(event.getFormattedMessage(), mapLevel(event));
     }

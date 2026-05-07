@@ -14,7 +14,7 @@ public record EmailProperties(
 
   public EmailProperties {
     if (apiBaseUrl == null || apiBaseUrl.isBlank()) apiBaseUrl = "https://api.resend.com";
-    if (from == null || from.isBlank()) from = "alerts@argus.local";
+    if (from == null || from.isBlank()) from = "alerts@arguslog.local";
     if (dashboardBaseUrl == null || dashboardBaseUrl.isBlank()) {
       dashboardBaseUrl = "http://localhost:5173";
     }

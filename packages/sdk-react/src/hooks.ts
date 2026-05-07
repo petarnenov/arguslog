@@ -9,7 +9,7 @@ import {
 } from '@arguslog/sdk-browser';
 import { useMemo } from 'react';
 
-export function useArgus() {
+export function useArguslog() {
   return useMemo(
     () => ({
       captureException,

@@ -79,7 +79,7 @@ mavenPublishing {
               2. Spring Boot — autoconfig wires the client at @PostConstruct, flushes at @PreDestroy.
                  Configure via the standard arguslog.* properties (dsn, environment, release,
                  sample-rate, scrubbing, debug). No-op when arguslog.dsn is empty.
-              3. Logback — drop org.arguslog.sdk.logback.ArgusLogbackAppender into logback-spring.xml
+              3. Logback — drop org.arguslog.sdk.logback.ArguslogLogbackAppender into logback-spring.xml
                  and every log.error(...) call ships its throwable. UnsynchronizedAppenderBase, so
                  high-volume loggers don't serialize on it; the SDK's bounded queue is the
                  back-pressure boundary.
@@ -92,11 +92,11 @@ mavenPublishing {
             Apache-2.0 — explicit patent grant chosen for the JVM ecosystem; the JS SDKs
             (@arguslog/sdk-browser, @arguslog/sdk-react) ship under MIT.
 
-            See README at https://github.com/petarnenov/argus/tree/main/java-sdk for full
+            See README at https://github.com/petarnenov/arguslog/tree/main/java-sdk for full
             quick-start, options table, and threading model.
             """.trimIndent(),
         )
-        url.set("https://github.com/petarnenov/argus/tree/main/java-sdk")
+        url.set("https://github.com/petarnenov/arguslog/tree/main/java-sdk")
         inceptionYear.set("2026")
         licenses {
             license {
@@ -108,14 +108,14 @@ mavenPublishing {
         developers {
             developer {
                 id.set("arguslog")
-                name.set("Argus team")
+                name.set("Arguslog team")
                 url.set("https://arguslog.org")
             }
         }
         scm {
-            url.set("https://github.com/petarnenov/argus")
-            connection.set("scm:git:git://github.com/petarnenov/argus.git")
-            developerConnection.set("scm:git:ssh://git@github.com/petarnenov/argus.git")
+            url.set("https://github.com/petarnenov/arguslog")
+            connection.set("scm:git:git://github.com/petarnenov/arguslog.git")
+            developerConnection.set("scm:git:ssh://git@github.com/petarnenov/arguslog.git")
         }
     }
 }

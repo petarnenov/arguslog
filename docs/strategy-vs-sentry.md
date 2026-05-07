@@ -69,7 +69,7 @@
 - **Slack/Discord alerting от ден 1** — email-ите никой не ги чете в 2026.
 - **Public status page + post-mortems** — Sentry губи доверие при инциденти,
   защото е closed-box. Wherever възможно — be transparent.
-- **CLI-first DX** — `argus releases new` / `argus sourcemaps upload` трябва да са
+- **CLI-first DX** — `arguslog releases new` / `arguslog sourcemaps upload` трябва да са
   по-приятни от `sentry-cli`.
 
 ## Кои users да привлечем от Ден 1

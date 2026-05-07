@@ -110,7 +110,7 @@ jobs:
           if [ -f services/api/build/openapi/openapi.json ]; then
             echo "::error::services/api/openapi.json drifted from /v3/api-docs."
             echo "Regenerate locally with:"
-            echo "  ARGUS_OPENAPI_WRITE=true ./gradlew :services:api:test --tests org.arguslog.api.openapi.OpenApiContractTest"
+            echo "  ARGUSLOG_OPENAPI_WRITE=true ./gradlew :services:api:test --tests org.arguslog.api.openapi.OpenApiContractTest"
             echo "and commit services/api/openapi.json."
             diff -u services/api/openapi.json services/api/build/openapi/openapi.json || true
             exit 1

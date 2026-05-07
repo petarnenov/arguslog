@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public final class ArgusOptions {
+public final class ArguslogOptions {
 
   private final String dsn;
   private final String environment;
@@ -17,7 +17,7 @@ public final class ArgusOptions {
   private final List<Pattern> extraScrubPatterns;
   private final boolean debug;
 
-  private ArgusOptions(Builder b) {
+  private ArguslogOptions(Builder b) {
     this.dsn = Objects.requireNonNull(b.dsn, "dsn");
     this.environment = b.environment;
     this.release = b.release;
@@ -131,8 +131,8 @@ public final class ArgusOptions {
       return this;
     }
 
-    public ArgusOptions build() {
-      return new ArgusOptions(this);
+    public ArguslogOptions build() {
+      return new ArguslogOptions(this);
     }
   }
 }

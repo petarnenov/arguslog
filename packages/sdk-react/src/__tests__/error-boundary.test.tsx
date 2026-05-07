@@ -2,13 +2,13 @@ import { __resetForTests, init } from '@arguslog/sdk-browser';
 import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ArgusErrorBoundary } from '../error-boundary.js';
+import { ArguslogErrorBoundary } from '../error-boundary.js';
 
 const Boom = ({ msg }: { msg: string }): never => {
   throw new Error(msg);
 };
 
-describe('ArgusErrorBoundary', () => {
+describe('ArguslogErrorBoundary', () => {
   beforeEach(() => {
     __resetForTests();
     init({
@@ -28,27 +28,27 @@ describe('ArgusErrorBoundary', () => {
 
   it('renders children when no error', () => {
     render(
-      <ArgusErrorBoundary fallback={<div>fallback</div>}>
+      <ArguslogErrorBoundary fallback={<div>fallback</div>}>
         <div>ok</div>
-      </ArgusErrorBoundary>,
+      </ArguslogErrorBoundary>,
     );
     expect(screen.getByText('ok')).toBeDefined();
   });
 
   it('renders fallback when child throws', () => {
     render(
-      <ArgusErrorBoundary fallback={<div>fallback</div>}>
+      <ArguslogErrorBoundary fallback={<div>fallback</div>}>
         <Boom msg="boom" />
-      </ArgusErrorBoundary>,
+      </ArguslogErrorBoundary>,
     );
     expect(screen.getByText('fallback')).toBeDefined();
   });
 
   it('supports a render-prop fallback', () => {
     render(
-      <ArgusErrorBoundary fallback={({ error }) => <div>{error.message}</div>}>
+      <ArguslogErrorBoundary fallback={({ error }) => <div>{error.message}</div>}>
         <Boom msg="custom" />
-      </ArgusErrorBoundary>,
+      </ArguslogErrorBoundary>,
     );
     expect(screen.getByText('custom')).toBeDefined();
   });
@@ -56,16 +56,16 @@ describe('ArgusErrorBoundary', () => {
   it('calls onError prop', () => {
     const onError = vi.fn();
     render(
-      <ArgusErrorBoundary fallback={<div>x</div>} onError={onError}>
+      <ArguslogErrorBoundary fallback={<div>x</div>} onError={onError}>
         <Boom msg="cb" />
-      </ArgusErrorBoundary>,
+      </ArguslogErrorBoundary>,
     );
     expect(onError).toHaveBeenCalled();
   });
 
   it('reset clears the error and re-renders children', async () => {
     const { rerender } = render(
-      <ArgusErrorBoundary
+      <ArguslogErrorBoundary
         fallback={({ error, reset }) => (
           <button onClick={reset} type="button">
             reset {error.message}
@@ -73,14 +73,14 @@ describe('ArgusErrorBoundary', () => {
         )}
       >
         <Boom msg="x" />
-      </ArgusErrorBoundary>,
+      </ArguslogErrorBoundary>,
     );
     const btn = await screen.findByRole('button');
     btn.click();
     rerender(
-      <ArgusErrorBoundary fallback={<div>fallback</div>}>
+      <ArguslogErrorBoundary fallback={<div>fallback</div>}>
         <div>recovered</div>
-      </ArgusErrorBoundary>,
+      </ArguslogErrorBoundary>,
     );
     expect(screen.getByText('recovered')).toBeDefined();
   });

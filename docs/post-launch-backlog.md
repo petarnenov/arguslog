@@ -1,6 +1,6 @@
 # Post-launch backlog
 
-State after P5 cutover (2026-05-07): Argus is live on `arguslog.org` with all four custom
+State after P5 cutover (2026-05-07): Arguslog is live on `arguslog.org` with all four custom
 domains answering 200, dogfood emit-side active, email verification working through Resend.
 This file tracks everything that was deliberately deferred plus things that surfaced during the
 cutover week.

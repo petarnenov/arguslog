@@ -7,7 +7,7 @@
 // path uses.
 //
 // Run:
-//   ARGUS_API_URL=https://arguslog-api-staging.up.railway.app \
+//   ARGUSLOG_API_URL=https://arguslog-api-staging.up.railway.app \
 //   k6 run infra/k6/dashboard-read.js
 //
 // Once Keycloak is on staging (#6), an authed variant lands here to hit the BillingPage poll
@@ -16,11 +16,11 @@
 import http from 'k6/http';
 import { check } from 'k6';
 
-const API_URL = __ENV.ARGUS_API_URL;
+const API_URL = __ENV.ARGUSLOG_API_URL;
 const VUS = parseInt(__ENV.VUS || '50', 10);
 const DURATION = __ENV.DURATION || '1m';
 
-if (!API_URL) throw new Error('ARGUS_API_URL is required');
+if (!API_URL) throw new Error('ARGUSLOG_API_URL is required');
 
 export const options = {
   scenarios: {

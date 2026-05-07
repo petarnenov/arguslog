@@ -16,7 +16,7 @@ export function DevErrorMenu() {
   if (!import.meta.env.DEV) return null;
 
   // When this state flips, the line below throws during render — that path goes through
-  // ArgusErrorBoundary (React's error boundary contract), not window.onerror.
+  // ArguslogErrorBoundary (React's error boundary contract), not window.onerror.
   if (renderBoom) {
     throw new Error('DevErrorMenu: simulated React render error');
   }

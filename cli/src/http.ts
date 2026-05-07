@@ -18,7 +18,7 @@ export class ApiError extends Error {
 }
 
 /**
- * Typed fetch around the Argus api. Bearer token comes from the loaded config; non-2xx responses
+ * Typed fetch around the Arguslog api. Bearer token comes from the loaded config; non-2xx responses
  * surface as {@link ApiError} carrying the parsed RFC 9457 problem+json body when available.
  */
 export async function apiFetch<T>(

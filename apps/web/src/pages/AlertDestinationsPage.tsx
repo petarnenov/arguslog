@@ -44,7 +44,7 @@ const CONFIG_PLACEHOLDERS: Record<DestinationKind, string> = {
   telegram: '{\n  "chatId": "-1001234567890"\n}',
   email: '{\n  "to": "ops@example.com"\n}',
   slack: '{\n  "webhookUrl": "https://hooks.slack.com/services/T00/B00/XXX"\n}',
-  webhook: '{\n  "url": "https://hooks.example.com/argus"\n}',
+  webhook: '{\n  "url": "https://hooks.example.com/arguslog"\n}',
 };
 
 interface DraftValues {
