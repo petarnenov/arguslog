@@ -11,6 +11,7 @@ RUN ./gradlew --version --no-daemon
 
 COPY services ./services
 COPY java-sdk ./java-sdk
+COPY lib ./lib
 
 RUN ./gradlew :services:worker:bootJar -x test --no-daemon
 
