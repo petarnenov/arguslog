@@ -267,12 +267,6 @@ export function AppShellLayout() {
               </Group>
               <NavLink
                 component={Link}
-                to={`/orgs/${orgSlug}/projects`}
-                label={t('projectSwitcher.switch')}
-                leftSection={<IconFolders size={16} />}
-              />
-              <NavLink
-                component={Link}
                 to={`/orgs/${orgSlug}/projects/${projectId}/issues`}
                 label={t('issues.title')}
                 leftSection={<IconAlertTriangle size={16} />}

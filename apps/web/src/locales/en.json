@@ -30,8 +30,7 @@
   "projectSwitcher": {
     "label": "Project",
     "loading": "Loading project…",
-    "unknown": "Unknown project",
-    "switch": "Switch project…"
+    "unknown": "Unknown project"
   },
   "auth": {
     "login": "Sign in",
