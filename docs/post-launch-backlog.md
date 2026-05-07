@@ -5,11 +5,16 @@ domains answering 200, dogfood emit-side active, email verification working thro
 This file tracks everything that was deliberately deferred plus things that surfaced during the
 cutover week.
 
-## Done (security rotations after launch)
+## Done (security hardening after launch)
 
 - [x] Cloudflare API token revoked (the one shared during DNS cutover).
 - [x] Keycloak `admin` master-realm password rotated.
 - [x] Resend API key + R2 access key rotated.
+- [x] Per-IP / per-JWT rate limit on `/api/**` (Bucket4j + Caffeine LRU): 600/min DEFAULT,
+      30/min STRICT for `/api/v1/webhooks/**`. Verified live: 100 parallel webhook hits
+      → 30 succeed, 70 return 429.
+- [x] Keycloak realm-level brute-force protection enabled (5 failures → 60s wait increment,
+      15min max wait, 12h failure reset).
 
 ## Open — feature work
 
