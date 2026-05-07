@@ -15,9 +15,12 @@ COPY gradle ./gradle
 COPY buildSrc ./buildSrc
 RUN ./gradlew --version --no-daemon
 
-# Now bring in the actual sources.
+# Now bring in the actual sources. lib/ is required because :services:api depends on
+# :lib:crypto-aes-gcm (extracted in c4ad17a) — Gradle resolves it at configuration time and
+# the project source tree must be present in the build context.
 COPY services ./services
 COPY java-sdk ./java-sdk
+COPY lib ./lib
 
 RUN ./gradlew :services:api:bootJar -x test --no-daemon
 
