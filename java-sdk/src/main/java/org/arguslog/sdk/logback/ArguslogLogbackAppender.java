@@ -4,8 +4,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.classic.spi.ThrowableProxyUtil;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
-import org.arguslog.sdk.ArguslogContext;
 import org.arguslog.sdk.Arguslog;
+import org.arguslog.sdk.ArguslogContext;
 import org.arguslog.sdk.Level;
 
 /**
