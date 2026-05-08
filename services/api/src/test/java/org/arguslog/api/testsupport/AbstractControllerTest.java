@@ -7,6 +7,7 @@ import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
 import org.arguslog.api.alerts.application.port.AlertDestinationWriteRepository;
 import org.arguslog.api.alerts.application.port.AlertRuleRepository;
 import org.arguslog.api.alerts.application.port.AlertRuleWriteRepository;
+import org.arguslog.api.application.DsnUseCase;
 import org.arguslog.api.application.GetIssueUseCase;
 import org.arguslog.api.application.ListIssueEventsUseCase;
 import org.arguslog.api.application.ListIssuesUseCase;
@@ -103,6 +104,7 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected UsageUseCase usageUseCase;
   @MockitoBean protected MemberUseCase memberUseCase;
   @MockitoBean protected PlatformUseCase platformUseCase;
+  @MockitoBean protected DsnUseCase dsnUseCase;
 
   // ── repositories ───────────────────────────────────────────────────────────────────────────
 

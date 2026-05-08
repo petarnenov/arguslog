@@ -2,17 +2,29 @@ package org.arguslog.api.adapter.out.postgres;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.api.application.port.DsnRepository;
 import org.arguslog.api.application.port.DsnWriteRepository;
 import org.arguslog.api.domain.Dsn;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class JdbcDsnRepository implements DsnRepository, DsnWriteRepository {
+
+  private static final RowMapper<Dsn> ROW_MAPPER =
+      (rs, rowNum) ->
+          new Dsn(
+              rs.getLong("id"),
+              rs.getLong("project_id"),
+              rs.getString("dsn_public"),
+              rs.getBoolean("active"),
+              rs.getTimestamp("created_at").toInstant());
 
   private final JdbcTemplate jdbc;
 
@@ -52,15 +64,47 @@ public class JdbcDsnRepository implements DsnRepository, DsnWriteRepository {
         SELECT id, project_id, dsn_public, active, created_at
           FROM project_keys
          WHERE project_id = ?
+           AND active = TRUE
          ORDER BY created_at DESC, id DESC
         """,
-        (rs, rowNum) ->
-            new Dsn(
-                rs.getLong("id"),
-                rs.getLong("project_id"),
-                rs.getString("dsn_public"),
-                rs.getBoolean("active"),
-                rs.getTimestamp("created_at").toInstant()),
+        ROW_MAPPER,
         projectId);
+  }
+
+  @Override
+  public Optional<Dsn> findByProjectAndId(long projectId, long keyId) {
+    try {
+      Dsn row =
+          jdbc.queryForObject(
+              """
+              SELECT id, project_id, dsn_public, active, created_at
+                FROM project_keys
+               WHERE project_id = ?
+                 AND id = ?
+              """,
+              ROW_MAPPER,
+              projectId,
+              keyId);
+      return Optional.ofNullable(row);
+    } catch (EmptyResultDataAccessException ex) {
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<Dsn> deactivate(long keyId) {
+    return jdbc
+        .query(
+            """
+            UPDATE project_keys
+               SET active = FALSE
+             WHERE id = ?
+               AND active = TRUE
+             RETURNING id, project_id, dsn_public, active, created_at
+            """,
+            ROW_MAPPER,
+            keyId)
+        .stream()
+        .findFirst();
   }
 }

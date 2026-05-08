@@ -41,6 +41,22 @@ public class DsnService implements DsnUseCase {
     return dsns.listForProject(projectId);
   }
 
+  @Override
+  @Transactional
+  public Dsn revoke(long projectId, long keyId) {
+    Dsn current =
+        dsns.findByProjectAndId(projectId, keyId)
+            .orElseThrow(() -> new DsnNotFoundException(projectId, keyId));
+    if (!current.active()) {
+      throw new DsnAlreadyRevokedException(keyId);
+    }
+    return writes
+        .deactivate(keyId)
+        // Race: another transaction beat us to the update. Surface the same outcome the
+        // caller would have seen on a re-attempt — already revoked.
+        .orElseThrow(() -> new DsnAlreadyRevokedException(keyId));
+  }
+
   private String generatePublicKey() {
     byte[] bytes = new byte[KEY_BYTES];
     random.nextBytes(bytes);
