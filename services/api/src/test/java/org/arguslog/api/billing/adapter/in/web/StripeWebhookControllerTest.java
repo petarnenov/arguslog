@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -24,18 +25,20 @@ import org.springframework.test.context.TestPropertySource;
 class StripeWebhookControllerTest extends AbstractControllerTest {
 
   @Test
-  void missingSignatureReturns400() throws Exception {
+  void missingSignatureReturns400ProblemJson() throws Exception {
     mvc.perform(
             post("/api/v1/webhooks/stripe")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"id\":\"evt_x\"}"))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.error").value("missing_signature"));
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.title").value("Missing signature"))
+        .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Signature")));
     verify(stripeWebhookUseCase, never()).handle(any());
   }
 
   @Test
-  void invalidSignatureReturns400() throws Exception {
+  void invalidSignatureReturns400ProblemJson() throws Exception {
     when(stripeEventVerifier.verify(
             eq("{\"id\":\"evt_x\"}"), eq("t=1,v1=bad"), eq("whsec_test_4_unit")))
         .thenThrow(new SignatureVerificationException("bad sig", "t=1,v1=bad"));
@@ -46,7 +49,8 @@ class StripeWebhookControllerTest extends AbstractControllerTest {
                 .header("Stripe-Signature", "t=1,v1=bad")
                 .content("{\"id\":\"evt_x\"}"))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.error").value("invalid_signature"));
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.title").value("Invalid signature"));
     verify(stripeWebhookUseCase, never()).handle(any());
   }
 
@@ -81,7 +85,7 @@ class StripeWebhookControllerTest extends AbstractControllerTest {
   }
 
   @Test
-  void handlerCrashYields500SoStripeRedelivers() throws Exception {
+  void handlerCrashYields500ProblemJsonSoStripeRedelivers() throws Exception {
     Event event = org.mockito.Mockito.mock(Event.class);
     when(stripeEventVerifier.verify(any(), any(), any())).thenReturn(event);
     when(stripeWebhookUseCase.handle(event)).thenThrow(new RuntimeException("db down"));
@@ -92,6 +96,7 @@ class StripeWebhookControllerTest extends AbstractControllerTest {
                 .header("Stripe-Signature", "t=1,v1=ok")
                 .content("{\"id\":\"evt_z\"}"))
         .andExpect(status().isInternalServerError())
-        .andExpect(jsonPath("$.error").value("handler_failed"));
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.title").value("Webhook handler failed"));
   }
 }
