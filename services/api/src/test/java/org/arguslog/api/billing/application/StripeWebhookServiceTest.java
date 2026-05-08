@@ -264,6 +264,45 @@ class StripeWebhookServiceTest {
     verify(customers, never()).clearPaymentGrace(anyLong());
   }
 
+  // ── deserialize fallback (webhook API version drift from Stripe Java SDK) ──
+
+  @Test
+  void safeDeserializeEmptyButUnsafeSucceedsStillProcessesCheckout() throws Exception {
+    // Reproduces the real-world case the user hit: webhook destination pinned to an old API
+    // version, so getObject() returns empty. We must not silently no-op — fall back to
+    // deserializeUnsafe and still flip the org's plan.
+    Session session = mock(Session.class);
+    when(session.getClientReferenceId()).thenReturn("42");
+    when(session.getCustomer()).thenReturn("cus_xyz");
+
+    Event event = stubEventWithUnsafeOnly("evt_unsafe_chk", "checkout.session.completed", session);
+    when(eventLog.recordIfNew("evt_unsafe_chk", "checkout.session.completed")).thenReturn(true);
+
+    assertThat(service.handle(event)).isEqualTo(Outcome.PROCESSED);
+    verify(customers).saveCustomerId(42L, "cus_xyz");
+    verify(customers).updatePlanAndRenewal(42L, PlanTier.PRO.dbValue(), null);
+  }
+
+  @Test
+  void unsafeDeserializeAlsoThrowsYieldsIgnored() throws Exception {
+    // When even unsafe deserialize blows up (genuinely unparseable payload), the handler must
+    // not crash the request — it logs and acks as IGNORED so Stripe doesn't redeliver forever.
+    Event event = mock(Event.class);
+    when(event.getId()).thenReturn("evt_broken");
+    when(event.getType()).thenReturn("checkout.session.completed");
+    EventDataObjectDeserializer deser = mock(EventDataObjectDeserializer.class);
+    when(deser.getObject()).thenReturn(Optional.empty());
+    org.mockito.Mockito.doThrow(new RuntimeException("garbage payload"))
+        .when(deser)
+        .deserializeUnsafe();
+    when(event.getDataObjectDeserializer()).thenReturn(deser);
+    when(eventLog.recordIfNew("evt_broken", "checkout.session.completed")).thenReturn(true);
+
+    assertThat(service.handle(event)).isEqualTo(Outcome.IGNORED);
+    verify(customers, never()).saveCustomerId(anyLong(), anyString());
+    verify(customers, never()).updatePlanAndRenewal(anyLong(), anyString(), any());
+  }
+
   // ── helpers ─────────────────────────────────────────────────────────────
 
   private static Event stubEvent(String id, String type, com.stripe.model.StripeObject data) {
@@ -275,6 +314,23 @@ class StripeWebhookServiceTest {
       when(deser.getObject()).thenReturn(Optional.of(data));
       when(event.getDataObjectDeserializer()).thenReturn(deser);
     }
+    return event;
+  }
+
+  /**
+   * Build an event whose safe getObject() returns empty (simulating webhook API-version drift) but
+   * whose deserializeUnsafe() returns the supplied payload. Mirrors what the live system saw after
+   * the Stripe webhook was created on API version 2022-08-01 against a stripe-java 29 SDK.
+   */
+  private static Event stubEventWithUnsafeOnly(
+      String id, String type, com.stripe.model.StripeObject data) throws Exception {
+    Event event = mock(Event.class);
+    when(event.getId()).thenReturn(id);
+    when(event.getType()).thenReturn(type);
+    EventDataObjectDeserializer deser = mock(EventDataObjectDeserializer.class);
+    when(deser.getObject()).thenReturn(Optional.empty());
+    when(deser.deserializeUnsafe()).thenReturn(data);
+    when(event.getDataObjectDeserializer()).thenReturn(deser);
     return event;
   }
 
