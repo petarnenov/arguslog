@@ -14,10 +14,12 @@ function emptyEvent(): EventPayload {
 }
 
 describe('NodeAdapter', () => {
-  it('reports node platform and sdk name', () => {
+  it('reports node platform and sdk identity', () => {
     const a = new NodeAdapter();
     expect(a.platform).toBe('node');
     expect(a.sdkName).toBe('arguslog.node');
+    // sdkVersion is generator-fed from package.json:version — assert shape, not literal.
+    expect(a.sdkVersion).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it('enrichEvent attaches runtime and os contexts', () => {

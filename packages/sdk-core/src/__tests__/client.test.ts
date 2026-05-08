@@ -5,6 +5,7 @@ import type { ArguslogOptions, EventPayload, PlatformAdapter, StackParser } from
 
 const stubAdapter: PlatformAdapter = {
   sdkName: 'arguslog.test',
+  sdkVersion: '0.0.0-test',
   platform: 'javascript',
 };
 
@@ -126,6 +127,7 @@ describe('ArguslogClient', () => {
       {
         adapter: {
           sdkName: 'arguslog.node',
+          sdkVersion: '0.0.0-test',
           platform: 'node',
           enrichEvent(event) {
             event.contexts = {

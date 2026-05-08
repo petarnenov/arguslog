@@ -121,7 +121,7 @@ export class ArguslogClient {
       eventId: cryptoRandomId(),
       timestamp: Date.now(),
       platform: this.adapter.platform,
-      sdk: { name: this.adapter.sdkName, version: SDK_VERSION },
+      sdk: { name: this.adapter.sdkName, version: this.adapter.sdkVersion },
       level,
       release: this.options.release,
       environment: this.options.environment,
