@@ -32,16 +32,16 @@
 
 ## Сравнение с Arguslog
 
-| Измерение           | Sentry               | Arguslog                         |
-| ------------------- | -------------------- | -------------------------------- |
-| SDK breadth         | 50+                  | 2 (browser/react + java)         |
-| Performance/Replay  | Да                   | Не                               |
-| Цена @ 100k events  | ~$26–80/mo           | $9/mo                            |
-| Self-host           | Heavy (20+ services) | 3 services + Postgres/Redis/R2   |
-| Multi-tenancy       | Org-based            | Org-based + RLS                  |
-| Source maps         | Да                   | Да (CLI)                         |
-| Releases/regression | Да                   | Releases да, regression — не yet |
-| Issue grouping      | Sophisticated        | Basic (трябва проверка)          |
+| Измерение           | Sentry               | Arguslog                                    |
+| ------------------- | -------------------- | ------------------------------------------- |
+| SDK breadth         | 50+                  | 8 (JS×6, JVM, Python — каталог расте по P0) |
+| Performance/Replay  | Да                   | Не                                          |
+| Цена @ 100k events  | ~$26–80/mo           | $9/mo                                       |
+| Self-host           | Heavy (20+ services) | 3 services + Postgres/Redis/R2              |
+| Multi-tenancy       | Org-based            | Org-based + RLS                             |
+| Source maps         | Да                   | Да (CLI)                                    |
+| Releases/regression | Да                   | Releases да, regression — не yet            |
+| Issue grouping      | Sophisticated        | Basic (трябва проверка)                     |
 
 **Структурно предимство:** ~10× по-евтин и ~10× по-лек self-host. Това е реалното
 оръжие.
@@ -83,7 +83,12 @@
 3. **Java/Spring shops специфично** — имате собствен SDK + autoconfig. Sentry's
    Java SDK е "ok but generic". Ако стане default-ът за Spring Boot regional shops
    — страхотна вписка.
-4. **Side-project / hobby developers** — Free tier-ът е щедър. Ловят се през Show HN,
+4. **Polyglot стартъпи (Next.js + Python/Java backend)** — сегашният SDK покрив
+   (JS browser/react/next/angular/RN, Node, Spring Boot, Python) е достатъчен
+   за 80% от модерните стекове. Един и същи DSN формат и event payload означават,
+   че frontend крашове и backend exceptions се групират в **една** issue група
+   по stack-frame fingerprint — нещо което Sentry прави, но не маркетира силно.
+5. **Side-project / hobby developers** — Free tier-ът е щедър. Ловят се през Show HN,
    Reddit r/webdev, Bulgarian dev общности.
 
 **Ден-1 marketing tactic:** един перфектен blog post — _"Self-hosted error tracking

@@ -13,21 +13,25 @@ Multi-tenant error tracking platform. Sentry-like, hosted on Railway.
 ## Layout
 
 ```
-apps/web/                      # React/Vite dashboard       (P2 fills it in)
+apps/web/                      # React/Vite dashboard
+apps/landing/                  # Vite + Mantine marketing site (live SDK catalog)
 services/api/                  # public REST + admin
 services/ingest/               # public event endpoint
 services/worker/               # Redis Streams consumer
 services/keycloak/realm/       # Keycloak realm export
-packages/sdk-browser/          # @arguslog/sdk-browser
-packages/sdk-react/            # @arguslog/sdk-react (ErrorBoundary + hook)
-packages/sdk-nextjs/           # @arguslog/sdk-nextjs (App/Pages Router + instrumentation hook)
-packages/sdk-angular/          # @arguslog/sdk-angular (ErrorHandler + provideArguslog)
+packages/sdk-core/             # @arguslog/sdk-core — shared transport, scope, scrubber
+packages/sdk-browser/          # @arguslog/sdk-browser — vanilla JS/TS browser SDK
+packages/sdk-node/             # @arguslog/sdk-node — Node.js SDK + Express adapter
+packages/sdk-react/            # @arguslog/sdk-react — ErrorBoundary + useArguslog
+packages/sdk-react-native/     # @arguslog/sdk-react-native — RN-aware integrations
+packages/sdk-nextjs/           # @arguslog/sdk-nextjs — App/Pages Router + instrumentation hook
+packages/sdk-angular/          # @arguslog/sdk-angular — ErrorHandler + provideArguslog
 packages/eslint-config/        # shared ESLint config
-packages/tsconfig/             # shared tsconfig presets
+packages/tsconfig/              # shared tsconfig presets
 java-sdk/                      # org.arguslog:arguslog-java-sdk (Spring Boot autoconfig)
 python-sdk/                    # arguslog (PyPI) — Python 3.9+ SDK with stdlib transport
-cli/                           # @arguslog/cli — releases + sourcemap upload (stub, real in P3)
-e2e/                           # Playwright suites (real flows in P2)
+cli/                           # @arguslog/cli — releases + sourcemap upload
+e2e/                           # Playwright suites
 infra/docker/                  # docker-compose for local dev
 ```
 
@@ -95,7 +99,29 @@ pnpm test                   # JS unit (vitest, all workspaces)
 pnpm test:coverage          # same, with v8 coverage gate
 pnpm e2e                    # Playwright (run pnpm e2e:install once first)
 ./gradlew check             # Java unit + integration (Testcontainers)
+make python-test            # pytest under python-sdk/ (uv-managed venv)
 ```
+
+## SDKs
+
+The platform ships first-class SDKs across the JS, JVM, and Python
+ecosystems. The dashboard's project-create dropdown and the marketing
+landing page are both fed live from `/api/v1/platforms` so the catalog
+stays in lockstep with what's actually shipped.
+
+| Runtime         | Package                          | Source                       |
+| --------------- | -------------------------------- | ---------------------------- |
+| Browser (JS/TS) | `@arguslog/sdk-browser`          | `packages/sdk-browser/`      |
+| React           | `@arguslog/sdk-react`            | `packages/sdk-react/`        |
+| Next.js         | `@arguslog/sdk-nextjs`           | `packages/sdk-nextjs/`       |
+| Angular         | `@arguslog/sdk-angular`          | `packages/sdk-angular/`      |
+| React Native    | `@arguslog/sdk-react-native`     | `packages/sdk-react-native/` |
+| Node.js         | `@arguslog/sdk-node`             | `packages/sdk-node/`         |
+| Java / Spring   | `org.arguslog:arguslog-java-sdk` | `java-sdk/`                  |
+| Python 3.9+     | `arguslog` (PyPI)                | `python-sdk/`                |
+
+A standalone install + quickstart index for every SDK lives in
+[`docs/sdks.md`](docs/sdks.md).
 
 ## License
 
