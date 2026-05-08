@@ -32,6 +32,7 @@ class StripeCheckoutServiceTest {
   @Mock CheckoutService checkout;
   @Mock SessionService sessions;
   @Mock BillingCustomerRepository customers;
+  @Mock org.arguslog.api.application.port.OrgWriteRepository orgs;
 
   StripeCheckoutService service;
   StripeProperties props;
@@ -45,16 +46,22 @@ class StripeCheckoutServiceTest {
             "price_pro_test",
             "price_pro_annual_test",
             "https://app.example");
-    service = new StripeCheckoutService(stripe, props, customers);
+    service = new StripeCheckoutService(stripe, props, customers, orgs);
     // lenient — unconfigured-key test never reaches the Stripe SDK so the stubs go unused there.
     org.mockito.Mockito.lenient().when(stripe.checkout()).thenReturn(checkout);
     org.mockito.Mockito.lenient().when(checkout.sessions()).thenReturn(sessions);
+    org.mockito.Mockito.lenient()
+        .when(orgs.findById(1L))
+        .thenReturn(
+            java.util.Optional.of(
+                new org.arguslog.api.domain.Org(
+                    1L, "acme", "Acme", "free", java.time.Instant.parse("2026-05-05T00:00:00Z"))));
   }
 
   @Test
   void unconfiguredKeyOrPriceRaises503Exception() {
     StripeProperties bad = new StripeProperties("", "", "", "", "https://app.example");
-    StripeCheckoutService unconfigured = new StripeCheckoutService(stripe, bad, customers);
+    StripeCheckoutService unconfigured = new StripeCheckoutService(stripe, bad, customers, orgs);
     assertThatThrownBy(
             () -> unconfigured.createCheckoutUrl(1L, "user@example.com", BillingInterval.MONTHLY))
         .isInstanceOf(StripeNotConfiguredException.class);
@@ -64,7 +71,8 @@ class StripeCheckoutServiceTest {
   void annualWithoutAnnualPriceConfiguredRaises503() {
     StripeProperties noAnnual =
         new StripeProperties("sk_test_123", "whsec_x", "price_pro_test", "", "https://app.example");
-    StripeCheckoutService monthlyOnly = new StripeCheckoutService(stripe, noAnnual, customers);
+    StripeCheckoutService monthlyOnly =
+        new StripeCheckoutService(stripe, noAnnual, customers, orgs);
     assertThatThrownBy(
             () -> monthlyOnly.createCheckoutUrl(1L, "user@example.com", BillingInterval.ANNUAL))
         .isInstanceOf(StripeNotConfiguredException.class)
@@ -104,8 +112,12 @@ class StripeCheckoutServiceTest {
     assertThat(params.getMode()).isEqualTo(SessionCreateParams.Mode.SUBSCRIPTION);
     assertThat(params.getLineItems()).hasSize(1);
     assertThat(params.getLineItems().get(0).getPrice()).isEqualTo("price_pro_test");
-    assertThat(params.getSuccessUrl()).contains("/orgs/1/billing");
+    // The success URL must use the org slug (not the numeric id) — the dashboard router keys
+    // org-scoped routes on slug.
+    assertThat(params.getSuccessUrl()).contains("/orgs/acme/billing");
     assertThat(params.getSuccessUrl()).contains("checkout=success");
+    assertThat(params.getSuccessUrl()).doesNotContain("/orgs/1/billing");
+    assertThat(params.getCancelUrl()).contains("/orgs/acme/billing");
     assertThat(params.getCancelUrl()).contains("checkout=cancelled");
   }
 

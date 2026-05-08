@@ -32,6 +32,7 @@ class StripePortalServiceTest {
   @Mock BillingPortalService billingPortal;
   @Mock SessionService sessions;
   @Mock BillingCustomerRepository customers;
+  @Mock org.arguslog.api.application.port.OrgWriteRepository orgs;
 
   StripePortalService service;
   StripeProperties props;
@@ -40,15 +41,21 @@ class StripePortalServiceTest {
   void setUp() {
     props =
         new StripeProperties("sk_test_123", "whsec_x", "price_pro_test", "", "https://app.example");
-    service = new StripePortalService(stripe, props, customers);
+    service = new StripePortalService(stripe, props, customers, orgs);
     org.mockito.Mockito.lenient().when(stripe.billingPortal()).thenReturn(billingPortal);
     org.mockito.Mockito.lenient().when(billingPortal.sessions()).thenReturn(sessions);
+    org.mockito.Mockito.lenient()
+        .when(orgs.findById(1L))
+        .thenReturn(
+            java.util.Optional.of(
+                new org.arguslog.api.domain.Org(
+                    1L, "acme", "Acme", "free", java.time.Instant.parse("2026-05-05T00:00:00Z"))));
   }
 
   @Test
   void unconfiguredStripeThrows503Exception() {
     StripeProperties bad = new StripeProperties("", "", "", "", "https://app.example");
-    StripePortalService unconfigured = new StripePortalService(stripe, bad, customers);
+    StripePortalService unconfigured = new StripePortalService(stripe, bad, customers, orgs);
     assertThatThrownBy(() -> unconfigured.createPortalUrl(1L))
         .isInstanceOf(StripeNotConfiguredException.class);
   }
@@ -74,7 +81,8 @@ class StripePortalServiceTest {
     ArgumentCaptor<SessionCreateParams> cap = ArgumentCaptor.forClass(SessionCreateParams.class);
     org.mockito.Mockito.verify(sessions).create(cap.capture());
     assertThat(cap.getValue().getCustomer()).isEqualTo("cus_42");
-    assertThat(cap.getValue().getReturnUrl()).isEqualTo("https://app.example/orgs/1/billing");
+    // Slug-based, not numeric — the dashboard router routes by slug.
+    assertThat(cap.getValue().getReturnUrl()).isEqualTo("https://app.example/orgs/acme/billing");
   }
 
   @Test

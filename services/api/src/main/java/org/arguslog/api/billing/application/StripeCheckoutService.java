@@ -5,9 +5,11 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
 import java.util.Optional;
+import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.billing.adapter.out.stripe.StripeProperties;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.domain.BillingInterval;
+import org.arguslog.api.domain.Org;
 import org.springframework.stereotype.Service;
 
 /**
@@ -25,12 +27,17 @@ public class StripeCheckoutService implements CheckoutUseCase {
   private final StripeClient stripe;
   private final StripeProperties props;
   private final BillingCustomerRepository customers;
+  private final OrgWriteRepository orgs;
 
   public StripeCheckoutService(
-      StripeClient stripe, StripeProperties props, BillingCustomerRepository customers) {
+      StripeClient stripe,
+      StripeProperties props,
+      BillingCustomerRepository customers,
+      OrgWriteRepository orgs) {
     this.stripe = stripe;
     this.props = props;
     this.customers = customers;
+    this.orgs = orgs;
   }
 
   @Override
@@ -49,11 +56,21 @@ public class StripeCheckoutService implements CheckoutUseCase {
     String priceId =
         interval == BillingInterval.ANNUAL ? props.priceProAnnualId() : props.priceProId();
 
+    // Stripe redirects post-checkout to /orgs/{slug}/billing — the dashboard's router keys on
+    // slug, so the numeric id would render the "org not found" empty state.
+    String slug =
+        orgs.findById(orgId)
+            .map(Org::slug)
+            .orElseThrow(
+                () ->
+                    new CheckoutFailedException(
+                        "Org " + orgId + " disappeared between access-guard and checkout", null));
+
     SessionCreateParams.Builder params =
         SessionCreateParams.builder()
             .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
-            .setSuccessUrl(props.successUrl(orgId))
-            .setCancelUrl(props.cancelUrl(orgId))
+            .setSuccessUrl(props.successUrl(slug))
+            .setCancelUrl(props.cancelUrl(slug))
             .setClientReferenceId(String.valueOf(orgId))
             .addLineItem(
                 SessionCreateParams.LineItem.builder().setPrice(priceId).setQuantity(1L).build());
