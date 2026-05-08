@@ -20,6 +20,7 @@ services/worker/               # Redis Streams consumer
 services/keycloak/realm/       # Keycloak realm export
 packages/sdk-browser/          # @arguslog/sdk-browser
 packages/sdk-react/            # @arguslog/sdk-react (ErrorBoundary + hook)
+packages/sdk-angular/          # @arguslog/sdk-angular (ErrorHandler + provideArguslog)
 packages/eslint-config/        # shared ESLint config
 packages/tsconfig/             # shared tsconfig presets
 java-sdk/                      # org.arguslog:arguslog-java-sdk (Spring Boot autoconfig)
