@@ -32,9 +32,7 @@ public record Dsn(
 
   private static boolean isLoopback(String host) {
     String bare =
-        host.startsWith("[")
-            ? host.substring(0, host.indexOf(']') + 1)
-            : host.split(":", 2)[0];
+        host.startsWith("[") ? host.substring(0, host.indexOf(']') + 1) : host.split(":", 2)[0];
     return bare.equals("localhost")
         || bare.startsWith("127.")
         || bare.equals("0.0.0.0")
