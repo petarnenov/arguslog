@@ -33,6 +33,7 @@ import {
   IconShieldLock,
   IconTrash,
   IconUser,
+  IconUsers,
 } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -84,7 +85,7 @@ export function AppShellLayout() {
     },
     onError: (err: unknown) => {
       setDeleteError(
-        err instanceof ApiError ? err.problem.detail ?? err.problem.title : String(err),
+        err instanceof ApiError ? (err.problem.detail ?? err.problem.title) : String(err),
       );
     },
   });
@@ -121,24 +122,20 @@ export function AppShellLayout() {
                     <IconUser size={18} />
                   </ActionIcon>
                 </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Label>
-                  <Text size="xs" c="dimmed">
-                    {t('auth.signedInAs', { name: userLabel })}
-                  </Text>
-                </Menu.Label>
-                <Menu.Item
-                  component={Link}
-                  to="/me/tokens"
-                  leftSection={<IconKey size={14} />}
-                >
-                  {t('nav.tokens')}
-                </Menu.Item>
-                <Menu.Item leftSection={<IconLogout size={14} />} onClick={() => void signOut()}>
-                  {t('auth.logout')}
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+                <Menu.Dropdown>
+                  <Menu.Label>
+                    <Text size="xs" c="dimmed">
+                      {t('auth.signedInAs', { name: userLabel })}
+                    </Text>
+                  </Menu.Label>
+                  <Menu.Item component={Link} to="/me/tokens" leftSection={<IconKey size={14} />}>
+                    {t('nav.tokens')}
+                  </Menu.Item>
+                  <Menu.Item leftSection={<IconLogout size={14} />} onClick={() => void signOut()}>
+                    {t('auth.logout')}
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
             </Group>
           )}
         </Group>
@@ -188,11 +185,7 @@ export function AppShellLayout() {
                 </Menu.Item>
               ))}
               {orgs.data && orgs.data.length > 0 && <Menu.Divider />}
-              <Menu.Item
-                component={Link}
-                to="/onboarding"
-                leftSection={<IconPlus size={14} />}
-              >
+              <Menu.Item component={Link} to="/onboarding" leftSection={<IconPlus size={14} />}>
                 {t('orgSwitcher.create')}
               </Menu.Item>
               {currentOrg && (
@@ -232,6 +225,14 @@ export function AppShellLayout() {
           {orgSlug && (
             <NavLink
               component={Link}
+              to={`/orgs/${orgSlug}/settings`}
+              label={t('nav.members')}
+              leftSection={<IconUsers size={16} />}
+            />
+          )}
+          {orgSlug && (
+            <NavLink
+              component={Link}
               to={`/orgs/${orgSlug}/billing`}
               label={t('nav.billing')}
               leftSection={<IconCreditCard size={16} />}
@@ -239,18 +240,8 @@ export function AppShellLayout() {
           )}
           {orgSlug && projectId && (
             <>
-              <Divider
-                my="xs"
-                label={t('projectSwitcher.label')}
-                labelPosition="left"
-              />
-              <Group
-                gap="xs"
-                wrap="nowrap"
-                px={10}
-                pb={6}
-                aria-label={t('projectSwitcher.label')}
-              >
+              <Divider my="xs" label={t('projectSwitcher.label')} labelPosition="left" />
+              <Group gap="xs" wrap="nowrap" px={10} pb={6} aria-label={t('projectSwitcher.label')}>
                 <IconFolders size={16} />
                 <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
                   <Text size="sm" fw={600} truncate data-testid="current-project-name">
@@ -314,9 +305,7 @@ export function AppShellLayout() {
           <Text size="sm" c="red.7" fw={500}>
             {t('orgSwitcher.deleteWarning')}
           </Text>
-          <Text size="sm">
-            {t('orgSwitcher.deleteBody')}
-          </Text>
+          <Text size="sm">{t('orgSwitcher.deleteBody')}</Text>
           <TextInput
             label={t('orgSwitcher.deleteConfirmLabel', { name: currentOrg?.name ?? '' })}
             value={confirmName}

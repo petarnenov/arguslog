@@ -23,10 +23,6 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function noContent() {
-  return new Response(null, { status: 204 });
-}
-
 function renderAt(path = '/orgs/acme/settings') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
