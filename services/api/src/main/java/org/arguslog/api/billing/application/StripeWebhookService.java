@@ -234,6 +234,19 @@ public class StripeWebhookService implements StripeWebhookUseCase {
   }
 
   private static StripeObject deserialize(Event event) {
-    return event.getDataObjectDeserializer().getObject().orElse(null);
+    Optional<StripeObject> obj = event.getDataObjectDeserializer().getObject();
+    if (obj.isEmpty()) {
+      // Common cause: webhook destination is pinned to an old API version whose data.object shape
+      // no longer matches the Stripe Java SDK's expected fields. The event lands in stripe_events
+      // (recordIfNew runs upstream) but processing silently no-ops, so plan flips never happen.
+      // Surface the gap loudly here so SDK-version drift is visible in dogfood.
+      log.warn(
+          "stripe event {} ({}) deserialize returned empty — likely API version mismatch between"
+              + " webhook destination and the Stripe Java SDK; check the destination's API version"
+              + " setting in the Stripe dashboard",
+          event.getId(),
+          event.getType());
+    }
+    return obj.orElse(null);
   }
 }
