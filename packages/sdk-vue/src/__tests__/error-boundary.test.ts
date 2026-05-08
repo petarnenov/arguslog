@@ -73,8 +73,9 @@ describe('ArguslogErrorBoundary', () => {
     expect(wrapper.find('.reset').exists()).toBe(true);
 
     // Replace slot content so the next render no longer throws, then reset.
-    await wrapper.setProps({ fallback: ({ reset }: { reset: () => void }) =>
-      h('button', { class: 'reset', onClick: reset }, 'retry'),
+    await wrapper.setProps({
+      fallback: ({ reset }: { reset: () => void }) =>
+        h('button', { class: 'reset', onClick: reset }, 'retry'),
     });
     (wrapper.vm as unknown as { reset: () => void }).reset();
     await nextTick();
