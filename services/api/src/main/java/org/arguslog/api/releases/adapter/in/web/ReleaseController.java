@@ -9,16 +9,19 @@ import org.arguslog.api.releases.adapter.in.web.dto.ReleaseResponse;
 import org.arguslog.api.releases.application.ReleaseUseCase;
 import org.arguslog.api.releases.application.ReleaseUseCase.DuplicateReleaseException;
 import org.arguslog.api.releases.application.ReleaseUseCase.InvalidReleaseException;
+import org.arguslog.api.releases.application.ReleaseUseCase.ReleaseNotFoundException;
 import org.arguslog.api.releases.domain.Release;
 import org.arguslog.api.security.AccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -57,6 +60,23 @@ public class ReleaseController {
         .orElseThrow(() -> AccessException.notFound(id));
   }
 
+  @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ReleaseResponse update(
+      @PathVariable long projectId, @PathVariable long id, @RequestBody ReleaseRequest body) {
+    PatScopeGuard.require(PatScope.RELEASES_WRITE);
+    Release updated = useCase.update(projectId, id, body == null ? null : body.version());
+    return ReleaseResponse.from(updated);
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> delete(@PathVariable long projectId, @PathVariable long id) {
+    PatScopeGuard.require(PatScope.RELEASES_WRITE);
+    if (!useCase.delete(projectId, id)) {
+      throw AccessException.notFound(id);
+    }
+    return ResponseEntity.noContent().build();
+  }
+
   @ExceptionHandler(InvalidReleaseException.class)
   ResponseEntity<ProblemDetail> handleInvalid(InvalidReleaseException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -73,6 +93,16 @@ public class ReleaseController {
     body.setTitle("Duplicate release");
     body.setType(URI.create("https://arguslog.dev/problems/duplicate-release"));
     return ResponseEntity.status(HttpStatus.CONFLICT)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(ReleaseNotFoundException.class)
+  ResponseEntity<ProblemDetail> handleNotFound(ReleaseNotFoundException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
+    body.setTitle("Release not found");
+    body.setType(URI.create("https://arguslog.dev/problems/release-not-found"));
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }

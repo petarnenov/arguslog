@@ -33,10 +33,13 @@ public class OrgService implements OrgUseCase {
     if (actorId == null) {
       throw new IllegalStateException("create called without an authenticated user");
     }
-    if (actorEmail == null || actorEmail.isBlank()) {
-      throw new InvalidOrgException("authenticated user is missing an email claim");
+    // JWT path supplies fresh claims; the upsert refreshes the user row (covers first-time login
+    // where the user row doesn't exist yet, and subsequent logins where email or display name
+    // changed in Keycloak). PAT path leaves both null because the user row already exists — PATs
+    // cannot be issued without it — so we skip the sync.
+    if (actorEmail != null && !actorEmail.isBlank()) {
+      users.upsertFromJwt(actorId, actorEmail, actorDisplayName);
     }
-    users.upsertFromJwt(actorId, actorEmail, actorDisplayName);
     Org org = orgs.create(slugify(name), name.trim());
     orgs.addMember(org.id(), actorId, "owner");
     return org;

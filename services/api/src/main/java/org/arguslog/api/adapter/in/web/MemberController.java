@@ -13,11 +13,11 @@ import org.arguslog.api.application.MemberUseCase.LastOwnerException;
 import org.arguslog.api.application.MemberUseCase.MemberAccessDeniedException;
 import org.arguslog.api.application.MemberUseCase.MemberNotFoundException;
 import org.arguslog.api.domain.Member;
+import org.arguslog.api.security.AuthActor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,10 +50,8 @@ public class MemberController {
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<MemberResponse> invite(
-      @PathVariable long orgId,
-      @RequestBody MemberInviteRequest body,
-      JwtAuthenticationToken token) {
-    UUID actorId = parseSubject(token);
+      @PathVariable long orgId, @RequestBody MemberInviteRequest body) {
+    UUID actorId = AuthActor.currentUserId();
     Member created = useCase.invite(actorId, orgId, body.email(), body.role());
     return ResponseEntity.created(URI.create(created.userId().toString()))
         .body(MemberResponse.from(created));
@@ -63,16 +61,14 @@ public class MemberController {
   public MemberResponse changeRole(
       @PathVariable long orgId,
       @PathVariable UUID userId,
-      @RequestBody MemberRoleUpdateRequest body,
-      JwtAuthenticationToken token) {
-    UUID actorId = parseSubject(token);
+      @RequestBody MemberRoleUpdateRequest body) {
+    UUID actorId = AuthActor.currentUserId();
     return MemberResponse.from(useCase.changeRole(actorId, orgId, userId, body.role()));
   }
 
   @DeleteMapping("/{userId}")
-  public ResponseEntity<Void> remove(
-      @PathVariable long orgId, @PathVariable UUID userId, JwtAuthenticationToken token) {
-    UUID actorId = parseSubject(token);
+  public ResponseEntity<Void> remove(@PathVariable long orgId, @PathVariable UUID userId) {
+    UUID actorId = AuthActor.currentUserId();
     useCase.remove(actorId, orgId, userId);
     return ResponseEntity.noContent().build();
   }
@@ -112,14 +108,5 @@ public class MemberController {
     body.setTitle(title);
     body.setType(URI.create("https://arguslog.dev/problems/" + typeSlug));
     return ResponseEntity.status(status).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(body);
-  }
-
-  private static UUID parseSubject(JwtAuthenticationToken token) {
-    try {
-      return UUID.fromString(token.getName());
-    } catch (IllegalArgumentException e) {
-      throw new IllegalStateException(
-          "JWT subject is not a UUID — Keycloak realm misconfigured?", e);
-    }
   }
 }

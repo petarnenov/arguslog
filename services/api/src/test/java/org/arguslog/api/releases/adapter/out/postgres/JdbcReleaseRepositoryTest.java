@@ -75,6 +75,16 @@ class JdbcReleaseRepositoryTest {
           public Optional<Release> findByVersion(long projectId, String version) {
             return tx.execute(s -> raw.findByVersion(projectId, version));
           }
+
+          @Override
+          public Optional<Release> updateVersion(long projectId, long id, String newVersion) {
+            return tx.execute(s -> raw.updateVersion(projectId, id, newVersion));
+          }
+
+          @Override
+          public boolean delete(long projectId, long id) {
+            return Boolean.TRUE.equals(tx.execute(s -> raw.delete(projectId, id)));
+          }
         };
   }
 

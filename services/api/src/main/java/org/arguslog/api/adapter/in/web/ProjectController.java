@@ -11,11 +11,11 @@ import org.arguslog.api.application.ProjectUseCase.InvalidProjectException;
 import org.arguslog.api.application.ProjectUseCase.ProjectAccessDeniedException;
 import org.arguslog.api.domain.Project;
 import org.arguslog.api.security.AccessException;
+import org.arguslog.api.security.AuthActor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -64,9 +64,8 @@ public class ProjectController {
    * review. Owner/admin only.
    */
   @DeleteMapping("/{projectId}")
-  public ResponseEntity<Void> archive(
-      @PathVariable long orgId, @PathVariable long projectId, JwtAuthenticationToken token) {
-    UUID actorId = UUID.fromString(token.getName());
+  public ResponseEntity<Void> archive(@PathVariable long orgId, @PathVariable long projectId) {
+    UUID actorId = AuthActor.currentUserId();
     if (!useCase.archive(actorId, orgId, projectId)) {
       throw AccessException.notFound(projectId);
     }

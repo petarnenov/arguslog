@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import org.arguslog.api.releases.application.ReleaseUseCase.DuplicateReleaseException;
 import org.arguslog.api.releases.application.ReleaseUseCase.InvalidReleaseException;
+import org.arguslog.api.releases.application.ReleaseUseCase.ReleaseNotFoundException;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.domain.Release;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,5 +86,55 @@ class ReleaseServiceTest {
     when(repository.find(101L, 7L)).thenReturn(Optional.of(stored));
 
     assertThat(service.get(101L, 7L)).contains(stored);
+  }
+
+  @Test
+  void updateTrimsAndPersists() {
+    Release after = new Release(7L, 101L, "2.0.0", Instant.parse("2026-05-05T12:00:00Z"));
+    when(repository.updateVersion(101L, 7L, "2.0.0")).thenReturn(Optional.of(after));
+
+    Release out = service.update(101L, 7L, "  2.0.0  ");
+
+    assertThat(out).isEqualTo(after);
+    verify(repository).updateVersion(101L, 7L, "2.0.0");
+  }
+
+  @Test
+  void updateRejectsBlank() {
+    assertThatThrownBy(() -> service.update(101L, 7L, "  "))
+        .isInstanceOf(InvalidReleaseException.class);
+    verifyNoInteractions(repository);
+  }
+
+  @Test
+  void updateRejectsTooLong() {
+    String tooLong = "v".repeat(ReleaseService.MAX_VERSION_LENGTH + 1);
+    assertThatThrownBy(() -> service.update(101L, 7L, tooLong))
+        .isInstanceOf(InvalidReleaseException.class);
+    verifyNoInteractions(repository);
+  }
+
+  @Test
+  void updateThrowsNotFoundWhenRepoMisses() {
+    when(repository.updateVersion(101L, 99L, "x")).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service.update(101L, 99L, "x"))
+        .isInstanceOf(ReleaseNotFoundException.class);
+  }
+
+  @Test
+  void updateSurfacesDuplicateAsDomainException() {
+    when(repository.updateVersion(101L, 7L, "1.0.0"))
+        .thenThrow(new DuplicateKeyException("uq violation"));
+    assertThatThrownBy(() -> service.update(101L, 7L, "1.0.0"))
+        .isInstanceOf(DuplicateReleaseException.class);
+  }
+
+  @Test
+  void deleteReturnsRepoOutcome() {
+    when(repository.delete(101L, 7L)).thenReturn(true);
+    assertThat(service.delete(101L, 7L)).isTrue();
+
+    when(repository.delete(101L, 99L)).thenReturn(false);
+    assertThat(service.delete(101L, 99L)).isFalse();
   }
 }

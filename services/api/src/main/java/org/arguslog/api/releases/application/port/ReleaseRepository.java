@@ -17,4 +17,13 @@ public interface ReleaseRepository {
   Optional<Release> find(long projectId, long id);
 
   Optional<Release> findByVersion(long projectId, String version);
+
+  /**
+   * Updates the {@code version} of a release. Returns the new row, or empty if no row was affected
+   * (release not found in this project).
+   */
+  Optional<Release> updateVersion(long projectId, long id, String newVersion);
+
+  /** Returns {@code true} if a row was deleted, {@code false} if release was not in the project. */
+  boolean delete(long projectId, long id);
 }
