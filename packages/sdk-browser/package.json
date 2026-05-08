@@ -21,6 +21,13 @@
     "@arguslog/sdk-core": "workspace:*"
   },
   "scripts": {
+    "gen-version": "node scripts/gen-version.mjs",
+    "prebuild": "node scripts/gen-version.mjs",
+    "predev": "node scripts/gen-version.mjs",
+    "pretest": "node scripts/gen-version.mjs",
+    "pretest:coverage": "node scripts/gen-version.mjs",
+    "pretest:pact": "node scripts/gen-version.mjs",
+    "pretypecheck": "node scripts/gen-version.mjs",
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
     "lint": "eslint src",
