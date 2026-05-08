@@ -57,9 +57,13 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       # Set up Node solely so verify-tag-version.mjs can run. No npm work happens here.
+      # `package-manager-cache: false` disables setup-node@v5's pnpm-lock auto-detection —
+      # this workflow doesn't install pnpm and the cache step would error with
+      # "Unable to locate executable file: pnpm". Same fix as the python release workflow.
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Verify tag is valid semver
         run: |
