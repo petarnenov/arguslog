@@ -1,6 +1,6 @@
 {
   "name": "@arguslog/sdk-nextjs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Arguslog Next.js SDK — App Router + Pages Router, route handler & server action wrappers, instrumentation.ts hook",
   "license": "MIT",
   "type": "module",
