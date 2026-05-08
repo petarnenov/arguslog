@@ -46,10 +46,7 @@ export function IssuesPage() {
   const projectId = Number(rawProjectId);
   const projectIdValid = Number.isFinite(projectId) && projectId > 0;
 
-  useReportSoftError(
-    !projectIdValid,
-    `IssuesPage: invalid projectId param "${rawProjectId}"`,
-  );
+  useReportSoftError(!projectIdValid, `IssuesPage: invalid projectId param "${rawProjectId}"`);
   const status = (search.get('status') as IssueStatus | null) ?? undefined;
   const level = (search.get('level') as IssueLevel | null) ?? undefined;
   const cursor = search.get('cursor') ?? undefined;
