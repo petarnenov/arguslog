@@ -1,12 +1,5 @@
 import { captureException } from '@arguslog/sdk-browser';
-import {
-  defineComponent,
-  h,
-  onErrorCaptured,
-  ref,
-  type PropType,
-  type VNode,
-} from 'vue';
+import { defineComponent, h, onErrorCaptured, ref, type PropType, type VNode } from 'vue';
 
 type FallbackRenderArgs = { error: Error; reset: () => void };
 type FallbackRender = (args: FallbackRenderArgs) => VNode | VNode[] | string;
