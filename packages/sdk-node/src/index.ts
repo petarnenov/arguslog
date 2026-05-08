@@ -2,6 +2,7 @@ import { ArguslogClient } from '@arguslog/sdk-core';
 import type { ArguslogOptions, Breadcrumb, Level, User } from '@arguslog/sdk-core';
 
 import { NodeAdapter } from './adapter.js';
+import { installHttpInstrumentation } from './integrations/http.js';
 import {
   installProcessHandlers,
   type ProcessHandlerOptions,
@@ -22,7 +23,7 @@ export { ArguslogClient, GlobalScope, InvalidDsnError, parseDsn } from '@arguslo
 export type { ProcessHandlerOptions } from './integrations/process-handlers.js';
 export { AsyncLocalScopeStore } from './scope.js';
 
-export type NodeIntegration = 'processHandlers';
+export type NodeIntegration = 'processHandlers' | 'http';
 
 export interface NodeArguslogOptions extends Omit<ArguslogOptions, 'integrations'> {
   integrations?: NodeIntegration[];
@@ -32,12 +33,15 @@ export interface NodeArguslogOptions extends Omit<ArguslogOptions, 'integrations
 let currentClient: ArguslogClient | undefined;
 let currentScopeStore: AsyncLocalScopeStore | undefined;
 let uninstallProcessHandlers: (() => void) | undefined;
+let uninstallHttp: (() => void) | undefined;
 
 export function init(options: NodeArguslogOptions): ArguslogClient {
   // Tear down handlers from a prior init before swapping the client — otherwise process
   // listeners from the previous client linger and capture into a stale instance.
   uninstallProcessHandlers?.();
   uninstallProcessHandlers = undefined;
+  uninstallHttp?.();
+  uninstallHttp = undefined;
 
   const { integrations, processHandlers, ...coreOptions } = options;
   const scopeStore = new AsyncLocalScopeStore(options.maxBreadcrumbs ?? 50);
@@ -50,6 +54,9 @@ export function init(options: NodeArguslogOptions): ArguslogClient {
 
   if (integrations?.includes('processHandlers')) {
     uninstallProcessHandlers = installProcessHandlers(currentClient, processHandlers);
+  }
+  if (integrations?.includes('http')) {
+    uninstallHttp = installHttpInstrumentation(currentClient);
   }
 
   return currentClient;
@@ -109,6 +116,8 @@ export function runWithRequestScope<T>(fn: () => T): T {
 export function __resetForTests(): void {
   uninstallProcessHandlers?.();
   uninstallProcessHandlers = undefined;
+  uninstallHttp?.();
+  uninstallHttp = undefined;
   currentClient = undefined;
   currentScopeStore = undefined;
 }
