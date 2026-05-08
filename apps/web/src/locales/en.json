@@ -11,6 +11,7 @@
     "destinations": "Destinations",
     "settings": "Settings",
     "members": "Members",
+    "releases": "Releases",
     "billing": "Billing",
     "tokens": "Personal access tokens",
     "logout": "Log out"
@@ -196,6 +197,28 @@
     "intervalMonthly": "Monthly",
     "intervalAnnualSave": "Annual (save 17%)",
     "renewsOn": "Renews on {{date}}"
+  },
+  "releases": {
+    "title": "Releases",
+    "intro": "Tag deploy versions to attribute issues to a specific build. Upload source maps against a release for symbolicated stack traces.",
+    "new": "New release",
+    "create": "Create",
+    "save": "Save",
+    "cancel": "Cancel",
+    "createTitle": "Create a release",
+    "editTitle": "Rename release",
+    "version": "Version",
+    "versionHint": "Free-form string. Common patterns: semver (1.2.3), git SHA (a1b2c3d), or calver (2026.05.08).",
+    "colVersion": "Version",
+    "colCreated": "Created",
+    "colActions": "Actions",
+    "editAria": "Edit {{version}}",
+    "deleteAria": "Delete {{version}}",
+    "deleteTitle": "Delete release {{version}}?",
+    "deleteBody": "Source-map artifacts uploaded against this release will be removed too. R2 blobs stay until the next maintenance sweep.",
+    "deleteConfirm": "Delete release",
+    "errorVersion": "Version is required",
+    "empty": "No releases yet — create one to start attributing issues to deploy versions."
   },
   "members": {
     "title": "Members",
