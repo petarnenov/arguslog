@@ -9,6 +9,7 @@ import {
   type ListIssueEventsParams,
   type ListIssuesParams,
 } from './issues';
+import { listDsns } from './keys';
 import { listOrgMembers } from './members';
 import { listMyOrgs } from './orgs';
 import { listPlatforms } from './platforms';
@@ -29,6 +30,7 @@ export const queryKeys = {
   orgMembers: (orgId: number) => ['org-members', orgId] as const,
   platforms: () => ['platforms'] as const,
   releases: (projectId: number) => ['releases', projectId] as const,
+  dsns: (projectId: number) => ['dsns', projectId] as const,
 };
 
 export function useMyOrgs(options: { enabled?: boolean } = {}) {
@@ -134,6 +136,15 @@ export function useReleases(projectId: number | undefined, options: { enabled?: 
     queryFn: () => listReleases(projectId as number),
     enabled: (options.enabled ?? true) && projectId != null,
     staleTime: 30_000,
+  });
+}
+
+export function useDsns(projectId: number | undefined, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.dsns(projectId ?? -1),
+    queryFn: () => listDsns(projectId as number),
+    enabled: (options.enabled ?? true) && projectId != null,
+    staleTime: 60_000,
   });
 }
 

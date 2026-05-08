@@ -17,7 +17,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconTrash } from '@tabler/icons-react';
+import { IconEye, IconEyeOff, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +26,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
 import { createDsn, type Dsn } from '../api/keys';
 import { archiveProject, createProject, type Project } from '../api/projects';
-import { queryKeys, useMyOrgs, usePlatforms, useProjects } from '../api/queries';
+import { queryKeys, useDsns, useMyOrgs, usePlatforms, useProjects } from '../api/queries';
 import { useReportSoftError } from '../lib/reportSoftError';
 
 interface DsnSuccess {
@@ -241,6 +241,7 @@ export function ProjectsPage() {
               >
                 <IconTrash size={14} />
               </ActionIcon>
+              <ProjectCardDsn project={p} />
             </Card>
           ))}
         </SimpleGrid>
@@ -371,6 +372,63 @@ export function ProjectsPage() {
           </Stack>
         ) : null}
       </Modal>
+    </Stack>
+  );
+}
+
+function ProjectCardDsn({ project }: { project: Project }) {
+  const { t } = useTranslation();
+  const [revealed, setRevealed] = useState(false);
+  // Lazy-fetch: the keys endpoint stays unhit until the user actually clicks the eye.
+  const dsnsQuery = useDsns(project.id, { enabled: revealed });
+  const dsn = dsnsQuery.data?.find((d) => d.active) ?? dsnsQuery.data?.[0];
+
+  return (
+    <Stack gap={6} mt="sm">
+      <Group gap="xs" wrap="nowrap">
+        <ActionIcon
+          variant="subtle"
+          size="sm"
+          aria-label={t(revealed ? 'projects.hideDsn' : 'projects.showDsn', {
+            name: project.name,
+          })}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setRevealed((prev) => !prev);
+          }}
+        >
+          {revealed ? <IconEyeOff size={14} /> : <IconEye size={14} />}
+        </ActionIcon>
+        {revealed && dsn ? (
+          <CopyButton value={dsn.dsn}>
+            {({ copied, copy }) => (
+              <Button onClick={copy} variant="subtle" size="compact-xs">
+                {copied ? t('projects.copied') : t('projects.copyDsn')}
+              </Button>
+            )}
+          </CopyButton>
+        ) : null}
+      </Group>
+      {revealed ? (
+        dsnsQuery.isLoading ? (
+          <Text size="xs" c="dimmed">
+            {t('projects.dsnLoading')}
+          </Text>
+        ) : dsnsQuery.isError ? (
+          <Text size="xs" c="red">
+            {t('projects.dsnLoadFailed')}
+          </Text>
+        ) : dsn ? (
+          <Code block fz="xs">
+            {dsn.dsn}
+          </Code>
+        ) : (
+          <Text size="xs" c="dimmed">
+            {t('projects.dsnEmpty')}
+          </Text>
+        )
+      ) : null}
     </Stack>
   );
 }
