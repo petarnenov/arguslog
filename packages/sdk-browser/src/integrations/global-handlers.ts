@@ -1,4 +1,4 @@
-import type { ArguslogClient } from '../client.js';
+import type { ArguslogClient } from '@arguslog/sdk-core';
 
 /**
  * Global handler integration: forwards errors that escape user code to the SDK so they don't

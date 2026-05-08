@@ -1,10 +1,19 @@
-import { ArguslogClient } from './client.js';
-import { installGlobalHandlers } from './integrations/global-handlers.js';
-import type { ArguslogOptions, Breadcrumb, Level, User } from './types.js';
+import { ArguslogClient } from '@arguslog/sdk-core';
+import type { ArguslogOptions, Breadcrumb, Level, User } from '@arguslog/sdk-core';
 
-export type { ArguslogOptions, Breadcrumb, EventPayload, Level, StackFrame, User } from './types.js';
-export { ArguslogClient } from './client.js';
-export { parseDsn, InvalidDsnError } from './dsn.js';
+import { BrowserAdapter } from './adapter.js';
+import { installGlobalHandlers } from './integrations/global-handlers.js';
+import { parseStack } from './stack-parser.js';
+
+export type {
+  ArguslogOptions,
+  Breadcrumb,
+  EventPayload,
+  Level,
+  StackFrame,
+  User,
+} from '@arguslog/sdk-core';
+export { ArguslogClient, InvalidDsnError, parseDsn } from '@arguslog/sdk-core';
 
 let currentClient: ArguslogClient | undefined;
 let uninstallGlobalHandlers: (() => void) | undefined;
@@ -15,7 +24,10 @@ export function init(options: ArguslogOptions): ArguslogClient {
   uninstallGlobalHandlers?.();
   uninstallGlobalHandlers = undefined;
 
-  currentClient = new ArguslogClient(options);
+  currentClient = new ArguslogClient(options, {
+    adapter: new BrowserAdapter(),
+    parseStack,
+  });
 
   if (options.integrations?.includes('globalHandlers')) {
     uninstallGlobalHandlers = installGlobalHandlers(currentClient);

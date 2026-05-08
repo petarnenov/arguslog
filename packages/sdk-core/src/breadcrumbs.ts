@@ -5,6 +5,11 @@ export class BreadcrumbBuffer {
 
   constructor(private readonly max: number) {}
 
+  /** The configured ring-buffer cap, exposed so a forked scope can build a buffer of the same size. */
+  get capacity(): number {
+    return this.max;
+  }
+
   add(crumb: Breadcrumb): void {
     this.buffer.push(crumb);
     if (this.buffer.length > this.max) this.buffer.shift();
