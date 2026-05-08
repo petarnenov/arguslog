@@ -82,9 +82,7 @@ export function PersonalAccessTokensPage() {
   const canCreate = trimmed.length >= 2 && scopesValid && !createMutation.isPending;
 
   function toggleScope(scope: PatScope, checked: boolean) {
-    setPickedScopes((prev) =>
-      checked ? [...prev, scope] : prev.filter((s) => s !== scope),
-    );
+    setPickedScopes((prev) => (checked ? [...prev, scope] : prev.filter((s) => s !== scope)));
   }
 
   return (

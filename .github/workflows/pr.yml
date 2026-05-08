@@ -2,9 +2,9 @@ name: PR
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   push:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: pr-${{ github.ref }}
@@ -84,7 +84,7 @@ jobs:
         with:
           scan-type: fs
           severity: HIGH,CRITICAL
-          exit-code: "1"
+          exit-code: '1'
           ignore-unfixed: true
 
   openapi-diff:

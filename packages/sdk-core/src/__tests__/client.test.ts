@@ -128,7 +128,10 @@ describe('ArguslogClient', () => {
           sdkName: 'arguslog.node',
           platform: 'node',
           enrichEvent(event) {
-            event.contexts = { ...(event.contexts ?? {}), runtime: { name: 'node', version: 'v20' } };
+            event.contexts = {
+              ...(event.contexts ?? {}),
+              runtime: { name: 'node', version: 'v20' },
+            };
           },
         },
         parseStack: stubParseStack,

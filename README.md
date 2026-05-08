@@ -67,9 +67,9 @@ running across mprocs sessions; tear it down with `make down`.
 | `make dev`                                 | full stack (infra + JVM services + web)                         |
 | `make up` / `down`                         | infra only (compose up `--wait` / down)                         |
 | `make logs` / `ps`                         | tail / inspect infra                                            |
-| `make api`                                 | `arguslog-api` foreground (`:8081`)                                |
-| `make ingest`                              | `arguslog-ingest` foreground (`:8080`)                             |
-| `make worker`                              | `arguslog-worker` foreground (`:8082`)                             |
+| `make api`                                 | `arguslog-api` foreground (`:8081`)                             |
+| `make ingest`                              | `arguslog-ingest` foreground (`:8080`)                          |
+| `make worker`                              | `arguslog-worker` foreground (`:8082`)                          |
 | `make web`                                 | Vite dev server (`:5173`)                                       |
 | `make build`                               | Gradle + Turbo full build                                       |
 | `make lint` / `typecheck` / `test` / `e2e` | quality gates                                                   |

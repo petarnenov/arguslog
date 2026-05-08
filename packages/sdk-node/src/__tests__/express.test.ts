@@ -4,14 +4,7 @@ import supertest from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { errorHandler, requestHandler } from '../express.js';
-import {
-  __resetForTests,
-  captureMessage,
-  flush,
-  init,
-  setTag,
-  setUser,
-} from '../index.js';
+import { __resetForTests, captureMessage, flush, init, setTag, setUser } from '../index.js';
 
 describe('express middleware', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -87,9 +80,16 @@ describe('express middleware', () => {
     });
     app.use(errorHandler());
     // Final handler so the response doesn't hang. Express needs a 4-arg signature here.
-    app.use((_err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-      res.status(500).json({ error: 'boom' });
-    });
+    app.use(
+      (
+        _err: unknown,
+        _req: express.Request,
+        res: express.Response,
+        _next: express.NextFunction,
+      ) => {
+        res.status(500).json({ error: 'boom' });
+      },
+    );
 
     await supertest(app).get('/boom').expect(500);
     await flush();
@@ -107,9 +107,16 @@ describe('express middleware', () => {
       next(new Error('async-kaboom'));
     });
     app.use(errorHandler());
-    app.use((_err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-      res.status(500).end();
-    });
+    app.use(
+      (
+        _err: unknown,
+        _req: express.Request,
+        res: express.Response,
+        _next: express.NextFunction,
+      ) => {
+        res.status(500).end();
+      },
+    );
 
     await supertest(app).get('/async-boom').expect(500);
     await flush();

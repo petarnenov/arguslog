@@ -150,7 +150,9 @@ function headersHaveDsnAuth(headers: unknown): boolean {
   if (Array.isArray(headers)) {
     return headers.some(
       (entry) =>
-        Array.isArray(entry) && typeof entry[0] === 'string' && entry[0].toLowerCase() === DSN_AUTH_HEADER,
+        Array.isArray(entry) &&
+        typeof entry[0] === 'string' &&
+        entry[0].toLowerCase() === DSN_AUTH_HEADER,
     );
   }
   if (typeof headers === 'object') {

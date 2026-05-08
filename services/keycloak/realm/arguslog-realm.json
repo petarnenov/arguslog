@@ -64,7 +64,5 @@
       }
     ]
   },
-  "defaultRoles": [
-    "arguslog:user"
-  ]
+  "defaultRoles": ["arguslog:user"]
 }

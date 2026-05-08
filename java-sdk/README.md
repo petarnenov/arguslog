@@ -8,6 +8,7 @@ Captures exceptions and messages from any JVM application and ships them asynchr
 the Arguslog ingest endpoint.
 
 Three integration paths, pick what matches your stack:
+
 1. **Plain Java** — call the static `Arguslog` facade directly.
 2. **Spring Boot** — drop in the JAR, add a property, autoconfig handles the rest.
 3. **Logback** — register the appender once and every `log.error(…)` call ships its throwable.
@@ -75,11 +76,11 @@ Add the dependency, set one property, done. The autoconfig wires the client at
 
 ```yaml
 arguslog:
-  dsn: ${ARGUSLOG_DSN:}        # empty value → SDK is a no-op (safe for local dev / tests)
+  dsn: ${ARGUSLOG_DSN:} # empty value → SDK is a no-op (safe for local dev / tests)
   environment: ${SPRING_PROFILES_ACTIVE:dev}
   release: ${ARGUSLOG_RELEASE:0.0.1-SNAPSHOT}
   sample-rate: 1.0
-  scrubbing: true           # built-in PII scrubbing on messages + stacks
+  scrubbing: true # built-in PII scrubbing on messages + stacks
 ```
 
 Capture from any bean:
@@ -140,17 +141,17 @@ safe to embed in env vars — it doesn't grant any read access.
 
 ### `Arguslog.init(ArguslogOptions)`
 
-| Builder field        | Type                | Default      | Notes                                                                |
-| -------------------- | ------------------- | ------------ | -------------------------------------------------------------------- |
-| `dsn(String)`        | required            | _none_       | See "DSN format".                                                    |
-| `environment(String)`| optional            | _none_       | E.g. `production`, `staging`.                                        |
-| `release(String)`    | optional            | _none_       | Free-form version tag.                                               |
-| `sampleRate(double)` | 0.0–1.0             | `1.0`        | Fraction of events kept.                                             |
-| `maxQueueSize(int)`  |                     | `256`        | Bounded queue size; dropped on overflow.                             |
-| `flushTimeout(Duration)` |                 | `2s`         | Max wait on `close()` / `flush()`.                                   |
-| `scrubbingEnabled(boolean)` |              | `true`       | Built-in regex scrubbing on messages + stack frames.                 |
-| `extraScrubPatterns(List<Pattern>)` |       | _empty_      | Additional regexes applied alongside the built-ins.                  |
-| `debug(boolean)`     |                     | `false`      | Logs send attempts to `System.err`. Never enable in production.      |
+| Builder field                       | Type     | Default | Notes                                                           |
+| ----------------------------------- | -------- | ------- | --------------------------------------------------------------- |
+| `dsn(String)`                       | required | _none_  | See "DSN format".                                               |
+| `environment(String)`               | optional | _none_  | E.g. `production`, `staging`.                                   |
+| `release(String)`                   | optional | _none_  | Free-form version tag.                                          |
+| `sampleRate(double)`                | 0.0–1.0  | `1.0`   | Fraction of events kept.                                        |
+| `maxQueueSize(int)`                 |          | `256`   | Bounded queue size; dropped on overflow.                        |
+| `flushTimeout(Duration)`            |          | `2s`    | Max wait on `close()` / `flush()`.                              |
+| `scrubbingEnabled(boolean)`         |          | `true`  | Built-in regex scrubbing on messages + stack frames.            |
+| `extraScrubPatterns(List<Pattern>)` |          | _empty_ | Additional regexes applied alongside the built-ins.             |
+| `debug(boolean)`                    |          | `false` | Logs send attempts to `System.err`. Never enable in production. |
 
 ### `Arguslog.captureException(Throwable)`
 

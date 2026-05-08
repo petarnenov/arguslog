@@ -27,10 +27,7 @@ describe('installProcessHandlers', () => {
 
     uninstall = installProcessHandlers(client, { exitOnUncaught: true, flushTimeoutMs: 50 });
     process.emit('uncaughtException', new Error('crash'));
-    expect(client.captureException).toHaveBeenCalledWith(
-      expect.any(Error),
-      { level: 'fatal' },
-    );
+    expect(client.captureException).toHaveBeenCalledWith(expect.any(Error), { level: 'fatal' });
     // Wait one macrotask for the flush race + exit path.
     await new Promise((r) => setTimeout(r, 80));
     expect(exitSpy).toHaveBeenCalledWith(1);
