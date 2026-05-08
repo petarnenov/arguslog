@@ -1,16 +1,17 @@
-name: Release sdk-browser
+name: Release sdk-core
 
-# Tag-driven npm release. Push a tag matching `sdk-browser-v*` (e.g. `sdk-browser-v0.1.0`) and the
-# matching version in packages/sdk-browser/package.json gets published to npm. Manual dispatch is
-# kept for rehearsing the workflow with no real publish (set `dry-run: true`).
+# Tag-driven npm release. Push a tag matching `sdk-core-v*` (e.g. `sdk-core-v1.0.0`) and the
+# matching version in packages/sdk-core/package.json gets published to npm. sdk-core is the
+# platform-agnostic foundation that sdk-browser and sdk-node depend on, so it must be on npm
+# before any of those packages can be (re)published.
 on:
   push:
     tags:
-      - 'sdk-browser-v*'
+      - 'sdk-core-v*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to release (sdk-browser-vX.Y.Z). For dry-runs use any matching tag.'
+        description: 'Existing tag to release (sdk-core-vX.Y.Z). For dry-runs use any matching tag.'
         required: true
       dry-run:
         description: 'Run pnpm publish with --dry-run (no upload).'
@@ -18,7 +19,7 @@ on:
         default: 'true'
 
 concurrency:
-  group: release-sdk-browser-${{ github.ref }}
+  group: release-sdk-core-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -32,8 +33,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          # Pull tags so verify-tag-version can read git data if needed (publish itself uses the
-          # tag from the trigger).
           fetch-depth: 0
 
       - name: Resolve tag
@@ -60,22 +59,17 @@ jobs:
         run: |
           node scripts/verify-tag-version.mjs \
             "${{ steps.tag.outputs.value }}" \
-            sdk-browser \
-            packages/sdk-browser/package.json
-
-      # sdk-browser depends on sdk-core via workspace: protocol — typecheck needs the
-      # sdk-core dist on disk to find type declarations, so build the dep first.
-      - name: Build sdk-core dependency
-        run: pnpm --filter @arguslog/sdk-core build
+            sdk-core \
+            packages/sdk-core/package.json
 
       - name: Lint, typecheck, test
         run: |
-          pnpm --filter @arguslog/sdk-browser lint
-          pnpm --filter @arguslog/sdk-browser typecheck
-          pnpm --filter @arguslog/sdk-browser test
+          pnpm --filter @arguslog/sdk-core lint
+          pnpm --filter @arguslog/sdk-core typecheck
+          pnpm --filter @arguslog/sdk-core test
 
       - name: Build
-        run: pnpm --filter @arguslog/sdk-browser build
+        run: pnpm --filter @arguslog/sdk-core build
 
       - name: Publish to npm
         env:
@@ -86,7 +80,7 @@ jobs:
              [ "${{ github.event.inputs.dry-run }}" = "true" ]; then
             DRY_RUN_FLAG="--dry-run"
           fi
-          pnpm --filter @arguslog/sdk-browser publish \
+          pnpm --filter @arguslog/sdk-core publish \
             --access public \
             --no-git-checks \
             --provenance \
