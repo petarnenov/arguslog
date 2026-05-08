@@ -5,11 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
@@ -20,15 +23,9 @@ import org.junit.jupiter.api.Test;
  * vice-versa). The catalog drives the project-create dropdown — drift here means the dashboard
  * advertises a stale SDK version to every new project.
  *
- * <p>Why a unit test and not a hook: the SDK manifests live in different sub-trees (packages/, *
+ * <p>Why a unit test and not a hook: the SDK manifests live in different sub-trees (packages/,
  * python-sdk/, java-sdk/) and each has its own release workflow. A single Java test reading the
  * monorepo gives one place to fail loudly when the catalog falls behind.
- *
- * <p>The Java SDK is exempt for now: its publishable version is supplied at release time via {@code
- * -Pversion=<x.y.z>} on the Gradle command line and the source tree only carries {@code
- * 0.0.1-SNAPSHOT}. There is no in-repo manifest to compare against, so the {@code java-spring}
- * entry in the catalog is bumped by hand as part of the release PR. Once we move the Java SDK to a
- * pinned version file, drop the exemption below.
  */
 class PlatformsCatalogParityTest {
 
@@ -47,9 +44,9 @@ class PlatformsCatalogParityTest {
   private static final String PYTHON_SLUG = "python";
   private static final Path PYTHON_PYPROJECT = REPO_ROOT.resolve("python-sdk/pyproject.toml");
 
-  // Platform slugs whose published version cannot be reliably read from the source tree (yet).
-  // Track here so a future "all slugs covered" assertion stays honest.
-  private static final List<String> EXEMPT_SLUGS = List.of("java-spring");
+  private static final String JAVA_SLUG = "java-spring";
+  private static final Path JAVA_GRADLE_PROPERTIES =
+      REPO_ROOT.resolve("java-sdk/gradle.properties");
 
   @Test
   void catalogVersionsMatchSdkManifests() throws IOException {
@@ -71,16 +68,23 @@ class PlatformsCatalogParityTest {
             pythonVersion)
         .containsEntry(PYTHON_SLUG, pythonVersion);
 
-    // Sanity: every slug in the catalog is either covered above or explicitly exempt. Stops a
+    String javaVersion = readPropertiesValue(JAVA_GRADLE_PROPERTIES, "version");
+    assertThat(catalog)
+        .as(
+            "platforms catalog row 'java-spring' must match java-sdk/gradle.properties:version (%s)",
+            javaVersion)
+        .containsEntry(JAVA_SLUG, javaVersion);
+
+    // Sanity: every slug in the catalog must be covered by one of the manifests above. Stops a
     // newly-added platform from silently bypassing the parity check.
-    var coveredSlugs = new java.util.HashSet<String>();
+    var coveredSlugs = new HashSet<String>();
     NODE_PACKAGES.forEach(p -> coveredSlugs.add(p.slug));
     coveredSlugs.add(PYTHON_SLUG);
-    coveredSlugs.addAll(EXEMPT_SLUGS);
+    coveredSlugs.add(JAVA_SLUG);
     assertThat(catalog.keySet())
         .as(
-            "every slug in R__platforms_catalog.sql must be covered by NODE_PACKAGES, "
-                + "PYTHON_SLUG, or EXEMPT_SLUGS in this test")
+            "every slug in R__platforms_catalog.sql must be covered by an SDK manifest read by "
+                + "this test (NODE_PACKAGES, PYTHON, or JAVA)")
         .isSubsetOf(coveredSlugs);
   }
 
@@ -118,6 +122,16 @@ class PlatformsCatalogParityTest {
         .as("could not find a top-level version = \"...\" line in %s", pyprojectToml)
         .isTrue();
     return m.group(1);
+  }
+
+  private static String readPropertiesValue(Path propertiesFile, String key) throws IOException {
+    Properties props = new Properties();
+    try (InputStream in = Files.newInputStream(propertiesFile)) {
+      props.load(in);
+    }
+    String value = props.getProperty(key);
+    assertThat(value).as("missing or empty key '%s' in %s", key, propertiesFile).isNotBlank();
+    return value;
   }
 
   private static Path locateRepoRoot() {
