@@ -11,6 +11,7 @@ import {
 } from './issues';
 import { listOrgMembers } from './members';
 import { listMyOrgs } from './orgs';
+import { listPlatforms } from './platforms';
 import { listProjects } from './projects';
 import { listMyTokens } from './tokens';
 
@@ -25,6 +26,7 @@ export const queryKeys = {
   usage: (orgId: number) => ['usage', orgId] as const,
   myTokens: () => ['tokens', 'mine'] as const,
   orgMembers: (orgId: number) => ['org-members', orgId] as const,
+  platforms: () => ['platforms'] as const,
 };
 
 export function useMyOrgs(options: { enabled?: boolean } = {}) {
@@ -102,6 +104,16 @@ export function useMyTokens(options: { enabled?: boolean } = {}) {
     queryFn: listMyTokens,
     enabled: options.enabled ?? true,
     staleTime: 30_000,
+  });
+}
+
+export function usePlatforms(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.platforms(),
+    queryFn: listPlatforms,
+    enabled: options.enabled ?? true,
+    // Catalog is essentially static — refetch sparingly. Updated via DB UPDATE on new SDK release.
+    staleTime: 5 * 60_000,
   });
 }
 

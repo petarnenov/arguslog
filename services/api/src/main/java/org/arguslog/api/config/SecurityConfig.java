@@ -32,7 +32,11 @@ public class SecurityConfig {
             authz ->
                 authz
                     .requestMatchers(
-                        "/actuator/health/**", "/api/v1/info", "/v3/api-docs/**", "/swagger-ui/**")
+                        "/actuator/health/**",
+                        "/api/v1/info",
+                        "/api/v1/platforms",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**")
                     .permitAll()
                     .requestMatchers("/api/v1/webhooks/stripe")
                     .permitAll()

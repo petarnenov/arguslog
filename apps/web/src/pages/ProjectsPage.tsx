@@ -26,7 +26,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
 import { createDsn, type Dsn } from '../api/keys';
 import { archiveProject, createProject, type Project } from '../api/projects';
-import { queryKeys, useMyOrgs, useProjects } from '../api/queries';
+import { queryKeys, useMyOrgs, usePlatforms, useProjects } from '../api/queries';
 
 interface DsnSuccess {
   project: Project;
@@ -47,6 +47,9 @@ export function ProjectsPage() {
   const orgsQuery = useMyOrgs();
   const org = orgsQuery.data?.find((o) => o.slug === orgSlug);
   const projectsQuery = useProjects(org?.id);
+  const platformsQuery = usePlatforms();
+  const platformOptions =
+    platformsQuery.data?.map((p) => ({ value: p.slug, label: p.name })) ?? [];
 
   const [createOpen, setCreateOpen] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<Project | null>(null);
@@ -285,14 +288,9 @@ export function ProjectsPage() {
             />
             <Select
               label={t('onboarding.platform')}
-              data={[
-                { value: 'javascript', label: 'JavaScript / Browser' },
-                { value: 'react', label: 'React' },
-                { value: 'react-native', label: 'React Native' },
-                { value: 'java-spring', label: 'Java / Spring Boot' },
-              ]}
+              data={platformOptions}
               {...form.getInputProps('platform')}
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || platformsQuery.isLoading}
             />
             {error ? (
               <Alert color="red" variant="light">

@@ -97,6 +97,7 @@ class OpenApiContractTest {
   @MockitoBean ProjectWriteRepository projectWriteRepository;
   @MockitoBean DsnRepository dsnRepository;
   @MockitoBean org.arguslog.api.application.port.DsnWriteRepository dsnWriteRepository;
+  @MockitoBean org.arguslog.api.application.port.PlatformRepository platformRepository;
   @MockitoBean ReleaseRepository releaseRepository;
   @MockitoBean SourceMapArtifactRepository sourceMapArtifactRepository;
 

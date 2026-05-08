@@ -1188,6 +1188,27 @@
         }
       }
     },
+    "/api/v1/platforms" : {
+      "get" : {
+        "tags" : [ "platform-controller" ],
+        "operationId" : "list_9",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PlatformResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{orgId}/usage" : {
       "get" : {
         "tags" : [ "usage-controller" ],
@@ -1824,6 +1845,23 @@
           },
           "page" : {
             "$ref" : "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "PlatformResponse" : {
+        "type" : "object",
+        "properties" : {
+          "slug" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "sdkPackage" : {
+            "type" : "string"
+          },
+          "sdkVersion" : {
+            "type" : "string"
           }
         }
       },
