@@ -162,6 +162,65 @@ describe('IssueDetailPage', () => {
     expect(screen.queryByText('src/app.ts:10:4')).not.toBeInTheDocument();
   });
 
+  it('renders the breadcrumbs panel for events that ship them', async () => {
+    const eventsWithBreadcrumbs = {
+      data: [
+        {
+          id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          issueId: 7,
+          projectId: 101,
+          receivedAt: '2026-05-05T11:00:00Z',
+          payload: {
+            level: 'error',
+            message: 'boom',
+            breadcrumbs: [
+              {
+                timestamp: new Date('2026-05-05T10:59:57Z').getTime(),
+                category: 'click',
+                message: 'user clicked #checkout',
+                level: 'info',
+                data: { selector: '#checkout' },
+              },
+              {
+                timestamp: new Date('2026-05-05T10:59:59Z').getTime(),
+                category: 'fetch',
+                message: 'GET /api/cart 500',
+                level: 'warning',
+              },
+            ],
+          },
+        },
+      ],
+      page: {},
+    };
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.includes('/events')) return jsonResponse(eventsWithBreadcrumbs);
+      return jsonResponse(sampleIssue);
+    }) as typeof fetch;
+
+    renderAt('/orgs/acme/projects/101/issues/7');
+
+    await waitFor(() => expect(screen.getByTestId('breadcrumbs')).toBeInTheDocument());
+    expect(screen.getByText('user clicked #checkout')).toBeInTheDocument();
+    expect(screen.getByText('GET /api/cart 500')).toBeInTheDocument();
+    // The data field renders as a JSON code preview underneath the message.
+    expect(screen.getByText('{"selector":"#checkout"}')).toBeInTheDocument();
+  });
+
+  it('hides the breadcrumbs panel when the event payload has none', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.includes('/events')) return jsonResponse(sampleEventsPage);
+      return jsonResponse(sampleIssue);
+    }) as typeof fetch;
+
+    renderAt('/orgs/acme/projects/101/issues/7');
+
+    await waitFor(() => expect(screen.getByTestId('events-table')).toBeInTheDocument());
+    expect(screen.queryByTestId('breadcrumbs')).not.toBeInTheDocument();
+  });
+
   it('hides the toggle when no event has any symbolicated frame', async () => {
     globalThis.fetch = vi.fn(async (input) => {
       const url = typeof input === 'string' ? input : (input as Request).url;
