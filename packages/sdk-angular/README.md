@@ -56,7 +56,9 @@ Inject `ArguslogService` (or import the function helpers from
 import { Component, inject } from '@angular/core';
 import { ArguslogService } from '@arguslog/sdk-angular';
 
-@Component({ /* … */ })
+@Component({
+  /* … */
+})
 export class CheckoutComponent {
   private readonly arguslog = inject(ArguslogService);
 
