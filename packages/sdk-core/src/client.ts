@@ -1,34 +1,54 @@
-import { BreadcrumbBuffer } from './breadcrumbs.js';
 import { parseDsn } from './dsn.js';
+import { GlobalScope, type ScopeStore } from './scope.js';
 import { Scrubber } from './scrubber.js';
-import { parseStack } from './stack-parser.js';
 import { Transport } from './transport.js';
-import type { ArguslogOptions, Breadcrumb, EventPayload, Level, ParsedDsn, User } from './types.js';
+import type {
+  ArguslogOptions,
+  Breadcrumb,
+  EventPayload,
+  Level,
+  ParsedDsn,
+  PlatformAdapter,
+  StackParser,
+  User,
+} from './types.js';
 
-const SDK_NAME = 'arguslog.javascript';
-const SDK_VERSION = '0.0.0';
+export const SDK_VERSION = '0.0.0';
+
+export interface ClientDeps {
+  adapter: PlatformAdapter;
+  parseStack: StackParser;
+  /** Optional scope store. Defaults to a single GlobalScope shared across the client. */
+  scopeStore?: ScopeStore;
+}
 
 export class ArguslogClient {
   private readonly options: ArguslogOptions;
   private readonly dsn: ParsedDsn;
   private readonly transport: Transport;
   private readonly scrubber: Scrubber;
-  private readonly breadcrumbs: BreadcrumbBuffer;
+  private readonly adapter: PlatformAdapter;
+  private readonly parseStack: StackParser;
+  private readonly scopeStore: ScopeStore;
 
-  private user: User | undefined;
-  private readonly tags: Map<string, string> = new Map();
-  private readonly contexts: Map<string, Record<string, unknown>> = new Map();
   private pending: Set<Promise<void>> = new Set();
 
-  constructor(options: ArguslogOptions) {
+  constructor(options: ArguslogOptions, deps: ClientDeps) {
     this.options = options;
+    this.adapter = deps.adapter;
+    this.parseStack = deps.parseStack;
     this.dsn = parseDsn(options.dsn);
     this.scrubber = new Scrubber(options.scrubbing);
-    this.breadcrumbs = new BreadcrumbBuffer(options.maxBreadcrumbs ?? 50);
+    this.scopeStore = deps.scopeStore ?? new GlobalScope(options.maxBreadcrumbs ?? 50);
     this.transport = new Transport(this.dsn, this.dsn.publicKey, {
       fetch: options.transport?.fetch,
       maxRetries: options.transport?.maxRetries,
     });
+  }
+
+  /** Exposed for SDK adapters that need to coordinate scope (e.g. per-request middleware). */
+  getScopeStore(): ScopeStore {
+    return this.scopeStore;
   }
 
   captureException(
@@ -42,7 +62,7 @@ export class ArguslogClient {
         {
           type: err.name || 'Error',
           value: err.message,
-          stacktrace: { frames: parseStack(err.stack) },
+          stacktrace: { frames: this.parseStack(err.stack) },
         },
       ],
     };
@@ -59,7 +79,7 @@ export class ArguslogClient {
   }
 
   addBreadcrumb(crumb: Omit<Breadcrumb, 'timestamp'> & { timestamp?: number }): void {
-    this.breadcrumbs.add({
+    this.scopeStore.getBreadcrumbs().add({
       timestamp: crumb.timestamp ?? Date.now(),
       category: crumb.category,
       message: crumb.message,
@@ -69,15 +89,15 @@ export class ArguslogClient {
   }
 
   setUser(user: User | undefined): void {
-    this.user = user;
+    this.scopeStore.setUser(user);
   }
 
   setTag(key: string, value: string): void {
-    this.tags.set(key, value);
+    this.scopeStore.setTag(key, value);
   }
 
   setContext(name: string, ctx: Record<string, unknown>): void {
-    this.contexts.set(name, ctx);
+    this.scopeStore.setContext(name, ctx);
   }
 
   async flush(): Promise<void> {
@@ -90,25 +110,23 @@ export class ArguslogClient {
   }
 
   private baseEvent(level: Level): EventPayload {
+    const user = this.scopeStore.getUser();
+    const tags = this.scopeStore.getTags();
+    const contexts = this.scopeStore.getContexts();
     const event: EventPayload = {
       eventId: cryptoRandomId(),
       timestamp: Date.now(),
-      platform: 'javascript',
-      sdk: { name: SDK_NAME, version: SDK_VERSION },
+      platform: this.adapter.platform,
+      sdk: { name: this.adapter.sdkName, version: SDK_VERSION },
       level,
       release: this.options.release,
       environment: this.options.environment,
-      breadcrumbs: this.breadcrumbs.snapshot(),
+      breadcrumbs: this.scopeStore.getBreadcrumbs().snapshot(),
     };
-    if (this.user) event.user = this.user;
-    if (this.tags.size > 0) event.tags = Object.fromEntries(this.tags);
-    if (this.contexts.size > 0) event.contexts = Object.fromEntries(this.contexts);
-    if (typeof window !== 'undefined' && window.location) {
-      event.request = {
-        url: window.location.href,
-        userAgent: window.navigator?.userAgent,
-      };
-    }
+    if (user) event.user = user;
+    if (tags.size > 0) event.tags = Object.fromEntries(tags);
+    if (contexts.size > 0) event.contexts = Object.fromEntries(contexts);
+    this.adapter.enrichEvent?.(event);
     return event;
   }
 

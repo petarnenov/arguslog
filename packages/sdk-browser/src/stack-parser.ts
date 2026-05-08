@@ -1,4 +1,4 @@
-import type { StackFrame } from './types.js';
+import type { StackFrame } from '@arguslog/sdk-core';
 
 const CHROME_RE = /^\s*at (?:(.+?)\s+\()?(?:(.+?):(\d+):(\d+)|<anonymous>)\)?\s*$/;
 const FIREFOX_RE = /^([^@]*)@(.+?):(\d+):(\d+)$/;

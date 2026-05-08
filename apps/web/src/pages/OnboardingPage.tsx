@@ -40,8 +40,7 @@ export function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
 
   const platformsQuery = usePlatforms();
-  const platformOptions =
-    platformsQuery.data?.map((p) => ({ value: p.slug, label: p.name })) ?? [];
+  const platformOptions = platformsQuery.data?.map((p) => ({ value: p.slug, label: p.name })) ?? [];
 
   const form = useForm({
     initialValues: { orgName: '', projectName: '', platform: 'javascript' },
@@ -70,7 +69,7 @@ export function OnboardingPage() {
     onError: (err: unknown) => {
       // Mirror to console so a misconfigured Alert never silently swallows the failure reason.
       console.error('[onboarding] create flow failed', err);
-      setError(err instanceof ApiError ? err.problem.detail ?? err.problem.title : String(err));
+      setError(err instanceof ApiError ? (err.problem.detail ?? err.problem.title) : String(err));
     },
   });
 

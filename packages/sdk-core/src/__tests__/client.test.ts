@@ -1,7 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ArguslogClient } from '../client.js';
-import type { ArguslogOptions, EventPayload } from '../types.js';
+import type { ArguslogOptions, EventPayload, PlatformAdapter, StackParser } from '../types.js';
+
+const stubAdapter: PlatformAdapter = {
+  sdkName: 'arguslog.test',
+  platform: 'javascript',
+};
+
+const stubParseStack: StackParser = () => [];
 
 describe('ArguslogClient', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -18,13 +25,16 @@ describe('ArguslogClient', () => {
   afterEach(() => vi.restoreAllMocks());
 
   function makeClient(extra: Partial<ArguslogOptions> = {}): ArguslogClient {
-    return new ArguslogClient({
-      dsn: 'arguslog://k@localhost:8080/api/1',
-      environment: 'test',
-      release: '0.0.0',
-      transport: { fetch: fetchMock as unknown as typeof fetch, maxRetries: 0 },
-      ...extra,
-    });
+    return new ArguslogClient(
+      {
+        dsn: 'arguslog://k@localhost:8080/api/1',
+        environment: 'test',
+        release: '0.0.0',
+        transport: { fetch: fetchMock as unknown as typeof fetch, maxRetries: 0 },
+        ...extra,
+      },
+      { adapter: stubAdapter, parseStack: stubParseStack },
+    );
   }
 
   it('captureException sends a structured event', async () => {
@@ -36,6 +46,8 @@ describe('ArguslogClient', () => {
     expect(sent[0]?.exception?.values[0]?.value).toBe('boom');
     expect(sent[0]?.environment).toBe('test');
     expect(sent[0]?.level).toBe('error');
+    expect(sent[0]?.platform).toBe('javascript');
+    expect(sent[0]?.sdk.name).toBe('arguslog.test');
   });
 
   it('captureMessage sends with provided level', async () => {
@@ -103,5 +115,64 @@ describe('ArguslogClient', () => {
         headers: expect.objectContaining({ 'X-Arguslog-Auth': 'Arguslog DSN k' }),
       }),
     );
+  });
+
+  it('adapter.enrichEvent runs and can attach platform-specific fields', async () => {
+    const client = new ArguslogClient(
+      {
+        dsn: 'arguslog://k@localhost:8080/api/1',
+        transport: { fetch: fetchMock as unknown as typeof fetch, maxRetries: 0 },
+      },
+      {
+        adapter: {
+          sdkName: 'arguslog.node',
+          platform: 'node',
+          enrichEvent(event) {
+            event.contexts = {
+              ...(event.contexts ?? {}),
+              runtime: { name: 'node', version: 'v20' },
+            };
+          },
+        },
+        parseStack: stubParseStack,
+      },
+    );
+    client.captureMessage('m');
+    await client.flush();
+    expect(sent[0]?.platform).toBe('node');
+    expect(sent[0]?.contexts?.runtime).toEqual({ name: 'node', version: 'v20' });
+  });
+
+  it('flush awaits in-flight transport sends (regression: Transport.flush early-return)', async () => {
+    let resolveFetch: () => void;
+    const slow = new Promise<void>((r) => {
+      resolveFetch = r;
+    });
+    const slowFetch = vi.fn(async (_url: string, init?: RequestInit) => {
+      sent.push(JSON.parse(init?.body as string) as EventPayload);
+      await slow;
+      return new Response(null, { status: 202 });
+    });
+    const client = new ArguslogClient(
+      {
+        dsn: 'arguslog://k@localhost:8080/api/1',
+        transport: { fetch: slowFetch as unknown as typeof fetch, maxRetries: 0 },
+      },
+      { adapter: stubAdapter, parseStack: stubParseStack },
+    );
+
+    client.captureMessage('m');
+    let flushed = false;
+    const flushPromise = client.flush().then(() => {
+      flushed = true;
+    });
+    // Give the microtask queue a chance to settle so any erroneous early-return resolves.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(flushed).toBe(false); // must wait for the slow fetch
+    resolveFetch!();
+    await flushPromise;
+    expect(flushed).toBe(true);
+    expect(slowFetch).toHaveBeenCalledTimes(1);
   });
 });

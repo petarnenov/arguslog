@@ -17,6 +17,9 @@
     "dist"
   ],
   "sideEffects": false,
+  "dependencies": {
+    "@arguslog/sdk-core": "workspace:*"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
