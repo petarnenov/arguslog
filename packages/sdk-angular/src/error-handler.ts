@@ -13,8 +13,9 @@ export class ArguslogErrorHandler implements ErrorHandler {
 
 function unwrap(error: unknown): unknown {
   if (error && typeof error === 'object') {
-    const candidate = (error as { rejection?: unknown; originalError?: unknown }).rejection
-      ?? (error as { originalError?: unknown }).originalError;
+    const candidate =
+      (error as { rejection?: unknown; originalError?: unknown }).rejection ??
+      (error as { originalError?: unknown }).originalError;
     if (candidate !== undefined) return candidate;
   }
   return error;

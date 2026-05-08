@@ -49,7 +49,11 @@ describe('ArguslogService', () => {
     expect(setUser).toHaveBeenCalledWith({ id: 'u1' });
     expect(setTag).toHaveBeenCalledWith('region', 'eu');
     expect(setContext).toHaveBeenCalledWith('order', { id: 42 });
-    expect(addBreadcrumb).toHaveBeenCalledWith({ category: 'nav', message: '/cart', level: 'info' });
+    expect(addBreadcrumb).toHaveBeenCalledWith({
+      category: 'nav',
+      message: '/cart',
+      level: 'info',
+    });
   });
 
   it('isInitialized reflects client state', () => {
