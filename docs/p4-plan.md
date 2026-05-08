@@ -16,11 +16,11 @@
 
 ## Plans
 
-| Plan | Price | Events / month | Projects | Retention |
-| --- | --- | --- | --- | --- |
-| Free | $0 | 5,000 | 1 | 30 days |
-| Pro  | $9 / mo | 100,000 | 10 | 30 days |
-| Enterprise | contract | custom | unlimited | 90–365 days |
+| Plan       | Price    | Events / month | Projects  | Retention   |
+| ---------- | -------- | -------------- | --------- | ----------- |
+| Free       | $0       | 5,000          | 1         | 30 days     |
+| Pro        | $9 / mo  | 100,000        | 10        | 30 days     |
+| Enterprise | contract | custom         | unlimited | 90–365 days |
 
 Soft-cap behavior: when usage hits the cap, ingest returns 429 + dashboard
 shows a "quota exceeded" banner. Counter resets at `period_start + 1 month`.
@@ -29,15 +29,15 @@ hard downgrade is a P5 decision.
 
 ## Milestone tracker
 
-| #   | Milestone                                                                                                   | Status  | Commit    |
-| --- | ----------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| 1   | API: Plan catalog + `GET /api/v1/orgs/{id}/usage` for the BillingPage banner.                               | ✅ done | `6723bd4` |
-| 2   | INGEST: `RealQuotaEnforcer` — Bucket4j in-memory burst + Postgres atomic UPSERT monthly cap.                | ✅ done | `1d01456` |
-| 3   | API: Stripe Checkout endpoint — `POST /api/v1/orgs/{id}/billing/checkout-session`.                          | ✅ done | `4fcd904` |
-| 4   | API: Stripe Customer Portal endpoint — `POST /api/v1/orgs/{id}/billing/portal`.                             | ✅ done | `c883e16` |
+| #   | Milestone                                                                                                               | Status  | Commit    |
+| --- | ----------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| 1   | API: Plan catalog + `GET /api/v1/orgs/{id}/usage` for the BillingPage banner.                                           | ✅ done | `6723bd4` |
+| 2   | INGEST: `RealQuotaEnforcer` — Bucket4j in-memory burst + Postgres atomic UPSERT monthly cap.                            | ✅ done | `1d01456` |
+| 3   | API: Stripe Checkout endpoint — `POST /api/v1/orgs/{id}/billing/checkout-session`.                                      | ✅ done | `4fcd904` |
+| 4   | API: Stripe Customer Portal endpoint — `POST /api/v1/orgs/{id}/billing/portal`.                                         | ✅ done | `c883e16` |
 | 5   | API: Stripe webhook handler — `checkout.session.completed`, `subscription.{updated,deleted}`, `invoice.payment_failed`. | ✅ done | `afb5ea0` |
-| 6   | Web: BillingPage — current plan, usage vs cap, upgrade CTA → Checkout, manage → Portal.                     | ✅ done | `5865e36` |
-| 7   | Web: PersonalAccessTokensPage (P3 #7c carry-forward) — mint / list / revoke.                                | ✅ done | `7338f89` |
+| 6   | Web: BillingPage — current plan, usage vs cap, upgrade CTA → Checkout, manage → Portal.                                 | ✅ done | `5865e36` |
+| 7   | Web: PersonalAccessTokensPage (P3 #7c carry-forward) — mint / list / revoke.                                            | ✅ done | `7338f89` |
 
 ## Architecture decisions to lock in
 
@@ -45,14 +45,14 @@ hard downgrade is a P5 decision.
   per-tier `events`, `projects`, `retentionDays`. The DB column stays the existing
   `org_plan` enum (mirror), but limits live in code so changes are atomic and reviewable.
   Stripe price IDs come from env (`STRIPE_PRICE_PRO`) so the same code can target test
-  + prod with different price objects.
+  - prod with different price objects.
 - **Quotas — Bucket4j on Redis:** the existing `QuotaEnforcer` port in ingest gets a
   `RedisQuotaEnforcer` impl. Two buckets per check:
-    1. **Per-project burst** — small token bucket (e.g. 60 events / 10s) so a malicious
-       SDK can't overload Redis Streams. Refills continuously.
-    2. **Per-org monthly cap** — one consumed token = one event, refills only at the
-       month boundary. Read backing `quotas.events_count` once per request via Bucket4j's
-       distributed counter.
+  1. **Per-project burst** — small token bucket (e.g. 60 events / 10s) so a malicious
+     SDK can't overload Redis Streams. Refills continuously.
+  2. **Per-org monthly cap** — one consumed token = one event, refills only at the
+     month boundary. Read backing `quotas.events_count` once per request via Bucket4j's
+     distributed counter.
 - **Stripe Checkout flow:** api creates a Checkout Session with `mode=subscription`,
   passes `client_reference_id = org_id`, `customer_email` from the requesting user,
   `success_url` + `cancel_url` back to the dashboard. Returns `{ url }` for the web to

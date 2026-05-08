@@ -67,11 +67,11 @@ Everything the browser SDK exports is re-exported from this package — see the
 </ArguslogErrorBoundary>
 ```
 
-| Prop       | Type                                                                            | Notes                                                                  |
-| ---------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `fallback` | `ReactNode \| ({ error, reset }) => ReactNode`                                  | Render-prop form gets a `reset()` to retry without a hard navigation.  |
-| `onError`  | `(error: Error, info: ErrorInfo) => void`                                       | Side-channel — fires AFTER the SDK reports. Useful for custom logging. |
-| `children` | `ReactNode`                                                                     | Subtree to protect.                                                    |
+| Prop       | Type                                           | Notes                                                                  |
+| ---------- | ---------------------------------------------- | ---------------------------------------------------------------------- |
+| `fallback` | `ReactNode \| ({ error, reset }) => ReactNode` | Render-prop form gets a `reset()` to retry without a hard navigation.  |
+| `onError`  | `(error: Error, info: ErrorInfo) => void`      | Side-channel — fires AFTER the SDK reports. Useful for custom logging. |
+| `children` | `ReactNode`                                    | Subtree to protect.                                                    |
 
 ### `useArguslog()`
 
@@ -100,6 +100,7 @@ function CheckoutButton() {
 ```
 
 The returned object exposes:
+
 - `captureException(error, hint?)`
 - `captureMessage(message, level?)`
 - `addBreadcrumb(crumb)`

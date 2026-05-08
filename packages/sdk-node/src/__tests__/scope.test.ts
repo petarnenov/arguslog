@@ -30,7 +30,10 @@ describe('AsyncLocalScopeStore', () => {
   it('isolates concurrent .run scopes (the per-request guarantee)', async () => {
     const s = new AsyncLocalScopeStore(50);
 
-    async function handle(reqId: string, delayMs: number): Promise<{ user: string | undefined; region: string | undefined }> {
+    async function handle(
+      reqId: string,
+      delayMs: number,
+    ): Promise<{ user: string | undefined; region: string | undefined }> {
       const child = s.fork();
       return s.run(child, async () => {
         s.setUser({ id: reqId });
@@ -59,7 +62,12 @@ describe('AsyncLocalScopeStore', () => {
     const s = new AsyncLocalScopeStore(50);
     const child = s.fork();
     s.run(child, () => {
-      s.getBreadcrumbs().add({ timestamp: 1, category: 'http', message: 'in-request', level: 'info' });
+      s.getBreadcrumbs().add({
+        timestamp: 1,
+        category: 'http',
+        message: 'in-request',
+        level: 'info',
+      });
     });
     expect(s.globalFallback().getBreadcrumbs().snapshot()).toEqual([]);
     expect(child.getBreadcrumbs().snapshot()).toHaveLength(1);

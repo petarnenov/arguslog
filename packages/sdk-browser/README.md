@@ -58,18 +58,18 @@ against the project ID + key combo and rejects unknown pairs with HTTP 401.
 Configures and starts the client. Re-initializing tears down the previous handlers cleanly,
 so hot-reload during dev doesn't accumulate stale listeners.
 
-| Option            | Type                                            | Default       | Notes                                                                 |
-| ----------------- | ----------------------------------------------- | ------------- | --------------------------------------------------------------------- |
-| `dsn`             | `string`                                        | _required_    | See "DSN format" above.                                               |
-| `release`         | `string`                                        | _none_        | Free-form version tag — git sha, semver, etc. Stamped on every event. |
-| `environment`     | `string`                                        | _none_        | E.g. `production`, `staging`, `dev`.                                  |
-| `sampleRate`      | `number` 0–1                                    | `1.0`         | Fraction of events kept; useful for high-traffic apps.                |
-| `maxBreadcrumbs`  | `number`                                        | `50`          | Ring-buffer size.                                                     |
-| `beforeSend`      | `(event) => event \| null \| Promise<...>`      | _identity_    | Last-mile mutation / drop hook.                                       |
-| `scrubbing`       | `{ enabled?: boolean; extraPatterns?: RegExp[] }` | enabled     | PII redaction in messages and URLs.                                   |
-| `transport`       | `{ fetch?: typeof fetch; maxRetries?: number }` | global fetch  | Inject a custom fetch (testing) or bump retry budget.                 |
-| `integrations`    | `('globalHandlers' \| 'breadcrumbs')[]`         | _none_        | Opt in to auto-instrumentation.                                       |
-| `debug`           | `boolean`                                       | `false`       | Logs every send to the console — never enable in production.          |
+| Option           | Type                                              | Default      | Notes                                                                 |
+| ---------------- | ------------------------------------------------- | ------------ | --------------------------------------------------------------------- |
+| `dsn`            | `string`                                          | _required_   | See "DSN format" above.                                               |
+| `release`        | `string`                                          | _none_       | Free-form version tag — git sha, semver, etc. Stamped on every event. |
+| `environment`    | `string`                                          | _none_       | E.g. `production`, `staging`, `dev`.                                  |
+| `sampleRate`     | `number` 0–1                                      | `1.0`        | Fraction of events kept; useful for high-traffic apps.                |
+| `maxBreadcrumbs` | `number`                                          | `50`         | Ring-buffer size.                                                     |
+| `beforeSend`     | `(event) => event \| null \| Promise<...>`        | _identity_   | Last-mile mutation / drop hook.                                       |
+| `scrubbing`      | `{ enabled?: boolean; extraPatterns?: RegExp[] }` | enabled      | PII redaction in messages and URLs.                                   |
+| `transport`      | `{ fetch?: typeof fetch; maxRetries?: number }`   | global fetch | Inject a custom fetch (testing) or bump retry budget.                 |
+| `integrations`   | `('globalHandlers' \| 'breadcrumbs')[]`           | _none_       | Opt in to auto-instrumentation.                                       |
+| `debug`          | `boolean`                                         | `false`      | Logs every send to the console — never enable in production.          |
 
 ### `captureException(error, hint?): string | undefined`
 

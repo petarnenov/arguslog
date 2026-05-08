@@ -4,12 +4,7 @@ import type { AddressInfo } from 'node:net';
 import type { EventPayload } from '@arguslog/sdk-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  __resetForTests,
-  captureMessage,
-  flush,
-  init,
-} from '../index.js';
+import { __resetForTests, captureMessage, flush, init } from '../index.js';
 
 interface TestServer {
   port: number;
@@ -128,7 +123,7 @@ describe('http integration', () => {
     expect(crumb?.data).toMatchObject({ method: 'POST', url, status_code: 200 });
   });
 
-  it('does NOT record breadcrumbs for the SDK\'s own outbound DSN traffic', async () => {
+  it("does NOT record breadcrumbs for the SDK's own outbound DSN traffic", async () => {
     // The SDK transport emits POST /api/1/events with X-Arguslog-Auth.
     // captureMessage triggers a transport flush — if our integration didn't filter the SDK's
     // own fetch calls we'd get a self-referential breadcrumb feedback loop.

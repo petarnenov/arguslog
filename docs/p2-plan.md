@@ -10,16 +10,16 @@
 
 ## Milestones
 
-| #   | Milestone                                                                                                            | Status  | Commit    |
-| --- | -------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
-| 1   | API: `/api/v1/projects/{id}/issues` paginated list — JOOQ-free JdbcTemplate, RLS-aware, real schema.                 | ✅ done | `ef0950b` |
+| #   | Milestone                                                                                                               | Status  | Commit    |
+| --- | ----------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| 1   | API: `/api/v1/projects/{id}/issues` paginated list — JOOQ-free JdbcTemplate, RLS-aware, real schema.                    | ✅ done | `ef0950b` |
 | 2   | API auth glue — Keycloak JWT → user → org membership → `current_setting('arguslog.org_id')` set per request via filter. | ✅ done | `6f117b7` |
-| 3   | API: issue detail + recent events endpoints; surface fingerprint, occurrence_count, level, last_seen.                | ✅ done | `b10b084` |
-| 4   | Web login flow — `oidc-client-ts` redirect + PKCE callback against Keycloak realm, persisted via Zustand store.      | ✅ done | `86bdd66` |
-| 5   | Web IssuesPage wired to real API via TanStack Query + Mantine table; status / level filters; pagination.             | ✅ done | `6cca436` |
-| 6   | Web IssueDetailPage — title / culprit / chart from `issue_stats_5m`, recent events panel.                            | ✅ done | `ad1cd26` |
-| 7   | Keycloak realm verification — confirm `arguslog-api` + `arguslog-web` clients, pwa scopes, default test users.             | ✅ done | `2b7c814` |
-| 8   | OpenAPI artifact emit + the openapi-diff CI job lights up (was a placeholder under PR workflow).                     | ✅ done | `73aa76c` |
+| 3   | API: issue detail + recent events endpoints; surface fingerprint, occurrence_count, level, last_seen.                   | ✅ done | `b10b084` |
+| 4   | Web login flow — `oidc-client-ts` redirect + PKCE callback against Keycloak realm, persisted via Zustand store.         | ✅ done | `86bdd66` |
+| 5   | Web IssuesPage wired to real API via TanStack Query + Mantine table; status / level filters; pagination.                | ✅ done | `6cca436` |
+| 6   | Web IssueDetailPage — title / culprit / chart from `issue_stats_5m`, recent events panel.                               | ✅ done | `ad1cd26` |
+| 7   | Keycloak realm verification — confirm `arguslog-api` + `arguslog-web` clients, pwa scopes, default test users.          | ✅ done | `2b7c814` |
+| 8   | OpenAPI artifact emit + the openapi-diff CI job lights up (was a placeholder under PR workflow).                        | ✅ done | `73aa76c` |
 
 ## Architecture decisions to lock in
 

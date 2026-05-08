@@ -7,13 +7,13 @@ image built by their per-service Dockerfile.
 
 ## Services
 
-| Railway service     | Source path           | Builder    | Health check                    |
-| ------------------- | --------------------- | ---------- | ------------------------------- |
-| `arguslog-api`      | `services/api/`       | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-ingest`   | `services/ingest/`    | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-worker`   | `services/worker/`    | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-web`      | `apps/web/`           | Dockerfile | `/healthz` (Caddy `respond ok`) |
-| `arguslog-keycloak` | `services/keycloak/`  | Dockerfile | `/realms/master` (8080)         |
+| Railway service     | Source path          | Builder    | Health check                    |
+| ------------------- | -------------------- | ---------- | ------------------------------- |
+| `arguslog-api`      | `services/api/`      | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-ingest`   | `services/ingest/`   | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-worker`   | `services/worker/`   | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-web`      | `apps/web/`          | Dockerfile | `/healthz` (Caddy `respond ok`) |
+| `arguslog-keycloak` | `services/keycloak/` | Dockerfile | `/realms/master` (8080)         |
 
 Each service has a `railway.toml` co-located with its source — Railway auto-detects them so
 there's no per-service dashboard config to drift.
@@ -32,12 +32,12 @@ Project id `f24cb7e5-c1fd-4520-a04d-dea1acd0d309`. All four custom domains are a
 their respective health endpoints; Keycloak realm import + email verification flow are live;
 Cloudflare R2 wired for attachments + source maps.
 
-| Subdomain               | DNS in Cloudflare                  | Cloudflare proxy | Health endpoint                                    |
-| ----------------------- | ---------------------------------- | ---------------- | -------------------------------------------------- |
-| `app.arguslog.org`      | CNAME → 8onbll5q.up.railway.app    | ON (orange)      | `/healthz` 200                                     |
-| `api.arguslog.org`      | CNAME → 4j1n7gex.up.railway.app    | ON (orange)      | `/actuator/health/readiness` 200                   |
-| `auth.arguslog.org`     | CNAME → cymu37i0.up.railway.app    | ON (orange)      | `/realms/arguslog/.well-known/openid-configuration` 200 |
-| `ingest.arguslog.org`   | CNAME → d9fz3gra.up.railway.app    | OFF (grey)       | `/actuator/health/readiness` 200                   |
+| Subdomain             | DNS in Cloudflare               | Cloudflare proxy | Health endpoint                                         |
+| --------------------- | ------------------------------- | ---------------- | ------------------------------------------------------- |
+| `app.arguslog.org`    | CNAME → 8onbll5q.up.railway.app | ON (orange)      | `/healthz` 200                                          |
+| `api.arguslog.org`    | CNAME → 4j1n7gex.up.railway.app | ON (orange)      | `/actuator/health/readiness` 200                        |
+| `auth.arguslog.org`   | CNAME → cymu37i0.up.railway.app | ON (orange)      | `/realms/arguslog/.well-known/openid-configuration` 200 |
+| `ingest.arguslog.org` | CNAME → d9fz3gra.up.railway.app | OFF (grey)       | `/actuator/health/readiness` 200                        |
 
 Cloudflare zone-wide settings: **SSL/TLS mode = Full** (required by Railway custom-domain TLS;
 "Flexible" mode breaks origin handshakes). Resend DKIM/SPF/DMARC TXT + MX records also live in
@@ -46,12 +46,12 @@ the same zone — keep them when re-applying DNS templates.
 Railway-issued direct URLs are still active and useful for bypassing Cloudflare during incident
 debug:
 
-| Service             | Direct URL                                              |
-| ------------------- | ------------------------------------------------------- |
-| `arguslog-api`      | https://arguslog-api-production.up.railway.app          |
-| `arguslog-ingest`   | https://arguslog-ingest-production.up.railway.app       |
-| `arguslog-web`      | https://arguslog-web-production.up.railway.app          |
-| `arguslog-keycloak` | https://arguslog-keycloak-production.up.railway.app     |
+| Service             | Direct URL                                          |
+| ------------------- | --------------------------------------------------- |
+| `arguslog-api`      | https://arguslog-api-production.up.railway.app      |
+| `arguslog-ingest`   | https://arguslog-ingest-production.up.railway.app   |
+| `arguslog-web`      | https://arguslog-web-production.up.railway.app      |
+| `arguslog-keycloak` | https://arguslog-keycloak-production.up.railway.app |
 
 ## Staging
 
@@ -211,12 +211,12 @@ Runtime: just `PORT` (Railway-injected; Caddy reads it).
 
 Set in Railway → Service → Settings → Domains. Cloudflare DNS for `arguslog.org`:
 
-| Subdomain               | Service           | Cloudflare proxy? | Reason                                                                 |
-| ----------------------- | ----------------- | ----------------- | ---------------------------------------------------------------------- |
-| `app.arguslog.org`      | `arguslog-web`    | on                | WAF / DDoS for the user-facing dashboard.                              |
-| `api.arguslog.org`      | `arguslog-api`    | on                | Same.                                                                  |
-| `ingest.arguslog.org`   | `arguslog-ingest` | **off**           | Avoid double-hop on every event POST; cf doesn't help an authed write. |
-| `auth.arguslog.org`     | Keycloak          | on                | OIDC issuer; cf is fine in front.                                      |
+| Subdomain             | Service           | Cloudflare proxy? | Reason                                                                 |
+| --------------------- | ----------------- | ----------------- | ---------------------------------------------------------------------- |
+| `app.arguslog.org`    | `arguslog-web`    | on                | WAF / DDoS for the user-facing dashboard.                              |
+| `api.arguslog.org`    | `arguslog-api`    | on                | Same.                                                                  |
+| `ingest.arguslog.org` | `arguslog-ingest` | **off**           | Avoid double-hop on every event POST; cf doesn't help an authed write. |
+| `auth.arguslog.org`   | Keycloak          | on                | OIDC issuer; cf is fine in front.                                      |
 
 Railway provisions Let's Encrypt certificates automatically for each custom domain.
 

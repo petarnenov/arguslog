@@ -23,7 +23,8 @@ export function installGlobalHandlers(client: ArguslogClient): () => void {
   const onError = (event: ErrorEvent): void => {
     // Prefer the unwrapped Error object (carries a stack); fall back to the message string for
     // browsers / edge cases that don't supply one (e.g. cross-origin "Script error.").
-    const err = event.error instanceof Error ? event.error : new Error(event.message || 'Unknown error');
+    const err =
+      event.error instanceof Error ? event.error : new Error(event.message || 'Unknown error');
     client.captureException(err, { level: 'error' });
   };
 
