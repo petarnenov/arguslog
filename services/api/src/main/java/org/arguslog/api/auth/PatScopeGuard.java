@@ -29,4 +29,17 @@ public final class PatScopeGuard {
       throw new AccessDeniedException("PAT missing required scope: " + required.wire());
     }
   }
+
+  /**
+   * Block PAT-driven calls entirely — only JWT-issued sessions (the dashboard) pass. Used for
+   * sensitive ops where letting a PAT escalate (e.g. minting another PAT) would be a privilege-
+   * escalation vector even with a scope check.
+   */
+  public static void requireDashboardSession() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth instanceof PatAuthentication) {
+      throw new AccessDeniedException(
+          "This endpoint is only available to dashboard sessions, not PATs.");
+    }
+  }
 }

@@ -7,6 +7,8 @@ import org.arguslog.api.alerts.adapter.in.web.dto.AlertRuleResponse;
 import org.arguslog.api.alerts.application.AlertRuleUseCase;
 import org.arguslog.api.alerts.application.AlertRuleUseCase.InvalidAlertRuleException;
 import org.arguslog.api.alerts.domain.AlertRule;
+import org.arguslog.api.auth.PatScopeGuard;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.security.AccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -42,6 +44,7 @@ public class AlertRuleController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<AlertRuleResponse> create(
       @PathVariable long projectId, @RequestBody AlertRuleRequest body) {
+    PatScopeGuard.require(PatScope.ALERTS_WRITE);
     AlertRule created =
         useCase.create(
             projectId,
@@ -65,6 +68,7 @@ public class AlertRuleController {
   @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
   public AlertRuleResponse update(
       @PathVariable long projectId, @PathVariable long id, @RequestBody AlertRuleRequest body) {
+    PatScopeGuard.require(PatScope.ALERTS_WRITE);
     return useCase
         .update(
             projectId,
@@ -80,6 +84,7 @@ public class AlertRuleController {
 
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(@PathVariable long projectId, @PathVariable long id) {
+    PatScopeGuard.require(PatScope.ALERTS_WRITE);
     if (!useCase.delete(projectId, id)) {
       throw AccessException.notFound(id);
     }

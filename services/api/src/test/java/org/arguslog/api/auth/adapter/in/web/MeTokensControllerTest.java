@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,6 +19,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.arguslog.api.auth.adapter.in.web.PatAuthenticationFilter.PatAuthentication;
 import org.arguslog.api.auth.application.PatUseCase.InvalidPatException;
 import org.arguslog.api.auth.application.PatUseCase.Issued;
 import org.arguslog.api.auth.domain.PatScope;
@@ -124,5 +126,27 @@ class MeTokensControllerTest extends AbstractControllerTest {
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.title").value(startsWith("Invalid")));
+  }
+
+  @Test
+  void postWithPatAuthIs403() throws Exception {
+    mvc.perform(
+            post("/api/v1/me/tokens")
+                .with(authentication(patAuthFor(USER)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"chained\"}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void deleteWithPatAuthIs403() throws Exception {
+    mvc.perform(delete("/api/v1/me/tokens/7").with(authentication(patAuthFor(USER))))
+        .andExpect(status().isForbidden());
+  }
+
+  private static PatAuthentication patAuthFor(UUID user) {
+    return new PatAuthentication(
+        new PersonalAccessToken(
+            7L, user, "ci", "ABCDEFGH", null, null, NOW, EnumSet.allOf(PatScope.class)));
   }
 }

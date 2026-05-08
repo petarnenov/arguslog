@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -17,11 +18,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.arguslog.api.alerts.application.AlertDestinationUseCase;
 import org.arguslog.api.alerts.domain.AlertDestination;
 import org.arguslog.api.alerts.domain.DestinationKind;
+import org.arguslog.api.auth.adapter.in.web.PatAuthenticationFilter.PatAuthentication;
+import org.arguslog.api.auth.domain.PatScope;
+import org.arguslog.api.auth.domain.PersonalAccessToken;
 import org.arguslog.api.testsupport.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -167,5 +173,48 @@ class AlertDestinationControllerTest extends AbstractControllerTest {
   void deleteIs404WhenMissing() throws Exception {
     when(alertDestinationUseCase.delete(1L, 999L)).thenReturn(false);
     mvc.perform(delete("/api/v1/orgs/1/alert-destinations/999")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  void postWithPatLackingAlertsWriteIs403() throws Exception {
+    mvc.perform(
+            post("/api/v1/orgs/1/alert-destinations")
+                .with(authentication(patWith(PatScope.ALERTS_READ)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"kind\":\"webhook\",\"name\":\"x\",\"config\":{\"url\":\"https://x\"}}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void putWithPatLackingAlertsWriteIs403() throws Exception {
+    mvc.perform(
+            put("/api/v1/orgs/1/alert-destinations/7")
+                .with(authentication(patWith(PatScope.ALERTS_READ)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"kind\":\"webhook\",\"name\":\"x\",\"config\":{\"url\":\"https://x\"}}"))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void deleteWithPatLackingAlertsWriteIs403() throws Exception {
+    mvc.perform(
+            delete("/api/v1/orgs/1/alert-destinations/7")
+                .with(authentication(patWith(PatScope.ISSUES_READ))))
+        .andExpect(status().isForbidden());
+  }
+
+  private static PatAuthentication patWith(PatScope... scopes) {
+    return new PatAuthentication(
+        new PersonalAccessToken(
+            7L,
+            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            "ci",
+            "ABCDEFGH",
+            null,
+            null,
+            Instant.parse("2026-05-05T12:00:00Z"),
+            EnumSet.copyOf(List.of(scopes))));
   }
 }
