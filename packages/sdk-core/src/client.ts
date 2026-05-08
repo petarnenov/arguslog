@@ -12,8 +12,12 @@ import type {
   StackParser,
   User,
 } from './types.js';
-
-export const SDK_VERSION = '0.0.0';
+// Re-exported from a generator-fed file so the runtime sdk.version stamped on every event
+// tracks package.json:version. scripts/gen-version.mjs rewrites version.generated.ts before
+// every build/test (prebuild + pretest hooks). Bumping the package version is a one-line
+// change in package.json — no source edit needed.
+import { SDK_VERSION } from './version.generated.js';
+export { SDK_VERSION };
 
 export interface ClientDeps {
   adapter: PlatformAdapter;
