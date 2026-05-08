@@ -19,7 +19,10 @@ PNPM           := pnpm
         api ingest worker web build-sdks \
         install e2e-install e2e \
         build lint typecheck test \
+        deploy-prod deploy-status \
         clean reset doctor
+
+PROD_SERVICES  := arguslog-api arguslog-ingest arguslog-worker arguslog-web arguslog-landing
 
 ## ─── Top-level ─────────────────────────────────────────────────────────────
 
@@ -121,6 +124,67 @@ test: ## Run all tests (Gradle + Vitest)
 
 e2e: ## Run Playwright e2e suite
 	@$(PNPM) e2e
+
+## ─── Production deploy ─────────────────────────────────────────────────────
+
+deploy-prod: ## Force fresh rebuild of all 5 prod app services in parallel, then check status
+	@command -v railway >/dev/null || { echo "✗ railway CLI not installed (brew install railway)"; exit 1; }
+	@echo "▶ Switching to production environment..."
+	@railway environment production >/dev/null
+	@echo "▶ Triggering parallel railway up for: $(PROD_SERVICES)"
+	@# Each `railway up` is independent — Railway's builder runs them concurrently. We capture
+	@# pids and wait for all so the post-deploy status check sees the final state.
+	@pids=""; \
+	for svc in $(PROD_SERVICES); do \
+		echo "  → $$svc"; \
+		railway up --service "$$svc" --ci > /tmp/argus-deploy-$$svc.log 2>&1 & \
+		pids="$$pids $$!"; \
+	done; \
+	echo "▶ Waiting for all builds to complete..."; \
+	failed=0; \
+	for pid in $$pids; do \
+		if ! wait $$pid; then failed=$$((failed + 1)); fi; \
+	done; \
+	if [ $$failed -gt 0 ]; then \
+		echo "✗ $$failed deploy(s) failed — see /tmp/argus-deploy-*.log"; \
+		exit 1; \
+	fi
+	@echo "▶ Verifying deployment state..."
+	@$(MAKE) deploy-status
+
+deploy-status: ## Show latest deployment status + timestamp for every prod service
+	@command -v railway >/dev/null || { echo "✗ railway CLI not installed"; exit 1; }
+	@command -v python3 >/dev/null || { echo "✗ python3 required for output formatting"; exit 1; }
+	@railway status --json | python3 -c "$$DEPLOY_STATUS_PY"
+
+# Heredoc-y python so the Makefile target body stays one line. Reads stdin (railway status JSON),
+# prints one row per prod service with status + truncated timestamp; flags any service whose
+# latestDeployment isn't SUCCESS so a flaky parallel build is impossible to miss.
+define DEPLOY_STATUS_PY
+import sys, json
+d = json.load(sys.stdin)
+rows = []
+for env in d['environments']['edges']:
+    if env['node']['name'] != 'production':
+        continue
+    for s in env['node']['serviceInstances']['edges']:
+        sn = s['node']
+        dep = sn.get('latestDeployment', {}) or {}
+        rows.append((sn['serviceName'], dep.get('status', '-'), (dep.get('createdAt') or '-')[:19]))
+rows.sort()
+print(f"  {'SERVICE':25} {'STATUS':10} {'DEPLOYED':19}")
+print(f"  {'-' * 25} {'-' * 10} {'-' * 19}")
+laggards = []
+for name, status, ts in rows:
+    marker = '✗' if status not in ('SUCCESS', 'SLEEPING', '-') else ' '
+    print(f"{marker} {name:25} {status:10} {ts:19}")
+    if status not in ('SUCCESS', 'SLEEPING', '-'):
+        laggards.append(name)
+if laggards:
+    print(f"\n⚠  Non-success deploys detected: {', '.join(laggards)}")
+    sys.exit(1)
+endef
+export DEPLOY_STATUS_PY
 
 ## ─── Cleanup ───────────────────────────────────────────────────────────────
 
