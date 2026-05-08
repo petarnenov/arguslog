@@ -64,9 +64,12 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       # Node is here only so we can run the shared verify-tag-version.mjs script.
+      # `package-manager-cache: false` disables setup-node@v5's pnpm-lock auto-detection —
+      # this workflow doesn't install pnpm and the cache step would error out.
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Verify tag matches pyproject.toml version
         working-directory: ${{ github.workspace }}
