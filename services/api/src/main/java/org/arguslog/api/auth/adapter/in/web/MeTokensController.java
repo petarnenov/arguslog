@@ -91,7 +91,7 @@ public class MeTokensController {
   ResponseEntity<ProblemDetail> handleInvalid(InvalidPatException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid token");
-    body.setType(URI.create("https://arguslog.dev/problems/invalid-pat"));
+    body.setType(URI.create("https://arguslog.org/problems/invalid-pat"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);

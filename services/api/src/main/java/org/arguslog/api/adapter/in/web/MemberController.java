@@ -111,7 +111,7 @@ public class MemberController {
       HttpStatus status, String title, String typeSlug, String detail) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(status, detail);
     body.setTitle(title);
-    body.setType(URI.create("https://arguslog.dev/problems/" + typeSlug));
+    body.setType(URI.create("https://arguslog.org/problems/" + typeSlug));
     return ResponseEntity.status(status).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(body);
   }
 }

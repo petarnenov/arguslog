@@ -96,7 +96,7 @@ public class CheckoutController {
     ProblemDetail body =
         ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage());
     body.setTitle("Stripe not configured");
-    body.setType(URI.create("https://arguslog.dev/problems/stripe-not-configured"));
+    body.setType(URI.create("https://arguslog.org/problems/stripe-not-configured"));
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -106,7 +106,7 @@ public class CheckoutController {
   ResponseEntity<ProblemDetail> handleFailed(CheckoutFailedException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
     body.setTitle("Stripe checkout failed");
-    body.setType(URI.create("https://arguslog.dev/problems/stripe-checkout-failed"));
+    body.setType(URI.create("https://arguslog.org/problems/stripe-checkout-failed"));
     return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -116,7 +116,7 @@ public class CheckoutController {
   ResponseEntity<ProblemDetail> handleInvalidInterval(InvalidIntervalException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid billing interval");
-    body.setType(URI.create("https://arguslog.dev/problems/invalid-billing-interval"));
+    body.setType(URI.create("https://arguslog.org/problems/invalid-billing-interval"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -128,7 +128,7 @@ public class CheckoutController {
     // dashboard should disable the "Manage subscription" button when usage shows free tier.
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     body.setTitle("No Stripe customer for this org");
-    body.setType(URI.create("https://arguslog.dev/problems/no-stripe-customer"));
+    body.setType(URI.create("https://arguslog.org/problems/no-stripe-customer"));
     return ResponseEntity.status(HttpStatus.CONFLICT)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);

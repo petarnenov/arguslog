@@ -95,7 +95,7 @@ public class AlertRuleController {
   ResponseEntity<ProblemDetail> handleInvalid(InvalidAlertRuleException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid alert rule");
-    body.setType(URI.create("https://arguslog.dev/problems/invalid-alert-rule"));
+    body.setType(URI.create("https://arguslog.org/problems/invalid-alert-rule"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);

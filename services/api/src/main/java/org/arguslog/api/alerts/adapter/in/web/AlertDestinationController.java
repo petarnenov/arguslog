@@ -93,7 +93,7 @@ public class AlertDestinationController {
   ResponseEntity<ProblemDetail> handleBadConfig(InvalidDestinationConfigException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid alert destination");
-    body.setType(URI.create("https://arguslog.dev/problems/invalid-alert-destination"));
+    body.setType(URI.create("https://arguslog.org/problems/invalid-alert-destination"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -103,7 +103,7 @@ public class AlertDestinationController {
   ResponseEntity<ProblemDetail> handleDuplicate(DuplicateDestinationException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     body.setTitle("Duplicate alert destination");
-    body.setType(URI.create("https://arguslog.dev/problems/duplicate-alert-destination"));
+    body.setType(URI.create("https://arguslog.org/problems/duplicate-alert-destination"));
     return ResponseEntity.status(HttpStatus.CONFLICT)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
