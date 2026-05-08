@@ -13,9 +13,13 @@ RUN corepack enable && corepack prepare pnpm@9.10.0 --activate
 # so source-only edits don't bust the install cache.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .npmrc* ./
 COPY apps/web/package.json ./apps/web/
+COPY apps/landing/package.json ./apps/landing/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/sdk-browser/package.json ./packages/sdk-browser/
+COPY packages/sdk-core/package.json ./packages/sdk-core/
+COPY packages/sdk-node/package.json ./packages/sdk-node/
 COPY packages/sdk-react/package.json ./packages/sdk-react/
+COPY packages/sdk-react-native/package.json ./packages/sdk-react-native/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 COPY cli/package.json ./cli/
 COPY e2e/package.json ./e2e/
