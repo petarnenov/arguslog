@@ -47,6 +47,29 @@ jobs:
             apps/*/coverage
             packages/*/coverage
 
+  python:
+    name: Python — lint + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: python-sdk
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Install package with dev extras
+        run: uv pip install --system -e ".[dev]"
+      - name: ruff check
+        run: ruff check .
+      - name: ruff format --check
+        run: ruff format --check .
+      - name: pytest
+        run: pytest --cov=arguslog --cov-report=term
+
   java:
     name: Java — build + test
     runs-on: ubuntu-latest
