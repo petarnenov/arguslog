@@ -73,6 +73,13 @@ jobs:
     name: Security — gitleaks + trivy
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # gitleaks-action calls GET /repos/{owner}/{repo}/pulls/{n}/commits to scope its scan to
+    # the PR's commits — that requires pull-requests:read, which the default GITHUB_TOKEN
+    # doesn't grant. Without this block the action fails with "Resource not accessible by
+    # integration" (HTTP 403) on every PR.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
       - name: gitleaks
