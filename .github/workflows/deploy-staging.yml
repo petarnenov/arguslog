@@ -68,6 +68,16 @@ jobs:
             *)   echo "name=arguslog-${{ matrix.service }}" >> "$GITHUB_OUTPUT" ;;
           esac
 
+      - name: Stamp GIT_SHA
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+        run: |
+          railway variables \
+            --set "GIT_SHA=${{ github.sha }}" \
+            --service="${{ steps.svc.outputs.name }}" \
+            --environment=staging \
+            --skip-deploys
+
       - name: Deploy
         env:
           # Project-scoped token from the Railway dashboard (not the account token). Read-only
@@ -81,4 +91,5 @@ jobs:
             --service="${{ steps.svc.outputs.name }}" \
             --environment=staging \
             --ci \
-            --detach
+            --detach \
+            --message "${{ github.sha }}"

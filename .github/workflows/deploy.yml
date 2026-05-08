@@ -83,7 +83,12 @@ jobs:
       - name: Verify CLI
         run: railway --version
 
+      - name: Stamp GIT_SHA on arguslog-${{ matrix.service }}
+        env:
+          RAILWAY_TOKEN: ${{ inputs.environment == 'production' && secrets.RAILWAY_TOKEN_PRODUCTION || secrets.RAILWAY_TOKEN_STAGING }}
+        run: railway variables --set "GIT_SHA=${{ github.sha }}" --service arguslog-${{ matrix.service }} --environment ${{ inputs.environment }} --skip-deploys
+
       - name: Deploy arguslog-${{ matrix.service }}
         env:
           RAILWAY_TOKEN: ${{ inputs.environment == 'production' && secrets.RAILWAY_TOKEN_PRODUCTION || secrets.RAILWAY_TOKEN_STAGING }}
-        run: railway up --service arguslog-${{ matrix.service }} --environment ${{ inputs.environment }} --ci --detach
+        run: railway up --service arguslog-${{ matrix.service }} --environment ${{ inputs.environment }} --ci --detach --message "${{ github.sha }}"
