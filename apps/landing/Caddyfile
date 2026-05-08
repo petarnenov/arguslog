@@ -1,0 +1,28 @@
+# Caddy config for the Arguslog marketing landing.
+#
+# Listens on $PORT (Railway injects), serves /srv. The landing is essentially a single-page
+# marketing site, but Caddy's try_files keeps deep-link refreshes honest if we add /privacy or
+# /terms later.
+
+:{$PORT:8080} {
+    root * /srv
+
+    try_files {path} /index.html
+
+    file_server
+
+    @hashed path_regexp ^/assets/.+\.[0-9a-f]{8,}\..+$
+    header @hashed Cache-Control "public, max-age=31536000, immutable"
+    @notHashed not path /assets/*
+    header @notHashed Cache-Control "no-cache, must-revalidate"
+
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    handle /healthz {
+        respond "ok" 200
+    }
+}
