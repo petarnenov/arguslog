@@ -19,6 +19,7 @@ import { useParams } from 'react-router';
 import { openPortal, startCheckout, type BillingInterval } from '../api/billing';
 import { ApiError } from '../api/client';
 import { useMyOrgs, useUsage } from '../api/queries';
+import { useReportSoftError } from '../lib/reportSoftError';
 
 export function BillingPage() {
   const { t } = useTranslation();
@@ -26,6 +27,15 @@ export function BillingPage() {
   const orgs = useMyOrgs();
   const org = orgs.data?.find((o) => o.slug === orgSlug);
   const usage = useUsage(org?.id);
+
+  // Soft-error capture: if the URL slug doesn't resolve to one of the user's orgs we render the
+  // empty state silently otherwise. Surface the anomaly to dogfood Arguslog so URL/router
+  // regressions (e.g. Stripe redirects with the wrong slug) are visible in the dashboard.
+  useReportSoftError(
+    Boolean(orgs.data && !org && orgSlug),
+    `BillingPage: org slug "${orgSlug}" not in user's memberships ` +
+      `(known: ${(orgs.data ?? []).map((o) => o.slug).join(',') || 'none'})`,
+  );
 
   // The picker is only visible BEFORE checkout (free → pro). Once subscribed, switching
   // monthly↔annual goes through the Stripe Customer Portal so we don't have to write proration

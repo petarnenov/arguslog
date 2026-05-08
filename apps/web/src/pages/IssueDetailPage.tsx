@@ -22,6 +22,7 @@ import { Link, useParams, useSearchParams } from 'react-router';
 
 import type { IssueLevel, IssueStatus } from '../api/issues';
 import { useIssue, useIssueEvents } from '../api/queries';
+import { useReportSoftError } from '../lib/reportSoftError';
 
 import {
   extractFrames,
@@ -57,6 +58,11 @@ export function IssueDetailPage() {
 
   const issueQ = useIssue(projectId, issueId, { enabled: valid });
   const eventsQ = useIssueEvents({ projectId, issueId, cursor, limit: 25 }, { enabled: valid });
+
+  useReportSoftError(
+    !valid,
+    `IssueDetailPage: invalid params projectId="${rawProjectId}" issueId="${rawIssueId}"`,
+  );
 
   // Per-issue toggle: when any event has decoded frames, default to "original" so the user sees
   // the symbolicated location first; the toggle lets them flip back to the bundled output for

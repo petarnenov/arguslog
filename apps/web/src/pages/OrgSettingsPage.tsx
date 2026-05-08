@@ -32,6 +32,7 @@ import {
 } from '../api/members';
 import { queryKeys, useMyOrgs, useOrgMembers } from '../api/queries';
 import { useAuthStore } from '../auth/useAuthStore';
+import { useReportSoftError } from '../lib/reportSoftError';
 
 const ROLE_OPTIONS: { value: MemberRole; labelKey: string }[] = [
   { value: 'owner', labelKey: 'members.roleOwner' },
@@ -54,6 +55,11 @@ export function OrgSettingsPage() {
   const orgsQuery = useMyOrgs();
   const org = orgsQuery.data?.find((o) => o.slug === orgSlug);
   const membersQuery = useOrgMembers(org?.id);
+
+  useReportSoftError(
+    Boolean(orgsQuery.data && !org && orgSlug),
+    `OrgSettingsPage: org slug "${orgSlug}" not in user's memberships`,
+  );
 
   const myMembership = membersQuery.data?.find((m) => m.userId === currentUserId);
   const isOwner = myMembership?.role === 'owner';

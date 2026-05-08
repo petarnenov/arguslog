@@ -34,6 +34,7 @@ import {
   useProjects,
   queryKeys,
 } from '../api/queries';
+import { useReportSoftError } from '../lib/reportSoftError';
 
 const DEFAULT_CONDITIONS = '{\n  "level": { "in": ["error", "fatal"] }\n}';
 
@@ -83,6 +84,19 @@ export function AlertRulesPage() {
   const project = projectsQuery.data?.find((p) => p.id === projectId);
   const rulesQuery = useAlertRules(Number.isFinite(projectId) ? projectId : undefined);
   const destinationsQuery = useAlertDestinations(org?.id);
+
+  useReportSoftError(
+    !Number.isFinite(projectId),
+    `AlertRulesPage: invalid projectId param "${projectIdParam}"`,
+  );
+  useReportSoftError(
+    Boolean(orgsQuery.data && !org && orgSlug),
+    `AlertRulesPage: org slug "${orgSlug}" not in user's memberships`,
+  );
+  useReportSoftError(
+    Boolean(org && projectsQuery.data && Number.isFinite(projectId) && !project),
+    `AlertRulesPage: project ${projectId} not in org "${orgSlug}"`,
+  );
 
   const [editing, setEditing] = useState<AlertRule | 'new' | null>(null);
   const [error, setError] = useState<string | null>(null);

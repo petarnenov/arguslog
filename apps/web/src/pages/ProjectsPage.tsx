@@ -27,6 +27,7 @@ import { ApiError } from '../api/client';
 import { createDsn, type Dsn } from '../api/keys';
 import { archiveProject, createProject, type Project } from '../api/projects';
 import { queryKeys, useMyOrgs, usePlatforms, useProjects } from '../api/queries';
+import { useReportSoftError } from '../lib/reportSoftError';
 
 interface DsnSuccess {
   project: Project;
@@ -49,6 +50,20 @@ export function ProjectsPage() {
   const projectsQuery = useProjects(org?.id);
   const platformsQuery = usePlatforms();
   const platformOptions = platformsQuery.data?.map((p) => ({ value: p.slug, label: p.name })) ?? [];
+
+  // Don't fire if user has no orgs (we redirect to /onboarding) or if first-org redirect is in
+  // flight — only when user has orgs but the requested slug truly doesn't match any.
+  const firstSlug = orgsQuery.data?.[0]?.slug;
+  useReportSoftError(
+    Boolean(
+      orgsQuery.data &&
+        orgsQuery.data.length > 0 &&
+        !org &&
+        orgSlug &&
+        (!firstSlug || firstSlug === orgSlug),
+    ),
+    `ProjectsPage: org slug "${orgSlug}" not in user's memberships`,
+  );
 
   const [createOpen, setCreateOpen] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<Project | null>(null);
