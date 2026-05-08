@@ -92,7 +92,7 @@ public final class ArguslogClient implements AutoCloseable {
     event.put("timestamp", Instant.now().toEpochMilli());
     event.put("platform", "java");
     event.put("level", level.toWire());
-    event.put("sdk", Map.of("name", "arguslog.java", "version", "0.0.1"));
+    event.put("sdk", Map.of("name", SdkInfo.NAME, "version", SdkInfo.version()));
     if (options.environment() != null) event.put("environment", options.environment());
     if (options.release() != null) event.put("release", options.release());
     return event;
