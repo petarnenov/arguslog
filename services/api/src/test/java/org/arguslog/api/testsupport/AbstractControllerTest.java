@@ -11,6 +11,7 @@ import org.arguslog.api.application.GetIssueUseCase;
 import org.arguslog.api.application.ListIssueEventsUseCase;
 import org.arguslog.api.application.ListIssuesUseCase;
 import org.arguslog.api.application.MemberUseCase;
+import org.arguslog.api.application.PlatformUseCase;
 import org.arguslog.api.application.port.DsnRepository;
 import org.arguslog.api.application.port.DsnWriteRepository;
 import org.arguslog.api.application.port.EventRepository;
@@ -18,6 +19,7 @@ import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.MembershipWriteRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
+import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
@@ -100,6 +102,7 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected StripeWebhookUseCase stripeWebhookUseCase;
   @MockitoBean protected UsageUseCase usageUseCase;
   @MockitoBean protected MemberUseCase memberUseCase;
+  @MockitoBean protected PlatformUseCase platformUseCase;
 
   // ── repositories ───────────────────────────────────────────────────────────────────────────
 
@@ -113,6 +116,7 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected InviteEmailSender inviteEmailSender;
   @MockitoBean protected DsnRepository dsnRepository;
   @MockitoBean protected DsnWriteRepository dsnWriteRepository;
+  @MockitoBean protected PlatformRepository platformRepository;
   @MockitoBean protected UserRepository userRepository;
   @MockitoBean protected AlertRuleRepository alertRuleRepository;
   @MockitoBean protected AlertRuleWriteRepository alertRuleWriteRepository;

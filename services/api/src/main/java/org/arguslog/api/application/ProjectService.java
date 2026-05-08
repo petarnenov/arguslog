@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.arguslog.api.application.port.MembershipRepository;
+import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.domain.Project;
 import org.springframework.stereotype.Service;
@@ -16,21 +17,20 @@ public class ProjectService implements ProjectUseCase {
   static final int MIN_NAME = 2;
   static final int MAX_NAME = 100;
 
-  /**
-   * Closed list of platform identifiers. Mirrors the onboarding form. Server enforces so a stale UI
-   * can't sneak unknown values into the DB and break SDK selection logic later.
-   */
-  static final Set<String> PLATFORMS = Set.of("javascript", "react", "react-native", "java-spring");
-
   /** Roles that may archive a project (owner can also delete the org wholesale). */
   private static final Set<String> ARCHIVE_ROLES = Set.of("owner", "admin");
 
   private final ProjectWriteRepository projects;
   private final MembershipRepository memberships;
+  private final PlatformRepository platforms;
 
-  public ProjectService(ProjectWriteRepository projects, MembershipRepository memberships) {
+  public ProjectService(
+      ProjectWriteRepository projects,
+      MembershipRepository memberships,
+      PlatformRepository platforms) {
     this.projects = projects;
     this.memberships = memberships;
+    this.platforms = platforms;
   }
 
   @Override
@@ -81,9 +81,10 @@ public class ProjectService implements ProjectUseCase {
     }
   }
 
-  private static void requirePlatform(String platform) {
-    if (platform == null || !PLATFORMS.contains(platform)) {
-      throw new InvalidProjectException("platform must be one of " + PLATFORMS);
+  private void requirePlatform(String platform) {
+    Set<String> known = platforms.enabledSlugs();
+    if (platform == null || !known.contains(platform)) {
+      throw new InvalidProjectException("platform must be one of " + known);
     }
   }
 }

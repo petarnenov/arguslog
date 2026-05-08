@@ -12,6 +12,7 @@ import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.MembershipWriteRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
+import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
@@ -65,6 +66,7 @@ class ApiApplicationTests {
   @MockitoBean ProjectWriteRepository projectWriteRepository;
   @MockitoBean DsnRepository dsnRepository;
   @MockitoBean DsnWriteRepository dsnWriteRepository;
+  @MockitoBean PlatformRepository platformRepository;
   @MockitoBean ReleaseRepository releaseRepository;
   @MockitoBean SourceMapArtifactRepository sourceMapArtifactRepository;
   @MockitoBean SourceMapArtifactWriteRepository sourceMapArtifactWriteRepository;

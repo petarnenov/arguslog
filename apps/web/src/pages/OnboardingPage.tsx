@@ -23,7 +23,7 @@ import { ApiError } from '../api/client';
 import { createDsn, type Dsn } from '../api/keys';
 import { createOrg, type Org } from '../api/orgs';
 import { createProject, type Project } from '../api/projects';
-import { queryKeys } from '../api/queries';
+import { queryKeys, usePlatforms } from '../api/queries';
 
 interface SuccessState {
   org: Org;
@@ -38,6 +38,10 @@ export function OnboardingPage() {
 
   const [success, setSuccess] = useState<SuccessState | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const platformsQuery = usePlatforms();
+  const platformOptions =
+    platformsQuery.data?.map((p) => ({ value: p.slug, label: p.name })) ?? [];
 
   const form = useForm({
     initialValues: { orgName: '', projectName: '', platform: 'javascript' },
@@ -93,14 +97,9 @@ export function OnboardingPage() {
             />
             <Select
               label={t('onboarding.platform')}
-              data={[
-                { value: 'javascript', label: 'JavaScript / Browser' },
-                { value: 'react', label: 'React' },
-                { value: 'react-native', label: 'React Native' },
-                { value: 'java-spring', label: 'Java / Spring Boot' },
-              ]}
+              data={platformOptions}
               {...form.getInputProps('platform')}
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || platformsQuery.isLoading}
             />
             {error ? (
               <Alert color="red" variant="light">

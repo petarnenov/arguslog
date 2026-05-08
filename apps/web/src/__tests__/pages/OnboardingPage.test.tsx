@@ -41,6 +41,11 @@ describe('OnboardingPage', () => {
   it('runs org → project → key in sequence and shows the DSN modal on success', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
+      if (url.endsWith('/api/v1/platforms')) {
+        return jsonResponse([
+          { slug: 'javascript', name: 'JavaScript / Browser', sdkPackage: null, sdkVersion: null },
+        ]);
+      }
       if (url.endsWith('/api/v1/orgs')) {
         return jsonResponse({ id: 1, slug: 'acme', name: 'Acme', plan: 'free', createdAt: 't' });
       }
@@ -78,7 +83,8 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.getByText('arguslog://PUB@localhost:8080/api/9')).toBeInTheDocument();
     });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    // 4 calls: platforms catalog + org create + project create + DSN create.
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it('surfaces api errors without opening the modal', async () => {

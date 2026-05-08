@@ -11,10 +11,12 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.arguslog.api.application.ProjectUseCase.InvalidProjectException;
 import org.arguslog.api.application.ProjectUseCase.ProjectAccessDeniedException;
 import org.arguslog.api.application.port.MembershipRepository;
+import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.domain.Project;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,12 +30,18 @@ class ProjectServiceTest {
 
   @Mock ProjectWriteRepository projects;
   @Mock MembershipRepository memberships;
+  @Mock PlatformRepository platforms;
 
   ProjectService service;
 
   @BeforeEach
   void setUp() {
-    service = new ProjectService(projects, memberships);
+    service = new ProjectService(projects, memberships, platforms);
+    // Default to the four shipped SDKs for tests that hit the platform check; lenient because
+    // archive-path tests don't reach platform validation at all.
+    org.mockito.Mockito.lenient()
+        .when(platforms.enabledSlugs())
+        .thenReturn(Set.of("javascript", "react", "react-native", "java-spring"));
   }
 
   @Test
