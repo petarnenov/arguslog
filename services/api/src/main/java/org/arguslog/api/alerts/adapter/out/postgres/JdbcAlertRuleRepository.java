@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.api.alerts.application.port.AlertRuleRepository;
+import org.arguslog.api.alerts.application.port.AlertRuleWriteRepository;
 import org.arguslog.api.alerts.domain.AlertRule;
 import org.arguslog.api.security.OrgContext;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -18,7 +19,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JdbcAlertRuleRepository implements AlertRuleRepository {
+public class JdbcAlertRuleRepository implements AlertRuleRepository, AlertRuleWriteRepository {
 
   private final JdbcTemplate jdbc;
   private final ObjectMapper json;

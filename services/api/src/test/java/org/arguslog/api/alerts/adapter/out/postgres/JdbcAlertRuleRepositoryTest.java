@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.api.alerts.application.port.AlertRuleRepository;
+import org.arguslog.api.alerts.application.port.AlertRuleWriteRepository;
 import org.arguslog.api.alerts.domain.AlertRule;
 import org.arguslog.api.security.OrgContext;
 import org.flywaydb.core.Flyway;
@@ -41,6 +42,7 @@ class JdbcAlertRuleRepositoryTest {
 
   private static HikariDataSource dataSource;
   private static AlertRuleRepository repository;
+  private static AlertRuleWriteRepository writes;
   private static ObjectMapper mapper;
 
   @BeforeAll
@@ -59,6 +61,18 @@ class JdbcAlertRuleRepositoryTest {
     repository =
         new AlertRuleRepository() {
           @Override
+          public List<AlertRule> listForProject(long projectId) {
+            return tx.execute(s -> raw.listForProject(projectId));
+          }
+
+          @Override
+          public Optional<AlertRule> find(long projectId, long id) {
+            return tx.execute(s -> raw.find(projectId, id));
+          }
+        };
+    writes =
+        new AlertRuleWriteRepository() {
+          @Override
           public AlertRule create(
               long projectId,
               String name,
@@ -68,16 +82,6 @@ class JdbcAlertRuleRepositoryTest {
               boolean enabled) {
             return tx.execute(
                 s -> raw.create(projectId, name, conditions, actions, throttleSeconds, enabled));
-          }
-
-          @Override
-          public List<AlertRule> listForProject(long projectId) {
-            return tx.execute(s -> raw.listForProject(projectId));
-          }
-
-          @Override
-          public Optional<AlertRule> find(long projectId, long id) {
-            return tx.execute(s -> raw.find(projectId, id));
           }
 
           @Override
@@ -124,7 +128,7 @@ class JdbcAlertRuleRepositoryTest {
     JsonNode conditions = mapper.readTree("{\"level\":{\"in\":[\"fatal\",\"error\"]}}");
     JsonNode actions = mapper.readTree("{\"destinationIds\":[1,2]}");
 
-    AlertRule created = repository.create(101L, "fatals", conditions, actions, 600, true);
+    AlertRule created = writes.create(101L, "fatals", conditions, actions, 600, true);
     AlertRule loaded = repository.find(101L, created.id()).orElseThrow();
 
     assertThat(loaded.name()).isEqualTo("fatals");
@@ -137,9 +141,9 @@ class JdbcAlertRuleRepositoryTest {
   @Test
   void listOrdersByCreatedDescId() throws Exception {
     JsonNode actions = mapper.readTree("{\"destinationIds\":[1]}");
-    AlertRule first = repository.create(101L, "a", mapper.createObjectNode(), actions, 300, true);
+    AlertRule first = writes.create(101L, "a", mapper.createObjectNode(), actions, 300, true);
     Thread.sleep(5);
-    AlertRule second = repository.create(101L, "b", mapper.createObjectNode(), actions, 300, true);
+    AlertRule second = writes.create(101L, "b", mapper.createObjectNode(), actions, 300, true);
 
     List<AlertRule> page = repository.listForProject(101L);
     assertThat(page).extracting(AlertRule::id).containsExactly(second.id(), first.id());
@@ -148,11 +152,10 @@ class JdbcAlertRuleRepositoryTest {
   @Test
   void updateReplacesAllFieldsExceptIdAndProject() throws Exception {
     JsonNode actions = mapper.readTree("{\"destinationIds\":[1]}");
-    AlertRule created =
-        repository.create(101L, "old", mapper.createObjectNode(), actions, 300, true);
+    AlertRule created = writes.create(101L, "old", mapper.createObjectNode(), actions, 300, true);
 
     Optional<AlertRule> updated =
-        repository.update(
+        writes.update(
             101L,
             created.id(),
             "new",
@@ -173,22 +176,22 @@ class JdbcAlertRuleRepositoryTest {
   @Test
   void deleteIsAccountedFor() throws Exception {
     AlertRule created =
-        repository.create(
+        writes.create(
             101L,
             "x",
             mapper.createObjectNode(),
             mapper.readTree("{\"destinationIds\":[1]}"),
             300,
             true);
-    assertThat(repository.delete(101L, created.id())).isTrue();
-    assertThat(repository.delete(101L, created.id())).isFalse();
+    assertThat(writes.delete(101L, created.id())).isTrue();
+    assertThat(writes.delete(101L, created.id())).isFalse();
     assertThat(repository.find(101L, created.id())).isEmpty();
   }
 
   @Test
   void wrongProjectCannotSeeOrMutate() throws Exception {
     AlertRule created =
-        repository.create(
+        writes.create(
             101L,
             "x",
             mapper.createObjectNode(),
@@ -197,7 +200,7 @@ class JdbcAlertRuleRepositoryTest {
             true);
 
     assertThat(repository.find(102L, created.id())).isEmpty();
-    assertThat(repository.delete(102L, created.id())).isFalse();
+    assertThat(writes.delete(102L, created.id())).isFalse();
   }
 
   private static void seed(DataSource ds) throws Exception {

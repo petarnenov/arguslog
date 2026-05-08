@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import org.arguslog.api.alerts.application.port.AlertRuleRepository;
+import org.arguslog.api.alerts.application.port.AlertRuleWriteRepository;
 import org.arguslog.api.alerts.domain.AlertRule;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,9 +23,11 @@ public class AlertRuleService implements AlertRuleUseCase {
       List.of("fatal", "error", "warning", "info", "debug");
 
   private final AlertRuleRepository repository;
+  private final AlertRuleWriteRepository writes;
 
-  public AlertRuleService(AlertRuleRepository repository) {
+  public AlertRuleService(AlertRuleRepository repository, AlertRuleWriteRepository writes) {
     this.repository = repository;
+    this.writes = writes;
   }
 
   @Override
@@ -40,7 +43,7 @@ public class AlertRuleService implements AlertRuleUseCase {
     validateConditions(conditions);
     validateActions(actions);
     int throttle = clampThrottle(throttleSeconds);
-    return repository.create(projectId, name.trim(), conditions, actions, throttle, enabled);
+    return writes.create(projectId, name.trim(), conditions, actions, throttle, enabled);
   }
 
   @Override
@@ -70,13 +73,13 @@ public class AlertRuleService implements AlertRuleUseCase {
     validateConditions(conditions);
     validateActions(actions);
     int throttle = clampThrottle(throttleSeconds);
-    return repository.update(projectId, id, name.trim(), conditions, actions, throttle, enabled);
+    return writes.update(projectId, id, name.trim(), conditions, actions, throttle, enabled);
   }
 
   @Override
   @Transactional
   public boolean delete(long projectId, long id) {
-    return repository.delete(projectId, id);
+    return writes.delete(projectId, id);
   }
 
   // ── validation ───────────────────────────────────────────────────────────

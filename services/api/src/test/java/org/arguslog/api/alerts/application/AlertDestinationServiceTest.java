@@ -28,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AlertDestinationServiceTest {
 
   @Mock AlertDestinationRepository repository;
+  @Mock org.arguslog.api.alerts.application.port.AlertDestinationWriteRepository writes;
 
   AlertDestinationService service;
   ObjectMapper mapper;
@@ -35,19 +36,19 @@ class AlertDestinationServiceTest {
   @BeforeEach
   void setUp() {
     mapper = new ObjectMapper();
-    service = new AlertDestinationService(repository, mapper);
+    service = new AlertDestinationService(repository, writes, mapper);
   }
 
   @Test
   void createsTelegramDestinationWithChatIdAndBotToken() {
     ObjectNode config = mapper.createObjectNode().put("chatId", "-100").put("botToken", "abc:123");
-    when(repository.create(eq(1L), eq(DestinationKind.TELEGRAM), eq("ops"), anyString()))
+    when(writes.create(eq(1L), eq(DestinationKind.TELEGRAM), eq("ops"), anyString()))
         .thenReturn(sample(DestinationKind.TELEGRAM, "ops"));
 
     AlertDestination created = service.create(1L, DestinationKind.TELEGRAM, "ops", config);
 
     assertThat(created.kind()).isEqualTo(DestinationKind.TELEGRAM);
-    verify(repository).create(eq(1L), eq(DestinationKind.TELEGRAM), eq("ops"), anyString());
+    verify(writes).create(eq(1L), eq(DestinationKind.TELEGRAM), eq("ops"), anyString());
   }
 
   @Test
@@ -56,7 +57,7 @@ class AlertDestinationServiceTest {
     assertThatThrownBy(() -> service.create(1L, DestinationKind.TELEGRAM, "ops", config))
         .isInstanceOf(InvalidDestinationConfigException.class)
         .hasMessageContaining("botToken");
-    verify(repository, never()).create(anyLong(), any(), any(), any());
+    verify(writes, never()).create(anyLong(), any(), any(), any());
   }
 
   @Test
@@ -72,10 +73,10 @@ class AlertDestinationServiceTest {
   void acceptsEmailWithRecipients() {
     ObjectNode config = mapper.createObjectNode();
     config.putArray("to").add("alice@example.com");
-    when(repository.create(eq(1L), eq(DestinationKind.EMAIL), eq("alice"), anyString()))
+    when(writes.create(eq(1L), eq(DestinationKind.EMAIL), eq("alice"), anyString()))
         .thenReturn(sample(DestinationKind.EMAIL, "alice"));
     service.create(1L, DestinationKind.EMAIL, "alice", config);
-    verify(repository).create(eq(1L), eq(DestinationKind.EMAIL), eq("alice"), anyString());
+    verify(writes).create(eq(1L), eq(DestinationKind.EMAIL), eq("alice"), anyString());
   }
 
   @Test
@@ -111,7 +112,7 @@ class AlertDestinationServiceTest {
     Optional<AlertDestination> result = service.update(1L, 99L, "x", config);
 
     assertThat(result).isEmpty();
-    verify(repository, never()).update(anyLong(), anyLong(), anyString(), anyString());
+    verify(writes, never()).update(anyLong(), anyLong(), anyString(), anyString());
   }
 
   @Test
@@ -128,7 +129,7 @@ class AlertDestinationServiceTest {
 
   @Test
   void deletePassesThrough() {
-    when(repository.delete(1L, 7L)).thenReturn(true);
+    when(writes.delete(1L, 7L)).thenReturn(true);
     assertThat(service.delete(1L, 7L)).isTrue();
   }
 

@@ -82,13 +82,28 @@ class OpenApiContractTest {
 
   @MockitoBean org.arguslog.api.email.InviteEmailSender inviteEmailSender;
   @MockitoBean AlertDestinationRepository alertDestinationRepository;
+
+  @MockitoBean
+  org.arguslog.api.alerts.application.port.AlertDestinationWriteRepository
+      alertDestinationWriteRepository;
+
   @MockitoBean AlertRuleRepository alertRuleRepository;
+
+  @MockitoBean
+  org.arguslog.api.alerts.application.port.AlertRuleWriteRepository alertRuleWriteRepository;
+
   @MockitoBean OrgWriteRepository orgWriteRepository;
   @MockitoBean UserRepository userRepository;
   @MockitoBean ProjectWriteRepository projectWriteRepository;
   @MockitoBean DsnRepository dsnRepository;
+  @MockitoBean org.arguslog.api.application.port.DsnWriteRepository dsnWriteRepository;
   @MockitoBean ReleaseRepository releaseRepository;
   @MockitoBean SourceMapArtifactRepository sourceMapArtifactRepository;
+
+  @MockitoBean
+  org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository
+      sourceMapArtifactWriteRepository;
+
   @MockitoBean SourceMapStorage sourceMapStorage;
   @MockitoBean PatRepository patRepository;
   @MockitoBean TokenHasher tokenHasher;

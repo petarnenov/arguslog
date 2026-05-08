@@ -38,6 +38,7 @@ class JdbcSourceMapArtifactRepositoryTest {
 
   private static HikariDataSource dataSource;
   private static SourceMapArtifactRepository repository;
+  private static org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository writes;
 
   @BeforeAll
   static void boot() throws Exception {
@@ -54,14 +55,16 @@ class JdbcSourceMapArtifactRepositoryTest {
     repository =
         new SourceMapArtifactRepository() {
           @Override
+          public List<SourceMapArtifact> listForRelease(long releaseId) {
+            return tx.execute(s -> raw.listForRelease(releaseId));
+          }
+        };
+    writes =
+        new org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository() {
+          @Override
           public SourceMapArtifact upsert(
               long releaseId, String r2Key, String originalPath, String sha256, long sizeBytes) {
             return tx.execute(s -> raw.upsert(releaseId, r2Key, originalPath, sha256, sizeBytes));
-          }
-
-          @Override
-          public List<SourceMapArtifact> listForRelease(long releaseId) {
-            return tx.execute(s -> raw.listForRelease(releaseId));
           }
         };
   }
@@ -87,7 +90,7 @@ class JdbcSourceMapArtifactRepositoryTest {
   @Test
   void insertReturnsPersistedRow() {
     SourceMapArtifact out =
-        repository.upsert(777L, "1/101/777/dist/app.js.map", "dist/app.js", "a".repeat(64), 1234L);
+        writes.upsert(777L, "1/101/777/dist/app.js.map", "dist/app.js", "a".repeat(64), 1234L);
     assertThat(out.id()).isPositive();
     assertThat(out.releaseId()).isEqualTo(777L);
     assertThat(out.r2Key()).isEqualTo("1/101/777/dist/app.js.map");
@@ -100,9 +103,9 @@ class JdbcSourceMapArtifactRepositoryTest {
   @Test
   void upsertReplacesExistingRowKeepingId() {
     SourceMapArtifact first =
-        repository.upsert(777L, "old/key.map", "dist/app.js", "a".repeat(64), 100L);
+        writes.upsert(777L, "old/key.map", "dist/app.js", "a".repeat(64), 100L);
     SourceMapArtifact second =
-        repository.upsert(777L, "new/key.map", "dist/app.js", "b".repeat(64), 200L);
+        writes.upsert(777L, "new/key.map", "dist/app.js", "b".repeat(64), 200L);
 
     assertThat(second.id()).isEqualTo(first.id());
     assertThat(second.r2Key()).isEqualTo("new/key.map");
@@ -115,8 +118,8 @@ class JdbcSourceMapArtifactRepositoryTest {
 
   @Test
   void differentPathsCoexistWithinSameRelease() {
-    repository.upsert(777L, "k1.map", "dist/app.js", "a".repeat(64), 100L);
-    repository.upsert(777L, "k2.map", "dist/vendor.js", "b".repeat(64), 200L);
+    writes.upsert(777L, "k1.map", "dist/app.js", "a".repeat(64), 100L);
+    writes.upsert(777L, "k2.map", "dist/vendor.js", "b".repeat(64), 200L);
 
     List<SourceMapArtifact> rows = repository.listForRelease(777L);
     // Sorted by original_path ASC.

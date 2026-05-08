@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
+import org.arguslog.api.alerts.application.port.AlertDestinationWriteRepository;
 import org.arguslog.api.alerts.domain.AlertDestination;
 import org.arguslog.api.alerts.domain.DestinationKind;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class AlertDestinationService implements AlertDestinationUseCase {
 
   private final AlertDestinationRepository repository;
+  private final AlertDestinationWriteRepository writes;
   private final ObjectMapper json;
 
-  public AlertDestinationService(AlertDestinationRepository repository, ObjectMapper json) {
+  public AlertDestinationService(
+      AlertDestinationRepository repository,
+      AlertDestinationWriteRepository writes,
+      ObjectMapper json) {
     this.repository = repository;
+    this.writes = writes;
     this.json = json;
   }
 
@@ -26,7 +32,7 @@ public class AlertDestinationService implements AlertDestinationUseCase {
   public AlertDestination create(long orgId, DestinationKind kind, String name, JsonNode config) {
     validateConfig(kind, config);
     requireName(name);
-    return repository.create(orgId, kind, name.trim(), serialize(config));
+    return writes.create(orgId, kind, name.trim(), serialize(config));
   }
 
   @Override
@@ -48,13 +54,13 @@ public class AlertDestinationService implements AlertDestinationUseCase {
     if (existing.isEmpty()) return Optional.empty();
     validateConfig(existing.get().kind(), config);
     requireName(name);
-    return repository.update(orgId, id, name.trim(), serialize(config));
+    return writes.update(orgId, id, name.trim(), serialize(config));
   }
 
   @Override
   @Transactional
   public boolean delete(long orgId, long id) {
-    return repository.delete(orgId, id);
+    return writes.delete(orgId, id);
   }
 
   private void validateConfig(DestinationKind kind, JsonNode config) {

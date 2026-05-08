@@ -3,6 +3,7 @@ package org.arguslog.api.application;
 import java.security.SecureRandom;
 import java.util.List;
 import org.arguslog.api.application.port.DsnRepository;
+import org.arguslog.api.application.port.DsnWriteRepository;
 import org.arguslog.api.domain.Dsn;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +21,18 @@ public class DsnService implements DsnUseCase {
   private static final char[] BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".toCharArray();
 
   private final DsnRepository dsns;
+  private final DsnWriteRepository writes;
   private final SecureRandom random = new SecureRandom();
 
-  public DsnService(DsnRepository dsns) {
+  public DsnService(DsnRepository dsns, DsnWriteRepository writes) {
     this.dsns = dsns;
+    this.writes = writes;
   }
 
   @Override
   @Transactional
   public Dsn create(long projectId) {
-    return dsns.create(projectId, generatePublicKey());
+    return writes.create(projectId, generatePublicKey());
   }
 
   @Override
