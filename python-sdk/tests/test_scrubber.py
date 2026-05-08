@@ -14,7 +14,9 @@ def test_email_redacted() -> None:
 
 
 def test_jwt_redacted() -> None:
-    token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.SflKxwRJSMeKKF2QT4f"
+    # Synthetic JWT-shaped fixture so the scrubber regex has something to match.
+    # Not a real credential — gitleaks: allow
+    token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.SflKxwRJSMeKKF2QT4f"  # gitleaks: allow
     out = Scrubber().scrub(f"Bearer {token}")
     assert REDACTED in out
     assert token not in out
