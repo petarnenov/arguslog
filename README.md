@@ -26,6 +26,7 @@ packages/sdk-react/            # @arguslog/sdk-react — ErrorBoundary + useArgu
 packages/sdk-react-native/     # @arguslog/sdk-react-native — RN-aware integrations
 packages/sdk-nextjs/           # @arguslog/sdk-nextjs — App/Pages Router + instrumentation hook
 packages/sdk-angular/          # @arguslog/sdk-angular — ErrorHandler + provideArguslog
+packages/sdk-vue/              # @arguslog/sdk-vue — Vue 3 plugin + composable + ErrorBoundary
 packages/eslint-config/        # shared ESLint config
 packages/tsconfig/              # shared tsconfig presets
 java-sdk/                      # org.arguslog:arguslog-java-sdk (Spring Boot autoconfig)
@@ -115,6 +116,7 @@ stays in lockstep with what's actually shipped.
 | React           | `@arguslog/sdk-react`            | `packages/sdk-react/`        |
 | Next.js         | `@arguslog/sdk-nextjs`           | `packages/sdk-nextjs/`       |
 | Angular         | `@arguslog/sdk-angular`          | `packages/sdk-angular/`      |
+| Vue 3           | `@arguslog/sdk-vue`              | `packages/sdk-vue/`          |
 | React Native    | `@arguslog/sdk-react-native`     | `packages/sdk-react-native/` |
 | Node.js         | `@arguslog/sdk-node`             | `packages/sdk-node/`         |
 | Java / Spring   | `org.arguslog:arguslog-java-sdk` | `java-sdk/`                  |
