@@ -1,0 +1,24 @@
+# Gitleaks config — extends the default ruleset, adds a global allowlist for
+# test fixtures whose entire purpose is to look like a secret so the SDK's
+# scrubber regexes have something to match.
+#
+# Without this, every PR that touches a scrubber test file re-trips the
+# default `generic-api-key` rule, blocking the Security check on the PR
+# workflow even when no real credential is present.
+
+title = "Arguslog gitleaks config"
+
+[extend]
+# Inherit every rule from the upstream default config; we're only widening
+# the allowlist, not turning off detection.
+useDefault = true
+
+[allowlist]
+description = "SDK test fixtures: synthetic JWT/API-key shapes for scrubber regex coverage"
+paths = [
+  '''python-sdk/tests/.*\.py''',
+  '''packages/sdk-core/src/__tests__/.*''',
+  '''packages/sdk-browser/src/__tests__/.*''',
+  '''packages/sdk-node/src/__tests__/.*''',
+  '''java-sdk/src/test/.*''',
+]
