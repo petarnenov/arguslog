@@ -1,16 +1,16 @@
-name: Release sdk-browser
+name: Release sdk-react-native
 
-# Tag-driven npm release. Push a tag matching `sdk-browser-v*` (e.g. `sdk-browser-v0.1.0`) and the
-# matching version in packages/sdk-browser/package.json gets published to npm. Manual dispatch is
-# kept for rehearsing the workflow with no real publish (set `dry-run: true`).
+# Tag-driven npm release. Push a tag matching `sdk-react-native-v*` and the matching version
+# in packages/sdk-react-native/package.json gets published. Depends on sdk-browser (which in
+# turn depends on sdk-core), so both must already be on npm before tagging.
 on:
   push:
     tags:
-      - 'sdk-browser-v*'
+      - 'sdk-react-native-v*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to release (sdk-browser-vX.Y.Z). For dry-runs use any matching tag.'
+        description: 'Existing tag to release (sdk-react-native-vX.Y.Z).'
         required: true
       dry-run:
         description: 'Run pnpm publish with --dry-run (no upload).'
@@ -18,7 +18,7 @@ on:
         default: 'true'
 
 concurrency:
-  group: release-sdk-browser-${{ github.ref }}
+  group: release-sdk-react-native-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -28,12 +28,10 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-      id-token: write # required for npm provenance attestations
+      id-token: write
     steps:
       - uses: actions/checkout@v5
         with:
-          # Pull tags so verify-tag-version can read git data if needed (publish itself uses the
-          # tag from the trigger).
           fetch-depth: 0
 
       - name: Resolve tag
@@ -60,22 +58,24 @@ jobs:
         run: |
           node scripts/verify-tag-version.mjs \
             "${{ steps.tag.outputs.value }}" \
-            sdk-browser \
-            packages/sdk-browser/package.json
+            sdk-react-native \
+            packages/sdk-react-native/package.json
 
-      # sdk-browser depends on sdk-core via workspace: protocol — typecheck needs the
-      # sdk-core dist on disk to find type declarations, so build the dep first.
-      - name: Build sdk-core dependency
-        run: pnpm --filter @arguslog/sdk-core build
+      # Build the workspace dependency chain (sdk-core → sdk-browser) so typecheck/test can
+      # resolve their `dist` outputs — `workspace:` deps don't get published artifacts here.
+      - name: Build workspace dependencies
+        run: |
+          pnpm --filter @arguslog/sdk-core build
+          pnpm --filter @arguslog/sdk-browser build
 
       - name: Lint, typecheck, test
         run: |
-          pnpm --filter @arguslog/sdk-browser lint
-          pnpm --filter @arguslog/sdk-browser typecheck
-          pnpm --filter @arguslog/sdk-browser test
+          pnpm --filter @arguslog/sdk-react-native lint
+          pnpm --filter @arguslog/sdk-react-native typecheck
+          pnpm --filter @arguslog/sdk-react-native test
 
       - name: Build
-        run: pnpm --filter @arguslog/sdk-browser build
+        run: pnpm --filter @arguslog/sdk-react-native build
 
       - name: Publish to npm
         env:
@@ -86,7 +86,7 @@ jobs:
              [ "${{ github.event.inputs.dry-run }}" = "true" ]; then
             DRY_RUN_FLAG="--dry-run"
           fi
-          pnpm --filter @arguslog/sdk-browser publish \
+          pnpm --filter @arguslog/sdk-react-native publish \
             --access public \
             --no-git-checks \
             --provenance \
