@@ -46,8 +46,18 @@ describe('LandingPage', () => {
       const url = typeof input === 'string' ? input : (input as Request).url;
       if (url.endsWith('/api/v1/platforms')) {
         return jsonResponse([
-          { slug: 'javascript', name: 'JavaScript / Browser', sdkPackage: '@arguslog/sdk-browser', sdkVersion: '1.0.0' },
-          { slug: 'react-native', name: 'React Native', sdkPackage: '@arguslog/sdk-react-native', sdkVersion: '1.0.0' },
+          {
+            slug: 'javascript',
+            name: 'JavaScript / Browser',
+            sdkPackage: '@arguslog/sdk-browser',
+            sdkVersion: '1.0.0',
+          },
+          {
+            slug: 'react-native',
+            name: 'React Native',
+            sdkPackage: '@arguslog/sdk-react-native',
+            sdkVersion: '1.0.0',
+          },
         ]);
       }
       return jsonResponse([]);

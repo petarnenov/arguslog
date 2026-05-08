@@ -4,6 +4,16 @@ plugins {
 
 description = "Arguslog ingest — public HTTP event endpoint, Redis Streams writer"
 
+// The shared `arguslog.spring-service` convention disables the plain `jar` task so a *full*
+// gradle build leaves only the bootJar in build/libs (Dockerfiles glob `ingest-*.jar`).
+// Re-enable it here so worker's integration tests can consume ingest classes via
+// `testImplementation(project(":services:ingest"))` — without a plain library jar Gradle has
+// no artifact to expose on the consumer's classpath. The Dockerfile is unaffected: it runs
+// `:services:ingest:bootJar` specifically, which doesn't trigger the plain `jar` task.
+tasks.named<Jar>("jar") {
+    enabled = true
+}
+
 val libs = the<org.gradle.accessors.dm.LibrariesForLibs>()
 
 dependencies {

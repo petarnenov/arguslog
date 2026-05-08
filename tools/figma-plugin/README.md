@@ -52,16 +52,16 @@ finds first). No manual installation required.
 
 ## What's where in `code.ts`
 
-| Section            | Purpose                                                                  |
-| ------------------ | ------------------------------------------------------------------------ |
-| `TOKENS`           | All colors, radii, spacing scale (single source of truth)                |
-| `FONT LOADING`     | Loads Inter + best available mono with graceful fallback                 |
-| `HELPERS`          | `frame()`, `txt()`, `spacer()`, `divider()`, `dot()` builders            |
-| `COMPONENTS`       | `pillBadge`, `chip`, `button`, `topBar`, `bottomTabBar`                  |
-| `ICONS`            | Geometric placeholders (search, filter, bell, cog, copy, share, …)       |
-| `SCREEN BUILDERS`  | One `build*()` per screen (login, onboarding, issues, …)                 |
-| `DESIGN TOKENS`    | The visible cheat-sheet frame at the top of the layout                   |
-| `MAIN`             | Lays out all frames on the page and zooms the viewport in                |
+| Section           | Purpose                                                            |
+| ----------------- | ------------------------------------------------------------------ |
+| `TOKENS`          | All colors, radii, spacing scale (single source of truth)          |
+| `FONT LOADING`    | Loads Inter + best available mono with graceful fallback           |
+| `HELPERS`         | `frame()`, `txt()`, `spacer()`, `divider()`, `dot()` builders      |
+| `COMPONENTS`      | `pillBadge`, `chip`, `button`, `topBar`, `bottomTabBar`            |
+| `ICONS`           | Geometric placeholders (search, filter, bell, cog, copy, share, …) |
+| `SCREEN BUILDERS` | One `build*()` per screen (login, onboarding, issues, …)           |
+| `DESIGN TOKENS`   | The visible cheat-sheet frame at the top of the layout             |
+| `MAIN`            | Lays out all frames on the page and zooms the viewport in          |
 
 To add a new screen, write `build<Screen>(): FrameNode` and append it to the
 `screens` array in `main()`.

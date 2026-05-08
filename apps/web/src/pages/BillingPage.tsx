@@ -72,8 +72,7 @@ export function BillingPage() {
   const percent = Math.min(100, Math.round(snapshot.ratio * 100));
   const progressColor = snapshot.exceeded ? 'red' : percent >= 80 ? 'yellow' : 'teal';
   const priceLabel = formatPriceLabel(snapshot.monthlyPriceCents, snapshot.billingInterval, isPro);
-  const renewsLabel =
-    isPro && snapshot.renewsAt ? formatRenewalDate(snapshot.renewsAt) : null;
+  const renewsLabel = isPro && snapshot.renewsAt ? formatRenewalDate(snapshot.renewsAt) : null;
 
   const checkoutError = errorMessage(checkout.error);
   const portalError = errorMessage(portal.error);

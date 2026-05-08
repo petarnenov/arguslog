@@ -2,9 +2,9 @@ name: PR
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   push:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: pr-${{ github.ref }}
@@ -73,8 +73,21 @@ jobs:
     name: Security — gitleaks + trivy
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # gitleaks-action calls GET /repos/{owner}/{repo}/pulls/{n}/commits to scope its scan to
+    # the PR's commits — that requires pull-requests:read, which the default GITHUB_TOKEN
+    # doesn't grant. Without this block the action fails with "Resource not accessible by
+    # integration" (HTTP 403) on every PR.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          # gitleaks-action computes the commit range to scan as <oldest_pr_commit>^..<head>;
+          # the default shallow clone (depth=1) doesn't have the parent commit, so the git
+          # rev-parse fails with "unknown revision or path not in the working tree". Full
+          # history is required.
+          fetch-depth: 0
       - name: gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -84,7 +97,7 @@ jobs:
         with:
           scan-type: fs
           severity: HIGH,CRITICAL
-          exit-code: "1"
+          exit-code: '1'
           ignore-unfixed: true
 
   openapi-diff:

@@ -11,7 +11,7 @@ export class Transport {
   private readonly maxRetries: number;
   private readonly baseDelayMs: number;
   private readonly queue: EventPayload[] = [];
-  private flushing = false;
+  private inFlight: Promise<void> | null = null;
 
   constructor(
     private readonly dsn: ParsedDsn,
@@ -28,16 +28,23 @@ export class Transport {
     void this.flush();
   }
 
-  async flush(): Promise<void> {
-    if (this.flushing) return;
-    this.flushing = true;
-    try {
-      while (this.queue.length > 0) {
-        const event = this.queue.shift()!;
-        await this.send(event);
-      }
-    } finally {
-      this.flushing = false;
+  /**
+   * Drains the queue. Concurrent callers receive the same in-flight promise so an
+   * `await transport.flush()` always resolves *after* every queued event has been sent —
+   * including events enqueued by `enqueue()`'s fire-and-forget flush call.
+   */
+  flush(): Promise<void> {
+    if (this.inFlight) return this.inFlight;
+    this.inFlight = this.drain().finally(() => {
+      this.inFlight = null;
+    });
+    return this.inFlight;
+  }
+
+  private async drain(): Promise<void> {
+    while (this.queue.length > 0) {
+      const event = this.queue.shift()!;
+      await this.send(event);
     }
   }
 

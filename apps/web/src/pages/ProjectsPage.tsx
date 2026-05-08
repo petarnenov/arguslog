@@ -35,7 +35,7 @@ interface DsnSuccess {
 }
 
 function describeApiError(err: unknown): string {
-  return err instanceof ApiError ? err.problem.detail ?? err.problem.title : String(err);
+  return err instanceof ApiError ? (err.problem.detail ?? err.problem.title) : String(err);
 }
 
 export function ProjectsPage() {
@@ -48,8 +48,7 @@ export function ProjectsPage() {
   const org = orgsQuery.data?.find((o) => o.slug === orgSlug);
   const projectsQuery = useProjects(org?.id);
   const platformsQuery = usePlatforms();
-  const platformOptions =
-    platformsQuery.data?.map((p) => ({ value: p.slug, label: p.name })) ?? [];
+  const platformOptions = platformsQuery.data?.map((p) => ({ value: p.slug, label: p.name })) ?? [];
 
   const [createOpen, setCreateOpen] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<Project | null>(null);
@@ -118,7 +117,7 @@ export function ProjectsPage() {
     },
     onError: (err: unknown) => {
       setArchiveError(
-        err instanceof ApiError ? err.problem.detail ?? err.problem.title : String(err),
+        err instanceof ApiError ? (err.problem.detail ?? err.problem.title) : String(err),
       );
     },
   });
@@ -244,9 +243,7 @@ export function ProjectsPage() {
         size="md"
       >
         <Stack>
-          <Text size="sm">
-            {t('projects.archiveBody', { name: archiveTarget?.name ?? '' })}
-          </Text>
+          <Text size="sm">{t('projects.archiveBody', { name: archiveTarget?.name ?? '' })}</Text>
           <Text size="xs" c="dimmed">
             {t('projects.archiveHint')}
           </Text>

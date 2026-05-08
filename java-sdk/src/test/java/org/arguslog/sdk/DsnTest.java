@@ -33,25 +33,21 @@ class DsnTest {
 
   @Test
   void rejectsLegacyHttpsScheme() {
-    assertThatIllegalArgumentException()
-        .isThrownBy(() -> Dsn.parse("https://k@host/1"));
+    assertThatIllegalArgumentException().isThrownBy(() -> Dsn.parse("https://k@host/1"));
   }
 
   @Test
   void rejectsMissingApiSegment() {
-    assertThatIllegalArgumentException()
-        .isThrownBy(() -> Dsn.parse("arguslog://k@host/1"));
+    assertThatIllegalArgumentException().isThrownBy(() -> Dsn.parse("arguslog://k@host/1"));
   }
 
   @Test
   void rejectsMissingProjectId() {
-    assertThatIllegalArgumentException()
-        .isThrownBy(() -> Dsn.parse("arguslog://k@host/api/"));
+    assertThatIllegalArgumentException().isThrownBy(() -> Dsn.parse("arguslog://k@host/api/"));
   }
 
   @Test
   void rejectsMissingPublicKey() {
-    assertThatIllegalArgumentException()
-        .isThrownBy(() -> Dsn.parse("arguslog://@host/api/1"));
+    assertThatIllegalArgumentException().isThrownBy(() -> Dsn.parse("arguslog://@host/api/1"));
   }
 }

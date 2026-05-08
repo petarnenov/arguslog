@@ -33,11 +33,6 @@ describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
   beforeEach(() => __resetForTests());
   afterEach(() => __resetForTests());
 
-  // The trailing setTimeout below is a workaround for a real SDK bug: client.flush()
-  // does not await an in-flight transport.flush() (Transport.flush returns early when
-  // already flushing). Tracked in the SDK; remove the delays once the SDK awaits the
-  // pending send promise instead of fire-and-forgetting.
-
   it('captureException(TypeError) → POST /api/{projectId}/events with X-Arguslog-Auth + EventPayload, expect 202', async () => {
     const p = provider()
       .uponReceiving('a TypeError captured by the browser SDK')
@@ -81,7 +76,6 @@ describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
       init({ dsn: dsnFor(mock.url) });
       captureException(new TypeError('x is undefined'));
       await flush();
-      await new Promise((r) => setTimeout(r, 200));
     });
   });
 
@@ -120,7 +114,6 @@ describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
       init({ dsn: dsnFor(mock.url) });
       captureMessage('config drift detected', 'warning');
       await flush();
-      await new Promise((r) => setTimeout(r, 200));
     });
   });
 });

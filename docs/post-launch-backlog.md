@@ -18,38 +18,38 @@ cutover week.
 
 ## Open — feature work
 
-| # | Item                                                                                          | Trigger                                  |
-| - | --------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| 1 | Stripe live keys (`STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`) on prod api. | Ready to charge real cards.              |
-| ~~2~~ | ~~First SDK publish~~ — `@arguslog/sdk-browser@0.1.1`, `@arguslog/sdk-react@0.1.1`, `org.arguslog:java-sdk:0.1.0` are live (Maven Central sync ~hours). | Done 2026-05-07. |
-| ~~3~~ | ~~NPM\_TOKEN + Maven Central creds + GPG key as repo secrets~~ — wired and rotated through the first publish. | Done 2026-05-07. |
-| 4 | Marketing / landing page on apex `arguslog.org` (currently 404).                              | Public launch.                           |
-| 5 | Status page (Better Stack or self-hosted).                                                    | First customer asks "is it down?".       |
-| 6 | Email-verification end-to-end smoke from real registration flow.                              | Before second real user registers.       |
-| 7 | Auto-downgrade rotation rehearsal — fire a `payment_failed` webhook + watch worker downgrade. | Before first Pro customer.               |
-| 8 | Audit log export + backup/DR rehearsal.                                                       | SOC2 prep / first enterprise customer.   |
+| #     | Item                                                                                                                                                    | Trigger                                |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| 1     | Stripe live keys (`STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`) on prod api.                                                           | Ready to charge real cards.            |
+| ~~2~~ | ~~First SDK publish~~ — `@arguslog/sdk-browser@0.1.1`, `@arguslog/sdk-react@0.1.1`, `org.arguslog:java-sdk:0.1.0` are live (Maven Central sync ~hours). | Done 2026-05-07.                       |
+| ~~3~~ | ~~NPM_TOKEN + Maven Central creds + GPG key as repo secrets~~ — wired and rotated through the first publish.                                            | Done 2026-05-07.                       |
+| 4     | Marketing / landing page on apex `arguslog.org` (currently 404).                                                                                        | Public launch.                         |
+| 5     | Status page (Better Stack or self-hosted).                                                                                                              | First customer asks "is it down?".     |
+| 6     | Email-verification end-to-end smoke from real registration flow.                                                                                        | Before second real user registers.     |
+| 7     | Auto-downgrade rotation rehearsal — fire a `payment_failed` webhook + watch worker downgrade.                                                           | Before first Pro customer.             |
+| 8     | Audit log export + backup/DR rehearsal.                                                                                                                 | SOC2 prep / first enterprise customer. |
 
 ## Open — tech debt (carry-forward from P4/P5 "out of scope")
 
-| # | Item                                                                                            |
-| - | ----------------------------------------------------------------------------------------------- |
-| 1 | `@TestConfiguration` extraction to stop the mock churn that hits every controller-test commit.  |
-| 2 | `AesGcmSecretCipher` extraction to a shared module.                                             |
-| 3 | RLS owner-bypass test split (separate Testcontainers role with bypass off).                     |
-| 4 | Granular PAT scopes (`releases:write`, `events:read`, etc.) instead of a single implicit scope. |
-| 5 | Annual prepay / yearly discount on Stripe.                                                      |
-| 6 | Metered billing / usage-based pricing variant.                                                  |
-| 7 | Pre-existing `import/order` lint warning in `apps/web/src/providers.tsx`.                       |
+| #   | Item                                                                                            |
+| --- | ----------------------------------------------------------------------------------------------- |
+| 1   | `@TestConfiguration` extraction to stop the mock churn that hits every controller-test commit.  |
+| 2   | `AesGcmSecretCipher` extraction to a shared module.                                             |
+| 3   | RLS owner-bypass test split (separate Testcontainers role with bypass off).                     |
+| 4   | Granular PAT scopes (`releases:write`, `events:read`, etc.) instead of a single implicit scope. |
+| 5   | Annual prepay / yearly discount on Stripe.                                                      |
+| 6   | Metered billing / usage-based pricing variant.                                                  |
+| 7   | Pre-existing `import/order` lint warning in `apps/web/src/providers.tsx`.                       |
 
 ## Open — operational
 
-| # | Item                                                                                                                  |
-| - | --------------------------------------------------------------------------------------------------------------------- |
-| 1 | Re-enable `RETENTION_DRY_RUN=false` after one nightly cycle confirms the per-org delete count is sane.                |
-| 2 | Move staging Keycloak's backing store off the auto-provisioned `Postgres` template onto a long-lived volume.          |
-| 3 | Decide whether `arguslog-internal` dogfood org should keep `enterprise` plan in production (currently does).          |
-| 4 | Decide if production should use a separate R2 bucket from staging (currently `arguslog-attachments` serves both).     |
-| 5 | Wire `RAILWAY_TOKEN_PRODUCTION` into the deploy workflow's manual `workflow_dispatch` step (token exists, not wired). |
+| #   | Item                                                                                                                  |
+| --- | --------------------------------------------------------------------------------------------------------------------- |
+| 1   | Re-enable `RETENTION_DRY_RUN=false` after one nightly cycle confirms the per-org delete count is sane.                |
+| 2   | Move staging Keycloak's backing store off the auto-provisioned `Postgres` template onto a long-lived volume.          |
+| 3   | Decide whether `arguslog-internal` dogfood org should keep `enterprise` plan in production (currently does).          |
+| 4   | Decide if production should use a separate R2 bucket from staging (currently `arguslog-attachments` serves both).     |
+| 5   | Wire `RAILWAY_TOKEN_PRODUCTION` into the deploy workflow's manual `workflow_dispatch` step (token exists, not wired). |
 
 ## Worth knowing
 

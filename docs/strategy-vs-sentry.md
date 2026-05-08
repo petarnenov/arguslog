@@ -8,7 +8,7 @@
 ### Силни
 
 - **Developer-first onboarding** — `Sentry.init(dsn)` и работи. SDK-та за 50+ платформи.
-- **Stack trace + source maps + breadcrumbs** — не просто "грешка X", а *защо* се
+- **Stack trace + source maps + breadcrumbs** — не просто "грешка X", а _защо_ се
   случи: последните 50 действия преди срива.
 - **Issue grouping / fingerprinting** — 10 000 експлоужъна на същия NPE = 1 issue,
   не 10 000 имейла.
@@ -23,7 +23,7 @@
 - **Цените експлодират** — $26/mo базов план, но при production трафик бързо отива
   на $200–500+/mo. Pay-per-event е жесток.
 - **UI е претрупан** — 7 години feature creep; нови users се губят.
-- **Quota model е наказващ** — превишаваш cap → drop events → грешките които *най-много*
+- **Quota model е наказващ** — превишаваш cap → drop events → грешките които _най-много_
   искаш да видиш изчезват.
 - **Self-host е тежък** — 20+ контейнера, Kafka, ClickHouse. "Open source" но
   практически unlovable.
@@ -32,16 +32,16 @@
 
 ## Сравнение с Arguslog
 
-| Измерение           | Sentry                | Arguslog                          |
-| ------------------- | --------------------- | --------------------------------- |
-| SDK breadth         | 50+                   | 2 (browser/react + java)          |
-| Performance/Replay  | Да                    | Не                                |
-| Цена @ 100k events  | ~$26–80/mo            | $9/mo                             |
-| Self-host           | Heavy (20+ services)  | 3 services + Postgres/Redis/R2    |
-| Multi-tenancy       | Org-based             | Org-based + RLS                   |
-| Source maps         | Да                    | Да (CLI)                          |
-| Releases/regression | Да                    | Releases да, regression — не yet  |
-| Issue grouping      | Sophisticated         | Basic (трябва проверка)           |
+| Измерение           | Sentry               | Arguslog                         |
+| ------------------- | -------------------- | -------------------------------- |
+| SDK breadth         | 50+                  | 2 (browser/react + java)         |
+| Performance/Replay  | Да                   | Не                               |
+| Цена @ 100k events  | ~$26–80/mo           | $9/mo                            |
+| Self-host           | Heavy (20+ services) | 3 services + Postgres/Redis/R2   |
+| Multi-tenancy       | Org-based            | Org-based + RLS                  |
+| Source maps         | Да                   | Да (CLI)                         |
+| Releases/regression | Да                   | Releases да, regression — не yet |
+| Issue grouping      | Sophisticated        | Basic (трябва проверка)          |
 
 **Структурно предимство:** ~10× по-евтин и ~10× по-лек self-host. Това е реалното
 оръжие.
@@ -86,7 +86,7 @@
 4. **Side-project / hobby developers** — Free tier-ът е щедър. Ловят се през Show HN,
    Reddit r/webdev, Bulgarian dev общности.
 
-**Ден-1 marketing tactic:** един перфектен blog post — *"Self-hosted error tracking
-for under $20/mo"* с benchmark vs Sentry (honest, във ваша полза). HN front page =
+**Ден-1 marketing tactic:** един перфектен blog post — _"Self-hosted error tracking
+for under $20/mo"_ с benchmark vs Sentry (honest, във ваша полза). HN front page =
 1000 signup-а. Имате SDK дистрибуция (npm + Maven Central), k6 baseline и dogfood —
 суровината за такъв пост вече е готова.
