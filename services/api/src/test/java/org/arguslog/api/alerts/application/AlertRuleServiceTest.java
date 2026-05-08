@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.Optional;
 import org.arguslog.api.alerts.application.AlertRuleUseCase.InvalidAlertRuleException;
 import org.arguslog.api.alerts.application.port.AlertRuleRepository;
+import org.arguslog.api.alerts.application.port.AlertRuleWriteRepository;
 import org.arguslog.api.alerts.domain.AlertRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AlertRuleServiceTest {
 
   @Mock AlertRuleRepository repository;
+  @Mock AlertRuleWriteRepository writes;
 
   AlertRuleService service;
   ObjectMapper mapper;
@@ -37,7 +39,7 @@ class AlertRuleServiceTest {
   @BeforeEach
   void setUp() {
     mapper = new ObjectMapper();
-    service = new AlertRuleService(repository);
+    service = new AlertRuleService(repository, writes);
   }
 
   @Test
@@ -46,12 +48,12 @@ class AlertRuleServiceTest {
     ObjectNode actions = mapper.createObjectNode();
     actions.putArray("destinationIds").add(7);
 
-    when(repository.create(eq(101L), eq("ops"), any(), any(), eq(300), eq(true)))
+    when(writes.create(eq(101L), eq("ops"), any(), any(), eq(300), eq(true)))
         .thenReturn(sample(101L, "ops"));
 
     service.create(101L, "ops", conditions, actions, 300, true);
 
-    verify(repository).create(eq(101L), eq("ops"), any(), any(), eq(300), eq(true));
+    verify(writes).create(eq(101L), eq("ops"), any(), any(), eq(300), eq(true));
   }
 
   @Test
@@ -168,13 +170,13 @@ class AlertRuleServiceTest {
             true);
 
     assertThat(result).isEmpty();
-    verify(repository, never())
+    verify(writes, never())
         .update(anyLong(), anyLong(), anyString(), any(), any(), anyInt(), anyBoolean());
   }
 
   @Test
   void deletePassesThrough() {
-    when(repository.delete(101L, 7L)).thenReturn(true);
+    when(writes.delete(101L, 7L)).thenReturn(true);
     assertThat(service.delete(101L, 7L)).isTrue();
   }
 

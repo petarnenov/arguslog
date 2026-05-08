@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import org.arguslog.api.application.port.ProjectRepository;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
+import org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository;
 import org.arguslog.api.releases.application.port.SourceMapStorage;
 import org.arguslog.api.releases.domain.Release;
 import org.arguslog.api.releases.domain.SourceMapArtifact;
@@ -28,6 +29,7 @@ public class SourceMapArtifactService implements SourceMapArtifactUseCase {
 
   private final ReleaseRepository releases;
   private final SourceMapArtifactRepository artifacts;
+  private final SourceMapArtifactWriteRepository artifactWrites;
   private final SourceMapStorage storage;
   private final ProjectRepository projects;
   private final Clock clock;
@@ -35,11 +37,13 @@ public class SourceMapArtifactService implements SourceMapArtifactUseCase {
   public SourceMapArtifactService(
       ReleaseRepository releases,
       SourceMapArtifactRepository artifacts,
+      SourceMapArtifactWriteRepository artifactWrites,
       SourceMapStorage storage,
       ProjectRepository projects,
       Clock clock) {
     this.releases = releases;
     this.artifacts = artifacts;
+    this.artifactWrites = artifactWrites;
     this.storage = storage;
     this.projects = projects;
     this.clock = clock;
@@ -68,7 +72,7 @@ public class SourceMapArtifactService implements SourceMapArtifactUseCase {
                 () -> new ReleaseNotFoundException("project " + projectId + " no longer exists"));
 
     String r2Key = buildR2Key(orgId, projectId, release.id(), path);
-    SourceMapArtifact stored = artifacts.upsert(release.id(), r2Key, path, hash, size);
+    SourceMapArtifact stored = artifactWrites.upsert(release.id(), r2Key, path, hash, size);
 
     URI uploadUrl = storage.presignPut(r2Key, size, PRESIGN_TTL);
     Instant expiresAt = Instant.now(clock).plus(PRESIGN_TTL);

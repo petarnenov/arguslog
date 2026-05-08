@@ -8,6 +8,7 @@ import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.api.alerts.application.AlertDestinationUseCase.DuplicateDestinationException;
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
+import org.arguslog.api.alerts.application.port.AlertDestinationWriteRepository;
 import org.arguslog.api.alerts.application.port.SecretCipher;
 import org.arguslog.api.alerts.domain.AlertDestination;
 import org.arguslog.api.alerts.domain.DestinationKind;
@@ -18,7 +19,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JdbcAlertDestinationRepository implements AlertDestinationRepository {
+public class JdbcAlertDestinationRepository
+    implements AlertDestinationRepository, AlertDestinationWriteRepository {
 
   private final JdbcTemplate jdbc;
   private final SecretCipher cipher;

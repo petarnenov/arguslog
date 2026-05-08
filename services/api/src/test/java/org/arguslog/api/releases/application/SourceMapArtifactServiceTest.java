@@ -39,6 +39,7 @@ class SourceMapArtifactServiceTest {
 
   @Mock ReleaseRepository releases;
   @Mock SourceMapArtifactRepository artifacts;
+  @Mock org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository artifactWrites;
   @Mock SourceMapStorage storage;
   @Mock ProjectRepository projects;
 
@@ -52,7 +53,12 @@ class SourceMapArtifactServiceTest {
   void setUp() {
     service =
         new SourceMapArtifactService(
-            releases, artifacts, storage, projects, Clock.fixed(FIXED_NOW, ZoneOffset.UTC));
+            releases,
+            artifacts,
+            artifactWrites,
+            storage,
+            projects,
+            Clock.fixed(FIXED_NOW, ZoneOffset.UTC));
   }
 
   @Test
@@ -65,7 +71,7 @@ class SourceMapArtifactServiceTest {
 
     when(releases.find(101L, 7L)).thenReturn(Optional.of(release));
     when(projects.findOrgIdForProject(101L)).thenReturn(OptionalLong.of(1L));
-    when(artifacts.upsert(7L, "1/101/7/dist/app.js.map", "dist/app.js", VALID_SHA, 1234L))
+    when(artifactWrites.upsert(7L, "1/101/7/dist/app.js.map", "dist/app.js", VALID_SHA, 1234L))
         .thenReturn(stored);
     when(storage.presignPut(eq("1/101/7/dist/app.js.map"), eq(1234L), any(Duration.class)))
         .thenReturn(presigned);
@@ -82,7 +88,7 @@ class SourceMapArtifactServiceTest {
     when(releases.find(101L, 7L))
         .thenReturn(Optional.of(new Release(7L, 101L, "1.2.3", FIXED_NOW)));
     when(projects.findOrgIdForProject(101L)).thenReturn(OptionalLong.of(1L));
-    when(artifacts.upsert(
+    when(artifactWrites.upsert(
             eq(7L), eq("1/101/7/dist/app.js.map"), eq("/dist/app.js"), eq(VALID_SHA), eq(1L)))
         .thenReturn(
             new SourceMapArtifact(
@@ -91,7 +97,7 @@ class SourceMapArtifactServiceTest {
 
     service.create(101L, 7L, "/dist/app.js", VALID_SHA, 1L);
 
-    verify(artifacts).upsert(7L, "1/101/7/dist/app.js.map", "/dist/app.js", VALID_SHA, 1L);
+    verify(artifactWrites).upsert(7L, "1/101/7/dist/app.js.map", "/dist/app.js", VALID_SHA, 1L);
   }
 
   @Test
@@ -101,7 +107,8 @@ class SourceMapArtifactServiceTest {
     assertThatThrownBy(() -> service.create(101L, 999L, "dist/a.js", VALID_SHA, 100L))
         .isInstanceOf(ReleaseNotFoundException.class);
     verifyNoInteractions(storage);
-    verify(artifacts, never()).upsert(anyLong(), anyString(), anyString(), anyString(), anyLong());
+    verify(artifactWrites, never())
+        .upsert(anyLong(), anyString(), anyString(), anyString(), anyLong());
   }
 
   @Test

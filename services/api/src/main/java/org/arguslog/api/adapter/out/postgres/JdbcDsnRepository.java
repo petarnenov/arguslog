@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import javax.sql.DataSource;
 import org.arguslog.api.application.port.DsnRepository;
+import org.arguslog.api.application.port.DsnWriteRepository;
 import org.arguslog.api.domain.Dsn;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -11,7 +12,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JdbcDsnRepository implements DsnRepository {
+public class JdbcDsnRepository implements DsnRepository, DsnWriteRepository {
 
   private final JdbcTemplate jdbc;
 

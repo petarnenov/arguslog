@@ -11,6 +11,7 @@ import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.api.alerts.adapter.out.crypto.AesGcmSecretCipher;
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
+import org.arguslog.api.alerts.application.port.AlertDestinationWriteRepository;
 import org.arguslog.api.alerts.domain.AlertDestination;
 import org.arguslog.api.alerts.domain.DestinationKind;
 import org.arguslog.api.security.OrgContext;
@@ -41,6 +42,7 @@ class JdbcAlertDestinationRepositoryTest {
 
   private static HikariDataSource dataSource;
   private static AlertDestinationRepository repository;
+  private static AlertDestinationWriteRepository writes;
 
   @BeforeAll
   static void boot() throws Exception {
@@ -64,12 +66,6 @@ class JdbcAlertDestinationRepositoryTest {
     repository =
         new AlertDestinationRepository() {
           @Override
-          public AlertDestination create(
-              long orgId, DestinationKind kind, String name, String configJson) {
-            return tx.execute(s -> raw.create(orgId, kind, name, configJson));
-          }
-
-          @Override
           public List<AlertDestination> listForOrg(long orgId) {
             return tx.execute(s -> raw.listForOrg(orgId));
           }
@@ -77,6 +73,14 @@ class JdbcAlertDestinationRepositoryTest {
           @Override
           public Optional<AlertDestination> find(long orgId, long id) {
             return tx.execute(s -> raw.find(orgId, id));
+          }
+        };
+    writes =
+        new AlertDestinationWriteRepository() {
+          @Override
+          public AlertDestination create(
+              long orgId, DestinationKind kind, String name, String configJson) {
+            return tx.execute(s -> raw.create(orgId, kind, name, configJson));
           }
 
           @Override
@@ -113,7 +117,7 @@ class JdbcAlertDestinationRepositoryTest {
   @Test
   void roundTripsConfigThroughEncryption() {
     AlertDestination created =
-        repository.create(1L, DestinationKind.TELEGRAM, "ops", "{\"chatId\":\"-100\"}");
+        writes.create(1L, DestinationKind.TELEGRAM, "ops", "{\"chatId\":\"-100\"}");
     AlertDestination loaded = repository.find(1L, created.id()).orElseThrow();
     assertThat(loaded.configJson()).isEqualTo("{\"chatId\":\"-100\"}");
     assertThat(loaded.kind()).isEqualTo(DestinationKind.TELEGRAM);
@@ -122,7 +126,7 @@ class JdbcAlertDestinationRepositoryTest {
 
   @Test
   void persistsCiphertextNotPlaintextInTheDb() throws Exception {
-    repository.create(1L, DestinationKind.WEBHOOK, "ci", "{\"url\":\"https://example.com/hook\"}");
+    writes.create(1L, DestinationKind.WEBHOOK, "ci", "{\"url\":\"https://example.com/hook\"}");
     try (Connection conn = dataSource.getConnection();
         PreparedStatement stmt =
             conn.prepareStatement("SELECT config_encrypted FROM alert_destinations LIMIT 1");
@@ -140,10 +144,10 @@ class JdbcAlertDestinationRepositoryTest {
   @Test
   void listOrdersByCreatedDescId() throws InterruptedException {
     AlertDestination first =
-        repository.create(1L, DestinationKind.WEBHOOK, "a", "{\"url\":\"https://1\"}");
+        writes.create(1L, DestinationKind.WEBHOOK, "a", "{\"url\":\"https://1\"}");
     Thread.sleep(5);
     AlertDestination second =
-        repository.create(1L, DestinationKind.WEBHOOK, "b", "{\"url\":\"https://2\"}");
+        writes.create(1L, DestinationKind.WEBHOOK, "b", "{\"url\":\"https://2\"}");
 
     List<AlertDestination> page = repository.listForOrg(1L);
     assertThat(page).extracting(AlertDestination::id).containsExactly(second.id(), first.id());
@@ -152,12 +156,12 @@ class JdbcAlertDestinationRepositoryTest {
   @Test
   void updateOnlyTouchesTheRequestedRow() {
     AlertDestination kept =
-        repository.create(1L, DestinationKind.WEBHOOK, "kept", "{\"url\":\"https://k\"}");
+        writes.create(1L, DestinationKind.WEBHOOK, "kept", "{\"url\":\"https://k\"}");
     AlertDestination edited =
-        repository.create(1L, DestinationKind.WEBHOOK, "edited", "{\"url\":\"https://e\"}");
+        writes.create(1L, DestinationKind.WEBHOOK, "edited", "{\"url\":\"https://e\"}");
 
     Optional<AlertDestination> updated =
-        repository.update(1L, edited.id(), "renamed", "{\"url\":\"https://e2\"}");
+        writes.update(1L, edited.id(), "renamed", "{\"url\":\"https://e2\"}");
 
     assertThat(updated).isPresent();
     assertThat(updated.orElseThrow().name()).isEqualTo("renamed");
@@ -168,19 +172,19 @@ class JdbcAlertDestinationRepositoryTest {
   @Test
   void deleteIsAccountedFor() {
     AlertDestination created =
-        repository.create(1L, DestinationKind.WEBHOOK, "k", "{\"url\":\"https://k\"}");
-    assertThat(repository.delete(1L, created.id())).isTrue();
-    assertThat(repository.delete(1L, created.id())).isFalse();
+        writes.create(1L, DestinationKind.WEBHOOK, "k", "{\"url\":\"https://k\"}");
+    assertThat(writes.delete(1L, created.id())).isTrue();
+    assertThat(writes.delete(1L, created.id())).isFalse();
     assertThat(repository.find(1L, created.id())).isEmpty();
   }
 
   @Test
   void wrongOrgCannotSeeOrMutate() {
     AlertDestination created =
-        repository.create(1L, DestinationKind.WEBHOOK, "k", "{\"url\":\"https://k\"}");
+        writes.create(1L, DestinationKind.WEBHOOK, "k", "{\"url\":\"https://k\"}");
     assertThat(repository.find(2L, created.id())).isEmpty();
-    assertThat(repository.update(2L, created.id(), "x", "{\"url\":\"https://x\"}")).isEmpty();
-    assertThat(repository.delete(2L, created.id())).isFalse();
+    assertThat(writes.update(2L, created.id(), "x", "{\"url\":\"https://x\"}")).isEmpty();
+    assertThat(writes.delete(2L, created.id())).isFalse();
   }
 
   private static void seed(DataSource ds) throws Exception {

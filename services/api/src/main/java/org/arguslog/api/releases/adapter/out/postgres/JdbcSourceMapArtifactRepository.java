@@ -6,6 +6,7 @@ import java.sql.Types;
 import java.util.List;
 import javax.sql.DataSource;
 import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
+import org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository;
 import org.arguslog.api.releases.domain.SourceMapArtifact;
 import org.arguslog.api.security.OrgContext;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -13,7 +14,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JdbcSourceMapArtifactRepository implements SourceMapArtifactRepository {
+public class JdbcSourceMapArtifactRepository
+    implements SourceMapArtifactRepository, SourceMapArtifactWriteRepository {
 
   private final JdbcTemplate jdbc;
   private final RowMapper<SourceMapArtifact> rowMapper = this::mapRow;
