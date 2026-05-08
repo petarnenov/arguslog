@@ -105,6 +105,35 @@ bootstrapApplication(AppComponent, {
 uncaught Angular errors. NgModule consumers can use
 `ArguslogModule.forRoot(options)` instead.
 
+## Vue 3
+
+```bash
+pnpm add @arguslog/sdk-vue
+```
+
+```ts
+// main.ts
+import { createApp } from 'vue';
+import { createArguslog } from '@arguslog/sdk-vue';
+import App from './App.vue';
+
+createApp(App)
+  .use(
+    createArguslog({
+      dsn: 'arguslog://<key>@<host>/api/<projectId>',
+      integrations: ['globalHandlers'],
+    }),
+  )
+  .mount('#app');
+```
+
+`createArguslog()` runs `init()`, replaces `app.config.errorHandler`
+with a chain that forwards uncaught component errors to
+`captureException`, and provides an `ArguslogService` for the
+`useArguslog()` composable. Wrap subtrees in
+`<ArguslogErrorBoundary fallback="…">` to catch render and lifecycle
+errors locally.
+
 ## React Native
 
 ```bash
