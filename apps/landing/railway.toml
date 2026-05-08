@@ -1,0 +1,22 @@
+# Railway service config for arguslog-landing. Static marketing site served by Caddy. Gets the
+# apex (arguslog.org) Cloudflare custom domain — the dashboard lives on app.arguslog.org.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/landing/Dockerfile"
+watchPatterns = [
+  "apps/landing/**",
+  "packages/sdk-browser/**",
+  "packages/sdk-react/**",
+  "packages/eslint-config/**",
+  "packages/tsconfig/**",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+]
+
+[deploy]
+healthcheckPath = "/healthz"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+numReplicas = 1

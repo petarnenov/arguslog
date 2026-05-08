@@ -1,0 +1,92 @@
+{
+  "app": {
+    "name": "Arguslog"
+  },
+  "nav": {
+    "signIn": "Sign in",
+    "getStarted": "Get started",
+    "github": "GitHub"
+  },
+  "hero": {
+    "tagline": "Error tracking for modern teams",
+    "title": "Catch errors before your customers do.",
+    "subtitle": "Real-time issue tracking with source-mapped stack traces, smart alerts, and team workflows. Self-hostable, multi-tenant, open-source SDKs.",
+    "ctaPrimary": "Get started free",
+    "ctaSecondary": "View on GitHub"
+  },
+  "features": {
+    "heading": "Everything you need, nothing you don't.",
+    "subheading": "Built on the same multi-tenant stack we run in production. Same DSN format and SDK shape as Sentry — drop-in for most existing setups.",
+    "items": {
+      "ingest": {
+        "title": "Real-time ingest",
+        "body": "Events flow through a Redis Streams queue with at-least-once delivery semantics. Issues are deduplicated by stable fingerprints in milliseconds."
+      },
+      "sourcemaps": {
+        "title": "Source-mapped stack traces",
+        "body": "Upload source maps per release through the CLI. Frames are symbolicated by the worker so your team sees real file paths, not minified gibberish."
+      },
+      "alerts": {
+        "title": "Multi-channel alerts",
+        "body": "Telegram, Slack, email, and generic webhooks out of the box. Per-rule throttling and DSL-driven matching on level, tags, and first-seen windows."
+      },
+      "team": {
+        "title": "Team workflows",
+        "body": "Owner / admin / member roles, invite flows with email verification, scoped Personal Access Tokens for CI and scripts, full RFC 9457 problem responses."
+      }
+    }
+  },
+  "platforms": {
+    "heading": "First-class SDKs",
+    "subheading": "Drop-in clients for the runtimes your team ships. The catalog below is fetched live from /api/v1/platforms — same endpoint the dashboard uses.",
+    "loading": "Loading…",
+    "fallback": "Visit the GitHub repo for the SDK list.",
+    "viewSdk": "View on npm / Maven"
+  },
+  "pricing": {
+    "heading": "Pricing that scales with you.",
+    "subheading": "Start free, upgrade when your event volume justifies it. Enterprise deals include custom retention windows and contracted SLAs.",
+    "free": {
+      "name": "Free",
+      "price": "$0",
+      "period": "/ month",
+      "features": ["5,000 events / month", "1 project", "30-day retention", "Community support"],
+      "cta": "Start free"
+    },
+    "pro": {
+      "name": "Pro",
+      "price": "$9",
+      "period": "/ month",
+      "features": [
+        "100,000 events / month",
+        "10 projects",
+        "30-day retention",
+        "Email + Slack support"
+      ],
+      "cta": "Upgrade to Pro"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "price": "Contact",
+      "period": "us",
+      "features": [
+        "Custom event volume",
+        "Unlimited projects",
+        "90–365 day retention",
+        "Contracted SLA"
+      ],
+      "cta": "Talk to sales"
+    },
+    "annualNote": "Annual billing saves ~17%. Configure on the billing page after signup."
+  },
+  "footer": {
+    "tagline": "Open-source error tracking, hosted on Railway.",
+    "links": {
+      "app": "Dashboard",
+      "github": "GitHub",
+      "status": "Status",
+      "docs": "Docs"
+    },
+    "copyright": "© 2026 Arguslog"
+  }
+}
