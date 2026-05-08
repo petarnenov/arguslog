@@ -1,5 +1,7 @@
 export type Level = 'fatal' | 'error' | 'warning' | 'info' | 'debug';
 
+export type Platform = 'javascript' | 'node';
+
 export interface User {
   id?: string;
   email?: string;
@@ -31,7 +33,7 @@ export interface ExceptionPayload {
 export interface EventPayload {
   eventId: string;
   timestamp: number;
-  platform: 'javascript';
+  platform: Platform;
   sdk: { name: string; version: string };
   release?: string;
   environment?: string;
@@ -58,7 +60,7 @@ export interface ArguslogOptions {
   beforeSend?: BeforeSend;
   scrubbing?: { enabled?: boolean; extraPatterns?: RegExp[] };
   transport?: { fetch?: typeof fetch; maxRetries?: number };
-  integrations?: ('globalHandlers' | 'breadcrumbs')[];
+  integrations?: string[];
   debug?: boolean;
 }
 
@@ -68,4 +70,20 @@ export interface ParsedDsn {
   protocol: 'http' | 'https';
   projectId: string;
   ingestUrl: string;
+}
+
+/**
+ * A platform-specific adapter — each SDK package (sdk-browser, sdk-node, …) ships one. The core
+ * client uses it to stamp events with the right SDK identity and to enrich them with
+ * platform-only fields (browser request URL, Node runtime version, etc.) without core needing
+ * to know about `window` or `process`.
+ */
+export interface PlatformAdapter {
+  sdkName: string;
+  platform: Platform;
+  enrichEvent?(event: EventPayload): void;
+}
+
+export interface StackParser {
+  (stack: string | undefined): StackFrame[];
 }

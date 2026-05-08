@@ -14,7 +14,7 @@ const PUBLIC_KEY = 'public-key-active';
 
 function provider(): PactV3 {
   return new PactV3({
-    consumer: 'arguslog-sdk-browser',
+    consumer: 'arguslog-sdk-node',
     provider: 'arguslog-ingest',
     dir: PACT_DIR,
     logLevel: 'warn',
@@ -29,13 +29,13 @@ function dsnFor(mockServerUrl: string): string {
   return `arguslog://${PUBLIC_KEY}@${u.host}/api/${PROJECT_ID}`;
 }
 
-describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
+describe('arguslog-sdk-node <-> arguslog-ingest contract', () => {
   beforeEach(() => __resetForTests());
   afterEach(() => __resetForTests());
 
   it('captureException(TypeError) → POST /api/{projectId}/events with X-Arguslog-Auth + EventPayload, expect 202', async () => {
     const p = provider()
-      .uponReceiving('a TypeError captured by the browser SDK')
+      .uponReceiving('a TypeError captured by the node SDK')
       .withRequest({
         method: 'POST',
         path: `/api/${PROJECT_ID}/events`,
@@ -46,10 +46,14 @@ describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
         body: like({
           eventId: regex('^[0-9a-f]{32}$', 'aabbccddeeff00112233445566778899'),
           timestamp: integer(1730000000000),
-          platform: 'javascript',
-          sdk: { name: 'arguslog.javascript', version: like('0.0.0') },
+          platform: 'node',
+          sdk: { name: 'arguslog.node', version: like('0.0.0') },
           level: 'error',
           breadcrumbs: like([]),
+          contexts: like({
+            runtime: { name: 'node', version: like('v20.0.0') },
+            os: { name: like('linux'), release: like('5.0') },
+          }),
           exception: {
             values: [
               like({
@@ -81,7 +85,7 @@ describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
 
   it('captureMessage(warning) → same envelope shape but message-only, expect 202', async () => {
     const p = provider()
-      .uponReceiving('a warning message captured by the browser SDK')
+      .uponReceiving('a warning message captured by the node SDK')
       .withRequest({
         method: 'POST',
         path: `/api/${PROJECT_ID}/events`,
@@ -92,10 +96,14 @@ describe('arguslog-sdk-browser <-> arguslog-ingest contract', () => {
         body: like({
           eventId: regex('^[0-9a-f]{32}$', 'aabbccddeeff00112233445566778899'),
           timestamp: integer(1730000000000),
-          platform: 'javascript',
-          sdk: { name: 'arguslog.javascript', version: like('0.0.0') },
+          platform: 'node',
+          sdk: { name: 'arguslog.node', version: like('0.0.0') },
           level: 'warning',
           breadcrumbs: like([]),
+          contexts: like({
+            runtime: { name: 'node', version: like('v20.0.0') },
+            os: { name: like('linux'), release: like('5.0') },
+          }),
           message: 'config drift detected',
         }),
       })
