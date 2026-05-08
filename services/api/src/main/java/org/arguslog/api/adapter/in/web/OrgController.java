@@ -11,10 +11,12 @@ import org.arguslog.api.application.OrgUseCase.InvalidOrgException;
 import org.arguslog.api.application.OrgUseCase.OrgAccessDeniedException;
 import org.arguslog.api.domain.Org;
 import org.arguslog.api.security.AccessException;
+import org.arguslog.api.security.AuthActor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -37,19 +39,27 @@ public class OrgController {
   }
 
   @GetMapping
-  public List<OrgResponse> listMine(JwtAuthenticationToken token) {
-    UUID userId = parseSubject(token);
+  public List<OrgResponse> listMine() {
+    UUID userId = AuthActor.currentUserId();
     return useCase.listForUser(userId).stream().map(OrgResponse::from).toList();
   }
 
+  /**
+   * Creates an org and adds the caller as owner. Works under both JWT (Keycloak browser session)
+   * and PAT auth: JWT path refreshes the user row from token claims (covers first-login user
+   * provisioning); PAT path skips the refresh because the user row necessarily already exists.
+   */
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<OrgResponse> create(
-      @RequestBody OrgRequest body, JwtAuthenticationToken token) {
-    Jwt jwt = token.getToken();
-    UUID userId = parseSubject(token);
-    String email = jwt.getClaimAsString("email");
-    String displayName =
-        firstNonBlank(jwt.getClaimAsString("name"), jwt.getClaimAsString("preferred_username"));
+  public ResponseEntity<OrgResponse> create(@RequestBody OrgRequest body, Authentication auth) {
+    UUID userId = AuthActor.currentUserId();
+    String email = null;
+    String displayName = null;
+    if (auth instanceof JwtAuthenticationToken jwtAuth) {
+      Jwt jwt = jwtAuth.getToken();
+      email = jwt.getClaimAsString("email");
+      displayName =
+          firstNonBlank(jwt.getClaimAsString("name"), jwt.getClaimAsString("preferred_username"));
+    }
     Org created = useCase.create(userId, email, displayName, body.name());
     return ResponseEntity.created(URI.create(String.valueOf(created.id())))
         .body(OrgResponse.from(created));
@@ -61,8 +71,8 @@ public class OrgController {
    * project/issue/event/key/destination/rule/release.
    */
   @DeleteMapping("/{orgId}")
-  public ResponseEntity<Void> delete(@PathVariable long orgId, JwtAuthenticationToken token) {
-    UUID actorId = parseSubject(token);
+  public ResponseEntity<Void> delete(@PathVariable long orgId) {
+    UUID actorId = AuthActor.currentUserId();
     if (!useCase.delete(actorId, orgId)) {
       throw AccessException.notFound(orgId);
     }
@@ -97,15 +107,6 @@ public class OrgController {
     return ResponseEntity.status(HttpStatus.FORBIDDEN)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
-  }
-
-  private static UUID parseSubject(JwtAuthenticationToken token) {
-    try {
-      return UUID.fromString(token.getName());
-    } catch (IllegalArgumentException e) {
-      throw new IllegalStateException(
-          "JWT subject is not a UUID — Keycloak realm misconfigured?", e);
-    }
   }
 
   private static String firstNonBlank(String a, String b) {

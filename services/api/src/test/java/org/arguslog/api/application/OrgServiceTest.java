@@ -85,14 +85,28 @@ class OrgServiceTest {
   }
 
   @Test
-  void rejectsMissingEmail() {
-    assertThatThrownBy(() -> service.create(ACTOR, null, "Alice", "Acme"))
-        .isInstanceOf(InvalidOrgException.class)
-        .hasMessageContaining("email");
-    assertThatThrownBy(() -> service.create(ACTOR, " ", "Alice", "Acme"))
-        .isInstanceOf(InvalidOrgException.class)
-        .hasMessageContaining("email");
-    verify(orgs, never()).create(anyString(), anyString());
+  void createSkipsUserSyncWhenEmailMissing() {
+    // PAT-driven creates omit JWT claims (PAT users already have a user row). The service still
+    // creates the org and membership, just skips the upsert.
+    Org expected = new Org(42L, "acme", "Acme", "free", Instant.parse("2026-05-06T00:00:00Z"));
+    when(orgs.create(eq("acme"), eq("Acme"))).thenReturn(expected);
+
+    Org out = service.create(ACTOR, null, null, "Acme");
+
+    assertThat(out).isEqualTo(expected);
+    verify(users, never()).upsertFromJwt(any(), anyString(), any());
+    verify(orgs).create("acme", "Acme");
+    verify(orgs).addMember(42L, ACTOR, "owner");
+  }
+
+  @Test
+  void createSkipsUserSyncWhenEmailBlank() {
+    Org expected = new Org(42L, "acme", "Acme", "free", Instant.parse("2026-05-06T00:00:00Z"));
+    when(orgs.create(eq("acme"), eq("Acme"))).thenReturn(expected);
+
+    service.create(ACTOR, " ", "ignored", "Acme");
+
+    verify(users, never()).upsertFromJwt(any(), anyString(), any());
   }
 
   @Test

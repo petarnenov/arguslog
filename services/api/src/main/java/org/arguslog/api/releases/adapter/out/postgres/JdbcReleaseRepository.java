@@ -92,6 +92,33 @@ public class JdbcReleaseRepository implements ReleaseRepository {
     }
   }
 
+  @Override
+  public Optional<Release> updateVersion(long projectId, long id, String newVersion) {
+    pinOrgContextForRls();
+    try {
+      Release row =
+          jdbc.queryForObject(
+              """
+              UPDATE releases
+                 SET version = ?
+               WHERE project_id = ? AND id = ?
+              RETURNING id, project_id, version, created_at
+              """,
+              new Object[] {newVersion, projectId, id},
+              new int[] {Types.VARCHAR, Types.BIGINT, Types.BIGINT},
+              rowMapper);
+      return Optional.ofNullable(row);
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public boolean delete(long projectId, long id) {
+    pinOrgContextForRls();
+    return jdbc.update("DELETE FROM releases WHERE project_id = ? AND id = ?", projectId, id) > 0;
+  }
+
   private void pinOrgContextForRls() {
     long orgId = OrgContext.requireCurrent();
     jdbc.queryForObject(
