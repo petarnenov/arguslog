@@ -88,7 +88,7 @@ build-sdks: ## Build workspace SDKs so Vite can resolve them (tsc-incremental, f
 	@# Drop stale tsbuildinfo when dist/ went missing externally — tsc's
 	@# incremental cache keys off source mtimes only, so it'd otherwise say
 	@# "Done" without emitting and leave Vite without sdk-browser types.
-	@for p in packages/sdk-browser packages/sdk-react; do \
+	@for p in packages/sdk-core packages/sdk-browser packages/sdk-node packages/sdk-react packages/sdk-react-native; do \
 		if [ ! -f "$$p/dist/index.d.ts" ]; then rm -f "$$p/tsconfig.build.tsbuildinfo"; fi; \
 	done
 	@# `...sdk-react` means "sdk-react AND its workspace deps" — pnpm builds
