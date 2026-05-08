@@ -10,7 +10,7 @@
   "hero": {
     "tagline": "Error tracking for modern teams",
     "title": "Catch errors before your customers do.",
-    "subtitle": "Real-time issue tracking with source-mapped stack traces, smart alerts, and team workflows. Self-hostable, multi-tenant, open-source SDKs.",
+    "subtitle": "Real-time issue tracking with source-mapped stack traces, smart alerts, and team workflows. First-class SDKs across the JS, JVM, and Python ecosystems — same wire format end-to-end so a polyglot stack groups into one issue.",
     "ctaPrimary": "Get started free",
     "ctaSecondary": "View on GitHub"
   },
@@ -38,7 +38,7 @@
   },
   "platforms": {
     "heading": "First-class SDKs",
-    "subheading": "Drop-in clients for the runtimes your team ships. The catalog below is fetched live from /api/v1/platforms — same endpoint the dashboard uses.",
+    "subheading": "Drop-in clients for browser, mobile, and server runtimes — including a zero-dependency Python SDK and a Spring Boot autoconfig. The catalog below is fetched live from /api/v1/platforms, the same endpoint the dashboard uses.",
     "loading": "Loading…",
     "fallback": "Visit the GitHub repo for the SDK list.",
     "viewSdk": "View on npm / Maven"
