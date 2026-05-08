@@ -67,11 +67,11 @@ jobs:
 
       - name: Guard — RAILWAY_TOKEN must be set
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ inputs.environment == 'production' && secrets.RAILWAY_TOKEN_PRODUCTION || secrets.RAILWAY_TOKEN_STAGING }}
         run: |
           if [ -z "$RAILWAY_TOKEN" ]; then
-            echo "::error::RAILWAY_TOKEN is unset for environment '${{ inputs.environment }}'."
-            echo "Add it under Settings → Environments → ${{ inputs.environment }} → Secrets."
+            echo "::error::RAILWAY_TOKEN_${{ inputs.environment == 'production' && 'PRODUCTION' || 'STAGING' }} is unset."
+            echo "Add it under Settings → Secrets and variables → Actions → Repository secrets."
             exit 1
           fi
 
@@ -85,5 +85,5 @@ jobs:
 
       - name: Deploy arguslog-${{ matrix.service }}
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service arguslog-${{ matrix.service }} --detach
+          RAILWAY_TOKEN: ${{ inputs.environment == 'production' && secrets.RAILWAY_TOKEN_PRODUCTION || secrets.RAILWAY_TOKEN_STAGING }}
+        run: railway up --service arguslog-${{ matrix.service }} --environment ${{ inputs.environment }} --ci --detach
