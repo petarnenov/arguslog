@@ -135,7 +135,14 @@
     "original": "original",
     "toggleOriginal": "Original",
     "toggleRaw": "Minified",
-    "toggleAria": "Show original or minified frames"
+    "toggleAria": "Show original or minified frames",
+    "breadcrumbs": {
+      "title": "Breadcrumbs",
+      "time": "Time",
+      "level": "Level",
+      "category": "Category",
+      "message": "Message"
+    }
   },
   "pagination": {
     "first": "First page",

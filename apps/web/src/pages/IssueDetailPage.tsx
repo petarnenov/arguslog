@@ -25,6 +25,11 @@ import { useIssue, useIssueEvents } from '../api/queries';
 import { useReportSoftError } from '../lib/reportSoftError';
 
 import {
+  BreadcrumbsView,
+  extractBreadcrumbs,
+  type RawBreadcrumb,
+} from './issue-detail/Breadcrumbs';
+import {
   extractFrames,
   hasSymbolication,
   type RawFrame,
@@ -71,6 +76,11 @@ export function IssueDetailPage() {
   const eventFrames = useMemo<Record<string, RawFrame[]>>(() => {
     const out: Record<string, RawFrame[]> = {};
     for (const ev of eventsQ.data?.data ?? []) out[ev.id] = extractFrames(ev.payload);
+    return out;
+  }, [eventsQ.data]);
+  const eventBreadcrumbs = useMemo<Record<string, RawBreadcrumb[]>>(() => {
+    const out: Record<string, RawBreadcrumb[]> = {};
+    for (const ev of eventsQ.data?.data ?? []) out[ev.id] = extractBreadcrumbs(ev.payload);
     return out;
   }, [eventsQ.data]);
   const anySymbolicated = useMemo(
@@ -225,6 +235,8 @@ export function IssueDetailPage() {
               <Table.Tbody>
                 {eventsQ.data.data.flatMap((event) => {
                   const frames = eventFrames[event.id] ?? [];
+                  const breadcrumbs = eventBreadcrumbs[event.id] ?? [];
+                  const receivedAtMs = new Date(event.receivedAt).getTime();
                   return [
                     <Table.Tr key={event.id}>
                       <Table.Td>{formatter.format(new Date(event.receivedAt))}</Table.Td>
@@ -244,6 +256,18 @@ export function IssueDetailPage() {
                           <Table.Tr key={`${event.id}-stack`}>
                             <Table.Td colSpan={3} style={{ paddingTop: 0 }}>
                               <StacktraceView frames={frames} preferOriginal={preferOriginal} />
+                            </Table.Td>
+                          </Table.Tr>,
+                        ]
+                      : []),
+                    ...(breadcrumbs.length > 0
+                      ? [
+                          <Table.Tr key={`${event.id}-breadcrumbs`}>
+                            <Table.Td colSpan={3} style={{ paddingTop: 0 }}>
+                              <BreadcrumbsView
+                                breadcrumbs={breadcrumbs}
+                                referenceTime={receivedAtMs}
+                              />
                             </Table.Td>
                           </Table.Tr>,
                         ]
