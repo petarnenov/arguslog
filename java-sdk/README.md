@@ -22,7 +22,7 @@ integrations are activated only when those libraries are already on the classpat
 
 ```kotlin
 dependencies {
-    implementation("org.arguslog:java-sdk:1.0.0")
+    implementation("org.arguslog:java-sdk:1.0.1")
 }
 ```
 
@@ -30,7 +30,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'org.arguslog:java-sdk:1.0.0'
+    implementation 'org.arguslog:java-sdk:1.0.1'
 }
 ```
 
@@ -40,7 +40,7 @@ dependencies {
 <dependency>
   <groupId>org.arguslog</groupId>
   <artifactId>java-sdk</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
