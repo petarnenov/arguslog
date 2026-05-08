@@ -631,6 +631,71 @@
         }
       }
     },
+    "/api/v1/orgs/{orgId}/members" : {
+      "get" : {
+        "tags" : [ "member-controller" ],
+        "operationId" : "list_5",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MemberResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "member-controller" ],
+        "operationId" : "invite",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MemberInviteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{orgId}/billing/portal" : {
       "post" : {
         "tags" : [ "checkout-controller" ],
@@ -696,7 +761,7 @@
     "/api/v1/orgs/{orgId}/alert-destinations" : {
       "get" : {
         "tags" : [ "alert-destination-controller" ],
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "name" : "orgId",
           "in" : "path",
@@ -761,7 +826,7 @@
     "/api/v1/me/tokens" : {
       "get" : {
         "tags" : [ "me-tokens-controller" ],
-        "operationId" : "list_6",
+        "operationId" : "list_7",
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -798,6 +863,77 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PatResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{orgId}/members/{userId}" : {
+      "delete" : {
+        "tags" : [ "member-controller" ],
+        "operationId" : "remove",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "member-controller" ],
+        "operationId" : "changeRole",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MemberRoleUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MemberResponse"
                 }
               }
             }
@@ -843,7 +979,7 @@
     "/api/v1/projects/{projectId}/issues" : {
       "get" : {
         "tags" : [ "issue-controller" ],
-        "operationId" : "list_7",
+        "operationId" : "list_8",
         "parameters" : [ {
           "name" : "projectId",
           "in" : "path",
@@ -1411,6 +1547,39 @@
           }
         }
       },
+      "MemberInviteRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string"
+          }
+        }
+      },
+      "MemberResponse" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string"
+          },
+          "addedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
       "CheckoutResponse" : {
         "type" : "object",
         "properties" : {
@@ -1470,6 +1639,14 @@
             "items" : {
               "type" : "string"
             }
+          }
+        }
+      },
+      "MemberRoleUpdateRequest" : {
+        "type" : "object",
+        "properties" : {
+          "role" : {
+            "type" : "string"
           }
         }
       },

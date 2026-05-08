@@ -1,6 +1,7 @@
 package org.arguslog.api.application.port;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.arguslog.api.domain.Org;
 
@@ -20,6 +21,9 @@ public interface OrgWriteRepository {
 
   /** Returns every org {@code userId} is a member of, ordered by org slug ascending. */
   List<Org> listForUser(UUID userId);
+
+  /** Look up a single org by id. Membership is NOT checked here — callers must guard. */
+  Optional<Org> findById(long orgId);
 
   /**
    * Hard-deletes an org. {@code ON DELETE CASCADE} on every dependent FK propagates the removal to
