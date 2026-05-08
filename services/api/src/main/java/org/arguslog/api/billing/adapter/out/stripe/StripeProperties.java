@@ -38,13 +38,22 @@ public record StripeProperties(
     return configured() && !priceProAnnualId.isBlank();
   }
 
-  /** Where Stripe redirects after a successful checkout — back to the org's billing page. */
-  public String successUrl(long orgId) {
-    return dashboardBaseUrl + "/orgs/" + orgId + "/billing?checkout=success";
+  /**
+   * Where Stripe redirects after a successful checkout — back to the org's billing page. The slug
+   * (not the numeric id) is used because the dashboard router keys org-scoped routes on slug, so a
+   * numeric segment would render "Organization not found" after the round-trip.
+   */
+  public String successUrl(String orgSlug) {
+    return dashboardBaseUrl + "/orgs/" + orgSlug + "/billing?checkout=success";
   }
 
   /** Where Stripe redirects when the user clicks "back" in checkout. */
-  public String cancelUrl(long orgId) {
-    return dashboardBaseUrl + "/orgs/" + orgId + "/billing?checkout=cancelled";
+  public String cancelUrl(String orgSlug) {
+    return dashboardBaseUrl + "/orgs/" + orgSlug + "/billing?checkout=cancelled";
+  }
+
+  /** Where Stripe Customer Portal redirects when the user closes the portal. */
+  public String portalReturnUrl(String orgSlug) {
+    return dashboardBaseUrl + "/orgs/" + orgSlug + "/billing";
   }
 }

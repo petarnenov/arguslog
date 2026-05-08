@@ -4,10 +4,12 @@ import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.billingportal.Session;
 import com.stripe.param.billingportal.SessionCreateParams;
+import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.billing.adapter.out.stripe.StripeProperties;
 import org.arguslog.api.billing.application.CheckoutUseCase.CheckoutFailedException;
 import org.arguslog.api.billing.application.CheckoutUseCase.StripeNotConfiguredException;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
+import org.arguslog.api.domain.Org;
 import org.springframework.stereotype.Service;
 
 /**
@@ -21,12 +23,17 @@ public class StripePortalService implements PortalUseCase {
   private final StripeClient stripe;
   private final StripeProperties props;
   private final BillingCustomerRepository customers;
+  private final OrgWriteRepository orgs;
 
   public StripePortalService(
-      StripeClient stripe, StripeProperties props, BillingCustomerRepository customers) {
+      StripeClient stripe,
+      StripeProperties props,
+      BillingCustomerRepository customers,
+      OrgWriteRepository orgs) {
     this.stripe = stripe;
     this.props = props;
     this.customers = customers;
+    this.orgs = orgs;
   }
 
   @Override
@@ -45,10 +52,18 @@ public class StripePortalService implements PortalUseCase {
                     new NoCustomerException(
                         "Org " + orgId + " has no Stripe customer yet — run Checkout first."));
 
+    String slug =
+        orgs.findById(orgId)
+            .map(Org::slug)
+            .orElseThrow(
+                () ->
+                    new CheckoutFailedException(
+                        "Org " + orgId + " disappeared between access-guard and portal", null));
+
     SessionCreateParams params =
         SessionCreateParams.builder()
             .setCustomer(customerId)
-            .setReturnUrl(props.dashboardBaseUrl() + "/orgs/" + orgId + "/billing")
+            .setReturnUrl(props.portalReturnUrl(slug))
             .build();
 
     try {
