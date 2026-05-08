@@ -141,7 +141,19 @@
       "time": "Time",
       "level": "Level",
       "category": "Category",
-      "message": "Message"
+      "message": "Message",
+      "viewData": "Show data",
+      "hideData": "Hide data"
+    },
+    "eventDetails": {
+      "title": "Event details",
+      "release": "Release",
+      "environment": "Environment",
+      "user": "User",
+      "tags": "Tags",
+      "request": "Request",
+      "contexts": "Context",
+      "extra": "Extra"
     }
   },
   "pagination": {

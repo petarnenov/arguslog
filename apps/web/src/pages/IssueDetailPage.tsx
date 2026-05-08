@@ -30,6 +30,12 @@ import {
   type RawBreadcrumb,
 } from './issue-detail/Breadcrumbs';
 import {
+  EventDetailsView,
+  extractEventMeta,
+  hasAnyMeta,
+  type EventMeta,
+} from './issue-detail/EventDetails';
+import {
   extractFrames,
   hasSymbolication,
   type RawFrame,
@@ -81,6 +87,11 @@ export function IssueDetailPage() {
   const eventBreadcrumbs = useMemo<Record<string, RawBreadcrumb[]>>(() => {
     const out: Record<string, RawBreadcrumb[]> = {};
     for (const ev of eventsQ.data?.data ?? []) out[ev.id] = extractBreadcrumbs(ev.payload);
+    return out;
+  }, [eventsQ.data]);
+  const eventMetas = useMemo<Record<string, EventMeta>>(() => {
+    const out: Record<string, EventMeta> = {};
+    for (const ev of eventsQ.data?.data ?? []) out[ev.id] = extractEventMeta(ev.payload);
     return out;
   }, [eventsQ.data]);
   const anySymbolicated = useMemo(
@@ -236,6 +247,11 @@ export function IssueDetailPage() {
                 {eventsQ.data.data.flatMap((event) => {
                   const frames = eventFrames[event.id] ?? [];
                   const breadcrumbs = eventBreadcrumbs[event.id] ?? [];
+                  const meta = eventMetas[event.id] ?? {
+                    tags: {},
+                    contexts: {},
+                    extra: {},
+                  };
                   const receivedAtMs = new Date(event.receivedAt).getTime();
                   return [
                     <Table.Tr key={event.id}>
@@ -251,6 +267,15 @@ export function IssueDetailPage() {
                         </Code>
                       </Table.Td>
                     </Table.Tr>,
+                    ...(hasAnyMeta(meta)
+                      ? [
+                          <Table.Tr key={`${event.id}-meta`}>
+                            <Table.Td colSpan={3} style={{ paddingTop: 0 }}>
+                              <EventDetailsView meta={meta} />
+                            </Table.Td>
+                          </Table.Tr>,
+                        ]
+                      : []),
                     ...(frames.length > 0
                       ? [
                           <Table.Tr key={`${event.id}-stack`}>
