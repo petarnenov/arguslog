@@ -288,6 +288,7 @@ export function ProjectsPage() {
               data={[
                 { value: 'javascript', label: 'JavaScript / Browser' },
                 { value: 'react', label: 'React' },
+                { value: 'react-native', label: 'React Native' },
                 { value: 'java-spring', label: 'Java / Spring Boot' },
               ]}
               {...form.getInputProps('platform')}

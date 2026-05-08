@@ -20,7 +20,7 @@ public class ProjectService implements ProjectUseCase {
    * Closed list of platform identifiers. Mirrors the onboarding form. Server enforces so a stale UI
    * can't sneak unknown values into the DB and break SDK selection logic later.
    */
-  static final Set<String> PLATFORMS = Set.of("javascript", "react", "java-spring");
+  static final Set<String> PLATFORMS = Set.of("javascript", "react", "react-native", "java-spring");
 
   /** Roles that may archive a project (owner can also delete the org wholesale). */
   private static final Set<String> ARCHIVE_ROLES = Set.of("owner", "admin");
