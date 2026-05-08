@@ -87,6 +87,16 @@ arguslog:
     bucket: ${R2_BUCKET:arguslog-sourcemaps}
     access-key: ${R2_ACCESS_KEY:minioadmin}
     secret-key: ${R2_SECRET_KEY:minioadmin}
+  invites:
+    # Resend HTTP API used to notify org-invitees. Reuses RESEND_API_KEY/RESEND_FROM that are
+    # already provisioned for alert delivery. apiKey blank → log-and-drop (membership row is
+    # still inserted, invitee can still log in, just no email).
+    email:
+      api-base-url: ${INVITE_EMAIL_API_URL:https://api.resend.com}
+      api-key: ${RESEND_API_KEY:}
+      from: ${RESEND_FROM:noreply@arguslog.local}
+      dashboard-base-url: ${DASHBOARD_BASE_URL:http://localhost:5173}
+      timeout: 5s
 
 logging:
   level:

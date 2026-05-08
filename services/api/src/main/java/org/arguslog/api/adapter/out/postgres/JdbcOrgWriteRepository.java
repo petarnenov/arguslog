@@ -1,11 +1,13 @@
 package org.arguslog.api.adapter.out.postgres;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.arguslog.api.application.OrgUseCase.DuplicateOrgException;
 import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.domain.Org;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -65,6 +67,30 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
         orgId,
         userId,
         role);
+  }
+
+  @Override
+  public Optional<Org> findById(long orgId) {
+    try {
+      Org org =
+          jdbc.queryForObject(
+              """
+              SELECT id, slug, name, plan::text AS plan, created_at
+                FROM organizations
+               WHERE id = ?
+              """,
+              (rs, rowNum) ->
+                  new Org(
+                      rs.getLong("id"),
+                      rs.getString("slug"),
+                      rs.getString("name"),
+                      rs.getString("plan"),
+                      rs.getTimestamp("created_at").toInstant()),
+              orgId);
+      return Optional.ofNullable(org);
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
   }
 
   @Override

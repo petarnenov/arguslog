@@ -9,6 +9,7 @@ import {
   type ListIssueEventsParams,
   type ListIssuesParams,
 } from './issues';
+import { listOrgMembers } from './members';
 import { listMyOrgs } from './orgs';
 import { listProjects } from './projects';
 import { listMyTokens } from './tokens';
@@ -23,6 +24,7 @@ export const queryKeys = {
   alertDestinations: (orgId: number) => ['alert-destinations', orgId] as const,
   usage: (orgId: number) => ['usage', orgId] as const,
   myTokens: () => ['tokens', 'mine'] as const,
+  orgMembers: (orgId: number) => ['org-members', orgId] as const,
 };
 
 export function useMyOrgs(options: { enabled?: boolean } = {}) {
@@ -99,6 +101,15 @@ export function useMyTokens(options: { enabled?: boolean } = {}) {
     queryKey: queryKeys.myTokens(),
     queryFn: listMyTokens,
     enabled: options.enabled ?? true,
+    staleTime: 30_000,
+  });
+}
+
+export function useOrgMembers(orgId: number | undefined, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.orgMembers(orgId ?? -1),
+    queryFn: () => listOrgMembers(orgId as number),
+    enabled: (options.enabled ?? true) && orgId != null,
     staleTime: 30_000,
   });
 }

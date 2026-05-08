@@ -1,9 +1,11 @@
 package org.arguslog.api.adapter.out.postgres;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.arguslog.api.application.port.UserRepository;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -31,9 +33,9 @@ public class JdbcUserRepository implements UserRepository {
     if (updated > 0) return;
 
     // 2. No row for this sub. If a stale row exists for this email (Keycloak realm was reseeded
-    //    and the sub rotated), realign its id to the new sub. V6's ON UPDATE CASCADE on
-    //    org_members / project_members / personal_access_tokens carries the memberships over so
-    //    the user keeps their orgs.
+    //    and the sub rotated, OR a placeholder was pre-created by an org invite), realign its id
+    //    to the new sub. V6's ON UPDATE CASCADE on org_members / project_members /
+    //    personal_access_tokens carries the memberships over so the user keeps their orgs.
     List<UUID> staleIds =
         jdbc.queryForList(
             "SELECT id FROM users WHERE email = ? AND id <> ?", UUID.class, email, id);
@@ -57,5 +59,29 @@ public class JdbcUserRepository implements UserRepository {
         id,
         email,
         displayName);
+  }
+
+  @Override
+  public Optional<UUID> findIdByEmail(String email) {
+    try {
+      String id =
+          jdbc.queryForObject("SELECT id::text FROM users WHERE email = ?", String.class, email);
+      return Optional.ofNullable(id).map(UUID::fromString);
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public UUID createPlaceholder(String email) {
+    UUID id = UUID.randomUUID();
+    // No last_seen_at — placeholder hasn't logged in yet. display_name stays null until
+    // upsertFromJwt
+    // realigns this row on first login.
+    jdbc.update(
+        "INSERT INTO users (id, email, display_name, last_seen_at) VALUES (?, ?, NULL, NULL)",
+        id,
+        email);
+    return id;
   }
 }

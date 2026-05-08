@@ -8,10 +8,12 @@ import org.arguslog.api.alerts.application.port.AlertRuleRepository;
 import org.arguslog.api.application.GetIssueUseCase;
 import org.arguslog.api.application.ListIssueEventsUseCase;
 import org.arguslog.api.application.ListIssuesUseCase;
+import org.arguslog.api.application.MemberUseCase;
 import org.arguslog.api.application.port.DsnRepository;
 import org.arguslog.api.application.port.EventRepository;
 import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.application.port.MembershipRepository;
+import org.arguslog.api.application.port.MembershipWriteRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.application.port.ProjectRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
@@ -28,6 +30,7 @@ import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.application.port.StripeEventLog;
 import org.arguslog.api.billing.application.port.StripeEventVerifier;
 import org.arguslog.api.billing.application.port.UsageRepository;
+import org.arguslog.api.email.InviteEmailSender;
 import org.arguslog.api.releases.application.ReleaseUseCase;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
@@ -92,6 +95,7 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected PortalUseCase portalUseCase;
   @MockitoBean protected StripeWebhookUseCase stripeWebhookUseCase;
   @MockitoBean protected UsageUseCase usageUseCase;
+  @MockitoBean protected MemberUseCase memberUseCase;
 
   // ── repositories ───────────────────────────────────────────────────────────────────────────
 
@@ -100,7 +104,9 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected ProjectRepository projectRepository;
   @MockitoBean protected ProjectWriteRepository projectWriteRepository;
   @MockitoBean protected MembershipRepository membershipRepository;
+  @MockitoBean protected MembershipWriteRepository membershipWriteRepository;
   @MockitoBean protected OrgWriteRepository orgWriteRepository;
+  @MockitoBean protected InviteEmailSender inviteEmailSender;
   @MockitoBean protected DsnRepository dsnRepository;
   @MockitoBean protected UserRepository userRepository;
   @MockitoBean protected AlertRuleRepository alertRuleRepository;
