@@ -63,7 +63,7 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.plan.outputs.services) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Guard — RAILWAY_TOKEN must be set
         env:
