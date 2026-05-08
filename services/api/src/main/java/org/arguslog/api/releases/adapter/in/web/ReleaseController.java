@@ -81,7 +81,7 @@ public class ReleaseController {
   ResponseEntity<ProblemDetail> handleInvalid(InvalidReleaseException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid release");
-    body.setType(URI.create("https://arguslog.dev/problems/invalid-release"));
+    body.setType(URI.create("https://arguslog.org/problems/invalid-release"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -91,7 +91,7 @@ public class ReleaseController {
   ResponseEntity<ProblemDetail> handleDuplicate(DuplicateReleaseException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     body.setTitle("Duplicate release");
-    body.setType(URI.create("https://arguslog.dev/problems/duplicate-release"));
+    body.setType(URI.create("https://arguslog.org/problems/duplicate-release"));
     return ResponseEntity.status(HttpStatus.CONFLICT)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -101,7 +101,7 @@ public class ReleaseController {
   ResponseEntity<ProblemDetail> handleNotFound(ReleaseNotFoundException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
     body.setTitle("Release not found");
-    body.setType(URI.create("https://arguslog.dev/problems/release-not-found"));
+    body.setType(URI.create("https://arguslog.org/problems/release-not-found"));
     return ResponseEntity.status(HttpStatus.NOT_FOUND)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);

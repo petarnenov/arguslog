@@ -61,7 +61,7 @@ public class SourceMapArtifactController {
   ResponseEntity<ProblemDetail> handleInvalid(InvalidSourceMapException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid sourcemap upload");
-    body.setType(URI.create("https://arguslog.dev/problems/invalid-sourcemap"));
+    body.setType(URI.create("https://arguslog.org/problems/invalid-sourcemap"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -71,7 +71,7 @@ public class SourceMapArtifactController {
   ResponseEntity<ProblemDetail> handleReleaseMissing(ReleaseNotFoundException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
     body.setTitle("Release not found");
-    body.setType(URI.create("https://arguslog.dev/problems/release-not-found"));
+    body.setType(URI.create("https://arguslog.org/problems/release-not-found"));
     return ResponseEntity.status(HttpStatus.NOT_FOUND)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);

@@ -87,7 +87,7 @@ public class OrgController {
   ResponseEntity<ProblemDetail> handleInvalid(InvalidOrgException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid org");
-    body.setType(URI.create("https://arguslog.dev/problems/invalid-org"));
+    body.setType(URI.create("https://arguslog.org/problems/invalid-org"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -97,7 +97,7 @@ public class OrgController {
   ResponseEntity<ProblemDetail> handleDuplicate(DuplicateOrgException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     body.setTitle("Duplicate org");
-    body.setType(URI.create("https://arguslog.dev/problems/duplicate-org"));
+    body.setType(URI.create("https://arguslog.org/problems/duplicate-org"));
     return ResponseEntity.status(HttpStatus.CONFLICT)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -107,7 +107,7 @@ public class OrgController {
   ResponseEntity<ProblemDetail> handleForbidden(OrgAccessDeniedException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
     body.setTitle("Forbidden");
-    body.setType(URI.create("https://arguslog.dev/problems/org-access-denied"));
+    body.setType(URI.create("https://arguslog.org/problems/org-access-denied"));
     return ResponseEntity.status(HttpStatus.FORBIDDEN)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);

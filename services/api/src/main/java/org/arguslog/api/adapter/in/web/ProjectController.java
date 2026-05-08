@@ -80,7 +80,7 @@ public class ProjectController {
   ResponseEntity<ProblemDetail> handleInvalid(InvalidProjectException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
     body.setTitle("Invalid project");
-    body.setType(URI.create("https://arguslog.dev/problems/invalid-project"));
+    body.setType(URI.create("https://arguslog.org/problems/invalid-project"));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -90,7 +90,7 @@ public class ProjectController {
   ResponseEntity<ProblemDetail> handleDuplicate(DuplicateProjectException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
     body.setTitle("Duplicate project");
-    body.setType(URI.create("https://arguslog.dev/problems/duplicate-project"));
+    body.setType(URI.create("https://arguslog.org/problems/duplicate-project"));
     return ResponseEntity.status(HttpStatus.CONFLICT)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
@@ -100,7 +100,7 @@ public class ProjectController {
   ResponseEntity<ProblemDetail> handleForbidden(ProjectAccessDeniedException e) {
     ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
     body.setTitle("Forbidden");
-    body.setType(URI.create("https://arguslog.dev/problems/project-access-denied"));
+    body.setType(URI.create("https://arguslog.org/problems/project-access-denied"));
     return ResponseEntity.status(HttpStatus.FORBIDDEN)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
