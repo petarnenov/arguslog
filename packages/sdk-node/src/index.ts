@@ -7,6 +7,7 @@ import {
   installProcessHandlers,
   type ProcessHandlerOptions,
 } from './integrations/process-handlers.js';
+import { enableSourceMaps } from './integrations/sourcemaps.js';
 import { AsyncLocalScopeStore } from './scope.js';
 import { parseStack } from './stack-parser.js';
 
@@ -25,9 +26,15 @@ export { AsyncLocalScopeStore } from './scope.js';
 
 export type NodeIntegration = 'processHandlers' | 'http';
 
+export interface SourceMapsOptions {
+  /** Calls `process.setSourceMapsEnabled(true)` so Error.stack reports original .ts paths. */
+  enabled?: boolean;
+}
+
 export interface NodeArguslogOptions extends Omit<ArguslogOptions, 'integrations'> {
   integrations?: NodeIntegration[];
   processHandlers?: ProcessHandlerOptions;
+  sourcemaps?: SourceMapsOptions;
 }
 
 let currentClient: ArguslogClient | undefined;
@@ -43,7 +50,8 @@ export function init(options: NodeArguslogOptions): ArguslogClient {
   uninstallHttp?.();
   uninstallHttp = undefined;
 
-  const { integrations, processHandlers, ...coreOptions } = options;
+  const { integrations, processHandlers, sourcemaps, ...coreOptions } = options;
+  if (sourcemaps?.enabled) enableSourceMaps();
   const scopeStore = new AsyncLocalScopeStore(options.maxBreadcrumbs ?? 50);
   currentScopeStore = scopeStore;
   currentClient = new ArguslogClient(coreOptions, {
