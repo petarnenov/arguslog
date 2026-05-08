@@ -24,6 +24,7 @@ import { Navigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
 import { queryKeys, useMyOrgs, useReleases } from '../api/queries';
 import { createRelease, deleteRelease, type Release, updateRelease } from '../api/releases';
+import { useReportSoftError } from '../lib/reportSoftError';
 
 interface DraftValues {
   version: string;
@@ -38,6 +39,11 @@ export function ReleasesPage() {
   const orgsQuery = useMyOrgs();
   const org = orgsQuery.data?.find((o) => o.slug === orgSlug);
   const releasesQuery = useReleases(projectId);
+
+  useReportSoftError(
+    Boolean(orgsQuery.data && !org && orgSlug),
+    `ReleasesPage: org slug "${orgSlug}" not in user's memberships`,
+  );
 
   const [editing, setEditing] = useState<Release | 'new' | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Release | null>(null);

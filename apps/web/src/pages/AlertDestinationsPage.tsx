@@ -32,6 +32,7 @@ import {
 } from '../api/alerts';
 import { ApiError } from '../api/client';
 import { useAlertDestinations, useMyOrgs, queryKeys } from '../api/queries';
+import { useReportSoftError } from '../lib/reportSoftError';
 
 const KIND_OPTIONS: { value: DestinationKind; label: string }[] = [
   { value: 'telegram', label: 'Telegram' },
@@ -63,6 +64,11 @@ export function AlertDestinationsPage() {
   const orgsQuery = useMyOrgs();
   const org = orgsQuery.data?.find((o) => o.slug === orgSlug);
   const destinationsQuery = useAlertDestinations(org?.id);
+
+  useReportSoftError(
+    Boolean(orgsQuery.data && !org && orgSlug),
+    `AlertDestinationsPage: org slug "${orgSlug}" not in user's memberships`,
+  );
 
   const [editing, setEditing] = useState<AlertDestination | 'new' | null>(null);
   const [error, setError] = useState<string | null>(null);

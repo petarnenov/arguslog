@@ -19,6 +19,7 @@ import { Link, useParams, useSearchParams } from 'react-router';
 
 import type { IssueLevel, IssueStatus } from '../api/issues';
 import { useIssues } from '../api/queries';
+import { useReportSoftError } from '../lib/reportSoftError';
 
 const STATUS_VALUES: readonly IssueStatus[] = ['unresolved', 'resolved', 'ignored'];
 const LEVEL_VALUES: readonly IssueLevel[] = ['fatal', 'error', 'warning', 'info', 'debug'];
@@ -44,6 +45,11 @@ export function IssuesPage() {
 
   const projectId = Number(rawProjectId);
   const projectIdValid = Number.isFinite(projectId) && projectId > 0;
+
+  useReportSoftError(
+    !projectIdValid,
+    `IssuesPage: invalid projectId param "${rawProjectId}"`,
+  );
   const status = (search.get('status') as IssueStatus | null) ?? undefined;
   const level = (search.get('level') as IssueLevel | null) ?? undefined;
   const cursor = search.get('cursor') ?? undefined;
