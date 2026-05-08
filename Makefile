@@ -159,16 +159,35 @@ deploy-prod: ## Force fresh rebuild of all 5 prod app services in parallel, then
 	@echo "▶ Verifying deployment state..."
 	@$(MAKE) deploy-status
 
-deploy-status: ## Show latest deployment status + timestamp for every prod service
+deploy-status: ## Show deployment status; waits past transient BUILDING/DEPLOYING up to 60s.
 	@command -v railway >/dev/null || { echo "✗ railway CLI not installed"; exit 1; }
 	@command -v python3 >/dev/null || { echo "✗ python3 required for output formatting"; exit 1; }
-	@railway status --json | python3 -c "$$DEPLOY_STATUS_PY"
+	@# Railway's GraphQL API lags ~5–10s behind `railway up --ci` exit, so the very first read
+	@# right after deploy-prod often catches a service still in BUILDING / DEPLOYING. Poll
+	@# while the python script signals "transient" (exit code 2); break on success (0) or
+	@# a real failure (1). 12 × 5s = 60s ceiling stops the loop from masking a stuck build.
+	@for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do \
+		out=$$(railway status --json | python3 -c "$$DEPLOY_STATUS_PY" 2>&1); \
+		ec=$$?; \
+		if [ $$ec -ne 2 ]; then printf "%s\n" "$$out"; exit $$ec; fi; \
+		if [ $$attempt -eq 12 ]; then \
+			printf "%s\n\n⏱  Still transient after 60s — investigate manually.\n" "$$out"; \
+			exit 1; \
+		fi; \
+		sleep 5; \
+	done
 
 # Heredoc-y python so the Makefile target body stays one line. Reads stdin (railway status JSON),
-# prints one row per prod service with status + truncated timestamp; flags any service whose
-# latestDeployment isn't SUCCESS so a flaky parallel build is impossible to miss.
+# prints one row per prod service with status + truncated timestamp, and signals via exit code:
+#   0 — every service is in a terminal-good state (SUCCESS / SLEEPING)
+#   1 — at least one service hit a terminal-bad state (FAILED / CRASHED / REMOVED)
+#   2 — at least one service is mid-flight (BUILDING / DEPLOYING / INITIALIZING / QUEUED)
+# The make wrapper retries on exit 2 so a brief Railway API lag right after `railway up` doesn't
+# look like a deploy failure.
 define DEPLOY_STATUS_PY
 import sys, json
+TRANSIENT = {"BUILDING", "DEPLOYING", "INITIALIZING", "QUEUED", "WAITING"}
+OK = {"SUCCESS", "SLEEPING", "-"}
 d = json.load(sys.stdin)
 rows = []
 for env in d['environments']['edges']:
@@ -179,17 +198,25 @@ for env in d['environments']['edges']:
         dep = sn.get('latestDeployment', {}) or {}
         rows.append((sn['serviceName'], dep.get('status', '-'), (dep.get('createdAt') or '-')[:19]))
 rows.sort()
-print(f"  {'SERVICE':25} {'STATUS':10} {'DEPLOYED':19}")
-print(f"  {'-' * 25} {'-' * 10} {'-' * 19}")
-laggards = []
+print(f"  {'SERVICE':25} {'STATUS':12} {'DEPLOYED':19}")
+print(f"  {'-' * 25} {'-' * 12} {'-' * 19}")
+failed, in_flight = [], []
 for name, status, ts in rows:
-    marker = '✗' if status not in ('SUCCESS', 'SLEEPING', '-') else ' '
-    print(f"{marker} {name:25} {status:10} {ts:19}")
-    if status not in ('SUCCESS', 'SLEEPING', '-'):
-        laggards.append(name)
-if laggards:
-    print(f"\n⚠  Non-success deploys detected: {', '.join(laggards)}")
+    if status in OK:
+        marker = ' '
+    elif status in TRANSIENT:
+        marker = '⋯'
+        in_flight.append(name)
+    else:
+        marker = '✗'
+        failed.append(name)
+    print(f"{marker} {name:25} {status:12} {ts:19}")
+if failed:
+    print(f"\n⚠  Failed deploys: {', '.join(failed)}")
     sys.exit(1)
+if in_flight:
+    print(f"\n⏳  In progress: {', '.join(in_flight)}")
+    sys.exit(2)
 endef
 export DEPLOY_STATUS_PY
 
