@@ -99,17 +99,17 @@ init(
 )
 ```
 
-| Option                  | Type             | Default | Notes                                                            |
-| ----------------------- | ---------------- | ------- | ---------------------------------------------------------------- |
-| `dsn`                   | `str`            | _req._  | See "DSN format" above.                                          |
-| `environment`           | `str`            | `None`  | E.g. `production`, `staging`.                                    |
-| `release`               | `str`            | `None`  | Free-form version stamped on every event.                        |
-| `sample_rate`           | `float` 0.0–1.0  | `1.0`   | Fraction of events kept.                                         |
-| `max_queue_size`        | `int`            | `256`   | Background queue size; events dropped when full (logged at WARN).|
-| `flush_timeout_seconds` | `float`          | `2.0`   | Upper bound for `flush()`.                                       |
-| `scrubbing_enabled`     | `bool`           | `True`  | Redact emails/IPs/credit-cards from messages and contexts.       |
-| `extra_scrub_patterns`  | `list[str]`      | `[]`    | Extra regex strings to scrub.                                    |
-| `debug`                 | `bool`           | `False` | Logs every send to stderr — never enable in production.          |
+| Option                  | Type            | Default | Notes                                                             |
+| ----------------------- | --------------- | ------- | ----------------------------------------------------------------- |
+| `dsn`                   | `str`           | _req._  | See "DSN format" above.                                           |
+| `environment`           | `str`           | `None`  | E.g. `production`, `staging`.                                     |
+| `release`               | `str`           | `None`  | Free-form version stamped on every event.                         |
+| `sample_rate`           | `float` 0.0–1.0 | `1.0`   | Fraction of events kept.                                          |
+| `max_queue_size`        | `int`           | `256`   | Background queue size; events dropped when full (logged at WARN). |
+| `flush_timeout_seconds` | `float`         | `2.0`   | Upper bound for `flush()`.                                        |
+| `scrubbing_enabled`     | `bool`          | `True`  | Redact emails/IPs/credit-cards from messages and contexts.        |
+| `extra_scrub_patterns`  | `list[str]`     | `[]`    | Extra regex strings to scrub.                                     |
+| `debug`                 | `bool`          | `False` | Logs every send to stderr — never enable in production.           |
 
 ## Integrations
 
@@ -347,7 +347,7 @@ you re-raise without `raise … from exc`, Python may chain a new frame as the r
 Capture closer to the original `try/except`.
 
 **`PermissionError: [Errno 13] permission denied` on the credentials file (CLI).**
-That's the Arguslog *CLI*, not the Python SDK — see
+That's the Arguslog _CLI_, not the Python SDK — see
 [`@arguslog/cli`](https://www.npmjs.com/package/@arguslog/cli) for that flow.
 
 ## Source

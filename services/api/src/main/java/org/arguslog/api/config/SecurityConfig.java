@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -42,7 +43,22 @@ public class SecurityConfig {
                     .permitAll()
                     .anyRequest()
                     .authenticated())
-        .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}))
+        // PAT-aware bearer resolver: when the Authorization header carries an arglog_pat_*
+        // token, the JWT filter sees nothing and skips. Without this guard, the JWT decoder
+        // would try to parse the PAT as a JWT, fail with "Malformed token", and short-circuit
+        // the request to 401 even after PatAuthenticationFilter has already authenticated it.
+        .oauth2ResourceServer(
+            oauth2 ->
+                oauth2
+                    .bearerTokenResolver(
+                        request -> {
+                          String header = request.getHeader("Authorization");
+                          if (header != null && header.startsWith("Bearer arglog_pat_")) {
+                            return null;
+                          }
+                          return new DefaultBearerTokenResolver().resolve(request);
+                        })
+                    .jwt(jwt -> {}))
         // PAT filter runs before the JWT filter — bearer tokens that start with `arglog_pat_`
         // resolve via the PAT path; everything else falls through to the JWT validator.
         .addFilterBefore(
