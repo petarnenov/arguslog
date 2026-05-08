@@ -7,6 +7,12 @@ name: Deploy to staging
 on:
   push:
     branches: [main]
+    # Skip Railway redeploys on docs-only commits — nothing the runtime cares about
+    # changes when only README/LICENSE/docs/ are touched.
+    paths-ignore:
+      - '**/*.md'
+      - 'LICENSE'
+      - 'docs/**'
   workflow_dispatch:
     inputs:
       service:
