@@ -31,6 +31,7 @@ import {
   IconSend,
   IconSettings,
   IconShieldLock,
+  IconTag,
   IconTrash,
   IconUser,
   IconUsers,
@@ -267,6 +268,12 @@ export function AppShellLayout() {
                 to={`/orgs/${orgSlug}/projects/${projectId}/alert-rules`}
                 label={t('nav.alertRules')}
                 leftSection={<IconBell size={16} />}
+              />
+              <NavLink
+                component={Link}
+                to={`/orgs/${orgSlug}/projects/${projectId}/releases`}
+                label={t('nav.releases')}
+                leftSection={<IconTag size={16} />}
               />
               <NavLink
                 component={Link}

@@ -13,6 +13,7 @@ import { listOrgMembers } from './members';
 import { listMyOrgs } from './orgs';
 import { listPlatforms } from './platforms';
 import { listProjects } from './projects';
+import { listReleases } from './releases';
 import { listMyTokens } from './tokens';
 
 export const queryKeys = {
@@ -27,6 +28,7 @@ export const queryKeys = {
   myTokens: () => ['tokens', 'mine'] as const,
   orgMembers: (orgId: number) => ['org-members', orgId] as const,
   platforms: () => ['platforms'] as const,
+  releases: (projectId: number) => ['releases', projectId] as const,
 };
 
 export function useMyOrgs(options: { enabled?: boolean } = {}) {
@@ -122,6 +124,15 @@ export function useOrgMembers(orgId: number | undefined, options: { enabled?: bo
     queryKey: queryKeys.orgMembers(orgId ?? -1),
     queryFn: () => listOrgMembers(orgId as number),
     enabled: (options.enabled ?? true) && orgId != null,
+    staleTime: 30_000,
+  });
+}
+
+export function useReleases(projectId: number | undefined, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.releases(projectId ?? -1),
+    queryFn: () => listReleases(projectId as number),
+    enabled: (options.enabled ?? true) && projectId != null,
     staleTime: 30_000,
   });
 }
