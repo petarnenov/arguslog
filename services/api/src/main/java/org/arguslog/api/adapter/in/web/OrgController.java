@@ -9,6 +9,8 @@ import org.arguslog.api.application.OrgUseCase;
 import org.arguslog.api.application.OrgUseCase.DuplicateOrgException;
 import org.arguslog.api.application.OrgUseCase.InvalidOrgException;
 import org.arguslog.api.application.OrgUseCase.OrgAccessDeniedException;
+import org.arguslog.api.auth.PatScopeGuard;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.domain.Org;
 import org.arguslog.api.security.AccessException;
 import org.arguslog.api.security.AuthActor;
@@ -51,6 +53,7 @@ public class OrgController {
    */
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<OrgResponse> create(@RequestBody OrgRequest body, Authentication auth) {
+    PatScopeGuard.require(PatScope.ORGS_WRITE);
     UUID userId = AuthActor.currentUserId();
     String email = null;
     String displayName = null;
@@ -72,6 +75,7 @@ public class OrgController {
    */
   @DeleteMapping("/{orgId}")
   public ResponseEntity<Void> delete(@PathVariable long orgId) {
+    PatScopeGuard.require(PatScope.ORGS_WRITE);
     UUID actorId = AuthActor.currentUserId();
     if (!useCase.delete(actorId, orgId)) {
       throw AccessException.notFound(orgId);

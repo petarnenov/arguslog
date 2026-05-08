@@ -12,6 +12,8 @@ import org.arguslog.api.application.MemberUseCase.InvalidMemberException;
 import org.arguslog.api.application.MemberUseCase.LastOwnerException;
 import org.arguslog.api.application.MemberUseCase.MemberAccessDeniedException;
 import org.arguslog.api.application.MemberUseCase.MemberNotFoundException;
+import org.arguslog.api.auth.PatScopeGuard;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.domain.Member;
 import org.arguslog.api.security.AuthActor;
 import org.springframework.http.HttpStatus;
@@ -51,6 +53,7 @@ public class MemberController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<MemberResponse> invite(
       @PathVariable long orgId, @RequestBody MemberInviteRequest body) {
+    PatScopeGuard.require(PatScope.ORGS_WRITE);
     UUID actorId = AuthActor.currentUserId();
     Member created = useCase.invite(actorId, orgId, body.email(), body.role());
     return ResponseEntity.created(URI.create(created.userId().toString()))
@@ -62,12 +65,14 @@ public class MemberController {
       @PathVariable long orgId,
       @PathVariable UUID userId,
       @RequestBody MemberRoleUpdateRequest body) {
+    PatScopeGuard.require(PatScope.ORGS_WRITE);
     UUID actorId = AuthActor.currentUserId();
     return MemberResponse.from(useCase.changeRole(actorId, orgId, userId, body.role()));
   }
 
   @DeleteMapping("/{userId}")
   public ResponseEntity<Void> remove(@PathVariable long orgId, @PathVariable UUID userId) {
+    PatScopeGuard.require(PatScope.ORGS_WRITE);
     UUID actorId = AuthActor.currentUserId();
     useCase.remove(actorId, orgId, userId);
     return ResponseEntity.noContent().build();

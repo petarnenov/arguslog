@@ -9,6 +9,8 @@ import org.arguslog.api.application.ProjectUseCase;
 import org.arguslog.api.application.ProjectUseCase.DuplicateProjectException;
 import org.arguslog.api.application.ProjectUseCase.InvalidProjectException;
 import org.arguslog.api.application.ProjectUseCase.ProjectAccessDeniedException;
+import org.arguslog.api.auth.PatScopeGuard;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.domain.Project;
 import org.arguslog.api.security.AccessException;
 import org.arguslog.api.security.AuthActor;
@@ -45,6 +47,7 @@ public class ProjectController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ProjectResponse> create(
       @PathVariable long orgId, @RequestBody ProjectRequest body) {
+    PatScopeGuard.require(PatScope.PROJECTS_WRITE);
     Project created = useCase.create(orgId, body.name(), body.platform());
     return ResponseEntity.created(URI.create(String.valueOf(created.id())))
         .body(ProjectResponse.from(created));
@@ -65,6 +68,7 @@ public class ProjectController {
    */
   @DeleteMapping("/{projectId}")
   public ResponseEntity<Void> archive(@PathVariable long orgId, @PathVariable long projectId) {
+    PatScopeGuard.require(PatScope.PROJECTS_WRITE);
     UUID actorId = AuthActor.currentUserId();
     if (!useCase.archive(actorId, orgId, projectId)) {
       throw AccessException.notFound(projectId);

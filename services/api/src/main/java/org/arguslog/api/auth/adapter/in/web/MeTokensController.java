@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.arguslog.api.auth.PatScopeGuard;
 import org.arguslog.api.auth.adapter.in.web.dto.PatRequest;
 import org.arguslog.api.auth.adapter.in.web.dto.PatResponse;
 import org.arguslog.api.auth.application.PatUseCase;
@@ -47,6 +48,10 @@ public class MeTokensController {
 
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<PatResponse> create(@RequestBody PatRequest body) {
+    // Disallow PAT-mints-PAT entirely. A PAT with broad scopes could otherwise issue a
+    // peer token (or worse, a longer-lived one) outside the user's dashboard awareness.
+    // The dashboard is the only legitimate token-management surface.
+    PatScopeGuard.requireDashboardSession();
     PatRequest req = body == null ? new PatRequest(null, null, null) : body;
     Set<PatScope> scopes = parseScopes(req.scopes());
     Issued issued = useCase.create(currentUserId(), req.name(), req.expiresAt(), scopes);
@@ -72,6 +77,10 @@ public class MeTokensController {
 
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(@PathVariable long id) {
+    // Same rationale as create: token revocation is a dashboard-only operation. A leaked PAT
+    // shouldn't be usable to revoke a peer PAT to lock the legitimate user out, nor should
+    // the leaked PAT be self-revocable in a way that destroys forensic context.
+    PatScopeGuard.requireDashboardSession();
     if (!useCase.revoke(currentUserId(), id)) {
       return ResponseEntity.notFound().build();
     }

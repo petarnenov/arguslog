@@ -9,6 +9,8 @@ import org.arguslog.api.alerts.application.AlertDestinationUseCase.DuplicateDest
 import org.arguslog.api.alerts.application.AlertDestinationUseCase.InvalidDestinationConfigException;
 import org.arguslog.api.alerts.domain.AlertDestination;
 import org.arguslog.api.alerts.domain.DestinationKind;
+import org.arguslog.api.auth.PatScopeGuard;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.security.AccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -44,6 +46,7 @@ public class AlertDestinationController {
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<AlertDestinationResponse> create(
       @PathVariable long orgId, @RequestBody AlertDestinationRequest body) {
+    PatScopeGuard.require(PatScope.ALERTS_WRITE);
     DestinationKind kind = parseKind(body.kind());
     AlertDestination created = useCase.create(orgId, kind, body.name(), body.config());
     return ResponseEntity.created(URI.create(String.valueOf(created.id())))
@@ -61,6 +64,7 @@ public class AlertDestinationController {
   @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
   public AlertDestinationResponse update(
       @PathVariable long orgId, @PathVariable long id, @RequestBody AlertDestinationRequest body) {
+    PatScopeGuard.require(PatScope.ALERTS_WRITE);
     return useCase
         .update(orgId, id, body.name(), body.config())
         .map(AlertDestinationResponse::from)
@@ -69,6 +73,7 @@ public class AlertDestinationController {
 
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(@PathVariable long orgId, @PathVariable long id) {
+    PatScopeGuard.require(PatScope.ALERTS_WRITE);
     if (!useCase.delete(orgId, id)) {
       throw AccessException.notFound(id);
     }

@@ -4,6 +4,8 @@ import java.net.URI;
 import java.util.List;
 import org.arguslog.api.adapter.in.web.dto.DsnResponse;
 import org.arguslog.api.application.DsnUseCase;
+import org.arguslog.api.auth.PatScopeGuard;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.domain.Dsn;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -37,6 +39,7 @@ public class DsnController {
 
   @PostMapping
   public ResponseEntity<DsnResponse> create(@PathVariable long projectId) {
+    PatScopeGuard.require(PatScope.PROJECTS_WRITE);
     Dsn created = useCase.create(projectId);
     return ResponseEntity.created(URI.create(String.valueOf(created.id())))
         .body(DsnResponse.from(created, ingestHost));
