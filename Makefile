@@ -18,7 +18,7 @@ PNPM           := pnpm
 .PHONY: help dev up down stop restart fresh logs ps \
         api ingest worker web build-sdks \
         install e2e-install e2e \
-        build lint typecheck test \
+        build lint typecheck test python-test python-lint \
         deploy-prod deploy-status \
         clean reset doctor
 
@@ -118,9 +118,16 @@ lint: ## Lint all workspaces (TS only; Gradle has its own)
 typecheck: ## Type-check all TS workspaces
 	@$(PNPM) typecheck
 
-test: ## Run all tests (Gradle + Vitest)
+test: ## Run all tests (Gradle + Vitest + pytest)
 	@$(GRADLE) test
 	@$(PNPM) test
+	@$(MAKE) python-test
+
+python-test: ## Run python-sdk tests (uv + pytest)
+	@cd python-sdk && uv run pytest
+
+python-lint: ## Run ruff over python-sdk
+	@cd python-sdk && uv run ruff check . && uv run ruff format --check .
 
 e2e: ## Run Playwright e2e suite
 	@$(PNPM) e2e
