@@ -72,6 +72,7 @@ class ProjectServiceTest {
     when(projects.create(anyLong(), anyString(), anyString(), anyString())).thenReturn(p);
     service.create(1L, "ok", "javascript");
     service.create(1L, "ok", "react");
+    service.create(1L, "ok", "react-native");
     service.create(1L, "ok", "java-spring");
   }
 
