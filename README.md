@@ -25,6 +25,7 @@ packages/sdk-angular/          # @arguslog/sdk-angular (ErrorHandler + provideAr
 packages/eslint-config/        # shared ESLint config
 packages/tsconfig/             # shared tsconfig presets
 java-sdk/                      # org.arguslog:arguslog-java-sdk (Spring Boot autoconfig)
+python-sdk/                    # arguslog (PyPI) — Python 3.9+ SDK with stdlib transport
 cli/                           # @arguslog/cli — releases + sourcemap upload (stub, real in P3)
 e2e/                           # Playwright suites (real flows in P2)
 infra/docker/                  # docker-compose for local dev
