@@ -57,10 +57,10 @@ export function ProjectsPage() {
   useReportSoftError(
     Boolean(
       orgsQuery.data &&
-        orgsQuery.data.length > 0 &&
-        !org &&
-        orgSlug &&
-        (!firstSlug || firstSlug === orgSlug),
+      orgsQuery.data.length > 0 &&
+      !org &&
+      orgSlug &&
+      (!firstSlug || firstSlug === orgSlug),
     ),
     `ProjectsPage: org slug "${orgSlug}" not in user's memberships`,
   );
