@@ -13,6 +13,8 @@ COPY apps/landing/package.json ./apps/landing/
 COPY apps/web/package.json ./apps/web/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/sdk-browser/package.json ./packages/sdk-browser/
+COPY packages/sdk-core/package.json ./packages/sdk-core/
+COPY packages/sdk-node/package.json ./packages/sdk-node/
 COPY packages/sdk-react/package.json ./packages/sdk-react/
 COPY packages/sdk-react-native/package.json ./packages/sdk-react-native/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
