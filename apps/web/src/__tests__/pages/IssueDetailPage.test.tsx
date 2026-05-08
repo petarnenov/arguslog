@@ -162,7 +162,7 @@ describe('IssueDetailPage', () => {
     expect(screen.queryByText('src/app.ts:10:4')).not.toBeInTheDocument();
   });
 
-  it('renders the breadcrumbs panel for events that ship them', async () => {
+  it('renders the breadcrumbs panel and toggles per-row data on demand', async () => {
     const eventsWithBreadcrumbs = {
       data: [
         {
@@ -204,8 +204,17 @@ describe('IssueDetailPage', () => {
     await waitFor(() => expect(screen.getByTestId('breadcrumbs')).toBeInTheDocument());
     expect(screen.getByText('user clicked #checkout')).toBeInTheDocument();
     expect(screen.getByText('GET /api/cart 500')).toBeInTheDocument();
-    // The data field renders as a JSON code preview underneath the message.
-    expect(screen.getByText('{"selector":"#checkout"}')).toBeInTheDocument();
+
+    // Data is hidden behind a "Show data" toggle — click flips the button to "Hide data"
+    // and the pretty-printed JSON appears under the message in a <pre> Code block.
+    const showDataBtn = screen.getByRole('button', { name: 'Show data' });
+    await userEvent.click(showDataBtn);
+    await screen.findByRole('button', { name: 'Hide data' });
+    const codeBlocks = document.querySelectorAll('pre');
+    const expanded = Array.from(codeBlocks).find((el) =>
+      el.textContent?.match(/"selector":\s*"#checkout"/),
+    );
+    expect(expanded).toBeDefined();
   });
 
   it('hides the breadcrumbs panel when the event payload has none', async () => {
@@ -219,6 +228,66 @@ describe('IssueDetailPage', () => {
 
     await waitFor(() => expect(screen.getByTestId('events-table')).toBeInTheDocument());
     expect(screen.queryByTestId('breadcrumbs')).not.toBeInTheDocument();
+  });
+
+  it('renders the event details panel — release, environment, user, tags, request', async () => {
+    const richEvents = {
+      data: [
+        {
+          id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+          issueId: 7,
+          projectId: 101,
+          receivedAt: '2026-05-05T11:00:00Z',
+          payload: {
+            level: 'error',
+            message: 'checkout failed',
+            release: '1.4.0',
+            environment: 'production',
+            user: { id: 'u-42', email: 'alice@example.com' },
+            tags: { feature: 'checkout', region: 'eu-west-1' },
+            request: { url: 'https://app.example.com/checkout', userAgent: 'Mozilla/5.0' },
+            contexts: {
+              runtime: { name: 'node', version: 'v20.0.0' },
+            },
+          },
+        },
+      ],
+      page: {},
+    };
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.includes('/events')) return jsonResponse(richEvents);
+      return jsonResponse(sampleIssue);
+    }) as typeof fetch;
+
+    renderAt('/orgs/acme/projects/101/issues/7');
+
+    await waitFor(() => expect(screen.getByTestId('event-details')).toBeInTheDocument());
+    // Release, environment, user surface as inline pills.
+    expect(screen.getByText('1.4.0')).toBeInTheDocument();
+    expect(screen.getByText('production')).toBeInTheDocument();
+    expect(screen.getByText('alice@example.com')).toBeInTheDocument();
+    // Tags render as labelled badges.
+    expect(screen.getByText('feature: checkout')).toBeInTheDocument();
+    expect(screen.getByText('region: eu-west-1')).toBeInTheDocument();
+    // Request URL is a real anchor.
+    const requestLink = screen.getByRole('link', { name: 'https://app.example.com/checkout' });
+    expect(requestLink).toHaveAttribute('href', 'https://app.example.com/checkout');
+    // Context block is collapsed by default; the heading is visible.
+    expect(screen.getByText('Context: runtime')).toBeInTheDocument();
+  });
+
+  it('hides the event details panel when payload has no extra fields', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.includes('/events')) return jsonResponse(sampleEventsPage);
+      return jsonResponse(sampleIssue);
+    }) as typeof fetch;
+
+    renderAt('/orgs/acme/projects/101/issues/7');
+
+    await waitFor(() => expect(screen.getByTestId('events-table')).toBeInTheDocument());
+    expect(screen.queryByTestId('event-details')).not.toBeInTheDocument();
   });
 
   it('hides the toggle when no event has any symbolicated frame', async () => {

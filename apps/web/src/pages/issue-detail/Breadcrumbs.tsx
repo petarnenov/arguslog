@@ -1,4 +1,6 @@
-import { Badge, Code, Stack, Table, Text } from '@mantine/core';
+import { ActionIcon, Badge, Code, Collapse, Stack, Table, Text, Tooltip } from '@mantine/core';
+import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -36,14 +38,20 @@ export interface BreadcrumbsViewProps {
   /**
    * Reference time the event was captured. Breadcrumb timestamps are formatted as a delta
    * (e.g. {@code -3.2s}) so the lead-up reads at a glance instead of forcing the user to
-   * cross-reference absolute timestamps.
+   * cross-reference absolute timestamps. The absolute timestamp is still available via a
+   * tooltip on hover for when relative ordering isn't enough.
    */
   referenceTime: number;
 }
 
 export function BreadcrumbsView({ breadcrumbs, referenceTime }: BreadcrumbsViewProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (breadcrumbs.length === 0) return null;
+
+  const absoluteFormatter = new Intl.DateTimeFormat(i18n.language || 'en', {
+    dateStyle: 'medium',
+    timeStyle: 'medium',
+  });
 
   return (
     <Stack gap={4} data-testid="breadcrumbs">
@@ -60,38 +68,84 @@ export function BreadcrumbsView({ breadcrumbs, referenceTime }: BreadcrumbsViewP
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {breadcrumbs.map((bc, idx) => {
-            const level = bc.level ?? 'info';
-            const dataPreview = bc.data ? previewData(bc.data) : null;
-            return (
-              <Table.Tr key={idx}>
-                <Table.Td>
-                  <Text size="xs" c="dimmed" ff="monospace">
-                    {formatDelta(bc.timestamp, referenceTime)}
-                  </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Badge size="xs" color={LEVEL_COLOR[level] ?? 'gray'} variant="light">
-                    {level}
-                  </Badge>
-                </Table.Td>
-                <Table.Td>
-                  <Text size="xs">{bc.category ?? '—'}</Text>
-                </Table.Td>
-                <Table.Td>
-                  <Stack gap={2}>
-                    <Text size="xs">{bc.message ?? '—'}</Text>
-                    {dataPreview && (
-                      <Code style={{ fontSize: 11, maxWidth: 480 }}>{dataPreview}</Code>
-                    )}
-                  </Stack>
-                </Table.Td>
-              </Table.Tr>
-            );
-          })}
+          {breadcrumbs.map((bc, idx) => (
+            <BreadcrumbRow
+              key={idx}
+              breadcrumb={bc}
+              referenceTime={referenceTime}
+              absoluteFormatter={absoluteFormatter}
+            />
+          ))}
         </Table.Tbody>
       </Table>
     </Stack>
+  );
+}
+
+interface BreadcrumbRowProps {
+  breadcrumb: RawBreadcrumb;
+  referenceTime: number;
+  absoluteFormatter: Intl.DateTimeFormat;
+}
+
+function BreadcrumbRow({ breadcrumb, referenceTime, absoluteFormatter }: BreadcrumbRowProps) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const level = breadcrumb.level ?? 'info';
+  const hasData = hasMeaningfulData(breadcrumb.data);
+  const dataJson = hasData ? safeStringify(breadcrumb.data!) : null;
+  const absolute = Number.isFinite(breadcrumb.timestamp)
+    ? absoluteFormatter.format(new Date(breadcrumb.timestamp))
+    : null;
+
+  return (
+    <Table.Tr>
+      <Table.Td>
+        <Tooltip label={absolute ?? '?'} disabled={absolute == null} withArrow>
+          <Text size="xs" c="dimmed" ff="monospace" style={{ cursor: 'help' }}>
+            {formatDelta(breadcrumb.timestamp, referenceTime)}
+          </Text>
+        </Tooltip>
+      </Table.Td>
+      <Table.Td>
+        <Badge size="xs" color={LEVEL_COLOR[level] ?? 'gray'} variant="light">
+          {level}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Text size="xs">{breadcrumb.category ?? '—'}</Text>
+      </Table.Td>
+      <Table.Td>
+        <Stack gap={2}>
+          <Text size="xs" component="span">
+            {breadcrumb.message ?? '—'}
+            {hasData && (
+              <ActionIcon
+                size="xs"
+                variant="subtle"
+                color="gray"
+                onClick={() => setExpanded((v) => !v)}
+                aria-label={
+                  expanded
+                    ? t('issueDetail.breadcrumbs.hideData')
+                    : t('issueDetail.breadcrumbs.viewData')
+                }
+                style={{ marginLeft: 6, verticalAlign: 'middle' }}
+              >
+                {expanded ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
+              </ActionIcon>
+            )}
+          </Text>
+          {hasData && (
+            <Collapse in={expanded}>
+              <Code block style={{ fontSize: 11, maxWidth: 640, whiteSpace: 'pre-wrap' }}>
+                {dataJson}
+              </Code>
+            </Collapse>
+          )}
+        </Stack>
+      </Table.Td>
+    </Table.Tr>
   );
 }
 
@@ -106,12 +160,15 @@ function formatDelta(timestamp: number, referenceTime: number): string {
   return `${hours.toFixed(1)}h`;
 }
 
-function previewData(data: Record<string, unknown>): string | null {
+function hasMeaningfulData(data: Record<string, unknown> | undefined): boolean {
+  if (!data) return false;
+  return Object.keys(data).length > 0;
+}
+
+function safeStringify(data: Record<string, unknown>): string {
   try {
-    const json = JSON.stringify(data);
-    if (json === '{}') return null;
-    return json.length > 200 ? `${json.slice(0, 200)}…` : json;
+    return JSON.stringify(data, null, 2);
   } catch {
-    return null;
+    return '<unserializable>';
   }
 }
