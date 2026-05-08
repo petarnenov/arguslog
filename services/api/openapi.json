@@ -349,7 +349,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "string"
+                  "$ref" : "#/components/schemas/StripeWebhookResponse"
                 }
               }
             }
@@ -1459,6 +1459,14 @@
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }
+      },
+      "StripeWebhookResponse" : {
+        "type" : "object",
+        "properties" : {
+          "outcome" : {
+            "type" : "string"
           }
         }
       },
