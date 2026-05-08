@@ -82,6 +82,12 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          # gitleaks-action computes the commit range to scan as <oldest_pr_commit>^..<head>;
+          # the default shallow clone (depth=1) doesn't have the parent commit, so the git
+          # rev-parse fails with "unknown revision or path not in the working tree". Full
+          # history is required.
+          fetch-depth: 0
       - name: gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
