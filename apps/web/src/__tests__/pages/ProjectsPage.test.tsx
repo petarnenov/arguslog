@@ -177,4 +177,49 @@ describe('ProjectsPage', () => {
     });
     expect(keysAttempts).toBe(2);
   });
+
+  it('reveals the DSN inline when the eye icon is clicked, and hides it again on toggle off', async () => {
+    let keysGetCalls = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      const method = init?.method ?? 'GET';
+      if (url.endsWith('/api/v1/orgs') && method === 'GET') {
+        return jsonResponse([ORG]);
+      }
+      if (url.endsWith('/api/v1/orgs/1/projects') && method === 'GET') {
+        return jsonResponse([NEW_PROJECT]);
+      }
+      if (url.endsWith('/api/v1/projects/9/keys') && method === 'GET') {
+        keysGetCalls += 1;
+        return jsonResponse([NEW_DSN]);
+      }
+      throw new Error(`unexpected ${method} ${url}`);
+    });
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    renderAt('/orgs/acme/projects');
+    const user = userEvent.setup();
+
+    // The card renders without firing the keys endpoint — eye is the only entry point.
+    await screen.findByText('Web');
+    expect(keysGetCalls).toBe(0);
+    expect(screen.queryByText('arguslog://PUB@localhost:8080/api/9')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Show DSN for Web/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('arguslog://PUB@localhost:8080/api/9')).toBeInTheDocument();
+    });
+    expect(keysGetCalls).toBe(1);
+    // Copy button surfaces alongside the revealed DSN.
+    expect(screen.getByRole('button', { name: /Copy DSN/i })).toBeInTheDocument();
+
+    // Toggling off hides both the DSN and the copy button without re-fetching.
+    await user.click(screen.getByRole('button', { name: /Hide DSN for Web/i }));
+    await waitFor(() => {
+      expect(screen.queryByText('arguslog://PUB@localhost:8080/api/9')).not.toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: /Copy DSN/i })).not.toBeInTheDocument();
+    expect(keysGetCalls).toBe(1);
+  });
 });

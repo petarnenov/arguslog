@@ -74,7 +74,12 @@
     "dsnRetryHint": "The project was created but the DSN could not be generated. Retry to issue one now, or open the project later to issue it from the keys settings.",
     "copyDsn": "Copy DSN",
     "copied": "Copied!",
-    "continue": "Open project"
+    "continue": "Open project",
+    "showDsn": "Show DSN for {{name}}",
+    "hideDsn": "Hide DSN for {{name}}",
+    "dsnLoading": "Loading DSN…",
+    "dsnEmpty": "No DSN issued yet — open the project to generate one.",
+    "dsnLoadFailed": "Could not load DSN."
   },
   "issues": {
     "title": "Issues",
