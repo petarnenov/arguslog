@@ -234,19 +234,31 @@ public class StripeWebhookService implements StripeWebhookUseCase {
   }
 
   private static StripeObject deserialize(Event event) {
-    Optional<StripeObject> obj = event.getDataObjectDeserializer().getObject();
-    if (obj.isEmpty()) {
-      // Common cause: webhook destination is pinned to an old API version whose data.object shape
-      // no longer matches the Stripe Java SDK's expected fields. The event lands in stripe_events
-      // (recordIfNew runs upstream) but processing silently no-ops, so plan flips never happen.
-      // Surface the gap loudly here so SDK-version drift is visible in dogfood.
-      log.warn(
-          "stripe event {} ({}) deserialize returned empty — likely API version mismatch between"
-              + " webhook destination and the Stripe Java SDK; check the destination's API version"
-              + " setting in the Stripe dashboard",
+    com.stripe.model.EventDataObjectDeserializer deserializer = event.getDataObjectDeserializer();
+    Optional<StripeObject> obj = deserializer.getObject();
+    if (obj.isPresent()) return obj.get();
+
+    // The webhook destination's API version doesn't match the Stripe Java SDK's compiled-in
+    // version, so the safe path returns empty. The fields we actually read off these payloads
+    // (clientReferenceId, customer id, subscription status, currentPeriodEnd, price id) are
+    // stable enough across Stripe API versions that an unsafe deserialization is the right
+    // tradeoff — we'd rather process the event with possibly-degraded fields than silently no-op
+    // and leave the org on the wrong plan.
+    try {
+      StripeObject unsafe = deserializer.deserializeUnsafe();
+      log.info(
+          "stripe event {} ({}) deserialized via deserializeUnsafe — webhook API version drift"
+              + " from Stripe Java SDK; consider aligning the destination's API version",
           event.getId(),
           event.getType());
+      return unsafe;
+    } catch (Exception e) {
+      log.warn(
+          "stripe event {} ({}) failed both safe and unsafe deserialize: {}",
+          event.getId(),
+          event.getType(),
+          e.getMessage());
+      return null;
     }
-    return obj.orElse(null);
   }
 }
