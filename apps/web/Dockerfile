@@ -46,7 +46,8 @@ ENV VITE_KEYCLOAK_CLIENT_ID=$VITE_KEYCLOAK_CLIENT_ID
 ENV VITE_DOGFOOD_DSN=$VITE_DOGFOOD_DSN
 ENV VITE_RELEASE=$VITE_RELEASE
 
-RUN pnpm --filter @arguslog/sdk-browser build \
+RUN pnpm --filter @arguslog/sdk-core build \
+ && pnpm --filter @arguslog/sdk-browser build \
  && pnpm --filter @arguslog/sdk-react build \
  && pnpm --filter @arguslog/web build
 
