@@ -39,7 +39,8 @@ ENV VITE_APP_BASE_URL=$VITE_APP_BASE_URL
 ENV VITE_DOGFOOD_DSN=$VITE_DOGFOOD_DSN
 ENV VITE_RELEASE=$VITE_RELEASE
 
-RUN pnpm --filter @arguslog/sdk-browser build \
+RUN pnpm --filter @arguslog/sdk-core build \
+ && pnpm --filter @arguslog/sdk-browser build \
  && pnpm --filter @arguslog/sdk-react build \
  && pnpm --filter @arguslog/landing build
 
