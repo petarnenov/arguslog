@@ -22,7 +22,7 @@ integrations are activated only when those libraries are already on the classpat
 
 ```kotlin
 dependencies {
-    implementation("org.arguslog:java-sdk:0.1.0")
+    implementation("org.arguslog:java-sdk:1.0.0")
 }
 ```
 
@@ -30,7 +30,7 @@ dependencies {
 
 ```groovy
 dependencies {
-    implementation 'org.arguslog:java-sdk:0.1.0'
+    implementation 'org.arguslog:java-sdk:1.0.0'
 }
 ```
 
@@ -40,7 +40,7 @@ dependencies {
 <dependency>
   <groupId>org.arguslog</groupId>
   <artifactId>java-sdk</artifactId>
-  <version>0.1.0</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 
@@ -54,7 +54,7 @@ import org.arguslog.sdk.ArguslogOptions;
 
 Arguslog.init(
     ArguslogOptions.builder()
-        .dsn("https://<publicKey>@ingest.arguslog.org/<projectId>")
+        .dsn("arguslog://<publicKey>@<host>/api/<projectId>")
         .environment("production")
         .release("1.4.0")
         .build());
@@ -131,11 +131,14 @@ boundary; once full, new events are dropped instead of blocking the application 
 ## DSN format
 
 ```
-https://<publicKey>@<ingestHost>/<projectId>
+arguslog://<publicKey>@<host>/api/<projectId>
 ```
 
-Get the DSN from your Arguslog project settings page. The public key is project-scoped and
-safe to embed in env vars — it doesn't grant any read access.
+The custom `arguslog://` scheme keeps the DSN string visually distinct from the actual
+transport URL — the SDK parses it, picks `http` for loopback hosts and `https` everywhere
+else, and POSTs events to `<scheme>://<host>/api/<projectId>/events`. Get the full DSN
+from your Arguslog project's "Copy DSN" modal; the public key is project-scoped and safe
+to embed in env vars (it grants ingest only, no read access).
 
 ## API reference
 

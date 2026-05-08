@@ -1,0 +1,182 @@
+{
+  "consumer": {
+    "name": "arguslog-java-sdk"
+  },
+  "interactions": [
+    {
+      "description": "a RuntimeException captured by the java SDK",
+      "request": {
+        "body": {
+          "eventId": "aabbccddeeff00112233445566778899",
+          "exception": {
+            "values": [
+              {
+                "stacktrace": {
+                  "raw": "java.lang.RuntimeException: boom\n\tat ..."
+                },
+                "type": "java.lang.RuntimeException",
+                "value": "boom"
+              }
+            ]
+          },
+          "level": "error",
+          "platform": "java",
+          "sdk": {
+            "name": "arguslog.java",
+            "version": "1.0.0"
+          },
+          "timestamp": 1730000000000
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Arguslog-Auth": "Arguslog DSN public-key-active"
+        },
+        "matchingRules": {
+          "body": {
+            "$.eventId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "^[0-9a-f]{32}$"
+                }
+              ]
+            },
+            "$.exception.values[0].stacktrace.raw": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.sdk.version": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.timestamp": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/api/101/events"
+      },
+      "response": {
+        "body": {
+          "eventId": "12a827e7-f71e-4fcd-9ebf-c6ee9847b10f"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.eventId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          }
+        },
+        "status": 202
+      }
+    },
+    {
+      "description": "a warning message captured by the java SDK",
+      "request": {
+        "body": {
+          "eventId": "aabbccddeeff00112233445566778899",
+          "level": "warning",
+          "message": "config drift detected",
+          "platform": "java",
+          "sdk": {
+            "name": "arguslog.java",
+            "version": "1.0.0"
+          },
+          "timestamp": 1730000000000
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Arguslog-Auth": "Arguslog DSN public-key-active"
+        },
+        "matchingRules": {
+          "body": {
+            "$.eventId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "^[0-9a-f]{32}$"
+                }
+              ]
+            },
+            "$.sdk.version": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.timestamp": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            }
+          }
+        },
+        "method": "POST",
+        "path": "/api/101/events"
+      },
+      "response": {
+        "body": {
+          "eventId": "12a827e7-f71e-4fcd-9ebf-c6ee9847b10f"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "body": {
+            "$.eventId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "regex",
+                  "regex": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                }
+              ]
+            }
+          }
+        },
+        "status": 202
+      }
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.6.16"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "arguslog-ingest"
+  }
+}

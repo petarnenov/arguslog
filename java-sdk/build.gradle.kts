@@ -41,6 +41,11 @@ dependencies {
     testImplementation("org.assertj:assertj-core")
     testImplementation("org.mockito:mockito-junit-jupiter")
     testImplementation("org.wiremock:wiremock-standalone:3.10.0")
+
+    // Pact JVM consumer: lets the SDK's test suite record the SDK ↔ ingest wire contract
+    // into /pacts so services/ingest's existing IngestProviderPactTest replays it on every CI
+    // run. Same library version as the provider side, pinned in libs.versions.toml.
+    testImplementation(libs.pact.junit5)
 }
 
 tasks.withType<JavaCompile> {
@@ -50,6 +55,48 @@ tasks.withType<JavaCompile> {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // Pact JVM defaults to build/pacts; redirect to the repo-level /pacts so the produced
+    // contract sits next to arguslog-sdk-browser/arguslog-sdk-node and is auto-picked up
+    // by services/ingest's @PactFolder("../../pacts").
+    systemProperty("pact.rootDir", file("../pacts").absolutePath)
+}
+
+// Stamp the runtime SDK identity from project.version so the value the SDK puts on every
+// event payload (sdk.version) and the GAV published to Maven Central can never drift.
+// The release workflow passes -Pversion=<x.y.z>; local builds default to the SNAPSHOT
+// configured in the root build.gradle.kts.
+val sdkVersionResourcesDir = layout.buildDirectory.dir("generated/resources/sdk-version")
+
+val generateSdkVersion =
+    tasks.register("generateSdkVersion") {
+        val versionProvider = providers.provider { project.version.toString() }
+        val outputDir = sdkVersionResourcesDir
+        inputs.property("version", versionProvider)
+        outputs.dir(outputDir)
+        doLast {
+            val file =
+                outputDir
+                    .get()
+                    .file("org/arguslog/sdk/sdk-version.properties")
+                    .asFile
+            file.parentFile.mkdirs()
+            file.writeText("version=${versionProvider.get()}\n")
+        }
+    }
+
+sourceSets.named("main") {
+    resources.srcDir(sdkVersionResourcesDir)
+}
+
+tasks.named("processResources") {
+    dependsOn(generateSdkVersion)
+}
+
+// sourcesJar (created by the maven-publish plugin) packages main/resources, so it must
+// run after the generator. Declared here once so adding more downstream consumers in the
+// future doesn't reintroduce the implicit-dependency warning.
+tasks.withType<Jar>().configureEach {
+    dependsOn(generateSdkVersion)
 }
 
 mavenPublishing {
