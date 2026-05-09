@@ -120,7 +120,7 @@ public class NowPaymentsWebhookService implements NowPaymentsWebhookUseCase {
         invoice.orgId(),
         BillingProvider.NOWPAYMENTS,
         reference,
-        PlanTier.PRO,
+        invoice.plan(),
         invoice.durationMonths(),
         invoice.priceAmountCents(),
         invoice.priceCurrency(),

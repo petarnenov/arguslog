@@ -1,11 +1,13 @@
 package org.arguslog.api.billing.adapter.in.web;
 
 import java.net.URI;
+import java.util.Locale;
 import org.arguslog.api.billing.adapter.in.web.dto.CryptoCheckoutResponse;
 import org.arguslog.api.billing.application.CryptoCheckoutFailedException;
 import org.arguslog.api.billing.application.CryptoCheckoutNotConfiguredException;
 import org.arguslog.api.billing.application.CryptoCheckoutUseCase;
 import org.arguslog.api.billing.application.CryptoCheckoutUseCase.CheckoutResult;
+import org.arguslog.api.billing.domain.PlanTier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -44,13 +46,53 @@ public class CryptoCheckoutController {
   @PostMapping
   public CryptoCheckoutResponse start(
       @PathVariable long orgId,
+      @RequestParam(name = "tier", required = false, defaultValue = "pro") String tier,
       @RequestParam(name = "duration", required = false, defaultValue = "1") int duration) {
     if (!ALLOWED_DURATIONS.contains(duration)) {
       throw new InvalidDurationException(
           "Unsupported duration: " + duration + " months. Allowed: 1, 3, 6, 12.");
     }
-    CheckoutResult result = useCase.start(orgId, duration);
+    PlanTier planTier = parseTier(tier);
+    CheckoutResult result = useCase.start(orgId, planTier, duration);
     return new CryptoCheckoutResponse(result.checkoutUrl(), result.invoiceReference());
+  }
+
+  private static PlanTier parseTier(String raw) {
+    if (raw == null) {
+      throw new InvalidTierException("Tier parameter is required.");
+    }
+    PlanTier tier;
+    try {
+      tier = PlanTier.valueOf(raw.toUpperCase(Locale.ROOT));
+    } catch (IllegalArgumentException e) {
+      throw new InvalidTierException(
+          "Unknown tier: " + raw + ". Allowed: starter, pro, business.");
+    }
+    if (!tier.isPaid()) {
+      throw new InvalidTierException(
+          "Tier "
+              + tier.dbValue()
+              + " is not sold via the self-serve flow. Allowed: starter, pro, business.");
+    }
+    return tier;
+  }
+
+  static final class InvalidTierException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    InvalidTierException(String message) {
+      super(message);
+    }
+  }
+
+  @ExceptionHandler(InvalidTierException.class)
+  ResponseEntity<ProblemDetail> handleInvalidTier(InvalidTierException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    body.setTitle("Invalid tier");
+    body.setType(URI.create("https://arguslog.org/problems/invalid-tier"));
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
   }
 
   static final class InvalidDurationException extends RuntimeException {

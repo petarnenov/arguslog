@@ -7,6 +7,8 @@ import java.util.UUID;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.MembershipWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
+import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.domain.PlanTier;
 import org.arguslog.api.domain.Member;
 import org.arguslog.api.email.InviteEmailSender;
 import org.slf4j.Logger;
@@ -25,16 +27,19 @@ public class MemberService implements MemberUseCase {
   private final MembershipWriteRepository membershipWrites;
   private final UserRepository users;
   private final InviteEmailSender inviteEmails;
+  private final OrgPlanRepository plans;
 
   public MemberService(
       MembershipRepository memberships,
       MembershipWriteRepository membershipWrites,
       UserRepository users,
-      InviteEmailSender inviteEmails) {
+      InviteEmailSender inviteEmails,
+      OrgPlanRepository plans) {
     this.memberships = memberships;
     this.membershipWrites = membershipWrites;
     this.users = users;
     this.inviteEmails = inviteEmails;
+    this.plans = plans;
   }
 
   @Override
@@ -49,6 +54,7 @@ public class MemberService implements MemberUseCase {
     requireOwner(actorId, orgId);
     String email = requireEmail(rawEmail);
     String role = requireRole(rawRole);
+    requireMemberCapAvailable(orgId);
 
     UUID userId = users.findIdByEmail(email).orElseGet(() -> users.createPlaceholder(email));
 
@@ -64,6 +70,23 @@ public class MemberService implements MemberUseCase {
         // Should never happen — we just inserted in the same tx — but keep the type system honest.
         .orElseThrow(
             () -> new IllegalStateException("just-inserted member missing from listMembersOf"));
+  }
+
+  private void requireMemberCapAvailable(long orgId) {
+    PlanTier tier = plans.findPlan(orgId).orElse(PlanTier.FREE);
+    int cap = tier.memberCap();
+    if (cap == Integer.MAX_VALUE) return;
+    int existing = memberships.listMembersOf(orgId).size();
+    if (existing >= cap) {
+      throw new MemberCapExceededException(
+          "Your "
+              + tier.dbValue()
+              + " plan is limited to "
+              + cap
+              + " member"
+              + (cap == 1 ? "" : "s")
+              + ". Upgrade or remove an existing member to add another.");
+    }
   }
 
   @Override

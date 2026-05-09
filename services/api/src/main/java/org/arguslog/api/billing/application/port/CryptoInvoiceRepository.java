@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.arguslog.api.billing.domain.CryptoInvoice;
 import org.arguslog.api.billing.domain.CryptoInvoiceStatus;
+import org.arguslog.api.billing.domain.PlanTier;
 
 /**
  * State for one NOWPayments hosted checkout we minted. The invoice row is created BEFORE we hit
@@ -15,7 +16,7 @@ import org.arguslog.api.billing.domain.CryptoInvoiceStatus;
  */
 public interface CryptoInvoiceRepository {
 
-  CryptoInvoice insertPending(long orgId, int durationMonths, int priceAmountCents);
+  CryptoInvoice insertPending(long orgId, PlanTier plan, int durationMonths, int priceAmountCents);
 
   Optional<CryptoInvoice> findByInternalReference(UUID internalReference);
 

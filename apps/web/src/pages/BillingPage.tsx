@@ -8,6 +8,7 @@ import {
   List,
   Loader,
   Progress,
+  SegmentedControl,
   SimpleGrid,
   Stack,
   Text,
@@ -16,12 +17,14 @@ import {
 } from '@mantine/core';
 import { IconCheck } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
 import {
   startCryptoCheckout,
   type DurationOffer,
+  type PaidTier,
   type PlanDuration,
   type PlanTierInfo,
 } from '../api/billing';
@@ -29,12 +32,25 @@ import { ApiError } from '../api/client';
 import { useBillingPlans, useMyOrgs, useUsage } from '../api/queries';
 import { useReportSoftError } from '../lib/reportSoftError';
 
-const DURATION_LABEL_KEY: Record<PlanDuration, string> = {
-  1: 'billing.duration1',
-  3: 'billing.duration3',
-  6: 'billing.duration6',
-  12: 'billing.duration12',
+const TIER_NAME_KEY: Record<string, string> = {
+  free: 'billing.tierFree',
+  starter: 'billing.tierStarter',
+  pro: 'billing.tierPro',
+  business: 'billing.tierBusiness',
 };
+
+const TIER_TAGLINE_KEY: Record<string, string> = {
+  free: 'billing.tierFreeTagline',
+  starter: 'billing.tierStarterTagline',
+  pro: 'billing.tierProTagline',
+  business: 'billing.tierBusinessTagline',
+};
+
+const PAID_TIERS: PaidTier[] = ['starter', 'pro', 'business'];
+
+function isPaidTier(plan: string): plan is PaidTier {
+  return (PAID_TIERS as string[]).includes(plan);
+}
 
 export function BillingPage() {
   const { t } = useTranslation();
@@ -50,9 +66,12 @@ export function BillingPage() {
       `(known: ${(orgs.data ?? []).map((o) => o.slug).join(',') || 'none'})`,
   );
 
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<PlanDuration>(12);
+
   const cryptoCheckout = useMutation({
-    mutationFn: ({ duration }: { duration: PlanDuration }) =>
-      startCryptoCheckout(org!.id, duration),
+    mutationFn: ({ tier, duration }: { tier: PaidTier; duration: PlanDuration }) =>
+      startCryptoCheckout(org!.id, tier, duration),
     onSuccess: ({ checkoutUrl }) => {
       window.location.assign(checkoutUrl);
     },
@@ -72,7 +91,7 @@ export function BillingPage() {
       </Alert>
     );
   }
-  if (usage.isError || !usage.data) {
+  if (usage.isError || !usage.data || !plans.data) {
     return (
       <Alert color="red" variant="light">
         {t('errors.generic')}
@@ -81,26 +100,23 @@ export function BillingPage() {
   }
 
   const snapshot = usage.data;
-  const isPro = snapshot.plan === 'pro';
   const percent = Math.min(100, Math.round(snapshot.ratio * 100));
   const progressColor = snapshot.exceeded ? 'red' : percent >= 80 ? 'yellow' : 'teal';
-  const renewsLabel = isPro && snapshot.renewsAt ? formatRenewalDate(snapshot.renewsAt) : null;
+  const renewsLabel =
+    snapshot.plan !== 'free' && snapshot.renewsAt ? formatRenewalDate(snapshot.renewsAt) : null;
 
   const checkoutError = errorMessage(cryptoCheckout.error);
   const graceDaysRemaining = snapshot.paymentGraceUntil
     ? daysUntil(snapshot.paymentGraceUntil)
     : null;
   const renewDaysRemaining =
-    isPro && snapshot.renewsAt ? daysUntil(snapshot.renewsAt) : null;
+    snapshot.plan !== 'free' && snapshot.renewsAt ? daysUntil(snapshot.renewsAt) : null;
   const renewSoon =
     renewDaysRemaining !== null && renewDaysRemaining > 0 && renewDaysRemaining <= 14;
   const renewExpired = renewDaysRemaining === 0;
 
-  const proOffers: DurationOffer[] = plans.data?.pro.durations ?? [];
-  const showCheckout = !isPro || renewSoon || renewExpired;
-
   return (
-    <Stack maw={1040}>
+    <Stack maw={1200}>
       <Title order={3}>{t('billing.title')}</Title>
 
       {graceDaysRemaining !== null && (
@@ -139,11 +155,6 @@ export function BillingPage() {
                 <Title order={2} tt="capitalize">
                   {snapshot.plan}
                 </Title>
-                {!isPro && (
-                  <Badge variant="light" color="gray">
-                    {t('billing.freeBadge')}
-                  </Badge>
-                )}
               </Group>
               {renewsLabel && (
                 <Text size="xs" c="dimmed" data-testid="renews-at">
@@ -187,146 +198,207 @@ export function BillingPage() {
         </Stack>
       </Card>
 
-      {showCheckout && proOffers.length > 0 && plans.data && (
-        <Stack gap="sm">
-          <Title order={4}>{isPro ? t('billing.extendPlan') : t('billing.pickPlan')}</Title>
-          <ProFeaturesPanel pro={plans.data.pro} free={plans.data.free} />
-          <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="md">
-            {proOffers.map((offer) => (
-              <DurationCard
-                key={offer.months}
-                offer={offer}
-                pending={
-                  cryptoCheckout.isPending &&
-                  cryptoCheckout.variables?.duration === offer.months
-                }
-                onPick={() => cryptoCheckout.mutate({ duration: offer.months })}
-              />
-            ))}
-          </SimpleGrid>
-          <Text size="xs" c="dimmed">
-            {t('billing.cryptoNote')}
-          </Text>
-          {checkoutError && (
-            <Alert color="red" variant="light">
-              {checkoutError}
-            </Alert>
-          )}
-        </Stack>
+      <Title order={4}>{t('billing.pickPlan')}</Title>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="md">
+        {plans.data.tiers.map((tier) => (
+          <TierCard
+            key={tier.plan}
+            tier={tier}
+            isCurrent={tier.plan === snapshot.plan}
+            isSelected={selectedTier === tier.plan}
+            onSelect={() => setSelectedTier(tier.plan)}
+            selectedDuration={selectedDuration}
+            onSelectDuration={setSelectedDuration}
+            paying={
+              cryptoCheckout.isPending && cryptoCheckout.variables?.tier === tier.plan
+            }
+            onPay={() => {
+              if (!isPaidTier(tier.plan)) return;
+              cryptoCheckout.mutate({ tier: tier.plan, duration: selectedDuration });
+            }}
+          />
+        ))}
+      </SimpleGrid>
+      <Text size="xs" c="dimmed">
+        {t('billing.cryptoNote')}
+      </Text>
+      {checkoutError && (
+        <Alert color="red" variant="light">
+          {checkoutError}
+        </Alert>
       )}
     </Stack>
   );
 }
 
-function ProFeaturesPanel({ pro, free }: { pro: PlanTierInfo; free: PlanTierInfo }) {
-  const { t } = useTranslation();
-  const multiplier = free.monthlyEventCap > 0
-    ? Math.round(pro.monthlyEventCap / free.monthlyEventCap)
-    : 0;
-  const items: string[] = [
-    t('billing.proIncludesEvents', {
-      events: formatNumber(pro.monthlyEventCap),
-      multiplier,
-      freeEvents: formatNumber(free.monthlyEventCap),
-    }),
-    t('billing.proIncludesProjects', { count: pro.projectCap, free: free.projectCap }),
-    t('billing.proIncludesRetention', { days: pro.retentionDays }),
-    t('billing.proIncludesAlerts'),
-    t('billing.proIncludesSdks'),
-    t('billing.proIncludesOneTime'),
-    t('billing.proIncludesCancelAnytime'),
-  ];
-  return (
-    <Card withBorder padding="lg" radius="md" data-testid="pro-features-panel">
-      <Stack gap="sm">
-        <Text fw={600} size="sm" tt="uppercase" c="dimmed">
-          {t('billing.proIncludesTitle')}
-        </Text>
-        <List
-          spacing="xs"
-          size="sm"
-          icon={
-            <ThemeIcon color="teal" size={20} radius="xl">
-              <IconCheck size={14} stroke={3} />
-            </ThemeIcon>
-          }
-        >
-          {items.map((item) => (
-            <List.Item key={item}>{item}</List.Item>
-          ))}
-        </List>
-      </Stack>
-    </Card>
-  );
-}
-
-function DurationCard({
-  offer,
-  pending,
-  onPick,
+function TierCard({
+  tier,
+  isCurrent,
+  isSelected,
+  onSelect,
+  selectedDuration,
+  onSelectDuration,
+  paying,
+  onPay,
 }: {
-  offer: DurationOffer;
-  pending: boolean;
-  onPick: () => void;
+  tier: PlanTierInfo;
+  isCurrent: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
+  selectedDuration: PlanDuration;
+  onSelectDuration: (d: PlanDuration) => void;
+  paying: boolean;
+  onPay: () => void;
 }) {
   const { t } = useTranslation();
-  const isHighlighted = offer.months === 12;
+  const isPaid = isPaidTier(tier.plan);
+  const isPopular = tier.plan === 'pro';
+  const offer = tier.durations.find((d) => d.months === selectedDuration);
+
+  const accentBorder = isSelected
+    ? 'var(--mantine-color-blue-6)'
+    : isPopular
+      ? 'var(--mantine-color-blue-3)'
+      : undefined;
 
   return (
     <Card
       withBorder
       padding="lg"
       radius="md"
-      data-testid={`duration-card-${offer.months}`}
-      style={
-        isHighlighted
-          ? {
-              borderColor: 'var(--mantine-color-blue-6)',
-              borderWidth: 2,
-              position: 'relative',
-            }
-          : { position: 'relative' }
-      }
+      data-testid={`tier-card-${tier.plan}`}
+      data-selected={isSelected}
+      onClick={onSelect}
+      style={{
+        cursor: 'pointer',
+        position: 'relative',
+        borderColor: accentBorder,
+        borderWidth: isSelected ? 2 : 1,
+      }}
     >
-      {isHighlighted && (
+      {isPopular && !isSelected && (
         <Badge
-          variant="filled"
+          variant="light"
           color="blue"
           size="sm"
           style={{ position: 'absolute', top: -10, right: 12 }}
         >
-          {t('billing.bestValue')}
+          {t('billing.popularBadge')}
         </Badge>
       )}
-      <Stack gap="xs">
-        <Group justify="space-between" align="center">
-          <Text fw={600}>{t(DURATION_LABEL_KEY[offer.months])}</Text>
-          {offer.savePercent > 0 && (
-            <Badge variant="light" color="green" size="sm">
-              {t('billing.saveBadge', { percent: offer.savePercent })}
-            </Badge>
-          )}
-        </Group>
-        <Box>
-          <Text size="xl" fw={700}>
-            {t('billing.totalPrice', { price: formatDollars(offer.amountCents) })}
+      {isCurrent && (
+        <Badge
+          variant="filled"
+          color="teal"
+          size="sm"
+          style={{ position: 'absolute', top: -10, left: 12 }}
+        >
+          {t('billing.tierStarterCurrent')}
+        </Badge>
+      )}
+
+      <Stack gap="sm">
+        <Stack gap={2}>
+          <Text fw={700} size="lg">
+            {t(TIER_NAME_KEY[tier.plan] ?? 'billing.tierFree')}
           </Text>
           <Text size="xs" c="dimmed">
-            {t('billing.perMonth', { price: formatDollars(offer.perMonthCents) })}
+            {t(TIER_TAGLINE_KEY[tier.plan] ?? 'billing.tierFreeTagline')}
+          </Text>
+        </Stack>
+
+        <Box>
+          <Text size="xl" fw={700}>
+            {isPaid
+              ? t('billing.perMonthFromCents', {
+                  price: formatDollars(tier.monthlyPriceCents),
+                })
+              : t('billing.freeTierPrice')}
           </Text>
         </Box>
-        <Button
-          fullWidth
-          variant={isHighlighted ? 'filled' : 'light'}
-          loading={pending}
-          onClick={onPick}
-          data-testid={`pay-crypto-${offer.months}`}
+
+        <List
+          spacing={4}
+          size="sm"
+          icon={
+            <ThemeIcon color="teal" size={18} radius="xl">
+              <IconCheck size={12} stroke={3} />
+            </ThemeIcon>
+          }
         >
-          {t('billing.payWithCrypto')}
-        </Button>
+          <List.Item>
+            {tier.unlimitedEvents
+              ? t('billing.tierEventsUnlimited')
+              : t('billing.tierEventsLine', { events: formatNumber(tier.monthlyEventCap) })}
+          </List.Item>
+          <List.Item>
+            {tier.unlimitedProjects
+              ? t('billing.tierProjectsUnlimited')
+              : t('billing.tierProjectsLine', { count: tier.projectCap })}
+          </List.Item>
+          <List.Item>
+            {tier.unlimitedMembers
+              ? t('billing.tierMembersUnlimited')
+              : t('billing.tierMembersLine', { count: tier.memberCap })}
+          </List.Item>
+          <List.Item>
+            {t('billing.tierRetentionLine', { days: tier.retentionDays })}
+          </List.Item>
+          <List.Item>{t('billing.tierAlertsLine')}</List.Item>
+        </List>
+
+        {isPaid && isSelected && (
+          <Stack gap="xs" pt="sm" data-testid={`tier-card-${tier.plan}-expanded`}>
+            <Text size="xs" c="dimmed" fw={600} tt="uppercase">
+              {t('billing.selectDuration')}
+            </Text>
+            <SegmentedControl
+              fullWidth
+              size="xs"
+              value={String(selectedDuration)}
+              onChange={(v) => onSelectDuration(Number(v) as PlanDuration)}
+              data={tier.durations.map((d) => ({
+                label: durationLabel(d),
+                value: String(d.months),
+              }))}
+            />
+            <Button
+              fullWidth
+              loading={paying}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPay();
+              }}
+              data-testid={`pay-${tier.plan}-${selectedDuration}`}
+            >
+              {t('billing.payTotalButton', {
+                total: formatDollars(offer?.amountCents ?? 0),
+              })}
+            </Button>
+          </Stack>
+        )}
+
+        {isPaid && !isSelected && (
+          <Button
+            fullWidth
+            variant="light"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect();
+            }}
+            data-testid={`select-${tier.plan}`}
+          >
+            {t('billing.tierSelectButton')}
+          </Button>
+        )}
       </Stack>
     </Card>
   );
+}
+
+function durationLabel(offer: DurationOffer): string {
+  if (offer.savePercent === 0) return `${offer.months}mo`;
+  return `${offer.months}mo (-${offer.savePercent}%)`;
 }
 
 function errorMessage(err: unknown): string | null {
@@ -336,6 +408,7 @@ function errorMessage(err: unknown): string | null {
 }
 
 function formatNumber(n: number): string {
+  if (n >= Number.MAX_SAFE_INTEGER) return '∞';
   return new Intl.NumberFormat('en-US').format(n);
 }
 

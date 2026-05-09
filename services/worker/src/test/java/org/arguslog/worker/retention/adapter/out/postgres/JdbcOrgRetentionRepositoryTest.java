@@ -107,7 +107,7 @@ class JdbcOrgRetentionRepositoryTest {
     assertThat(below)
         .containsExactlyInAnyOrder(
             new OrgRetention(1L, Duration.ofDays(30)),
-            new OrgRetention(2L, Duration.ofDays(30)),
+            new OrgRetention(2L, Duration.ofDays(90)),
             new OrgRetention(4L, Duration.ofDays(90)));
   }
 

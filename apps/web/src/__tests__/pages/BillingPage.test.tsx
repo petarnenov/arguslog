@@ -15,26 +15,71 @@ const ORG = { id: 1, slug: 'acme', name: 'Acme', plan: 'free', createdAt: '2026-
 
 const PLANS = {
   currency: 'USD',
-  free: { plan: 'free', monthlyEventCap: 5000, projectCap: 1, retentionDays: 30, durations: [] },
-  pro: {
-    plan: 'pro',
-    monthlyEventCap: 100000,
-    projectCap: 10,
-    retentionDays: 30,
-    durations: [
-      { months: 1, amountCents: 1199, perMonthCents: 1199, savePercent: 0 },
-      { months: 3, amountCents: 2999, perMonthCents: 999, savePercent: 17 },
-      { months: 6, amountCents: 5399, perMonthCents: 899, savePercent: 25 },
-      { months: 12, amountCents: 9599, perMonthCents: 799, savePercent: 33 },
-    ],
-  },
-  enterprise: {
-    plan: 'enterprise',
-    monthlyEventCap: Number.MAX_SAFE_INTEGER,
-    projectCap: 999,
-    retentionDays: 365,
-    durations: [],
-  },
+  tiers: [
+    {
+      plan: 'free',
+      monthlyPriceCents: 0,
+      monthlyEventCap: 5000,
+      projectCap: 1,
+      memberCap: 1,
+      retentionDays: 30,
+      unlimitedEvents: false,
+      unlimitedProjects: false,
+      unlimitedMembers: false,
+      durations: [],
+    },
+    {
+      plan: 'starter',
+      monthlyPriceCents: 1199,
+      monthlyEventCap: 25000,
+      projectCap: 3,
+      memberCap: 3,
+      retentionDays: 30,
+      unlimitedEvents: false,
+      unlimitedProjects: false,
+      unlimitedMembers: false,
+      durations: [
+        { months: 1, amountCents: 1199, perMonthCents: 1199, savePercent: 0 },
+        { months: 3, amountCents: 2999, perMonthCents: 999, savePercent: 17 },
+        { months: 6, amountCents: 5399, perMonthCents: 899, savePercent: 25 },
+        { months: 12, amountCents: 9599, perMonthCents: 799, savePercent: 33 },
+      ],
+    },
+    {
+      plan: 'pro',
+      monthlyPriceCents: 2999,
+      monthlyEventCap: 100000,
+      projectCap: 10,
+      memberCap: 10,
+      retentionDays: 90,
+      unlimitedEvents: false,
+      unlimitedProjects: false,
+      unlimitedMembers: false,
+      durations: [
+        { months: 1, amountCents: 2999, perMonthCents: 2999, savePercent: 0 },
+        { months: 3, amountCents: 7499, perMonthCents: 2499, savePercent: 17 },
+        { months: 6, amountCents: 13499, perMonthCents: 2249, savePercent: 25 },
+        { months: 12, amountCents: 23999, perMonthCents: 1999, savePercent: 33 },
+      ],
+    },
+    {
+      plan: 'business',
+      monthlyPriceCents: 7999,
+      monthlyEventCap: Number.MAX_SAFE_INTEGER,
+      projectCap: 999999,
+      memberCap: 999999,
+      retentionDays: 365,
+      unlimitedEvents: true,
+      unlimitedProjects: true,
+      unlimitedMembers: true,
+      durations: [
+        { months: 1, amountCents: 7999, perMonthCents: 7999, savePercent: 0 },
+        { months: 3, amountCents: 19999, perMonthCents: 6666, savePercent: 17 },
+        { months: 6, amountCents: 35999, perMonthCents: 5999, savePercent: 25 },
+        { months: 12, amountCents: 63999, perMonthCents: 5333, savePercent: 33 },
+      ],
+    },
+  ],
 };
 
 function jsonResponse(body: unknown, status = 200) {
@@ -59,14 +104,18 @@ function renderAt(path = '/orgs/acme/billing') {
   );
 }
 
-function mockFetch(handlers: Record<string, (init?: RequestInit) => Response>) {
-  return vi.fn(async (input, init) => {
-    const url = typeof input === 'string' ? input : (input as Request).url;
-    for (const [pattern, handler] of Object.entries(handlers)) {
-      if (url.includes(pattern)) return handler(init);
-    }
-    throw new Error(`unexpected fetch: ${url}`);
-  }) as typeof fetch;
+function freeUsage() {
+  return {
+    plan: 'free',
+    monthlyPriceCents: 0,
+    eventsUsed: 1500,
+    eventCap: 5000,
+    projectCap: 1,
+    retentionDays: 30,
+    ratio: 0.3,
+    exceeded: false,
+    billingInterval: 'one_month',
+  };
 }
 
 describe('BillingPage', () => {
@@ -82,53 +131,61 @@ describe('BillingPage', () => {
     });
   });
 
-  it('renders the FREE plan with usage and the four duration cards', async () => {
-    globalThis.fetch = mockFetch({
-      '/api/v1/orgs/1/usage': () =>
-        jsonResponse({
-          plan: 'free',
-          monthlyPriceCents: 0,
-          eventsUsed: 1500,
-          eventCap: 5000,
-          projectCap: 1,
-          retentionDays: 7,
-          ratio: 0.3,
-          exceeded: false,
-          billingInterval: 'one_month',
-        }),
-      '/api/v1/billing/plans': () => jsonResponse(PLANS),
-      '/api/v1/orgs': () => jsonResponse([ORG]),
-    });
+  it('renders all four tier cards with their caps', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/usage')) return jsonResponse(freeUsage());
+      if (url.endsWith('/api/v1/billing/plans')) return jsonResponse(PLANS);
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
 
     renderAt();
 
-    await waitFor(() => expect(screen.getByTestId('usage-ratio')).toBeInTheDocument());
-    expect(screen.getByTestId('usage-ratio')).toHaveTextContent('1,500 / 5,000');
-    expect(screen.getAllByText(/free/i).length).toBeGreaterThanOrEqual(1);
-    // All four duration cards visible.
-    expect(screen.getByTestId('duration-card-1')).toBeInTheDocument();
-    expect(screen.getByTestId('duration-card-3')).toBeInTheDocument();
-    expect(screen.getByTestId('duration-card-6')).toBeInTheDocument();
-    expect(screen.getByTestId('duration-card-12')).toBeInTheDocument();
-    // The 12-month card is highlighted as "Best value".
-    expect(screen.getByTestId('duration-card-12')).toHaveTextContent(/best value/i);
-    // Save badges reflect the aggressive ladder.
-    expect(screen.getByTestId('duration-card-12')).toHaveTextContent('Save 33%');
-    expect(screen.getByTestId('duration-card-3')).toHaveTextContent('Save 17%');
-    // Total prices.
-    expect(screen.getByTestId('duration-card-1')).toHaveTextContent('$11.99');
-    expect(screen.getByTestId('duration-card-12')).toHaveTextContent('$95.99');
+    await waitFor(() => expect(screen.getByTestId('tier-card-free')).toBeInTheDocument());
+    expect(screen.getByTestId('tier-card-starter')).toBeInTheDocument();
+    expect(screen.getByTestId('tier-card-pro')).toBeInTheDocument();
+    expect(screen.getByTestId('tier-card-business')).toBeInTheDocument();
 
-    // The "what you get" panel is rendered before the cards so visitors know
-    // what they're paying for. Quotas come from the API (server-driven).
-    const features = screen.getByTestId('pro-features-panel');
-    expect(features).toHaveTextContent('100,000 events');
-    expect(features).toHaveTextContent('20×');
-    expect(features).toHaveTextContent('10 projects');
-    expect(features).toHaveTextContent(/no auto-renewal/i);
+    // Caps are visible on each card.
+    expect(screen.getByTestId('tier-card-free')).toHaveTextContent('5,000 events');
+    expect(screen.getByTestId('tier-card-starter')).toHaveTextContent('25,000 events');
+    expect(screen.getByTestId('tier-card-pro')).toHaveTextContent('100,000 events');
+    expect(screen.getByTestId('tier-card-business')).toHaveTextContent(/unlimited events/i);
+
+    // Pro's retention is 90 days, business 365 — proves we read from server config.
+    expect(screen.getByTestId('tier-card-pro')).toHaveTextContent('90-day');
+    expect(screen.getByTestId('tier-card-business')).toHaveTextContent('365-day');
+
+    // Pro is the most-popular tag.
+    expect(screen.getByTestId('tier-card-pro')).toHaveTextContent(/most popular/i);
   });
 
-  it('redirects to the NOWPayments checkout url when a duration card is picked', async () => {
+  it('expands duration picker + Pay button only after a paid tier is selected', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/usage')) return jsonResponse(freeUsage());
+      if (url.endsWith('/api/v1/billing/plans')) return jsonResponse(PLANS);
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
+
+    renderAt();
+
+    // Before selection, no expanded panel exists.
+    await waitFor(() => expect(screen.getByTestId('tier-card-pro')).toBeInTheDocument());
+    expect(screen.queryByTestId('tier-card-pro-expanded')).not.toBeInTheDocument();
+
+    // Click the tier card to select it.
+    await userEvent.click(screen.getByTestId('tier-card-pro'));
+
+    // Now the expanded panel exists with the Pay CTA defaulting to 12 months.
+    expect(await screen.findByTestId('tier-card-pro-expanded')).toBeInTheDocument();
+    expect(screen.getByTestId('pay-pro-12')).toBeInTheDocument();
+    expect(screen.getByTestId('pay-pro-12')).toHaveTextContent('$239.99');
+  });
+
+  it('starts NOWPayments crypto checkout with the chosen tier and duration', async () => {
     const assign = vi.fn();
     Object.defineProperty(window, 'location', {
       value: { ...originalLocation, assign },
@@ -136,53 +193,16 @@ describe('BillingPage', () => {
       configurable: true,
     });
 
-    let cryptoUrl: string | undefined;
-    globalThis.fetch = mockFetch({
-      '/api/v1/orgs/1/usage': () =>
-        jsonResponse({
-          plan: 'free',
-          monthlyPriceCents: 0,
-          eventsUsed: 0,
-          eventCap: 5000,
-          projectCap: 1,
-          retentionDays: 7,
-          ratio: 0,
-          exceeded: false,
-          billingInterval: 'one_month',
-        }),
-      '/api/v1/billing/plans': () => jsonResponse(PLANS),
-      '/api/v1/orgs/1/billing/crypto-invoice': (init) => {
-        if (init?.method !== 'POST') throw new Error('expected POST');
-        return jsonResponse({
-          checkoutUrl: 'https://nowpayments.io/payment/iv_abc',
-          invoiceReference: 'ref-1',
-        });
-      },
-      '/api/v1/orgs': () => jsonResponse([ORG]),
-    });
-
-    // Capture the URL to assert duration query param.
+    let capturedUrl: string | undefined;
     globalThis.fetch = vi.fn(async (input, init) => {
       const url = typeof input === 'string' ? input : (input as Request).url;
       if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
-      if (url.endsWith('/api/v1/orgs/1/usage')) {
-        return jsonResponse({
-          plan: 'free',
-          monthlyPriceCents: 0,
-          eventsUsed: 0,
-          eventCap: 5000,
-          projectCap: 1,
-          retentionDays: 7,
-          ratio: 0,
-          exceeded: false,
-          billingInterval: 'one_month',
-        });
-      }
+      if (url.endsWith('/api/v1/orgs/1/usage')) return jsonResponse(freeUsage());
       if (url.endsWith('/api/v1/billing/plans')) return jsonResponse(PLANS);
       if (url.includes('/api/v1/orgs/1/billing/crypto-invoice') && init?.method === 'POST') {
-        cryptoUrl = url;
+        capturedUrl = url;
         return jsonResponse({
-          checkoutUrl: 'https://nowpayments.io/payment/iv_abc',
+          checkoutUrl: 'https://nowpayments.io/payment/iv_starter6',
           invoiceReference: 'ref-1',
         });
       }
@@ -191,113 +211,56 @@ describe('BillingPage', () => {
 
     renderAt();
 
-    const sixMonthBtn = await screen.findByTestId('pay-crypto-6');
-    await userEvent.click(sixMonthBtn);
+    await userEvent.click(await screen.findByTestId('tier-card-starter'));
+    // Default is 12 months; pick 6 explicitly to prove the segmented control flows through.
+    await userEvent.click(screen.getByRole('radio', { name: /6mo/i }));
+    await userEvent.click(screen.getByTestId('pay-starter-6'));
 
     await waitFor(() =>
-      expect(assign).toHaveBeenCalledWith('https://nowpayments.io/payment/iv_abc'),
+      expect(assign).toHaveBeenCalledWith('https://nowpayments.io/payment/iv_starter6'),
     );
-    expect(cryptoUrl).toContain('duration=6');
+    expect(capturedUrl).toContain('tier=starter');
+    expect(capturedUrl).toContain('duration=6');
   });
 
-  it('hides duration grid for an active Pro org with renewal in the future', async () => {
-    const renewsAt = new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString();
-    globalThis.fetch = mockFetch({
-      '/api/v1/orgs/1/usage': () =>
-        jsonResponse({
+  it('marks the org current plan with a Current badge', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([{ ...ORG, plan: 'pro' }]);
+      if (url.endsWith('/api/v1/orgs/1/usage'))
+        return jsonResponse({
+          ...freeUsage(),
           plan: 'pro',
-          monthlyPriceCents: 1199,
-          eventsUsed: 12000,
+          monthlyPriceCents: 2999,
           eventCap: 100000,
           projectCap: 10,
-          retentionDays: 30,
-          ratio: 0.12,
-          exceeded: false,
-          billingInterval: 'twelve_months',
-          renewsAt,
-        }),
-      '/api/v1/billing/plans': () => jsonResponse(PLANS),
-      '/api/v1/orgs': () => jsonResponse([{ ...ORG, plan: 'pro' }]),
-    });
+          retentionDays: 90,
+          renewsAt: new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString(),
+        });
+      if (url.endsWith('/api/v1/billing/plans')) return jsonResponse(PLANS);
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
 
     renderAt();
 
-    await waitFor(() => expect(screen.getByTestId('renews-at')).toBeInTheDocument());
-    expect(screen.queryByTestId('duration-card-1')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('renew-banner')).not.toBeInTheDocument();
-  });
-
-  it('shows the renew banner and extend grid when Pro plan expires within 14 days', async () => {
-    const renewsAt = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
-    globalThis.fetch = mockFetch({
-      '/api/v1/orgs/1/usage': () =>
-        jsonResponse({
-          plan: 'pro',
-          monthlyPriceCents: 1199,
-          eventsUsed: 1000,
-          eventCap: 100000,
-          projectCap: 10,
-          retentionDays: 30,
-          ratio: 0.01,
-          exceeded: false,
-          billingInterval: 'one_month',
-          renewsAt,
-        }),
-      '/api/v1/billing/plans': () => jsonResponse(PLANS),
-      '/api/v1/orgs': () => jsonResponse([{ ...ORG, plan: 'pro' }]),
-    });
-
-    renderAt();
-
-    const banner = await screen.findByTestId('renew-banner');
-    expect(banner).toHaveTextContent(/expires in 5/i);
-    expect(screen.getByTestId('duration-card-12')).toBeInTheDocument();
-  });
-
-  it('shows the payment-grace banner with countdown when the api returns a deadline', async () => {
-    const deadline = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
-    globalThis.fetch = mockFetch({
-      '/api/v1/orgs/1/usage': () =>
-        jsonResponse({
-          plan: 'pro',
-          monthlyPriceCents: 1199,
-          eventsUsed: 100,
-          eventCap: 100000,
-          projectCap: 10,
-          retentionDays: 30,
-          ratio: 0.001,
-          exceeded: false,
-          billingInterval: 'one_month',
-          paymentGraceUntil: deadline,
-        }),
-      '/api/v1/billing/plans': () => jsonResponse(PLANS),
-      '/api/v1/orgs': () => jsonResponse([{ ...ORG, plan: 'pro' }]),
-    });
-
-    renderAt();
-
-    const banner = await screen.findByTestId('payment-grace-banner');
-    expect(banner).toHaveTextContent(/payment failed/i);
-    expect(banner).toHaveTextContent(/5/);
+    await waitFor(() => expect(screen.getByTestId('tier-card-pro')).toBeInTheDocument());
+    expect(screen.getByTestId('tier-card-pro')).toHaveTextContent(/current plan/i);
   });
 
   it('shows the cap-exceeded banner when the api flags it', async () => {
-    globalThis.fetch = mockFetch({
-      '/api/v1/orgs/1/usage': () =>
-        jsonResponse({
-          plan: 'free',
-          monthlyPriceCents: 0,
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/usage'))
+        return jsonResponse({
+          ...freeUsage(),
           eventsUsed: 5200,
-          eventCap: 5000,
-          projectCap: 1,
-          retentionDays: 7,
           ratio: 1.04,
           exceeded: true,
-          billingInterval: 'one_month',
-        }),
-      '/api/v1/billing/plans': () => jsonResponse(PLANS),
-      '/api/v1/orgs': () => jsonResponse([ORG]),
-    });
+        });
+      if (url.endsWith('/api/v1/billing/plans')) return jsonResponse(PLANS);
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
 
     renderAt();
 

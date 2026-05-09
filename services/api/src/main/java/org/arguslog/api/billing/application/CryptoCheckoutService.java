@@ -39,14 +39,18 @@ public class CryptoCheckoutService implements CryptoCheckoutUseCase {
 
   @Override
   @Transactional
-  public CheckoutResult start(long orgId, int durationMonths) {
+  public CheckoutResult start(long orgId, PlanTier tier, int durationMonths) {
     if (!props.configured()) {
       throw new CryptoCheckoutNotConfiguredException(
           "NOWPayments is not configured on this deployment — set arguslog.nowpayments.api-key"
               + " and arguslog.nowpayments.ipn-secret to enable crypto checkout.");
     }
+    if (!tier.isPaid()) {
+      throw new IllegalArgumentException(
+          "Tier " + tier.dbValue() + " is not sold via the self-serve crypto flow.");
+    }
 
-    int amountCents = PlanTier.PRO.priceCentsForDuration(durationMonths);
+    int amountCents = tier.priceCentsForDuration(durationMonths);
     String orgSlug =
         orgs.findById(orgId)
             .map(Org::slug)
@@ -55,15 +59,22 @@ public class CryptoCheckoutService implements CryptoCheckoutUseCase {
                     new CryptoCheckoutFailedException(
                         "Org " + orgId + " disappeared between access-guard and checkout", null));
 
-    CryptoInvoice pending = invoices.insertPending(orgId, durationMonths, amountCents);
+    CryptoInvoice pending = invoices.insertPending(orgId, tier, durationMonths, amountCents);
 
-    BigDecimal priceUsd = BigDecimal.valueOf(amountCents).movePointLeft(2).setScale(2, RoundingMode.HALF_UP);
+    BigDecimal priceUsd =
+        BigDecimal.valueOf(amountCents).movePointLeft(2).setScale(2, RoundingMode.HALF_UP);
+    String tierLabel = capitalize(tier.dbValue());
     CreateInvoiceRequest request =
         new CreateInvoiceRequest(
             priceUsd,
             "USD",
             pending.internalReference().toString(),
-            "Arguslog Pro — " + durationMonths + " month" + (durationMonths == 1 ? "" : "s"),
+            "Arguslog "
+                + tierLabel
+                + " — "
+                + durationMonths
+                + " month"
+                + (durationMonths == 1 ? "" : "s"),
             props.ipnCallbackUrl(),
             props.successUrl(orgSlug),
             props.cancelUrl(orgSlug),
@@ -85,13 +96,19 @@ public class CryptoCheckoutService implements CryptoCheckoutUseCase {
     invoices.attachNpInvoice(pending.internalReference(), response.id(), response.invoiceUrl());
 
     log.info(
-        "crypto checkout minted: org {} months={} amount={}c npInvoice={} ref={}",
+        "crypto checkout minted: org {} tier={} months={} amount={}c npInvoice={} ref={}",
         orgId,
+        tier.dbValue(),
         durationMonths,
         amountCents,
         response.id(),
         pending.internalReference());
 
     return new CheckoutResult(response.invoiceUrl(), pending.internalReference().toString());
+  }
+
+  private static String capitalize(String s) {
+    if (s == null || s.isEmpty()) return s;
+    return Character.toUpperCase(s.charAt(0)) + s.substring(1);
   }
 }

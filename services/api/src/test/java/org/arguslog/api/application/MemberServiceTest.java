@@ -21,6 +21,8 @@ import org.arguslog.api.application.MemberUseCase.MemberNotFoundException;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.MembershipWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
+import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.domain.PlanTier;
 import org.arguslog.api.domain.Member;
 import org.arguslog.api.email.InviteEmailSender;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +38,7 @@ class MemberServiceTest {
   @Mock MembershipWriteRepository membershipWrites;
   @Mock UserRepository users;
   @Mock InviteEmailSender inviteEmails;
+  @Mock OrgPlanRepository plans;
 
   MemberService service;
 
@@ -47,7 +50,10 @@ class MemberServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new MemberService(memberships, membershipWrites, users, inviteEmails);
+    service = new MemberService(memberships, membershipWrites, users, inviteEmails, plans);
+    org.mockito.Mockito.lenient()
+        .when(plans.findPlan(anyLong()))
+        .thenReturn(Optional.of(PlanTier.BUSINESS));
   }
 
   // ── invite ─────────────────────────────────────────────────────────────

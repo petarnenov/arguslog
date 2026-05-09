@@ -18,6 +18,8 @@ import org.arguslog.api.application.ProjectUseCase.ProjectAccessDeniedException;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
+import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.domain.PlanTier;
 import org.arguslog.api.domain.Project;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,17 +33,23 @@ class ProjectServiceTest {
   @Mock ProjectWriteRepository projects;
   @Mock MembershipRepository memberships;
   @Mock PlatformRepository platforms;
+  @Mock OrgPlanRepository plans;
 
   ProjectService service;
 
   @BeforeEach
   void setUp() {
-    service = new ProjectService(projects, memberships, platforms);
+    service = new ProjectService(projects, memberships, platforms, plans);
     // Default to the four shipped SDKs for tests that hit the platform check; lenient because
     // archive-path tests don't reach platform validation at all.
     org.mockito.Mockito.lenient()
         .when(platforms.enabledSlugs())
         .thenReturn(Set.of("javascript", "react", "react-native", "java-spring"));
+    // Default to BUSINESS so the cap check is a no-op in unrelated tests; per-test overrides set
+    // FREE/STARTER/PRO when the cap is the thing under test.
+    org.mockito.Mockito.lenient()
+        .when(plans.findPlan(org.mockito.ArgumentMatchers.anyLong()))
+        .thenReturn(Optional.of(PlanTier.BUSINESS));
   }
 
   @Test

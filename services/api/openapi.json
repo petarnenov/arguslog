@@ -876,6 +876,14 @@
             "format" : "int64"
           }
         }, {
+          "name" : "tier",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "pro"
+          }
+        }, {
           "name" : "duration",
           "in" : "query",
           "required" : false,
@@ -2077,14 +2085,11 @@
           "currency" : {
             "type" : "string"
           },
-          "free" : {
-            "$ref" : "#/components/schemas/TierInfo"
-          },
-          "pro" : {
-            "$ref" : "#/components/schemas/TierInfo"
-          },
-          "enterprise" : {
-            "$ref" : "#/components/schemas/TierInfo"
+          "tiers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TierInfo"
+            }
           }
         }
       },
@@ -2115,6 +2120,10 @@
           "plan" : {
             "type" : "string"
           },
+          "monthlyPriceCents" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "monthlyEventCap" : {
             "type" : "integer",
             "format" : "int64"
@@ -2123,9 +2132,22 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "memberCap" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "retentionDays" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "unlimitedProjects" : {
+            "type" : "boolean"
+          },
+          "unlimitedMembers" : {
+            "type" : "boolean"
+          },
+          "unlimitedEvents" : {
+            "type" : "boolean"
           },
           "durations" : {
             "type" : "array",

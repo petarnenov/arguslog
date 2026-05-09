@@ -1,25 +1,32 @@
 package org.arguslog.api.billing.adapter.in.web.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
 import java.util.List;
 import org.arguslog.api.billing.domain.PlanTier;
 
 /**
  * Server-driven pricing config consumed by the public billing page. Frontend reads this once on
- * page load and renders the four duration cards from {@code pro.durations[]}; pricing changes
- * therefore require no frontend deploy.
+ * page load and renders the tier cards from {@code tiers[]}; pricing changes therefore require
+ * no frontend deploy.
+ *
+ * <p>The response includes Free as a non-purchasable info row (durations is empty, prices are 0)
+ * so the UI can render its caps next to the paid tiers — reads as a comparison column rather
+ * than a CTA.
  */
 public record BillingPlansResponse(
-    @JsonProperty("currency") String currency,
-    @JsonProperty("free") TierInfo free,
-    @JsonProperty("pro") TierInfo pro,
-    @JsonProperty("enterprise") TierInfo enterprise) {
+    @JsonProperty("currency") String currency, @JsonProperty("tiers") List<TierInfo> tiers) {
 
   public record TierInfo(
       @JsonProperty("plan") String plan,
+      @JsonProperty("monthlyPriceCents") int monthlyPriceCents,
       @JsonProperty("monthlyEventCap") long monthlyEventCap,
       @JsonProperty("projectCap") int projectCap,
+      @JsonProperty("memberCap") int memberCap,
       @JsonProperty("retentionDays") long retentionDays,
+      @JsonProperty("unlimitedProjects") boolean unlimitedProjects,
+      @JsonProperty("unlimitedMembers") boolean unlimitedMembers,
+      @JsonProperty("unlimitedEvents") boolean unlimitedEvents,
       @JsonProperty("durations") List<DurationOffer> durations) {}
 
   public record DurationOffer(
@@ -29,37 +36,38 @@ public record BillingPlansResponse(
       @JsonProperty("savePercent") int savePercent) {}
 
   public static BillingPlansResponse defaults() {
-    int baseMonthly = PlanTier.PRO.priceCentsForDuration(1);
-    List<DurationOffer> proOffers =
-        List.of(
-            offerFor(PlanTier.PRO, 1, baseMonthly),
-            offerFor(PlanTier.PRO, 3, baseMonthly),
-            offerFor(PlanTier.PRO, 6, baseMonthly),
-            offerFor(PlanTier.PRO, 12, baseMonthly));
-
-    return new BillingPlansResponse(
-        "USD",
-        new TierInfo(
-            PlanTier.FREE.dbValue(),
-            PlanTier.FREE.monthlyEventCap(),
-            PlanTier.FREE.projectCap(),
-            PlanTier.FREE.retention().toDays(),
-            List.of()),
-        new TierInfo(
-            PlanTier.PRO.dbValue(),
-            PlanTier.PRO.monthlyEventCap(),
-            PlanTier.PRO.projectCap(),
-            PlanTier.PRO.retention().toDays(),
-            proOffers),
-        new TierInfo(
-            PlanTier.ENTERPRISE.dbValue(),
-            PlanTier.ENTERPRISE.monthlyEventCap(),
-            PlanTier.ENTERPRISE.projectCap(),
-            PlanTier.ENTERPRISE.retention().toDays(),
-            List.of()));
+    List<TierInfo> tiers = new ArrayList<>();
+    for (PlanTier tier : List.of(PlanTier.FREE, PlanTier.STARTER, PlanTier.PRO, PlanTier.BUSINESS)) {
+      tiers.add(toTierInfo(tier));
+    }
+    return new BillingPlansResponse("USD", tiers);
   }
 
-  private static DurationOffer offerFor(PlanTier tier, int months, int baseMonthlyCents) {
+  private static TierInfo toTierInfo(PlanTier tier) {
+    return new TierInfo(
+        tier.dbValue(),
+        tier.monthlyPriceCents(),
+        tier.monthlyEventCap(),
+        tier.projectCap(),
+        tier.memberCap(),
+        tier.retention().toDays(),
+        tier.projectCap() == Integer.MAX_VALUE,
+        tier.memberCap() == Integer.MAX_VALUE,
+        tier.monthlyEventCap() == Long.MAX_VALUE,
+        offersFor(tier));
+  }
+
+  private static List<DurationOffer> offersFor(PlanTier tier) {
+    if (!tier.isPaid()) return List.of();
+    int baseMonthly = tier.priceCentsForDuration(1);
+    return List.of(
+        offer(tier, 1, baseMonthly),
+        offer(tier, 3, baseMonthly),
+        offer(tier, 6, baseMonthly),
+        offer(tier, 12, baseMonthly));
+  }
+
+  private static DurationOffer offer(PlanTier tier, int months, int baseMonthlyCents) {
     int totalCents = tier.priceCentsForDuration(months);
     int perMonthCents = totalCents / months;
     int undiscountedCents = baseMonthlyCents * months;
