@@ -8,9 +8,9 @@
     "github": "GitHub"
   },
   "hero": {
-    "tagline": "Error tracking for modern teams",
+    "tagline": "Error tracking for modern teams — and crypto-native ones",
     "title": "Catch errors before your customers do.",
-    "subtitle": "Real-time issue tracking with source-mapped stack traces, smart alerts, and team workflows. First-class SDKs across the JS, JVM, and Python ecosystems — same wire format end-to-end so a polyglot stack groups into one issue.",
+    "subtitle": "Real-time issue tracking with source-mapped stack traces, deep auto-breadcrumb timelines, and smart alerts. First-class SDKs across the JS, JVM, and Python ecosystems plus a Web3 add-on that decodes wallet, chain, and contract errors from viem, ethers, Solana, and Anchor — same wire format end-to-end so a polyglot stack groups into one issue.",
     "ctaPrimary": "Get started free",
     "ctaSecondary": "View on GitHub"
   },
@@ -26,6 +26,14 @@
         "title": "Source-mapped stack traces",
         "body": "Upload source maps per release through the CLI. Frames are symbolicated by the worker so your team sees real file paths, not minified gibberish."
       },
+      "breadcrumbs": {
+        "title": "Auto-breadcrumb timeline",
+        "body": "Browser SDK auto-instruments console, fetch, XHR, navigation, clicks, web vitals, long tasks, and worker errors. Every issue lands with the lead-up rendered as a coloured timeline so the cause reads at a glance."
+      },
+      "web3": {
+        "title": "Web3 — first-class",
+        "body": "viem, ethers v6, @solana/web3.js, Anchor, wagmi, and WalletConnect errors decoded into rich tags: chain, wallet, contract, function, args, decoded revert reason / Anchor error / custom program code. One initWeb3() wires the lot."
+      },
       "alerts": {
         "title": "Multi-channel alerts",
         "body": "Telegram, Slack, email, and generic webhooks out of the box. Per-rule throttling and DSL-driven matching on level, tags, and first-seen windows."
@@ -38,49 +46,86 @@
   },
   "platforms": {
     "heading": "First-class SDKs",
-    "subheading": "Drop-in clients for browser, mobile, and server runtimes — including a zero-dependency Python SDK and a Spring Boot autoconfig. The catalog below is fetched live from /api/v1/platforms, the same endpoint the dashboard uses.",
+    "subheading": "Drop-in clients for browser, mobile, and server runtimes — including a zero-dependency Python SDK, a Spring Boot autoconfig, and a Web3 add-on you layer on top of any JS SDK. The catalog below is fetched live from /api/v1/platforms, the same endpoint the dashboard uses.",
     "loading": "Loading…",
     "fallback": "Visit the GitHub repo for the SDK list.",
-    "viewSdk": "View on npm / Maven"
+    "viewSdk": "View on npm / Maven",
+    "web3Card": {
+      "title": "Web3 add-on",
+      "package": "@arguslog/sdk-web3",
+      "description": "EVM (viem + ethers + wagmi + WalletConnect) and Solana (web3.js + Anchor + wallet adapter) error decoding. Layers on top of @arguslog/sdk-browser."
+    }
   },
   "pricing": {
     "heading": "Pricing that scales with you.",
-    "subheading": "Start free, upgrade when your event volume justifies it. Enterprise deals include custom retention windows and contracted SLAs.",
+    "subheading": "Start free. Upgrade when your event volume justifies it. Pay with a card via Lemon Squeezy or in stablecoins (USDT / USDC). Bundles for 1, 3, 6 and 12 months with a -17% / -25% / -33% discount ladder — no auto-renew, no surprise charges.",
+    "popularBadge": "Most popular",
     "free": {
       "name": "Free",
       "price": "$0",
       "period": "/ month",
-      "features": ["5,000 events / month", "1 project", "30-day retention", "Community support"],
+      "tagline": "For trying it out",
+      "features": [
+        "5,000 events / month",
+        "1 project",
+        "1 team member",
+        "30-day retention",
+        "Community support"
+      ],
       "cta": "Start free"
+    },
+    "starter": {
+      "name": "Starter",
+      "price": "$11.99",
+      "period": "/ month",
+      "tagline": "For solo developers",
+      "features": [
+        "25,000 events / month",
+        "3 projects",
+        "3 team members",
+        "30-day retention",
+        "Email support"
+      ],
+      "cta": "Choose Starter"
     },
     "pro": {
       "name": "Pro",
-      "price": "$9",
+      "price": "$29.99",
       "period": "/ month",
+      "tagline": "For small teams — most popular",
       "features": [
         "100,000 events / month",
         "10 projects",
-        "30-day retention",
+        "10 team members",
+        "90-day retention",
         "Email + Slack support"
       ],
       "cta": "Upgrade to Pro"
     },
+    "business": {
+      "name": "Business",
+      "price": "$79.99",
+      "period": "/ month",
+      "tagline": "For high-volume + compliance",
+      "features": [
+        "Unlimited events",
+        "Unlimited projects",
+        "Unlimited team members",
+        "365-day retention",
+        "Priority support"
+      ],
+      "cta": "Choose Business"
+    },
     "enterprise": {
       "name": "Enterprise",
-      "price": "Contact",
-      "period": "us",
-      "features": [
-        "Custom event volume",
-        "Unlimited projects",
-        "90–365 day retention",
-        "Contracted SLA"
-      ],
+      "tagline": "Custom retention, SSO, contracted SLA",
+      "description": "Dedicated infrastructure, SAML/OIDC SSO, contracted SLA, custom retention windows, and a named support channel. Talk to us about volumes, compliance scope, and rollout.",
       "cta": "Talk to sales"
     },
-    "annualNote": "Annual billing saves ~17%. Configure on the billing page after signup."
+    "annualNote": "Crypto and card both. Stablecoin checkout settles in seconds via NOWPayments; cards via Lemon Squeezy (Merchant of Record — invoices and EU VAT handled for you). Switch tiers any time from the billing page."
   },
   "footer": {
-    "tagline": "Open-source error tracking, hosted on Railway.",
+    "tagline": "Open-source error tracking, hosted on Railway. EVM + Solana aware.",
     "links": {
       "app": "Dashboard",
       "github": "GitHub",
