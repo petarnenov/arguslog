@@ -22,6 +22,8 @@ import {
   IconBrandGithub,
   IconCheck,
   IconCode,
+  IconCoin,
+  IconRoute,
   IconUsers,
 } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
@@ -97,7 +99,7 @@ function Hero({ onboardingUrl }: { onboardingUrl: string }) {
           <Title order={1} ta="center" fw={800} size="3rem" lh={1.1}>
             {t('hero.title')}
           </Title>
-          <Text size="xl" c="dimmed" ta="center" maw={680}>
+          <Text size="xl" c="dimmed" ta="center" maw={760}>
             {t('hero.subtitle')}
           </Text>
           <Group gap="md" mt="md">
@@ -125,6 +127,8 @@ function Hero({ onboardingUrl }: { onboardingUrl: string }) {
 const FEATURE_ICONS = {
   ingest: IconBolt,
   sourcemaps: IconCode,
+  breadcrumbs: IconRoute,
+  web3: IconCoin,
   alerts: IconAlertCircle,
   team: IconUsers,
 } as const;
@@ -147,7 +151,7 @@ function Features() {
             {t('features.subheading')}
           </Text>
         </Stack>
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
           {items.map((it) => (
             <Card key={it.key} withBorder padding="lg" radius="md">
               <Group gap="sm" mb="sm">
@@ -209,20 +213,47 @@ function Platforms({
             ))}
           </SimpleGrid>
         )}
+
+        <Card
+          withBorder
+          padding="lg"
+          radius="md"
+          mt="lg"
+          data-testid="web3-addon-card"
+          style={{ borderColor: 'var(--mantine-color-violet-6)' }}
+        >
+          <Group gap="sm" align="flex-start" wrap="nowrap">
+            <ThemeIcon variant="light" color="violet" size="lg" radius="md">
+              <IconCoin size={20} />
+            </ThemeIcon>
+            <Stack gap={4} style={{ flex: 1 }}>
+              <Group gap="sm" wrap="wrap">
+                <Title order={5}>{t('platforms.web3Card.title')}</Title>
+                <Text size="xs" c="dimmed" ff="monospace">
+                  {t('platforms.web3Card.package')}
+                </Text>
+              </Group>
+              <Text c="dimmed" size="sm">
+                {t('platforms.web3Card.description')}
+              </Text>
+            </Stack>
+          </Group>
+        </Card>
       </Container>
     </Box>
   );
 }
 
 interface PricingTier {
-  key: 'free' | 'pro' | 'enterprise';
+  key: 'free' | 'starter' | 'pro' | 'business';
   highlight?: boolean;
 }
 
 const TIERS: PricingTier[] = [
   { key: 'free' },
+  { key: 'starter' },
   { key: 'pro', highlight: true },
-  { key: 'enterprise' },
+  { key: 'business' },
 ];
 
 function Pricing({ onboardingUrl }: { onboardingUrl: string }) {
@@ -233,44 +264,50 @@ function Pricing({ onboardingUrl }: { onboardingUrl: string }) {
       <Container size="lg">
         <Stack gap="xs" mb="xl">
           <Title order={2}>{t('pricing.heading')}</Title>
-          <Text c="dimmed" maw={680}>
+          <Text c="dimmed" maw={760}>
             {t('pricing.subheading')}
           </Text>
         </Stack>
-        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
           {TIERS.map((tier) => {
             const features = t(`pricing.${tier.key}.features`, { returnObjects: true }) as string[];
             return (
               <Card
                 key={tier.key}
                 withBorder
-                padding="xl"
+                padding="lg"
                 radius="md"
+                data-testid={`pricing-tier-${tier.key}`}
                 style={
                   tier.highlight
                     ? { borderColor: 'var(--mantine-color-green-6)', borderWidth: 2 }
                     : undefined
                 }
               >
-                <Stack gap="md">
-                  <Group justify="space-between">
-                    <Title order={3}>{t(`pricing.${tier.key}.name`)}</Title>
-                    {tier.highlight ? (
-                      <Badge color="green" variant="light">
-                        Popular
-                      </Badge>
-                    ) : null}
-                  </Group>
+                <Stack gap="md" h="100%">
+                  <Stack gap={4}>
+                    <Group justify="space-between" align="flex-start">
+                      <Title order={3}>{t(`pricing.${tier.key}.name`)}</Title>
+                      {tier.highlight ? (
+                        <Badge color="green" variant="light">
+                          {t('pricing.popularBadge')}
+                        </Badge>
+                      ) : null}
+                    </Group>
+                    <Text size="sm" c="dimmed">
+                      {t(`pricing.${tier.key}.tagline`)}
+                    </Text>
+                  </Stack>
                   <Group gap={4} align="baseline">
                     <Title order={2}>{t(`pricing.${tier.key}.price`)}</Title>
                     <Text c="dimmed" size="sm">
                       {t(`pricing.${tier.key}.period`)}
                     </Text>
                   </Group>
-                  <Stack gap="xs">
+                  <Stack gap="xs" style={{ flex: 1 }}>
                     {features.map((f) => (
-                      <Group key={f} gap="xs" wrap="nowrap">
-                        <ThemeIcon variant="light" size="sm" radius="xl" color="green">
+                      <Group key={f} gap="xs" wrap="nowrap" align="flex-start">
+                        <ThemeIcon variant="light" size="sm" radius="xl" color="green" mt={2}>
                           <IconCheck size={12} />
                         </ThemeIcon>
                         <Text size="sm">{f}</Text>
@@ -290,7 +327,31 @@ function Pricing({ onboardingUrl }: { onboardingUrl: string }) {
             );
           })}
         </SimpleGrid>
-        <Text c="dimmed" size="sm" ta="center" mt="lg">
+
+        <Card withBorder padding="lg" radius="md" mt="lg" data-testid="pricing-tier-enterprise">
+          <Group justify="space-between" wrap="wrap" gap="md">
+            <Stack gap={4} style={{ flex: 1, minWidth: 280 }}>
+              <Group gap="sm" align="baseline">
+                <Title order={3}>{t('pricing.enterprise.name')}</Title>
+                <Text c="dimmed" size="sm">
+                  {t('pricing.enterprise.tagline')}
+                </Text>
+              </Group>
+              <Text c="dimmed" size="sm">
+                {t('pricing.enterprise.description')}
+              </Text>
+            </Stack>
+            <Button
+              component="a"
+              href={`mailto:hello@arguslog.org?subject=${encodeURIComponent('Enterprise plan')}`}
+              variant="default"
+            >
+              {t('pricing.enterprise.cta')}
+            </Button>
+          </Group>
+        </Card>
+
+        <Text c="dimmed" size="sm" ta="center" mt="lg" maw={720} mx="auto">
           {t('pricing.annualNote')}
         </Text>
       </Container>

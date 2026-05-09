@@ -72,6 +72,28 @@ describe('LandingPage', () => {
     expect(screen.getByText('React Native')).toBeInTheDocument();
   });
 
+  it('renders all four self-serve pricing tiers and the Enterprise card', () => {
+    globalThis.fetch = vi.fn(async () => jsonResponse([])) as typeof fetch;
+    renderLanding();
+    expect(screen.getByTestId('pricing-tier-free')).toBeInTheDocument();
+    expect(screen.getByTestId('pricing-tier-starter')).toBeInTheDocument();
+    expect(screen.getByTestId('pricing-tier-pro')).toBeInTheDocument();
+    expect(screen.getByTestId('pricing-tier-business')).toBeInTheDocument();
+    expect(screen.getByTestId('pricing-tier-enterprise')).toBeInTheDocument();
+    // Headline prices follow the canonical PlanTier ladder.
+    expect(screen.getByText('$11.99')).toBeInTheDocument();
+    expect(screen.getByText('$29.99')).toBeInTheDocument();
+    expect(screen.getByText('$79.99')).toBeInTheDocument();
+  });
+
+  it('renders the Web3 add-on highlight card', () => {
+    globalThis.fetch = vi.fn(async () => jsonResponse([])) as typeof fetch;
+    renderLanding();
+    const card = screen.getByTestId('web3-addon-card');
+    expect(card).toBeInTheDocument();
+    expect(card).toHaveTextContent('@arguslog/sdk-web3');
+  });
+
   it('falls back gracefully when the platforms api fails', async () => {
     globalThis.fetch = vi.fn(async () => jsonResponse({ title: 'boom' }, 500)) as typeof fetch;
 
