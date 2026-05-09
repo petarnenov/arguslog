@@ -164,15 +164,87 @@ breadcrumbed by the `fetch` integration in `@arguslog/sdk-browser`.
 | `solana.insufficientLamports` | `InsufficientFundsForRent` or "insufficient lamports" message — account doesn't have enough SOL for rent or transfer. |
 | `unknown`                     | Anything we couldn't map — original error name / code preserved on the payload.            |
 
+## Phase 3 — wagmi, Solana auto-wrap, WalletConnect
+
+### wagmi v2 reporter
+
+Subscribe once at app boot and every wagmi mutation error — `useWriteContract`,
+`useSendTransaction`, `useSignMessage`, `useSwitchChain`, etc. — flows into Arguslog with
+the right context extracted from the mutation variables. No per-component try/catch.
+
+```ts
+import { QueryClient } from '@tanstack/react-query';
+import { installWagmiReporter } from '@arguslog/sdk-web3';
+
+const queryClient = new QueryClient();
+installWagmiReporter(queryClient, { wallet: 'metamask', chain: { id: 1, name: 'Ethereum' } });
+```
+
+Tracked mutation keys: `writeContract`, `sendTransaction`, `signMessage`, `signTypedData`,
+`switchChain`, `connect`, `disconnect`. Untracked queries / user mutations pass through
+silently.
+
+### `wrapSolanaConnection`
+
+Counterpart to `wrapWalletClient`, for `@solana/web3.js`:
+
+```ts
+import { Connection, clusterApiUrl } from '@solana/web3.js';
+import { wrapSolanaConnection } from '@arguslog/sdk-web3';
+
+const connection = wrapSolanaConnection(new Connection(clusterApiUrl('mainnet-beta')), {
+  wallet: 'phantom',
+  chain: { id: 'mainnet-beta', name: 'Solana mainnet' },
+});
+
+// sendTransaction / sendRawTransaction / simulateTransaction / confirmTransaction errors
+// are auto-captured with chain + wallet + decoded program logs.
+```
+
+### `installSolanaWalletBreadcrumbs`
+
+Listen to `@solana/wallet-adapter-base` adapter events:
+
+```ts
+import { useWallet } from '@solana/wallet-adapter-react';
+import { installSolanaWalletBreadcrumbs } from '@arguslog/sdk-web3';
+
+const { wallet } = useWallet();
+useEffect(() => {
+  if (!wallet?.adapter) return;
+  return installSolanaWalletBreadcrumbs(wallet.adapter);
+}, [wallet]);
+```
+
+`connect`, `disconnect`, `error`, `readyStateChange` events become `web3.wallet`
+breadcrumbs.
+
+### `installWalletConnectBreadcrumbs`
+
+WalletConnect v2 providers fire session-lifecycle events that EIP-1193 doesn't define.
+Layer this on top of `installProviderBreadcrumbs` for the WC-specific signals
+(`display_uri`, `session_event`, `session_update`, `session_delete`, `session_expire`).
+
+```ts
+import { installProviderBreadcrumbs, installWalletConnectBreadcrumbs } from '@arguslog/sdk-web3';
+
+installProviderBreadcrumbs(wcProvider);          // standard EIP-1193 events
+installWalletConnectBreadcrumbs(wcProvider);     // + WC session lifecycle
+```
+
+`initWeb3` auto-detects WC providers and installs both, so the typical app only ever calls
+`initWeb3` once.
+
 ## Roadmap
 
 - **Phase 1** ✅ — viem + ethers v6 decoders, EIP-1193 provider events, `wrapWalletClient`.
 - **Phase 2** ✅ — Solana support via `@solana/web3.js` + Anchor; wallet adapter errors;
   program-log parsing (Anchor + custom-error hex codes).
-- **Phase 3** — `wagmi` v2 React hooks wrapper, WalletConnect session lifecycle breadcrumbs,
-  Solana wallet adapter direct integration (auto-wrap `Connection.sendTransaction` etc.).
+- **Phase 3** ✅ — wagmi v2 mutation cache reporter, `wrapSolanaConnection`,
+  `installSolanaWalletBreadcrumbs`, WalletConnect lifecycle breadcrumbs.
 - **Phase 4** — server-side ABI / Anchor IDL upload → richer decoding of custom errors the
-  client-side bundle didn't include.
+  client-side bundle didn't include; viem `PublicClient` read-side wrapping for RPC failure
+  attribution; first-class wagmi `connector` event listening.
 
 ## License
 

@@ -1,7 +1,7 @@
 {
   "name": "@arguslog/sdk-web3",
-  "version": "0.1.0",
-  "description": "Arguslog Web3 SDK — rich EVM error decoding for viem + ethers v6 (chain, wallet, contract, decoded revert reason)",
+  "version": "0.3.0",
+  "description": "Arguslog Web3 SDK — rich error decoding for viem, ethers v6, @solana/web3.js + Anchor, wagmi, WalletConnect (chain, wallet, contract, decoded revert / Anchor / program error)",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
