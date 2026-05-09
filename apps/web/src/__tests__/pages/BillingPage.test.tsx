@@ -13,6 +13,30 @@ const originalLocation = window.location;
 
 const ORG = { id: 1, slug: 'acme', name: 'Acme', plan: 'free', createdAt: '2026-05-01T00:00:00Z' };
 
+const PLANS = {
+  currency: 'USD',
+  free: { plan: 'free', monthlyEventCap: 5000, projectCap: 1, retentionDays: 30, durations: [] },
+  pro: {
+    plan: 'pro',
+    monthlyEventCap: 100000,
+    projectCap: 10,
+    retentionDays: 30,
+    durations: [
+      { months: 1, amountCents: 999, perMonthCents: 999, savePercent: 0 },
+      { months: 3, amountCents: 2499, perMonthCents: 833, savePercent: 17 },
+      { months: 6, amountCents: 4499, perMonthCents: 749, savePercent: 25 },
+      { months: 12, amountCents: 7999, perMonthCents: 666, savePercent: 33 },
+    ],
+  },
+  enterprise: {
+    plan: 'enterprise',
+    monthlyEventCap: Number.MAX_SAFE_INTEGER,
+    projectCap: 999,
+    retentionDays: 365,
+    durations: [],
+  },
+};
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -35,6 +59,16 @@ function renderAt(path = '/orgs/acme/billing') {
   );
 }
 
+function mockFetch(handlers: Record<string, (init?: RequestInit) => Response>) {
+  return vi.fn(async (input, init) => {
+    const url = typeof input === 'string' ? input : (input as Request).url;
+    for (const [pattern, handler] of Object.entries(handlers)) {
+      if (url.includes(pattern)) return handler(init);
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  }) as typeof fetch;
+}
+
 describe('BillingPage', () => {
   beforeEach(() => {
     globalThis.fetch = originalFetch;
@@ -48,12 +82,10 @@ describe('BillingPage', () => {
     });
   });
 
-  it('renders the FREE plan with usage and an Upgrade CTA', async () => {
-    globalThis.fetch = vi.fn(async (input) => {
-      const url = typeof input === 'string' ? input : (input as Request).url;
-      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
-      if (url.endsWith('/api/v1/orgs/1/usage')) {
-        return jsonResponse({
+  it('renders the FREE plan with usage and the four duration cards', async () => {
+    globalThis.fetch = mockFetch({
+      '/api/v1/orgs/1/usage': () =>
+        jsonResponse({
           plan: 'free',
           monthlyPriceCents: 0,
           eventsUsed: 1500,
@@ -62,19 +94,33 @@ describe('BillingPage', () => {
           retentionDays: 7,
           ratio: 0.3,
           exceeded: false,
-        });
-      }
-      throw new Error(`unexpected fetch: ${url}`);
-    }) as typeof fetch;
+          billingInterval: 'one_month',
+        }),
+      '/api/v1/billing/plans': () => jsonResponse(PLANS),
+      '/api/v1/orgs': () => jsonResponse([ORG]),
+    });
 
     renderAt();
 
-    await waitFor(() => expect(screen.getByText(/free/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('usage-ratio')).toBeInTheDocument());
     expect(screen.getByTestId('usage-ratio')).toHaveTextContent('1,500 / 5,000');
-    expect(screen.getByTestId('upgrade-button')).toBeInTheDocument();
+    expect(screen.getAllByText(/free/i).length).toBeGreaterThanOrEqual(1);
+    // All four duration cards visible.
+    expect(screen.getByTestId('duration-card-1')).toBeInTheDocument();
+    expect(screen.getByTestId('duration-card-3')).toBeInTheDocument();
+    expect(screen.getByTestId('duration-card-6')).toBeInTheDocument();
+    expect(screen.getByTestId('duration-card-12')).toBeInTheDocument();
+    // The 12-month card is highlighted as "Best value".
+    expect(screen.getByTestId('duration-card-12')).toHaveTextContent(/best value/i);
+    // Save badges reflect the aggressive ladder.
+    expect(screen.getByTestId('duration-card-12')).toHaveTextContent('Save 33%');
+    expect(screen.getByTestId('duration-card-3')).toHaveTextContent('Save 17%');
+    // Total prices.
+    expect(screen.getByTestId('duration-card-1')).toHaveTextContent('$9.99');
+    expect(screen.getByTestId('duration-card-12')).toHaveTextContent('$79.99');
   });
 
-  it('redirects to the Stripe checkout url when Upgrade is clicked', async () => {
+  it('redirects to the NOWPayments checkout url when a duration card is picked', async () => {
     const assign = vi.fn();
     Object.defineProperty(window, 'location', {
       value: { ...originalLocation, assign },
@@ -82,6 +128,32 @@ describe('BillingPage', () => {
       configurable: true,
     });
 
+    let cryptoUrl: string | undefined;
+    globalThis.fetch = mockFetch({
+      '/api/v1/orgs/1/usage': () =>
+        jsonResponse({
+          plan: 'free',
+          monthlyPriceCents: 0,
+          eventsUsed: 0,
+          eventCap: 5000,
+          projectCap: 1,
+          retentionDays: 7,
+          ratio: 0,
+          exceeded: false,
+          billingInterval: 'one_month',
+        }),
+      '/api/v1/billing/plans': () => jsonResponse(PLANS),
+      '/api/v1/orgs/1/billing/crypto-invoice': (init) => {
+        if (init?.method !== 'POST') throw new Error('expected POST');
+        return jsonResponse({
+          checkoutUrl: 'https://nowpayments.io/payment/iv_abc',
+          invoiceReference: 'ref-1',
+        });
+      },
+      '/api/v1/orgs': () => jsonResponse([ORG]),
+    });
+
+    // Capture the URL to assert duration query param.
     globalThis.fetch = vi.fn(async (input, init) => {
       const url = typeof input === 'string' ? input : (input as Request).url;
       if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
@@ -95,194 +167,116 @@ describe('BillingPage', () => {
           retentionDays: 7,
           ratio: 0,
           exceeded: false,
+          billingInterval: 'one_month',
         });
       }
-      if (url.includes('/api/v1/orgs/1/billing/checkout-session') && init?.method === 'POST') {
-        return jsonResponse({ url: 'https://checkout.stripe.com/c/sess_abc' });
+      if (url.endsWith('/api/v1/billing/plans')) return jsonResponse(PLANS);
+      if (url.includes('/api/v1/orgs/1/billing/crypto-invoice') && init?.method === 'POST') {
+        cryptoUrl = url;
+        return jsonResponse({
+          checkoutUrl: 'https://nowpayments.io/payment/iv_abc',
+          invoiceReference: 'ref-1',
+        });
       }
       throw new Error(`unexpected fetch: ${url}`);
     }) as typeof fetch;
 
     renderAt();
 
-    const upgrade = await screen.findByTestId('upgrade-button');
-    await userEvent.click(upgrade);
+    const sixMonthBtn = await screen.findByTestId('pay-crypto-6');
+    await userEvent.click(sixMonthBtn);
 
     await waitFor(() =>
-      expect(assign).toHaveBeenCalledWith('https://checkout.stripe.com/c/sess_abc'),
+      expect(assign).toHaveBeenCalledWith('https://nowpayments.io/payment/iv_abc'),
     );
+    expect(cryptoUrl).toContain('duration=6');
   });
 
-  it('passes the chosen interval to checkout when Annual is selected', async () => {
-    const assign = vi.fn();
-    Object.defineProperty(window, 'location', {
-      value: { ...originalLocation, assign },
-      writable: true,
-      configurable: true,
-    });
-    let checkoutUrl: string | undefined;
-    globalThis.fetch = vi.fn(async (input, init) => {
-      const url = typeof input === 'string' ? input : (input as Request).url;
-      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
-      if (url.endsWith('/api/v1/orgs/1/usage')) {
-        return jsonResponse({
-          plan: 'free',
-          monthlyPriceCents: 0,
-          eventsUsed: 0,
-          eventCap: 5000,
-          projectCap: 1,
-          retentionDays: 7,
-          ratio: 0,
-          exceeded: false,
-          billingInterval: 'monthly',
-        });
-      }
-      if (url.includes('/api/v1/orgs/1/billing/checkout-session') && init?.method === 'POST') {
-        checkoutUrl = url;
-        return jsonResponse({ url: 'https://checkout.stripe.com/c/sess_annual' });
-      }
-      throw new Error(`unexpected fetch: ${url}`);
-    }) as typeof fetch;
-
-    renderAt();
-
-    // Toggle annual then click Upgrade.
-    const toggle = await screen.findByTestId('billing-interval-toggle');
-    await userEvent.click(toggle.querySelector('input[value="annual"]')!);
-    await userEvent.click(screen.getByTestId('upgrade-button'));
-
-    await waitFor(() => expect(assign).toHaveBeenCalled());
-    expect(checkoutUrl).toContain('interval=annual');
-  });
-
-  it('shows renewal date for an annual Pro org', async () => {
-    globalThis.fetch = vi.fn(async (input) => {
-      const url = typeof input === 'string' ? input : (input as Request).url;
-      if (url.endsWith('/api/v1/orgs')) return jsonResponse([{ ...ORG, plan: 'pro' }]);
-      if (url.endsWith('/api/v1/orgs/1/usage')) {
-        return jsonResponse({
+  it('hides duration grid for an active Pro org with renewal in the future', async () => {
+    const renewsAt = new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString();
+    globalThis.fetch = mockFetch({
+      '/api/v1/orgs/1/usage': () =>
+        jsonResponse({
           plan: 'pro',
-          monthlyPriceCents: 900,
-          eventsUsed: 1000,
-          eventCap: 100000,
-          projectCap: 10,
-          retentionDays: 30,
-          ratio: 0.01,
-          exceeded: false,
-          billingInterval: 'annual',
-          renewsAt: '2027-05-06T00:00:00Z',
-        });
-      }
-      throw new Error(`unexpected fetch: ${url}`);
-    }) as typeof fetch;
-
-    renderAt();
-
-    await waitFor(() => expect(screen.getByText(/\$90\/yr/)).toBeInTheDocument());
-    expect(screen.getByTestId('renews-at')).toHaveTextContent(/renews on/i);
-  });
-
-  it('renders the PRO plan with a Manage subscription CTA', async () => {
-    globalThis.fetch = vi.fn(async (input) => {
-      const url = typeof input === 'string' ? input : (input as Request).url;
-      if (url.endsWith('/api/v1/orgs')) return jsonResponse([{ ...ORG, plan: 'pro' }]);
-      if (url.endsWith('/api/v1/orgs/1/usage')) {
-        return jsonResponse({
-          plan: 'pro',
-          monthlyPriceCents: 900,
+          monthlyPriceCents: 999,
           eventsUsed: 12000,
           eventCap: 100000,
           projectCap: 10,
           retentionDays: 30,
           ratio: 0.12,
           exceeded: false,
-        });
-      }
-      throw new Error(`unexpected fetch: ${url}`);
-    }) as typeof fetch;
+          billingInterval: 'twelve_months',
+          renewsAt,
+        }),
+      '/api/v1/billing/plans': () => jsonResponse(PLANS),
+      '/api/v1/orgs': () => jsonResponse([{ ...ORG, plan: 'pro' }]),
+    });
 
     renderAt();
 
-    await waitFor(() => expect(screen.getByText(/\$9\/mo/)).toBeInTheDocument());
-    expect(screen.getByTestId('manage-button')).toBeInTheDocument();
-    expect(screen.queryByTestId('upgrade-button')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('renews-at')).toBeInTheDocument());
+    expect(screen.queryByTestId('duration-card-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('renew-banner')).not.toBeInTheDocument();
+  });
+
+  it('shows the renew banner and extend grid when Pro plan expires within 14 days', async () => {
+    const renewsAt = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
+    globalThis.fetch = mockFetch({
+      '/api/v1/orgs/1/usage': () =>
+        jsonResponse({
+          plan: 'pro',
+          monthlyPriceCents: 999,
+          eventsUsed: 1000,
+          eventCap: 100000,
+          projectCap: 10,
+          retentionDays: 30,
+          ratio: 0.01,
+          exceeded: false,
+          billingInterval: 'one_month',
+          renewsAt,
+        }),
+      '/api/v1/billing/plans': () => jsonResponse(PLANS),
+      '/api/v1/orgs': () => jsonResponse([{ ...ORG, plan: 'pro' }]),
+    });
+
+    renderAt();
+
+    const banner = await screen.findByTestId('renew-banner');
+    expect(banner).toHaveTextContent(/expires in 5/i);
+    expect(screen.getByTestId('duration-card-12')).toBeInTheDocument();
   });
 
   it('shows the payment-grace banner with countdown when the api returns a deadline', async () => {
     const deadline = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
-    globalThis.fetch = vi.fn(async (input) => {
-      const url = typeof input === 'string' ? input : (input as Request).url;
-      if (url.endsWith('/api/v1/orgs')) return jsonResponse([{ ...ORG, plan: 'pro' }]);
-      if (url.endsWith('/api/v1/orgs/1/usage')) {
-        return jsonResponse({
+    globalThis.fetch = mockFetch({
+      '/api/v1/orgs/1/usage': () =>
+        jsonResponse({
           plan: 'pro',
-          monthlyPriceCents: 900,
+          monthlyPriceCents: 999,
           eventsUsed: 100,
           eventCap: 100000,
           projectCap: 10,
           retentionDays: 30,
           ratio: 0.001,
           exceeded: false,
+          billingInterval: 'one_month',
           paymentGraceUntil: deadline,
-        });
-      }
-      throw new Error(`unexpected fetch: ${url}`);
-    }) as typeof fetch;
+        }),
+      '/api/v1/billing/plans': () => jsonResponse(PLANS),
+      '/api/v1/orgs': () => jsonResponse([{ ...ORG, plan: 'pro' }]),
+    });
 
     renderAt();
 
     const banner = await screen.findByTestId('payment-grace-banner');
     expect(banner).toHaveTextContent(/payment failed/i);
-    // Math.ceil on 5d - epsilon → "5 day(s) remaining"
     expect(banner).toHaveTextContent(/5/);
   });
 
-  it('opens the Stripe portal when Update payment method is clicked', async () => {
-    const assign = vi.fn();
-    Object.defineProperty(window, 'location', {
-      value: { ...originalLocation, assign },
-      writable: true,
-      configurable: true,
-    });
-    const deadline = new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString();
-    globalThis.fetch = vi.fn(async (input, init) => {
-      const url = typeof input === 'string' ? input : (input as Request).url;
-      if (url.endsWith('/api/v1/orgs')) return jsonResponse([{ ...ORG, plan: 'pro' }]);
-      if (url.endsWith('/api/v1/orgs/1/usage')) {
-        return jsonResponse({
-          plan: 'pro',
-          monthlyPriceCents: 900,
-          eventsUsed: 0,
-          eventCap: 100000,
-          projectCap: 10,
-          retentionDays: 30,
-          ratio: 0,
-          exceeded: false,
-          paymentGraceUntil: deadline,
-        });
-      }
-      if (url.endsWith('/api/v1/orgs/1/billing/portal') && init?.method === 'POST') {
-        return jsonResponse({ url: 'https://billing.stripe.com/p/sess_grace' });
-      }
-      throw new Error(`unexpected fetch: ${url}`);
-    }) as typeof fetch;
-
-    renderAt();
-
-    const update = await screen.findByTestId('update-payment-button');
-    await userEvent.click(update);
-
-    await waitFor(() =>
-      expect(assign).toHaveBeenCalledWith('https://billing.stripe.com/p/sess_grace'),
-    );
-  });
-
   it('shows the cap-exceeded banner when the api flags it', async () => {
-    globalThis.fetch = vi.fn(async (input) => {
-      const url = typeof input === 'string' ? input : (input as Request).url;
-      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
-      if (url.endsWith('/api/v1/orgs/1/usage')) {
-        return jsonResponse({
+    globalThis.fetch = mockFetch({
+      '/api/v1/orgs/1/usage': () =>
+        jsonResponse({
           plan: 'free',
           monthlyPriceCents: 0,
           eventsUsed: 5200,
@@ -291,10 +285,11 @@ describe('BillingPage', () => {
           retentionDays: 7,
           ratio: 1.04,
           exceeded: true,
-        });
-      }
-      throw new Error(`unexpected fetch: ${url}`);
-    }) as typeof fetch;
+          billingInterval: 'one_month',
+        }),
+      '/api/v1/billing/plans': () => jsonResponse(PLANS),
+      '/api/v1/orgs': () => jsonResponse([ORG]),
+    });
 
     renderAt();
 

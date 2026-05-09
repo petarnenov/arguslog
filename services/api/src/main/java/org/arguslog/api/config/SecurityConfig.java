@@ -36,10 +36,11 @@ public class SecurityConfig {
                         "/actuator/health/**",
                         "/api/v1/info",
                         "/api/v1/platforms",
+                        "/api/v1/billing/plans",
                         "/v3/api-docs/**",
                         "/swagger-ui/**")
                     .permitAll()
-                    .requestMatchers("/api/v1/webhooks/stripe")
+                    .requestMatchers("/api/v1/webhooks/stripe", "/api/v1/webhooks/nowpayments")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

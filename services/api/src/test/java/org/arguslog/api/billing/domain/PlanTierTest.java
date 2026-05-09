@@ -20,14 +20,36 @@ class PlanTierTest {
   }
 
   @Test
-  void proIsNineDollarsInCents() {
-    assertThat(PlanTier.PRO.monthlyPriceCents()).isEqualTo(900);
+  void proBaseIsNineNinetyNineInCents() {
+    assertThat(PlanTier.PRO.monthlyPriceCents()).isEqualTo(999);
   }
 
   @Test
   void freeAndEnterpriseHaveZeroDirectPrice() {
     assertThat(PlanTier.FREE.monthlyPriceCents()).isZero();
     assertThat(PlanTier.ENTERPRISE.monthlyPriceCents()).isZero();
+  }
+
+  @Test
+  void proPriceLadderFollowsAggressiveDiscounts() {
+    assertThat(PlanTier.PRO.priceCentsForDuration(1)).isEqualTo(999);
+    assertThat(PlanTier.PRO.priceCentsForDuration(3)).isEqualTo(2499);
+    assertThat(PlanTier.PRO.priceCentsForDuration(6)).isEqualTo(4499);
+    assertThat(PlanTier.PRO.priceCentsForDuration(12)).isEqualTo(7999);
+  }
+
+  @Test
+  void priceForDurationRejectsUnsupportedMonths() {
+    org.junit.jupiter.api.Assertions.assertThrows(
+        IllegalArgumentException.class, () -> PlanTier.PRO.priceCentsForDuration(2));
+    org.junit.jupiter.api.Assertions.assertThrows(
+        IllegalArgumentException.class, () -> PlanTier.PRO.priceCentsForDuration(24));
+  }
+
+  @Test
+  void freeAndEnterprisePriceForAnyDurationIsZero() {
+    assertThat(PlanTier.FREE.priceCentsForDuration(1)).isZero();
+    assertThat(PlanTier.ENTERPRISE.priceCentsForDuration(12)).isZero();
   }
 
   @Test

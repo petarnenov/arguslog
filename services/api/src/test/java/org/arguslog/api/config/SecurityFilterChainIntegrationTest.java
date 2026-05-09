@@ -40,12 +40,18 @@ import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
 import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
+import org.arguslog.api.billing.application.ApplyPlanPurchaseUseCase;
 import org.arguslog.api.billing.application.CheckoutUseCase;
+import org.arguslog.api.billing.application.CryptoCheckoutUseCase;
+import org.arguslog.api.billing.application.NowPaymentsWebhookUseCase;
 import org.arguslog.api.billing.application.PortalUseCase;
 import org.arguslog.api.billing.application.StripeWebhookUseCase;
 import org.arguslog.api.billing.application.UsageUseCase;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
+import org.arguslog.api.billing.application.port.CryptoEventLog;
+import org.arguslog.api.billing.application.port.CryptoInvoiceRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.application.port.PlanPurchaseRepository;
 import org.arguslog.api.billing.application.port.StripeEventLog;
 import org.arguslog.api.billing.application.port.StripeEventVerifier;
 import org.arguslog.api.billing.application.port.UsageRepository;
@@ -149,6 +155,12 @@ class SecurityFilterChainIntegrationTest {
   @MockitoBean private StripeEventLog stripeEventLog;
   @MockitoBean private StripeEventVerifier stripeEventVerifier;
   @MockitoBean private StripeClient stripeClient;
+  @MockitoBean private PlanPurchaseRepository planPurchaseRepository;
+  @MockitoBean private ApplyPlanPurchaseUseCase applyPlanPurchaseUseCase;
+  @MockitoBean private CryptoInvoiceRepository cryptoInvoiceRepository;
+  @MockitoBean private CryptoEventLog cryptoEventLog;
+  @MockitoBean private CryptoCheckoutUseCase cryptoCheckoutUseCase;
+  @MockitoBean private NowPaymentsWebhookUseCase nowPaymentsWebhookUseCase;
 
   @Test
   void validPatAuthenticatesAndJwtDecoderIsNeverCalled() throws Exception {

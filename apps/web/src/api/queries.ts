@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { listAlertDestinations, listAlertRules } from './alerts';
-import { getUsage } from './billing';
+import { getBillingPlans, getUsage } from './billing';
 import {
   getIssue,
   listIssueEvents,
@@ -26,6 +26,7 @@ export const queryKeys = {
   alertRules: (projectId: number) => ['alert-rules', projectId] as const,
   alertDestinations: (orgId: number) => ['alert-destinations', orgId] as const,
   usage: (orgId: number) => ['usage', orgId] as const,
+  billingPlans: () => ['billing-plans'] as const,
   myTokens: () => ['tokens', 'mine'] as const,
   orgMembers: (orgId: number) => ['org-members', orgId] as const,
   platforms: () => ['platforms'] as const,
@@ -155,5 +156,15 @@ export function useUsage(orgId: number | undefined, options: { enabled?: boolean
     enabled: (options.enabled ?? true) && orgId != null,
     // 60s — usage moves slowly and the API doc commits to a once-per-minute poll.
     staleTime: 60_000,
+  });
+}
+
+export function useBillingPlans(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.billingPlans(),
+    queryFn: getBillingPlans,
+    enabled: options.enabled ?? true,
+    // Pricing is server-driven and effectively static — refresh once per page load is plenty.
+    staleTime: 10 * 60_000,
   });
 }

@@ -63,6 +63,17 @@ arguslog:
     price-pro-id: ${STRIPE_PRICE_PRO:}
     # Where Stripe redirects after Checkout / Customer Portal — points at the dashboard.
     dashboard-base-url: ${DASHBOARD_BASE_URL:http://localhost:5173}
+  nowpayments:
+    # NOWPayments crypto checkout (Phase 2 secondary provider). Empty until production secrets
+    # are wired in Railway env vars. Endpoints short-circuit to 503 when unconfigured.
+    api-key: ${NOWPAYMENTS_API_KEY:}
+    ipn-secret: ${NOWPAYMENTS_IPN_SECRET:}
+    public-key: ${NOWPAYMENTS_PUBLIC_KEY:}
+    api-base-url: ${NOWPAYMENTS_API_BASE_URL:https://api.nowpayments.io/v1}
+    dashboard-base-url: ${DASHBOARD_BASE_URL:http://localhost:5173}
+    # Public URL NOWPayments will POST IPN events to. Configure the same value in the
+    # NOWPayments dashboard's Store Settings → IPN Callback URL.
+    ipn-callback-url: ${NOWPAYMENTS_IPN_CALLBACK_URL:https://api.arguslog.org/api/v1/webhooks/nowpayments}
   billing:
     # ISO-8601 duration. 7 days matches industry norms (GitHub, Vercel) and is short enough
     # to bound disk burn from a customer with a permanently broken card.
