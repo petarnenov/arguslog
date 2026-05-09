@@ -279,6 +279,7 @@
     "freeTierPrice": "$0/mo",
     "selectDuration": "Choose billing duration",
     "payTotalButton": "Pay ${{total}} with crypto",
+    "payTotalButtonWithSave": "Pay ${{total}} with crypto · save {{save}}%",
     "currentBalance": "You're already on this plan — extending will add to your renewal date.",
     "downgradeWarning": "This is a lower tier than your current plan."
   },
