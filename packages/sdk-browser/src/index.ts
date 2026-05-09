@@ -2,7 +2,12 @@ import { ArguslogClient } from '@arguslog/sdk-core';
 import type { ArguslogOptions, Breadcrumb, Level, User } from '@arguslog/sdk-core';
 
 import { BrowserAdapter } from './adapter.js';
+import { installConsoleBreadcrumbs } from './integrations/console-breadcrumbs.js';
+import { installDomBreadcrumbs } from './integrations/dom-breadcrumbs.js';
+import { installFetchBreadcrumbs } from './integrations/fetch-breadcrumbs.js';
 import { installGlobalHandlers } from './integrations/global-handlers.js';
+import { installHistoryBreadcrumbs } from './integrations/history-breadcrumbs.js';
+import { installXhrBreadcrumbs } from './integrations/xhr-breadcrumbs.js';
 import { parseStack } from './stack-parser.js';
 
 export type {
@@ -16,21 +21,45 @@ export type {
 export { ArguslogClient, InvalidDsnError, parseDsn } from '@arguslog/sdk-core';
 
 let currentClient: ArguslogClient | undefined;
-let uninstallGlobalHandlers: (() => void) | undefined;
+let installedUninstallers: Array<() => void> = [];
+
+/**
+ * Each entry maps an integration identifier (the string a consumer passes in {@code
+ * ArguslogOptions.integrations}) to its installer. {@code 'autoBreadcrumbs'} is a convenience
+ * meta-flag that turns on every breadcrumb integration without needing to list five strings.
+ */
+const BREADCRUMB_INTEGRATIONS: Array<{
+  id: string;
+  install: (client: ArguslogClient) => () => void;
+}> = [
+  { id: 'console', install: installConsoleBreadcrumbs },
+  { id: 'fetch', install: installFetchBreadcrumbs },
+  { id: 'xhr', install: installXhrBreadcrumbs },
+  { id: 'history', install: installHistoryBreadcrumbs },
+  { id: 'dom', install: installDomBreadcrumbs },
+];
 
 export function init(options: ArguslogOptions): ArguslogClient {
-  // Tear down a prior init's handlers before swapping the client — otherwise a hot-reload can
-  // accumulate listeners that point at a stale ArguslogClient.
-  uninstallGlobalHandlers?.();
-  uninstallGlobalHandlers = undefined;
+  // Tear down any prior init's handlers before swapping the client — a hot-reload path can
+  // accumulate listeners pointing at a stale ArguslogClient and double-record breadcrumbs.
+  for (const off of installedUninstallers) off();
+  installedUninstallers = [];
 
   currentClient = new ArguslogClient(options, {
     adapter: new BrowserAdapter(),
     parseStack,
   });
 
-  if (options.integrations?.includes('globalHandlers')) {
-    uninstallGlobalHandlers = installGlobalHandlers(currentClient);
+  const integrations = options.integrations ?? [];
+  const auto = integrations.includes('autoBreadcrumbs');
+
+  if (integrations.includes('globalHandlers')) {
+    installedUninstallers.push(installGlobalHandlers(currentClient));
+  }
+  for (const { id, install } of BREADCRUMB_INTEGRATIONS) {
+    if (auto || integrations.includes(id)) {
+      installedUninstallers.push(install(currentClient));
+    }
   }
 
   return currentClient;
@@ -73,7 +102,7 @@ export function flush(): Promise<void> {
 
 /** Test-only: reset the singleton client between tests. */
 export function __resetForTests(): void {
-  uninstallGlobalHandlers?.();
-  uninstallGlobalHandlers = undefined;
+  for (const off of installedUninstallers) off();
+  installedUninstallers = [];
   currentClient = undefined;
 }
