@@ -35,11 +35,31 @@ def parse_dsn(raw: str) -> ParsedDsn:
     public_key, host, project_id = match.group(1), match.group(2), match.group(3)
     if not public_key or not host or not project_id:
         raise InvalidDsnError(f"Invalid DSN: {raw}")
-    scheme = "http" if _is_loopback(host) else "https"
+    scheme = "http" if _is_dev_host(host) else "https"
     ingest_url = f"{scheme}://{host}/api/{project_id}/events"
     return ParsedDsn(public_key, host, scheme, project_id, ingest_url)
 
 
-def _is_loopback(host: str) -> bool:
+def _is_dev_host(host: str) -> bool:
     bare = host[: host.index("]") + 1] if host.startswith("[") else host.split(":", 1)[0]
-    return bare in _LOOPBACK_HOSTS or bare.startswith("127.")
+    if bare in _LOOPBACK_HOSTS or bare.startswith("127."):
+        return True
+    # RFC1918 private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16. A device on the same
+    # LAN pointing at the dev box is still a dev-mode transport; ingest only listens on plain
+    # HTTP locally, so HTTPS upgrade would fail the TLS handshake silently.
+    parts = bare.split(".")
+    if len(parts) != 4:
+        return False
+    try:
+        a, b, c, d = (int(p) for p in parts)
+    except ValueError:
+        return False
+    if not all(0 <= n <= 255 for n in (a, b, c, d)):
+        return False
+    if a == 10:
+        return True
+    if a == 192 and b == 168:
+        return True
+    if a == 172 and 16 <= b <= 31:
+        return True
+    return False
