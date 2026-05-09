@@ -41,6 +41,9 @@ dependencies {
     testImplementation("org.assertj:assertj-core")
     testImplementation("org.mockito:mockito-junit-jupiter")
     testImplementation("org.wiremock:wiremock-standalone:3.10.0")
+    // Used by DsnFixturesTest to read scripts/dsn-test-fixtures.json. Declared explicitly so
+    // we don't rely on starter-test's transitive Jackson — the SDK is otherwise dependency-free.
+    testImplementation("com.fasterxml.jackson.core:jackson-databind")
 
     // Pact JVM consumer: lets the SDK's test suite record the SDK ↔ ingest wire contract
     // into /pacts so services/ingest's existing IngestProviderPactTest replays it on every CI

@@ -24,26 +24,8 @@ describe('parseDsn', () => {
     expect(parseDsn('arguslog://k@127.0.0.1:8080/api/1').protocol).toBe('http');
   });
 
-  it.each([
-    'arguslog://k@192.168.0.186:8080/api/1',
-    'arguslog://k@192.168.1.1:8080/api/1',
-    'arguslog://k@10.0.0.5:8080/api/1',
-    'arguslog://k@10.255.255.255:8080/api/1',
-    'arguslog://k@172.16.0.1:8080/api/1',
-    'arguslog://k@172.31.255.255:8080/api/1',
-  ])('picks http transport for RFC1918 private host %s', (dsn) => {
-    expect(parseDsn(dsn).protocol).toBe('http');
-  });
-
-  it.each([
-    // Just outside RFC1918 — must stay https.
-    'arguslog://k@172.15.0.1:8080/api/1', // below 172.16
-    'arguslog://k@172.32.0.1:8080/api/1', // above 172.31
-    'arguslog://k@193.168.0.1:8080/api/1', // 193, not 192
-    'arguslog://k@11.0.0.1:8080/api/1', // not 10
-  ])('keeps https transport for public IPs %s', (dsn) => {
-    expect(parseDsn(dsn).protocol).toBe('https');
-  });
+  // RFC1918 + just-outside-the-range cases live in scripts/dsn-test-fixtures.json so the
+  // TS, Java and Python SDKs all run identical assertions; see dsn.fixtures.test.ts.
 
   it.each([
     'not-a-dsn',

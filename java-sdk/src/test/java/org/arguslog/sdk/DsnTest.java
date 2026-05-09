@@ -31,31 +31,8 @@ class DsnTest {
     assertThat(dsn.ingestUrl()).isEqualTo("http://127.0.0.1:9000/api/7/events");
   }
 
-  @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(
-      strings = {
-        "arguslog://k@192.168.0.186:8080/api/1",
-        "arguslog://k@192.168.1.1:8080/api/1",
-        "arguslog://k@10.0.0.5:8080/api/1",
-        "arguslog://k@10.255.255.255:8080/api/1",
-        "arguslog://k@172.16.0.1:8080/api/1",
-        "arguslog://k@172.31.255.255:8080/api/1"
-      })
-  void parsesRfc1918PrivateAsHttp(String dsn) {
-    assertThat(Dsn.parse(dsn).scheme()).isEqualTo("http");
-  }
-
-  @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(
-      strings = {
-        "arguslog://k@172.15.0.1:8080/api/1",
-        "arguslog://k@172.32.0.1:8080/api/1",
-        "arguslog://k@193.168.0.1:8080/api/1",
-        "arguslog://k@11.0.0.1:8080/api/1"
-      })
-  void keepsHttpsForJustOutsideRfc1918(String dsn) {
-    assertThat(Dsn.parse(dsn).scheme()).isEqualTo("https");
-  }
+  // RFC1918 + just-outside-the-range cases live in scripts/dsn-test-fixtures.json so all
+  // three SDKs run identical assertions; see DsnFixturesTest.
 
   @Test
   void rejectsLegacyHttpsScheme() {
