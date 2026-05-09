@@ -7,6 +7,8 @@ import java.util.UUID;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
+import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.domain.PlanTier;
 import org.arguslog.api.domain.Project;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,14 +25,17 @@ public class ProjectService implements ProjectUseCase {
   private final ProjectWriteRepository projects;
   private final MembershipRepository memberships;
   private final PlatformRepository platforms;
+  private final OrgPlanRepository plans;
 
   public ProjectService(
       ProjectWriteRepository projects,
       MembershipRepository memberships,
-      PlatformRepository platforms) {
+      PlatformRepository platforms,
+      OrgPlanRepository plans) {
     this.projects = projects;
     this.memberships = memberships;
     this.platforms = platforms;
+    this.plans = plans;
   }
 
   @Override
@@ -38,7 +43,25 @@ public class ProjectService implements ProjectUseCase {
   public Project create(long orgId, String name, String platform) {
     requireName(name);
     requirePlatform(platform);
+    requireProjectCapAvailable(orgId);
     return projects.create(orgId, OrgService.slugify(name), name.trim(), platform);
+  }
+
+  private void requireProjectCapAvailable(long orgId) {
+    PlanTier tier = plans.findPlan(orgId).orElse(PlanTier.FREE);
+    int cap = tier.projectCap();
+    if (cap == Integer.MAX_VALUE) return;
+    int existing = projects.listForOrg(orgId).size();
+    if (existing >= cap) {
+      throw new ProjectCapExceededException(
+          "Your "
+              + tier.dbValue()
+              + " plan is limited to "
+              + cap
+              + " project"
+              + (cap == 1 ? "" : "s")
+              + ". Upgrade or archive an existing project to add another.");
+    }
   }
 
   @Override

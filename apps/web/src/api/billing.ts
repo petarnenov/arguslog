@@ -45,17 +45,20 @@ export interface DurationOffer {
 
 export interface PlanTierInfo {
   plan: string;
+  monthlyPriceCents: number;
   monthlyEventCap: number;
   projectCap: number;
+  memberCap: number;
   retentionDays: number;
+  unlimitedProjects: boolean;
+  unlimitedMembers: boolean;
+  unlimitedEvents: boolean;
   durations: DurationOffer[];
 }
 
 export interface BillingPlansResponse {
   currency: string;
-  free: PlanTierInfo;
-  pro: PlanTierInfo;
-  enterprise: PlanTierInfo;
+  tiers: PlanTierInfo[];
 }
 
 export function getUsage(orgId: number): Promise<UsageSnapshot> {
@@ -76,12 +79,15 @@ export function startCheckout(
   );
 }
 
+export type PaidTier = 'starter' | 'pro' | 'business';
+
 export function startCryptoCheckout(
   orgId: number,
+  tier: PaidTier,
   duration: PlanDuration,
 ): Promise<CryptoCheckoutResponse> {
   return apiFetch<CryptoCheckoutResponse>(
-    `/api/v1/orgs/${orgId}/billing/crypto-invoice?duration=${duration}`,
+    `/api/v1/orgs/${orgId}/billing/crypto-invoice?tier=${tier}&duration=${duration}`,
     { method: 'POST' },
   );
 }

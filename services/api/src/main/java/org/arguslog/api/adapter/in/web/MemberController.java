@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.arguslog.api.adapter.in.web.dto.MemberInviteRequest;
 import org.arguslog.api.adapter.in.web.dto.MemberResponse;
 import org.arguslog.api.adapter.in.web.dto.MemberRoleUpdateRequest;
+import org.arguslog.api.application.MemberCapExceededException;
 import org.arguslog.api.application.MemberUseCase;
 import org.arguslog.api.application.MemberUseCase.DuplicateMemberException;
 import org.arguslog.api.application.MemberUseCase.InvalidMemberException;
@@ -103,6 +104,15 @@ public class MemberController {
   @ExceptionHandler(MemberNotFoundException.class)
   ResponseEntity<ProblemDetail> handleNotFound(MemberNotFoundException e) {
     return problem(HttpStatus.NOT_FOUND, "Member not found", "member-not-found", e.getMessage());
+  }
+
+  @ExceptionHandler(MemberCapExceededException.class)
+  ResponseEntity<ProblemDetail> handleCapExceeded(MemberCapExceededException e) {
+    return problem(
+        HttpStatus.PAYMENT_REQUIRED,
+        "Member cap exceeded",
+        "member-cap-exceeded",
+        e.getMessage());
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────

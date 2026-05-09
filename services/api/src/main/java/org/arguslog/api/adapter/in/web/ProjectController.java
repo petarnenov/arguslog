@@ -105,4 +105,16 @@ public class ProjectController {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }
+
+  @ExceptionHandler(org.arguslog.api.application.ProjectCapExceededException.class)
+  ResponseEntity<ProblemDetail> handleCapExceeded(
+      org.arguslog.api.application.ProjectCapExceededException e) {
+    ProblemDetail body =
+        ProblemDetail.forStatusAndDetail(HttpStatus.PAYMENT_REQUIRED, e.getMessage());
+    body.setTitle("Project cap exceeded");
+    body.setType(URI.create("https://arguslog.org/problems/project-cap-exceeded"));
+    return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
 }

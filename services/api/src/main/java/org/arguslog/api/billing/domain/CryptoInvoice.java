@@ -11,6 +11,7 @@ public record CryptoInvoice(
     UUID internalReference,
     Optional<String> npInvoiceId,
     Optional<String> npPaymentId,
+    PlanTier plan,
     int durationMonths,
     int priceAmountCents,
     String priceCurrency,

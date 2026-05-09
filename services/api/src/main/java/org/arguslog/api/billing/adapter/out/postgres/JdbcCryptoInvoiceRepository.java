@@ -12,6 +12,7 @@ import javax.sql.DataSource;
 import org.arguslog.api.billing.application.port.CryptoInvoiceRepository;
 import org.arguslog.api.billing.domain.CryptoInvoice;
 import org.arguslog.api.billing.domain.CryptoInvoiceStatus;
+import org.arguslog.api.billing.domain.PlanTier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -21,9 +22,9 @@ import org.springframework.stereotype.Component;
 public class JdbcCryptoInvoiceRepository implements CryptoInvoiceRepository {
 
   private static final String SELECT_COLUMNS =
-      "id, org_id, internal_reference, np_invoice_id, np_payment_id, duration_months,"
-          + " price_amount_cents, price_currency, pay_amount, pay_currency, status::text AS status,"
-          + " checkout_url, expires_at, created_at, updated_at";
+      "id, org_id, internal_reference, np_invoice_id, np_payment_id, plan::text AS plan,"
+          + " duration_months, price_amount_cents, price_currency, pay_amount, pay_currency,"
+          + " status::text AS status, checkout_url, expires_at, created_at, updated_at";
 
   private final JdbcTemplate jdbc;
 
@@ -32,13 +33,16 @@ public class JdbcCryptoInvoiceRepository implements CryptoInvoiceRepository {
   }
 
   @Override
-  public CryptoInvoice insertPending(long orgId, int durationMonths, int priceAmountCents) {
+  public CryptoInvoice insertPending(
+      long orgId, PlanTier plan, int durationMonths, int priceAmountCents) {
     UUID internalReference = UUID.randomUUID();
     jdbc.update(
-        "INSERT INTO crypto_invoices (org_id, internal_reference, duration_months, price_amount_cents)"
-            + " VALUES (?, ?, ?, ?)",
+        "INSERT INTO crypto_invoices ("
+            + " org_id, internal_reference, plan, duration_months, price_amount_cents)"
+            + " VALUES (?, ?, ?::org_plan, ?, ?)",
         orgId,
         internalReference,
+        plan.dbValue(),
         durationMonths,
         priceAmountCents);
     return findByInternalReference(internalReference)
@@ -135,6 +139,7 @@ public class JdbcCryptoInvoiceRepository implements CryptoInvoiceRepository {
             (UUID) rs.getObject("internal_reference"),
             Optional.ofNullable(rs.getString("np_invoice_id")),
             Optional.ofNullable(rs.getString("np_payment_id")),
+            PlanTier.fromDbValue(rs.getString("plan")),
             rs.getInt("duration_months"),
             rs.getInt("price_amount_cents"),
             rs.getString("price_currency"),
