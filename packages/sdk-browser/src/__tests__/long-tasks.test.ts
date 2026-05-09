@@ -31,6 +31,8 @@ describe('installLongTaskBreadcrumbs', () => {
       this.callback = cb;
       this.observed = undefined;
       this.disconnect = vi.fn();
+      // Need to capture the FakePerformanceObserver instance so the outer test can fire entries through it.
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
       observer = this;
     }
     (FakePerformanceObserver.prototype as Record<string, unknown>).observe = function (

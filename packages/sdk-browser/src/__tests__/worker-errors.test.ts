@@ -25,12 +25,10 @@ describe('installWorkerErrorBreadcrumbs', () => {
     // dispatchEvent.
     const listeners: Record<string, Array<(event: Event) => void>> = {};
     class StubWorker extends EventTarget {
-      addEventListener(type: string, cb: (event: Event) => void) {
+      override addEventListener(type: string, cb: (event: Event) => void) {
         (listeners[type] ??= []).push(cb);
       }
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
       postMessage() {}
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
       terminate() {}
     }
     (globalThis as { Worker: typeof Worker }).Worker = StubWorker as unknown as typeof Worker;
@@ -61,7 +59,7 @@ describe('installWorkerErrorBreadcrumbs', () => {
 
   it('uninstall restores the original Worker constructor', () => {
     class StubWorker extends EventTarget {
-      addEventListener() {}
+      override addEventListener() {}
       postMessage() {}
       terminate() {}
     }

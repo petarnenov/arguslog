@@ -1,6 +1,6 @@
 {
   "name": "@arguslog/sdk-angular",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Arguslog Angular SDK — ErrorHandler, provideArguslog(), ArguslogModule, service",
   "license": "MIT",
   "type": "module",
