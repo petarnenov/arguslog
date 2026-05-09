@@ -9,6 +9,7 @@
 export { captureWeb3Error } from './capture-web3-error.js';
 export { decodeViemError } from './decode-viem-error.js';
 export { decodeEthersError } from './decode-ethers-error.js';
+export { decodeSolanaError } from './decode-solana-error.js';
 export { installProviderBreadcrumbs, detectWallet, type Eip1193Provider } from './eip-1193.js';
 export { wrapWalletClient, type WrapWalletClientOptions } from './wrap-wallet-client.js';
 export type {
