@@ -20,8 +20,8 @@ class PlanTierTest {
   }
 
   @Test
-  void proBaseIsNineNinetyNineInCents() {
-    assertThat(PlanTier.PRO.monthlyPriceCents()).isEqualTo(999);
+  void proBaseIsElevenNinetyNineInCents() {
+    assertThat(PlanTier.PRO.monthlyPriceCents()).isEqualTo(1199);
   }
 
   @Test
@@ -32,10 +32,10 @@ class PlanTierTest {
 
   @Test
   void proPriceLadderFollowsAggressiveDiscounts() {
-    assertThat(PlanTier.PRO.priceCentsForDuration(1)).isEqualTo(999);
-    assertThat(PlanTier.PRO.priceCentsForDuration(3)).isEqualTo(2499);
-    assertThat(PlanTier.PRO.priceCentsForDuration(6)).isEqualTo(4499);
-    assertThat(PlanTier.PRO.priceCentsForDuration(12)).isEqualTo(7999);
+    assertThat(PlanTier.PRO.priceCentsForDuration(1)).isEqualTo(1199);
+    assertThat(PlanTier.PRO.priceCentsForDuration(3)).isEqualTo(2999);
+    assertThat(PlanTier.PRO.priceCentsForDuration(6)).isEqualTo(5399);
+    assertThat(PlanTier.PRO.priceCentsForDuration(12)).isEqualTo(9599);
   }
 
   @Test

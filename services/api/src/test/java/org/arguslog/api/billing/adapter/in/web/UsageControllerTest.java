@@ -34,7 +34,7 @@ class UsageControllerTest extends AbstractControllerTest {
     mvc.perform(get("/api/v1/orgs/1/usage").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.plan").value("pro"))
-        .andExpect(jsonPath("$.monthlyPriceCents").value(999))
+        .andExpect(jsonPath("$.monthlyPriceCents").value(1199))
         .andExpect(jsonPath("$.eventsUsed").value(25000))
         .andExpect(jsonPath("$.eventCap").value(100000))
         .andExpect(jsonPath("$.projectCap").value(10))
