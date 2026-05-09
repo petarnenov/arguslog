@@ -23,7 +23,6 @@ import { useParams } from 'react-router';
 
 import {
   startCryptoCheckout,
-  type DurationOffer,
   type PaidTier,
   type PlanDuration,
   type PlanTierInfo,
@@ -348,7 +347,7 @@ function TierCard({
               value={String(selectedDuration)}
               onChange={(v) => onSelectDuration(Number(v) as PlanDuration)}
               data={tier.durations.map((d) => ({
-                label: durationLabel(d),
+                label: `${d.months}mo`,
                 value: String(d.months),
               }))}
             />
@@ -361,9 +360,14 @@ function TierCard({
               }}
               data-testid={`pay-${tier.plan}-${selectedDuration}`}
             >
-              {t('billing.payTotalButton', {
-                total: formatDollars(offer?.amountCents ?? 0),
-              })}
+              {offer && offer.savePercent > 0
+                ? t('billing.payTotalButtonWithSave', {
+                    total: formatDollars(offer.amountCents),
+                    save: offer.savePercent,
+                  })
+                : t('billing.payTotalButton', {
+                    total: formatDollars(offer?.amountCents ?? 0),
+                  })}
             </Button>
           </Stack>
         )}
@@ -384,11 +388,6 @@ function TierCard({
       </Stack>
     </Card>
   );
-}
-
-function durationLabel(offer: DurationOffer): string {
-  if (offer.savePercent === 0) return `${offer.months}mo`;
-  return `${offer.months}mo (-${offer.savePercent}%)`;
 }
 
 function errorMessage(err: unknown): string | null {
