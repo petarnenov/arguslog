@@ -82,6 +82,36 @@ await walletClient!.writeContract({
 });
 ```
 
+### Wire EVERYTHING in one call
+
+`initWeb3` accepts every Phase 1–4 input and returns each one wrapped. Pass whatever you
+have — anything you omit is skipped, so the same call works for an EVM-only app, a
+Solana-only app, or a hybrid:
+
+```ts
+const {
+  walletClient,    // viem WalletClient — write methods auto-captured
+  publicClient,    // viem PublicClient — read failures auto-captured
+  ethersContracts, // [Contract, ...] — every method auto-captured
+  solanaConnection,// @solana/web3.js Connection — sendTx/sim/confirm auto-captured
+  anchorPrograms,  // [Program, ...] — every methods.X.rpc/.simulate auto-captured
+  uninstall,
+} = initWeb3({
+  provider: window.ethereum,
+  walletClient: rawWalletClient,
+  publicClient: rawPublicClient,
+  ethersContracts: [erc20Contract, ammContract],
+  solanaConnection: rawSolanaConnection,
+  solanaWallet: phantomAdapter,
+  anchorPrograms: [swapProgram],
+  queryClient,                           // wagmi mutation reporter
+  wrapOptions: { chain: { id: 1, name: 'Ethereum' } },
+});
+```
+
+`uninstall()` tears down every listener installed in this call — call it on hot-reload or
+on user logout.
+
 ## Manual capture (ethers, Solana, raw provider, …)
 
 When you can't / don't want to wrap a client, capture errors yourself in a `try/catch`:
