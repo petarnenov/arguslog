@@ -18,9 +18,20 @@ ENV KC_METRICS_ENABLED=true
 
 WORKDIR /opt/keycloak
 
-# Copy the realm before `kc.sh build` so it's part of the optimized image. The runtime stage
-# imports it on first boot via --import-realm.
-COPY services/keycloak/realm/arguslog-realm.json /opt/keycloak/data/import/arguslog-realm.json
+# Render the realm from its template before `kc.sh build` so it's part of the optimized
+# image. The runtime stage imports it on first boot via --import-realm.
+#
+# The realm file is generated (not committed) — local dev runs services/keycloak/render-realm.sh
+# from the Makefile. Here we replicate that step inside the build using sed so the prod image
+# builds without any host tooling. DEV_HOST is intentionally left as "localhost" in prod
+# images: the redirect URIs that matter (auth.arguslog.org, *.staging.up.railway.app) are
+# already in the template; localhost is just an extra entry that nobody on the public internet
+# can hit.
+COPY services/keycloak/realm.template.json /tmp/realm.template.json
+RUN mkdir -p /opt/keycloak/data/import \
+ && sed 's|__DEV_HOST__|localhost|g' /tmp/realm.template.json \
+      > /opt/keycloak/data/import/arguslog-realm.json \
+ && rm /tmp/realm.template.json
 
 RUN /opt/keycloak/bin/kc.sh build
 
