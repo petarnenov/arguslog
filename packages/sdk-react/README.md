@@ -34,10 +34,10 @@ import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react';
 import { createRoot } from 'react-dom/client';
 
 init({
-  dsn: 'https://<publicKey>@ingest.arguslog.org/<projectId>',
+  dsn: 'arguslog://<publicKey>@<ingestHost>/api/<projectId>',
   environment: import.meta.env.MODE,
   release: import.meta.env.VITE_RELEASE,
-  integrations: ['globalHandlers', 'breadcrumbs'],
+  integrations: ['globalHandlers', 'autoBreadcrumbs'],
 });
 
 createRoot(document.getElementById('root')!).render(
