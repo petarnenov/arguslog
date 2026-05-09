@@ -23,6 +23,7 @@ INSERT INTO platforms (slug, name, sdk_package, sdk_version, sort_order) VALUES
   ('angular',      'Angular',              '@arguslog/sdk-angular',      '1.0.4', 22),
   ('vue',          'Vue',                  '@arguslog/sdk-vue',          '1.0.4', 23),
   ('nextjs',       'Next.js',              '@arguslog/sdk-nextjs',       '1.0.4', 25),
+  ('web3',         'Web3 (EVM + Solana)',  '@arguslog/sdk-web3',         '0.3.0', 27),
   ('react-native', 'React Native',         '@arguslog/sdk-react-native', '1.0.3', 30),
   ('node',         'Node.js',              '@arguslog/sdk-node',         '1.0.2', 35),
   ('java-spring',  'Java / Spring Boot',   'org.arguslog:java-sdk',      '1.0.2', 40),
