@@ -37,9 +37,12 @@ dev: doctor install build-sdks up ## Start the full stack: doctor → install �
 
 ## ─── Infra (Docker Compose) ────────────────────────────────────────────────
 
-up: ## Start Postgres/Redis/Keycloak/MinIO/MailHog and wait until healthy
+up: render-realm ## Start Postgres/Redis/Keycloak/MinIO/MailHog and wait until healthy
 	@$(COMPOSE) up -d --wait
 	@$(COMPOSE) --profile init run --rm minio-bucket-init
+
+render-realm: ## Render Keycloak realm from template using DEV_HOST (default localhost)
+	@DEV_HOST="$${DEV_HOST:-localhost}" services/keycloak/render-realm.sh
 
 down: ## Stop and remove infra containers (volumes preserved)
 	@$(COMPOSE) down

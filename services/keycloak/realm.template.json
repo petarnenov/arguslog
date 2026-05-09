@@ -28,17 +28,19 @@
       "directAccessGrantsEnabled": false,
       "redirectUris": [
         "http://localhost:5173/*",
+        "http://__DEV_HOST__:5173/*",
         "https://arguslog-web-staging.up.railway.app/*",
         "https://app.arguslog.org/*"
       ],
       "webOrigins": [
         "http://localhost:5173",
+        "http://__DEV_HOST__:5173",
         "https://arguslog-web-staging.up.railway.app",
         "https://app.arguslog.org"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:5173/*##https://arguslog-web-staging.up.railway.app/*##https://app.arguslog.org/*"
+        "post.logout.redirect.uris": "http://localhost:5173/*##http://__DEV_HOST__:5173/*##https://arguslog-web-staging.up.railway.app/*##https://app.arguslog.org/*"
       }
     },
     {
