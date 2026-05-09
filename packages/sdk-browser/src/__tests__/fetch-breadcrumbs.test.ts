@@ -72,6 +72,67 @@ describe('installFetchBreadcrumbs', () => {
     );
   });
 
+  it('captures a response body preview for 4xx JSON responses', async () => {
+    const client = fakeClient();
+    window.fetch = vi.fn(async () =>
+      new Response('{"error":"NowPaymentsAuthFailed"}', {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      }),
+    ) as typeof window.fetch;
+    uninstall = installFetchBreadcrumbs(client);
+    await fetch('/api/x');
+    expect(client.addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 401,
+          responsePreview: '{"error":"NowPaymentsAuthFailed"}',
+        }),
+      }),
+    );
+  });
+
+  it('truncates response previews larger than 4KB', async () => {
+    const client = fakeClient();
+    const big = 'x'.repeat(5000);
+    window.fetch = vi.fn(async () =>
+      new Response(big, { status: 500, headers: { 'content-type': 'text/plain' } }),
+    ) as typeof window.fetch;
+    uninstall = installFetchBreadcrumbs(client);
+    await fetch('/api/x');
+    const call = (client.addBreadcrumb as ReturnType<typeof vi.fn>).mock.calls[0]![0] as {
+      data: { responsePreview?: string };
+    };
+    expect(call.data.responsePreview).toContain('… (truncated)');
+    expect(call.data.responsePreview!.length).toBeLessThanOrEqual(4096 + 30);
+  });
+
+  it('skips response preview for binary content types', async () => {
+    const client = fakeClient();
+    window.fetch = vi.fn(async () =>
+      new Response('binary stuff', {
+        status: 500,
+        headers: { 'content-type': 'application/octet-stream' },
+      }),
+    ) as typeof window.fetch;
+    uninstall = installFetchBreadcrumbs(client);
+    await fetch('/api/x');
+    const call = (client.addBreadcrumb as ReturnType<typeof vi.fn>).mock.calls[0]![0] as {
+      data: { responsePreview?: string };
+    };
+    expect(call.data.responsePreview).toBeUndefined();
+  });
+
+  it('does not capture response preview for 2xx', async () => {
+    const client = fakeClient();
+    uninstall = installFetchBreadcrumbs(client);
+    await fetch('/api/ok');
+    const call = (client.addBreadcrumb as ReturnType<typeof vi.fn>).mock.calls[0]![0] as {
+      data: Record<string, unknown>;
+    };
+    expect(call.data).not.toHaveProperty('responsePreview');
+  });
+
   it('uninstall restores window.fetch', () => {
     const client = fakeClient();
     const before = window.fetch;
