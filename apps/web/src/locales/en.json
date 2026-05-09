@@ -154,6 +154,27 @@
       "request": "Request",
       "contexts": "Context",
       "extra": "Extra"
+    },
+    "web3": {
+      "title": "Web3 context",
+      "chain": "Chain",
+      "wallet": "Wallet",
+      "contract": "Contract",
+      "program": "Program",
+      "function": "Function",
+      "account": "Account",
+      "txHash": "Transaction",
+      "signature": "Signature",
+      "anchorOrigin": "Anchor origin",
+      "anchorErrorNumber": "Anchor error #",
+      "gasEstimate": "Gas estimate",
+      "args": "Args",
+      "comparedValues": "Compared values",
+      "metaMessages": "Detailed messages",
+      "revertData": "Revert data",
+      "errorLogs": "Error logs",
+      "programLogs": "Program logs",
+      "customError": "Custom program error"
     }
   },
   "pagination": {
