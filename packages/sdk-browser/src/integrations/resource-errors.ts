@@ -71,7 +71,7 @@ function resourceUrl(el: Element): string | undefined {
     el instanceof HTMLSourceElement ||
     el instanceof HTMLIFrameElement
   ) {
-    return (el as HTMLImageElement).src || undefined;
+    return (el as { src?: string }).src || undefined;
   }
   return el.getAttribute('src') || el.getAttribute('href') || undefined;
 }
