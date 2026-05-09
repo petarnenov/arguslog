@@ -38,6 +38,7 @@ class PlatformsCatalogParityTest {
           new NodePackage("angular", "packages/sdk-angular/package.json"),
           new NodePackage("vue", "packages/sdk-vue/package.json"),
           new NodePackage("nextjs", "packages/sdk-nextjs/package.json"),
+          new NodePackage("web3", "packages/sdk-web3/package.json"),
           new NodePackage("react-native", "packages/sdk-react-native/package.json"),
           new NodePackage("node", "packages/sdk-node/package.json"));
 
