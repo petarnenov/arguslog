@@ -52,16 +52,21 @@ export function installXhrBreadcrumbs(client: ArguslogClient): () => void {
         try {
           const level: Level =
             this.status >= 500 ? 'error' : this.status >= 400 ? 'warning' : 'info';
+          const data: Record<string, unknown> = {
+            method: meta.method,
+            url: meta.url,
+            status: this.status,
+            durationMs: Date.now() - meta.start,
+          };
+          if (this.status >= 400) {
+            const preview = xhrResponsePreview(this);
+            if (preview !== undefined) data.responsePreview = preview;
+          }
           client.addBreadcrumb({
             category: 'xhr',
             message: `${meta.method} ${meta.url} → ${this.status}`,
             level,
-            data: {
-              method: meta.method,
-              url: meta.url,
-              status: this.status,
-              durationMs: Date.now() - meta.start,
-            },
+            data,
           });
         } catch {
           // best-effort
@@ -93,4 +98,20 @@ export function installXhrBreadcrumbs(client: ArguslogClient): () => void {
     proto.open = originalOpen;
     proto.send = originalSend;
   };
+}
+
+const BODY_PREVIEW_CAP_BYTES = 4096;
+
+function xhrResponsePreview(xhr: XMLHttpRequest): string | undefined {
+  // responseText is only populated for responseType === '' or 'text'. The user code might
+  // have set responseType = 'json' / 'arraybuffer' — in that case we'd throw on access.
+  try {
+    if (xhr.responseType !== '' && xhr.responseType !== 'text') return undefined;
+    const text = xhr.responseText;
+    if (!text) return undefined;
+    if (text.length <= BODY_PREVIEW_CAP_BYTES) return text;
+    return text.slice(0, BODY_PREVIEW_CAP_BYTES) + '… (truncated)';
+  } catch {
+    return undefined;
+  }
 }

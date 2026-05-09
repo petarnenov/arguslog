@@ -7,8 +7,11 @@ import { installDomBreadcrumbs } from './integrations/dom-breadcrumbs.js';
 import { installFetchBreadcrumbs } from './integrations/fetch-breadcrumbs.js';
 import { installGlobalHandlers } from './integrations/global-handlers.js';
 import { installHistoryBreadcrumbs } from './integrations/history-breadcrumbs.js';
+import { installLongTaskBreadcrumbs } from './integrations/long-tasks.js';
 import { installResourceErrorBreadcrumbs } from './integrations/resource-errors.js';
+import { installVisibilityBreadcrumbs } from './integrations/visibility.js';
 import { installWebVitalsBreadcrumbs } from './integrations/web-vitals.js';
+import { installWorkerErrorBreadcrumbs } from './integrations/worker-errors.js';
 import { installXhrBreadcrumbs } from './integrations/xhr-breadcrumbs.js';
 import { parseStack } from './stack-parser.js';
 
@@ -41,6 +44,9 @@ const BREADCRUMB_INTEGRATIONS: Array<{
   { id: 'dom', install: installDomBreadcrumbs },
   { id: 'resourceErrors', install: installResourceErrorBreadcrumbs },
   { id: 'webVitals', install: installWebVitalsBreadcrumbs },
+  { id: 'longTasks', install: installLongTaskBreadcrumbs },
+  { id: 'visibility', install: installVisibilityBreadcrumbs },
+  { id: 'workerErrors', install: installWorkerErrorBreadcrumbs },
 ];
 
 export function init(options: ArguslogOptions): ArguslogClient {

@@ -5,10 +5,15 @@ import type { ArguslogClient, Level } from '@arguslog/sdk-core';
  * pre-flight, then on resolution records the status (and duration). The original response is
  * passed through untouched.
  *
- * <p>Failures are recorded with {@code level: 'error'} but the rejection is re-thrown so user
- * code's catch blocks still fire. URLs are recorded as-is; if the user's DSN-aware proxy
- * scrubs query strings, that's handled at the scrubber layer, not here.
+ * <p>For 4xx/5xx responses the integration also peeks at the response body and stamps a
+ * preview ({@link #BODY_PREVIEW_CAP_BYTES} max, JSON / text content types only) into
+ * {@code data.responsePreview} — the difference between "POST /api/orgs/1/billing/... → 502"
+ * and "...→ 502, body: {error: NowPaymentsAuthFailed}" is how fast you find the bug. The peek
+ * uses {@link Response.clone} so user code's await response.json() still works.
  */
+const BODY_PREVIEW_CAP_BYTES = 4096;
+const TEXTUAL_CONTENT_TYPES = /^(application\/(json|.*\+json)|text\/)/i;
+
 export function installFetchBreadcrumbs(client: ArguslogClient): () => void {
   if (typeof window === 'undefined' || typeof window.fetch !== 'function') return () => {};
 
@@ -25,11 +30,21 @@ export function installFetchBreadcrumbs(client: ArguslogClient): () => void {
       try {
         const level: Level =
           response.status >= 500 ? 'error' : response.status >= 400 ? 'warning' : 'info';
+        const data: Record<string, unknown> = {
+          method,
+          url,
+          status: response.status,
+          durationMs: Date.now() - start,
+        };
+        if (response.status >= 400) {
+          const preview = await responseBodyPreview(response);
+          if (preview !== undefined) data.responsePreview = preview;
+        }
         client.addBreadcrumb({
           category: 'fetch',
           message: `${method} ${url} → ${response.status}`,
           level,
-          data: { method, url, status: response.status, durationMs: Date.now() - start },
+          data,
         });
       } catch {
         // best-effort
@@ -53,6 +68,22 @@ export function installFetchBreadcrumbs(client: ArguslogClient): () => void {
   return () => {
     if (window.fetch !== original) window.fetch = original;
   };
+}
+
+async function responseBodyPreview(response: Response): Promise<string | undefined> {
+  // Skip binary content — gzipped/octet-stream/image bytes wouldn't be readable as a
+  // breadcrumb anyway and would just bloat the payload.
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!TEXTUAL_CONTENT_TYPES.test(contentType)) return undefined;
+  try {
+    // .clone() lets the user's downstream await response.json() still work — the body
+    // stream isn't drained by our peek.
+    const text = await response.clone().text();
+    if (text.length <= BODY_PREVIEW_CAP_BYTES) return text;
+    return text.slice(0, BODY_PREVIEW_CAP_BYTES) + '… (truncated)';
+  } catch {
+    return undefined;
+  }
 }
 
 function requestUrl(input: RequestInfo | URL): string {

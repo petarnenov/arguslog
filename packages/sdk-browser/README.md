@@ -40,9 +40,11 @@ init({
 After `init`, unhandled `window.onerror` and `unhandledrejection` events are captured
 automatically (when the `globalHandlers` integration is enabled). The
 `autoBreadcrumbs` flag turns on every breadcrumb integration the SDK ships
-(`console`, `fetch`, `xhr`, `history`, `dom`, `resourceErrors`, `webVitals`) so the
-dashboard timeline carries the trail of clicks, network calls, route changes,
-resource load failures and Core Web Vitals leading up to the error. Every event
+(`console`, `fetch`, `xhr`, `history`, `dom`, `resourceErrors`, `webVitals`,
+`longTasks`, `visibility`, `workerErrors`) so the dashboard timeline carries the
+trail of clicks, network calls (including 4xx/5xx response body previews), route
+changes, resource load failures, Core Web Vitals, main-thread freezes, page
+visibility transitions and worker errors leading up to the exception. Every event
 also picks up an auto-context bag with viewport, online status, locale, timezone,
 color scheme and effective connection type. Manual reporting is always available
 via `captureException` / `captureMessage`.
@@ -152,6 +154,7 @@ init({
     // …or pick à la carte:
     // 'console', 'fetch', 'xhr', 'history', 'dom',
     // 'resourceErrors', 'webVitals',
+    // 'longTasks', 'visibility', 'workerErrors',
   ],
 });
 ```
@@ -160,13 +163,16 @@ init({
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `globalHandlers`  | `window.onerror` + `unhandledrejection`. The "actual error capture" integration — without it nothing reaches `captureException` automatically. |
 | `console`         | Every `console.log/info/warn/error/debug` becomes a breadcrumb. The original console call is preserved. Levels map to `info/info/warning/error/debug`. |
-| `fetch`           | Patches `window.fetch`. Every request leaves a breadcrumb with method, URL, status, duration. 2xx → info, 4xx → warning, 5xx → error. Network failures are recorded and re-thrown. |
-| `xhr`             | Same payload shape as `fetch` but for legacy `XMLHttpRequest` traffic (jQuery AJAX, axios's xhr adapter, hand-rolled XHR).            |
+| `fetch`           | Patches `window.fetch`. Every request leaves a breadcrumb with method, URL, status, duration. 2xx → info, 4xx → warning, 5xx → error. Network failures are recorded and re-thrown. **For 4xx/5xx with a JSON / text content type**, the first 4KB of the response body is captured into `data.responsePreview` so error messages from your own backend show up next to the status. Body is read via `response.clone()` so user code's `await response.json()` still works. |
+| `xhr`             | Same payload shape as `fetch` but for legacy `XMLHttpRequest` traffic (jQuery AJAX, axios's xhr adapter, hand-rolled XHR). Same 4KB response preview on 4xx/5xx when `responseType` is `''` or `'text'`. |
 | `history`         | Patches `history.pushState` / `replaceState` and listens for `popstate` / `hashchange`. Single-page-app routers leave a navigation trail (`/start → /billing`). |
 | `resourceErrors`  | `<img>`, `<script>`, `<link>`, `<audio>`, `<video>`, `<iframe>` load failures. These never reach `window.onerror` — common cause of "image silently missing" / "ad blocker killed third-party script" bugs. |
 | `webVitals`       | Core Web Vitals as breadcrumbs (LCP / INP / CLS / FCP / TTFB) via the [`web-vitals`](https://github.com/GoogleChrome/web-vitals) library. Poor ratings show as `warning` so a slow LCP next to a crash is visible at a glance. |
 | `dom`             | Document-level capture-phase listeners for `click` and `submit`. Only interactive targets are recorded (`<button>`, `<a>`, `<input>`, `<select>`, `<textarea>`, `<label>`, `[role=button \| link \| checkbox \| menuitem]`, `[data-arguslog-track]`). The closest interactive ancestor of the click target is used so a click on a `<span>` inside a `<button>` reports the button. |
-| `autoBreadcrumbs` | Convenience meta-flag — turns on every breadcrumb integration (`console`, `fetch`, `xhr`, `history`, `dom`, `resourceErrors`, `webVitals`). |
+| `longTasks`       | `PerformanceObserver` for `longtask` entries — main thread blocked >50ms. 50–200ms → info, 200–500ms → warning, 500ms+ → error. Reveals "the UI froze right before the click stopped responding" patterns. Source attribution (`containerType` / `containerSrc`) is included where Chromium supplies it. |
+| `visibility`      | `visibilitychange`, `pagehide`, `online`, `offline` events. Distinguishes "error fired while user was on another tab" from "error fired during interaction" — different debugging stories. |
+| `workerErrors`    | Forwards Web Worker + Service Worker errors into the main-thread client. Patches the global `Worker` constructor to attach an `error` listener on every new instance; service workers can also opt in by `postMessage({ __arguslog: 'error', message, stack })`. |
+| `autoBreadcrumbs` | Convenience meta-flag — turns on every breadcrumb integration (`console`, `fetch`, `xhr`, `history`, `dom`, `resourceErrors`, `webVitals`, `longTasks`, `visibility`, `workerErrors`). |
 
 ### Customizing the DOM breadcrumb label
 
