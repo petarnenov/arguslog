@@ -253,7 +253,15 @@
     "cryptoNote": "USDT, USDC, BTC, ETH and 200+ tokens accepted. Hosted by NOWPayments.",
     "renewSoon": "Plan expires in {{days}} day(s) — renew below to keep Pro.",
     "renewExpired": "Plan expired — purchase a new term to restore Pro features.",
-    "freeBadge": "Free"
+    "freeBadge": "Free",
+    "proIncludesTitle": "Pro tier — what you get",
+    "proIncludesEvents": "{{events}} events / month ({{multiplier}}× the Free tier's {{freeEvents}})",
+    "proIncludesProjects": "{{count}} projects (vs {{free}} on Free)",
+    "proIncludesRetention": "{{days}}-day event retention",
+    "proIncludesAlerts": "All alert channels — email, Slack, Telegram, generic webhook",
+    "proIncludesSdks": "All SDKs — browser, React, Node, Java, Python, Vue, Next.js, Angular",
+    "proIncludesOneTime": "One-time payment — no auto-renewal, no surprise charges",
+    "proIncludesCancelAnytime": "Cancel any time by simply not renewing"
   },
   "releases": {
     "title": "Releases",
