@@ -1,6 +1,7 @@
 import { addBreadcrumb, captureException, type Level } from '@arguslog/sdk-browser';
 
 import { decodeEthersError } from './decode-ethers-error.js';
+import { decodeSolanaError } from './decode-solana-error.js';
 import { decodeViemError, jsonSafe } from './decode-viem-error.js';
 import type { DecodedWeb3Error, Web3ErrorContext, Web3ErrorKind } from './types.js';
 
@@ -19,7 +20,14 @@ import type { DecodedWeb3Error, Web3ErrorContext, Web3ErrorKind } from './types.
  * every transaction revert across all customers, etc.
  */
 export function captureWeb3Error(error: unknown, context: Web3ErrorContext = {}): string | undefined {
-  const decoded = decodeViemError(error) ?? decodeEthersError(error) ?? genericDecode(error);
+  // Decoder chain — viem first (most expressive typed errors in the EVM ecosystem), then
+  // ethers v6 (.code-based fallback for the legacy stack), then Solana (Anchor / wallet
+  // adapter / SendTransactionError / log parsing), then a generic Error.message shape.
+  const decoded =
+    decodeViemError(error) ??
+    decodeEthersError(error) ??
+    decodeSolanaError(error) ??
+    genericDecode(error);
 
   // Breadcrumb captures the rich structure — the next captureException attaches all
   // breadcrumbs (incl this one) onto the event.
@@ -58,10 +66,17 @@ export function captureWeb3Error(error: unknown, context: Web3ErrorContext = {})
 }
 
 function levelFor(kind: Web3ErrorKind): Level {
-  // User-rejected is by-design behaviour; capturing as info keeps the alert noise down. Anything
-  // else is at least a warning so it shows up on the dashboard's default "errors" filter.
-  if (kind === 'user.rejected') return 'info';
-  if (kind === 'rpc.rateLimit' || kind === 'chain.mismatch') return 'warning';
+  // User-rejected and wallet-not-connected are by-design states; capturing as info keeps the
+  // alert noise down. Network-class warnings (rate limit, chain mismatch, blockhash expired —
+  // tx-resubmittable) ship as warning so they're visible but don't trigger pages.
+  if (kind === 'user.rejected' || kind === 'wallet.notConnected') return 'info';
+  if (
+    kind === 'rpc.rateLimit' ||
+    kind === 'chain.mismatch' ||
+    kind === 'solana.blockhashExpired'
+  ) {
+    return 'warning';
+  }
   return 'error';
 }
 
