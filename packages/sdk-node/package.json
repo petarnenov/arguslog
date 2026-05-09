@@ -1,6 +1,6 @@
 {
   "name": "@arguslog/sdk-node",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Arguslog Node.js SDK — error tracking for server-side Node apps",
   "license": "MIT",
   "type": "module",
