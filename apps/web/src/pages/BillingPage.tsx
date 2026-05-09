@@ -255,11 +255,11 @@ function TierCard({
   const isPopular = tier.plan === 'pro';
   const offer = tier.durations.find((d) => d.months === selectedDuration);
 
-  const accentBorder = isSelected
-    ? 'var(--mantine-color-blue-6)'
-    : isPopular
-      ? 'var(--mantine-color-blue-3)'
-      : undefined;
+  // Selection border is the only blue accent — the popular tier differentiates
+  // itself via the badge inline at the top of the card. Two cards lighting up
+  // simultaneously (selection on one, "popular" on another) read as ambiguous,
+  // so we keep the border state binary.
+  const isHighlighted = isSelected;
 
   return (
     <Card
@@ -268,36 +268,26 @@ function TierCard({
       radius="md"
       data-testid={`tier-card-${tier.plan}`}
       data-selected={isSelected}
-      onClick={onSelect}
+      onClick={isPaid ? onSelect : undefined}
       style={{
-        cursor: 'pointer',
-        position: 'relative',
-        borderColor: accentBorder,
-        borderWidth: isSelected ? 2 : 1,
+        cursor: isPaid ? 'pointer' : 'default',
+        borderColor: isHighlighted ? 'var(--mantine-color-blue-6)' : undefined,
+        borderWidth: isHighlighted ? 2 : 1,
       }}
     >
-      {isPopular && !isSelected && (
-        <Badge
-          variant="light"
-          color="blue"
-          size="sm"
-          style={{ position: 'absolute', top: -10, right: 12 }}
-        >
-          {t('billing.popularBadge')}
-        </Badge>
-      )}
-      {isCurrent && (
-        <Badge
-          variant="filled"
-          color="teal"
-          size="sm"
-          style={{ position: 'absolute', top: -10, left: 12 }}
-        >
-          {t('billing.tierStarterCurrent')}
-        </Badge>
-      )}
-
       <Stack gap="sm">
+        <Group gap="xs" mih={22}>
+          {isCurrent && (
+            <Badge variant="filled" color="teal" size="sm">
+              {t('billing.tierStarterCurrent')}
+            </Badge>
+          )}
+          {isPopular && !isCurrent && (
+            <Badge variant="filled" color="blue" size="sm">
+              {t('billing.popularBadge')}
+            </Badge>
+          )}
+        </Group>
         <Stack gap={2}>
           <Text fw={700} size="lg">
             {t(TIER_NAME_KEY[tier.plan] ?? 'billing.tierFree')}
