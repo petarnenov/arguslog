@@ -131,16 +131,64 @@ describe('installWagmiReporter', () => {
     expect(captureException).not.toHaveBeenCalled();
   });
 
-  it('ignores success and pending state transitions', () => {
+  it('records a success breadcrumb on writeContract success and never calls captureException', () => {
     const { client, emit } = fakeQueryClient();
     installWagmiReporter(client);
     emit({
       type: 'updated',
       mutation: {
-        state: { status: 'success' },
+        state: {
+          status: 'success',
+          variables: { address: '0xCAFE', functionName: 'mint', args: [1n] },
+          data: '0xtxhash1234567890',
+        },
         options: { mutationKey: ['writeContract'] },
       },
     });
+    expect(captureException).not.toHaveBeenCalled();
+    expect(addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: 'web3.tx',
+        data: expect.objectContaining({
+          contract: '0xCAFE',
+          functionName: 'mint',
+          result: '0xtxhash1234567890',
+        }),
+      }),
+    );
+  });
+
+  it('records a web3.switch breadcrumb on switchChain success', () => {
+    const { client, emit } = fakeQueryClient();
+    installWagmiReporter(client);
+    emit({
+      type: 'updated',
+      mutation: {
+        state: { status: 'success', variables: { chainId: 8453 } },
+        options: { mutationKey: ['switchChain'] },
+      },
+    });
+    expect(addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ category: 'web3.switch' }),
+    );
+  });
+
+  it('skips success breadcrumb when recordSuccess is false', () => {
+    const { client, emit } = fakeQueryClient();
+    installWagmiReporter(client, { recordSuccess: false });
+    emit({
+      type: 'updated',
+      mutation: {
+        state: { status: 'success', variables: { address: '0xA' }, data: '0xtxhash' },
+        options: { mutationKey: ['writeContract'] },
+      },
+    });
+    expect(addBreadcrumb).not.toHaveBeenCalled();
+  });
+
+  it('ignores pending state transitions', () => {
+    const { client, emit } = fakeQueryClient();
+    installWagmiReporter(client);
     emit({
       type: 'updated',
       mutation: {
@@ -149,6 +197,7 @@ describe('installWagmiReporter', () => {
       },
     });
     expect(captureException).not.toHaveBeenCalled();
+    expect(addBreadcrumb).not.toHaveBeenCalled();
   });
 
   it('uninstall removes the subscription', () => {

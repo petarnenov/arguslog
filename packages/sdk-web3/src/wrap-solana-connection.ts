@@ -1,4 +1,5 @@
 import { captureWeb3Error } from './capture-web3-error.js';
+import { recordTxBreadcrumb } from './record-tx-breadcrumb.js';
 import type { ChainInfo, WalletKind, Web3ErrorContext } from './types.js';
 
 /**
@@ -12,13 +13,16 @@ import type { ChainInfo, WalletKind, Web3ErrorContext } from './types.js';
  * <ul>
  *   <li>{@code sendTransaction} — main dispatch path. The error here is typically a
  *       {@code SendTransactionError} carrying logs + signature, decoded by the Solana
- *       decoder.</li>
+ *       decoder. Successful dispatch leaves a {@code web3.tx} breadcrumb with the
+ *       returned signature.</li>
  *   <li>{@code sendRawTransaction} — pre-signed transaction submit.</li>
  *   <li>{@code simulateTransaction} — preflight; surfaces {@code solana.simulationFailed}
- *       or unwraps an Anchor error from the simulation logs.</li>
+ *       or unwraps an Anchor error from the simulation logs. Successful simulation leaves
+ *       a {@code web3.simulate} breadcrumb.</li>
  *   <li>{@code confirmTransaction} — confirmation wait; throws on
  *       {@code TransactionExpiredBlockheightExceededError} which decodes to
- *       {@code solana.blockhashExpired}.</li>
+ *       {@code solana.blockhashExpired}. Successful confirmation leaves a
+ *       {@code web3.confirm} breadcrumb.</li>
  * </ul>
  */
 const TRACKED_METHODS = new Set([
@@ -35,6 +39,8 @@ export interface WrapSolanaConnectionOptions {
   chain?: ChainInfo;
   /** Per-call context override — receives the method name + raw args. */
   enrichContext?: (method: string, args: readonly unknown[]) => Partial<Web3ErrorContext>;
+  /** When true (default), also record success breadcrumbs alongside error captures. */
+  recordSuccess?: boolean;
 }
 
 export function wrapSolanaConnection<T extends object>(
@@ -48,19 +54,48 @@ export function wrapSolanaConnection<T extends object>(
       if (!TRACKED_METHODS.has(prop)) return value;
 
       return async (...args: unknown[]) => {
+        const ctx: Web3ErrorContext = {
+          wallet: options.wallet,
+          chain: options.chain,
+          functionName: prop,
+          ...(options.enrichContext?.(prop, args) ?? {}),
+        };
         try {
-          return await Reflect.apply(value, target, args);
+          const result = await Reflect.apply(value, target, args);
+          if (options.recordSuccess !== false) {
+            recordTxBreadcrumb({
+              kind: kindFor(prop),
+              message: successMessage(prop, result),
+              context: ctx,
+              result: typeof result === 'string' ? result : undefined,
+            });
+          }
+          return result;
         } catch (error) {
-          const ctx: Web3ErrorContext = {
-            wallet: options.wallet,
-            chain: options.chain,
-            functionName: prop,
-            ...(options.enrichContext?.(prop, args) ?? {}),
-          };
           captureWeb3Error(error, ctx);
           throw error;
         }
       };
     },
   });
+}
+
+function kindFor(method: string): 'tx' | 'simulate' | 'confirm' {
+  if (method === 'simulateTransaction') return 'simulate';
+  if (method === 'confirmTransaction') return 'confirm';
+  return 'tx';
+}
+
+function successMessage(method: string, result: unknown): string {
+  if (method === 'sendTransaction' || method === 'sendRawTransaction') {
+    if (typeof result === 'string') return `${method} → ${truncateSig(result)}`;
+    return method;
+  }
+  if (method === 'simulateTransaction') return 'simulation OK';
+  if (method === 'confirmTransaction') return 'confirmed';
+  return method;
+}
+
+function truncateSig(sig: string): string {
+  return sig.length > 14 ? `${sig.slice(0, 10)}…${sig.slice(-4)}` : sig;
 }
