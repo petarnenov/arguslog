@@ -35,7 +35,7 @@ createApp(App)
       dsn: 'arguslog://<key>@<host>/api/<projectId>',
       release: '1.0.0',
       environment: 'production',
-      integrations: ['globalHandlers', 'breadcrumbs'],
+      integrations: ['globalHandlers', 'autoBreadcrumbs'],
     }),
   )
   .mount('#app');
@@ -214,7 +214,7 @@ plus one Vue-specific switch:
 | `beforeSend`         | `(event) => event \| null \| Promise<...>`        | _identity_   | Last-mile mutation / drop hook.                               |
 | `scrubbing`          | `{ enabled?: boolean; extraPatterns?: RegExp[] }` | enabled      | PII redaction in messages and URLs.                           |
 | `transport`          | `{ fetch?: typeof fetch; maxRetries?: number }`   | global fetch | Inject a custom fetch (testing) or bump retry budget.         |
-| `integrations`       | `('globalHandlers' \| 'breadcrumbs')[]`           | _none_       | Opt in to auto-instrumentation in the underlying browser SDK. |
+| `integrations`       | `('globalHandlers' \| 'console' \| 'fetch' \| 'xhr' \| 'history' \| 'dom' \| 'autoBreadcrumbs')[]` | _none_       | Opt in to auto-instrumentation in the underlying browser SDK. `'autoBreadcrumbs'` is a meta-flag — see the [`@arguslog/sdk-browser` README](https://github.com/petarnenov/arguslog/tree/main/packages/sdk-browser#integrations) for details on each ID. |
 | `debug`              | `boolean`                                         | `false`      | Logs every send to console — never enable in production.      |
 | `attachErrorHandler` | `boolean`                                         | `true`       | Whether to chain onto `app.config.errorHandler`. Vue-only.    |
 

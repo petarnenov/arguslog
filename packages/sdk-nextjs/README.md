@@ -162,7 +162,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       dsn: process.env.NEXT_PUBLIC_ARGUSLOG_DSN!,
       release: process.env.NEXT_PUBLIC_RELEASE,
       environment: process.env.NODE_ENV,
-      integrations: ['globalHandlers', 'breadcrumbs'],
+      integrations: ['globalHandlers', 'autoBreadcrumbs'],
     });
   }, []);
 

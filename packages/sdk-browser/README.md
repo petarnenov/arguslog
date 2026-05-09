@@ -30,21 +30,24 @@ before bootstrap.
 import { init } from '@arguslog/sdk-browser';
 
 init({
-  dsn: 'https://<publicKey>@ingest.arguslog.org/<projectId>',
+  dsn: 'arguslog://<publicKey>@<ingestHost>/api/<projectId>',
   environment: 'production',
   release: '1.4.0',
-  integrations: ['globalHandlers', 'breadcrumbs'],
+  integrations: ['globalHandlers', 'autoBreadcrumbs'],
 });
 ```
 
 After `init`, unhandled `window.onerror` and `unhandledrejection` events are captured
-automatically (when the `globalHandlers` integration is enabled). Manual reporting is
-always available via `captureException` / `captureMessage`.
+automatically (when the `globalHandlers` integration is enabled). The
+`autoBreadcrumbs` flag turns on every breadcrumb integration the SDK ships
+(`console`, `fetch`, `xhr`, `history`, `dom`) so the dashboard timeline carries the
+trail of clicks, network calls and route changes that led up to the error. Manual
+reporting is always available via `captureException` / `captureMessage`.
 
 ## DSN format
 
 ```
-https://<publicKey>@<ingestHost>/<projectId>
+arguslog://<publicKey>@<ingestHost>/api/<projectId>
 ```
 
 Get yours from your Arguslog project settings page. The `publicKey` is safe to embed in a
@@ -68,7 +71,7 @@ so hot-reload during dev doesn't accumulate stale listeners.
 | `beforeSend`     | `(event) => event \| null \| Promise<...>`        | _identity_   | Last-mile mutation / drop hook.                                       |
 | `scrubbing`      | `{ enabled?: boolean; extraPatterns?: RegExp[] }` | enabled      | PII redaction in messages and URLs.                                   |
 | `transport`      | `{ fetch?: typeof fetch; maxRetries?: number }`   | global fetch | Inject a custom fetch (testing) or bump retry budget.                 |
-| `integrations`   | `('globalHandlers' \| 'breadcrumbs')[]`           | _none_       | Opt in to auto-instrumentation.                                       |
+| `integrations`   | `IntegrationId[]` (see below)                     | _none_       | Opt in to auto-instrumentation. `'autoBreadcrumbs'` is a meta-flag that turns on every breadcrumb integration. |
 | `debug`          | `boolean`                                         | `false`      | Logs every send to the console — never enable in production.          |
 
 ### `captureException(error, hint?): string | undefined`
@@ -132,15 +135,44 @@ Awaits the in-flight queue. Useful before `window.unload` or in service workers.
 
 ## Integrations
 
-### `globalHandlers`
+Every integration is opt-in via the `integrations` array, returns a no-op when `window` is
+not defined (SSR), and installs an uninstaller that runs on the next `init` so hot-reload
+during dev never accumulates duplicate listeners. Pass `'autoBreadcrumbs'` to turn on every
+breadcrumb integration in one go, or list them individually.
 
-Hooks `window.onerror` and `window.onunhandledrejection`. Errors that bubble to the platform
-without a try/catch land here. Enable in `init({ integrations: ['globalHandlers'] })`.
+```ts
+init({
+  dsn: '...',
+  integrations: [
+    'globalHandlers',
+    'autoBreadcrumbs',
+    // …or pick à la carte:
+    // 'console', 'fetch', 'xhr', 'history', 'dom',
+  ],
+});
+```
 
-### `breadcrumbs`
+| ID                | Captures                                                                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `globalHandlers`  | `window.onerror` + `unhandledrejection`. The "actual error capture" integration — without it nothing reaches `captureException` automatically. |
+| `console`         | Every `console.log/info/warn/error/debug` becomes a breadcrumb. The original console call is preserved. Levels map to `info/info/warning/error/debug`. |
+| `fetch`           | Patches `window.fetch`. Every request leaves a breadcrumb with method, URL, status, duration. 2xx → info, 4xx → warning, 5xx → error. Network failures are recorded and re-thrown. |
+| `xhr`             | Same payload shape as `fetch` but for legacy `XMLHttpRequest` traffic (jQuery AJAX, axios's xhr adapter, hand-rolled XHR).            |
+| `history`         | Patches `history.pushState` / `replaceState` and listens for `popstate` / `hashchange`. Single-page-app routers leave a navigation trail (`/start → /billing`). |
+| `dom`             | Document-level capture-phase listeners for `click` and `submit`. Only interactive targets are recorded (`<button>`, `<a>`, `<input>`, `<select>`, `<textarea>`, `<label>`, `[role=button \| link \| checkbox \| menuitem]`, `[data-arguslog-track]`). The closest interactive ancestor of the click target is used so a click on a `<span>` inside a `<button>` reports the button. |
+| `autoBreadcrumbs` | Convenience meta-flag — turns on `console`, `fetch`, `xhr`, `history`, and `dom`.                                                     |
 
-Captures lightweight navigation, click, and console events automatically. Pairs well with
-`globalHandlers` so the breadcrumbs are present when an unhandled error fires.
+### Customizing the DOM breadcrumb label
+
+The `dom` integration auto-derives a label like `button#pay.primary "Pay"`. Override with
+`data-arguslog-label` on any tracked element:
+
+```html
+<button data-arguslog-label="Upgrade to Pro — annual">Upgrade <span>(save 33%)</span></button>
+```
+
+The breadcrumb message becomes exactly `Upgrade to Pro — annual` instead of an auto-derived
+selector.
 
 ## Privacy / scrubbing
 
