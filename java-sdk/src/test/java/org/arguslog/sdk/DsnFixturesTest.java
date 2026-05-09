@@ -13,13 +13,13 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
 /**
- * Cross-SDK parity test. The canonical fixture lives at scripts/dsn-test-fixtures.json (repo
- * root); the TS and Python SDKs run identical assertions against the same file. Adding an edge
- * case there means all three SDKs run it on next CI; whichever fails the parity check gets
- * fixed. Prevents the "fixed it in TS, forgot Java" drift that bit us 2026-05-09.
+ * Cross-SDK parity test. The canonical fixture lives at scripts/dsn-test-fixtures.json (repo root);
+ * the TS and Python SDKs run identical assertions against the same file. Adding an edge case there
+ * means all three SDKs run it on next CI; whichever fails the parity check gets fixed. Prevents the
+ * "fixed it in TS, forgot Java" drift that bit us 2026-05-09.
  *
- * <p>Path math: Gradle sets cwd = projectDir = java-sdk/, so the repo-relative
- * {@code ../scripts/dsn-test-fixtures.json} resolves regardless of where the test runner sits.
+ * <p>Path math: Gradle sets cwd = projectDir = java-sdk/, so the repo-relative {@code
+ * ../scripts/dsn-test-fixtures.json} resolves regardless of where the test runner sits.
  */
 class DsnFixturesTest {
 
