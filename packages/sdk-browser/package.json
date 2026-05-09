@@ -18,7 +18,8 @@
   ],
   "sideEffects": false,
   "dependencies": {
-    "@arguslog/sdk-core": "workspace:*"
+    "@arguslog/sdk-core": "workspace:*",
+    "web-vitals": "^5.2.0"
   },
   "scripts": {
     "gen-version": "node scripts/gen-version.mjs",

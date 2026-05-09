@@ -40,9 +40,12 @@ init({
 After `init`, unhandled `window.onerror` and `unhandledrejection` events are captured
 automatically (when the `globalHandlers` integration is enabled). The
 `autoBreadcrumbs` flag turns on every breadcrumb integration the SDK ships
-(`console`, `fetch`, `xhr`, `history`, `dom`) so the dashboard timeline carries the
-trail of clicks, network calls and route changes that led up to the error. Manual
-reporting is always available via `captureException` / `captureMessage`.
+(`console`, `fetch`, `xhr`, `history`, `dom`, `resourceErrors`, `webVitals`) so the
+dashboard timeline carries the trail of clicks, network calls, route changes,
+resource load failures and Core Web Vitals leading up to the error. Every event
+also picks up an auto-context bag with viewport, online status, locale, timezone,
+color scheme and effective connection type. Manual reporting is always available
+via `captureException` / `captureMessage`.
 
 ## DSN format
 
@@ -148,6 +151,7 @@ init({
     'autoBreadcrumbs',
     // …or pick à la carte:
     // 'console', 'fetch', 'xhr', 'history', 'dom',
+    // 'resourceErrors', 'webVitals',
   ],
 });
 ```
@@ -159,8 +163,10 @@ init({
 | `fetch`           | Patches `window.fetch`. Every request leaves a breadcrumb with method, URL, status, duration. 2xx → info, 4xx → warning, 5xx → error. Network failures are recorded and re-thrown. |
 | `xhr`             | Same payload shape as `fetch` but for legacy `XMLHttpRequest` traffic (jQuery AJAX, axios's xhr adapter, hand-rolled XHR).            |
 | `history`         | Patches `history.pushState` / `replaceState` and listens for `popstate` / `hashchange`. Single-page-app routers leave a navigation trail (`/start → /billing`). |
+| `resourceErrors`  | `<img>`, `<script>`, `<link>`, `<audio>`, `<video>`, `<iframe>` load failures. These never reach `window.onerror` — common cause of "image silently missing" / "ad blocker killed third-party script" bugs. |
+| `webVitals`       | Core Web Vitals as breadcrumbs (LCP / INP / CLS / FCP / TTFB) via the [`web-vitals`](https://github.com/GoogleChrome/web-vitals) library. Poor ratings show as `warning` so a slow LCP next to a crash is visible at a glance. |
 | `dom`             | Document-level capture-phase listeners for `click` and `submit`. Only interactive targets are recorded (`<button>`, `<a>`, `<input>`, `<select>`, `<textarea>`, `<label>`, `[role=button \| link \| checkbox \| menuitem]`, `[data-arguslog-track]`). The closest interactive ancestor of the click target is used so a click on a `<span>` inside a `<button>` reports the button. |
-| `autoBreadcrumbs` | Convenience meta-flag — turns on `console`, `fetch`, `xhr`, `history`, and `dom`.                                                     |
+| `autoBreadcrumbs` | Convenience meta-flag — turns on every breadcrumb integration (`console`, `fetch`, `xhr`, `history`, `dom`, `resourceErrors`, `webVitals`). |
 
 ### Customizing the DOM breadcrumb label
 
