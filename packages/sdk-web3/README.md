@@ -156,17 +156,23 @@ structured data).
 
 ## What `initWeb3` actually wires
 
-| Wired thing                   | Effect                                                                                                                |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| EIP-1193 `accountsChanged`    | Breadcrumb with the (truncated) new address. Empty array → "wallet disconnected" at warning level.                    |
-| EIP-1193 `chainChanged`       | Breadcrumb with hex + decoded decimal chain id. Sentry-style "you switched mid-flow" detection.                       |
-| EIP-1193 `connect`/`disconnect` | Breadcrumbs for session boundaries.                                                                                  |
-| `writeContract` wrap          | Try / catch around the call; on throw → `captureWeb3Error` with `{ contract, functionName, args }` extracted.         |
-| `sendTransaction` wrap        | Same shape, with `to` exposed as `contract`.                                                                          |
-| `signMessage` / `signTypedData` / `signTransaction` / `deployContract` / `prepareTransactionRequest` wraps | Each tracked, errors captured with the method name as `functionName`. |
+| Wired thing                                                                                                | Effect                                                                                                                                              |
+| ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EIP-1193 `accountsChanged`                                                                                 | Breadcrumb with the (truncated) new address. Empty array → "wallet disconnected" at warning level.                                                  |
+| EIP-1193 `chainChanged`                                                                                    | Breadcrumb with hex + decoded decimal chain id. Sentry-style "you switched mid-flow" detection.                                                     |
+| EIP-1193 `connect`/`disconnect`                                                                            | Breadcrumbs for session boundaries.                                                                                                                 |
+| WalletConnect v2 session events                                                                            | `display_uri`, `session_update`, `session_event`, `session_delete` (warning), `session_expire` (warning), `session_request*`, `session_authenticate`. |
+| viem `WalletClient` writes                                                                                 | `writeContract` / `sendTransaction` / `deployContract` / `signMessage` / `signTypedData` / `signTransaction` / `prepareTransactionRequest` — try/catch each, on throw → `captureWeb3Error`; on success → `web3.tx` / `web3.sign` breadcrumb. |
+| viem `PublicClient` reads                                                                                  | `readContract` / `simulateContract` / `estimateGas` / `estimateContractGas` / `call` / `waitForTransactionReceipt` / `getTransactionReceipt` / `getTransaction` — failures captured (successes silent — read calls fire too often to breadcrumb). |
+| ethers v6 `Contract` methods                                                                               | Every callable on the contract is wrapped; ERC20 reads (`balanceOf`, `totalSupply`, `allowance`, `decimals`, `symbol`, `name`) skipped by default.  |
+| `@coral-xyz/anchor` `Program.methods`                                                                      | Builder-chain interception: `methods.X.rpc()` / `.simulate()` / `.transaction()` are instrumented with the program ID as the contract field.        |
+| `@solana/web3.js Connection`                                                                               | `sendTransaction` / `sendRawTransaction` / `simulateTransaction` / `confirmTransaction` — errors captured + success breadcrumbs.                    |
+| `@solana/wallet-adapter-base`                                                                              | `connect`, `disconnect`, `error`, `readyStateChange` adapter events.                                                                                |
+| wagmi v2 mutation cache                                                                                    | Subscribes to `useWriteContract` / `useSendTransaction` / `useSignMessage` / `useSwitchChain` / `useConnect` / `useDisconnect` mutations; routes errors and successes through Arguslog without per-component try/catch. |
 
-Read methods (`getBalance`, `getBlock`, etc.) pass through unchanged — RPC calls are already
-breadcrumbed by the `fetch` integration in `@arguslog/sdk-browser`.
+Read methods on the wallet client (`getBalance`, `getBlock`, etc.) pass through unchanged
+— RPC calls are already breadcrumbed by the `fetch` integration in
+`@arguslog/sdk-browser`.
 
 ## Decoded error kinds
 

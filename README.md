@@ -27,6 +27,7 @@ packages/sdk-react-native/     # @arguslog/sdk-react-native — RN-aware integra
 packages/sdk-nextjs/           # @arguslog/sdk-nextjs — App/Pages Router + instrumentation hook
 packages/sdk-angular/          # @arguslog/sdk-angular — ErrorHandler + provideArguslog
 packages/sdk-vue/              # @arguslog/sdk-vue — Vue 3 plugin + composable + ErrorBoundary
+packages/sdk-web3/             # @arguslog/sdk-web3 — viem/ethers/Solana/Anchor/wagmi error decoding + auto-breadcrumbs
 packages/eslint-config/        # shared ESLint config
 packages/tsconfig/              # shared tsconfig presets
 java-sdk/                      # org.arguslog:arguslog-java-sdk (Spring Boot autoconfig)
@@ -121,9 +122,13 @@ stays in lockstep with what's actually shipped.
 | Node.js         | `@arguslog/sdk-node`             | `packages/sdk-node/`         |
 | Java / Spring   | `org.arguslog:arguslog-java-sdk` | `java-sdk/`                  |
 | Python 3.9+     | `arguslog` (PyPI)                | `python-sdk/`                |
+| Web3 (EVM + Solana) | `@arguslog/sdk-web3`         | `packages/sdk-web3/`         |
 
 A standalone install + quickstart index for every SDK lives in
-[`docs/sdks.md`](docs/sdks.md).
+[`docs/sdks.md`](docs/sdks.md). The Web3 add-on layers on top of any
+JS-runtime SDK and decodes wallet / chain / contract / Anchor errors
+from viem, ethers v6, `@solana/web3.js`, Anchor, wagmi, and
+WalletConnect into searchable Arguslog issues.
 
 ## License
 
