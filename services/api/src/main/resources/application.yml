@@ -24,7 +24,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/arguslog}
+          issuer-uri: ${KEYCLOAK_ISSUER:http://${DEV_HOST:localhost}:8180/realms/arguslog}
   jackson:
     default-property-inclusion: non_null
 
@@ -50,11 +50,15 @@ management:
 
 arguslog:
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+    # ${DEV_HOST:localhost} resolves to whatever the dev machine's LAN IP is (or localhost when
+    # unset) so a phone or second laptop loading the dashboard at http://192.168.x.y:5173 isn't
+    # blocked by CORS. CORS_ORIGINS, when set, replaces the whole list — used in prod to lock
+    # down to app.arguslog.org only.
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://${DEV_HOST:localhost}:5173}
   ingest:
     # Used to render DSN strings in /projects/{id}/keys responses. The DSN points clients at the
     # ingest service, not the api — set INGEST_PUBLIC_HOST in production to your ingest hostname.
-    public-host: ${INGEST_PUBLIC_HOST:http://localhost:8080}
+    public-host: ${INGEST_PUBLIC_HOST:http://${DEV_HOST:localhost}:8080}
   stripe:
     api-key: ${STRIPE_API_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
@@ -62,7 +66,7 @@ arguslog:
     # objects without a code change. Empty until Stripe is provisioned.
     price-pro-id: ${STRIPE_PRICE_PRO:}
     # Where Stripe redirects after Checkout / Customer Portal — points at the dashboard.
-    dashboard-base-url: ${DASHBOARD_BASE_URL:http://localhost:5173}
+    dashboard-base-url: ${DASHBOARD_BASE_URL:http://${DEV_HOST:localhost}:5173}
   nowpayments:
     # NOWPayments crypto checkout (Phase 2 secondary provider). Empty until production secrets
     # are wired in Railway env vars. Endpoints short-circuit to 503 when unconfigured.
@@ -70,7 +74,7 @@ arguslog:
     ipn-secret: ${NOWPAYMENTS_IPN_SECRET:}
     public-key: ${NOWPAYMENTS_PUBLIC_KEY:}
     api-base-url: ${NOWPAYMENTS_API_BASE_URL:https://api.nowpayments.io/v1}
-    dashboard-base-url: ${DASHBOARD_BASE_URL:http://localhost:5173}
+    dashboard-base-url: ${DASHBOARD_BASE_URL:http://${DEV_HOST:localhost}:5173}
     # Public URL NOWPayments will POST IPN events to. Configure the same value in the
     # NOWPayments dashboard's Store Settings → IPN Callback URL.
     ipn-callback-url: ${NOWPAYMENTS_IPN_CALLBACK_URL:https://api.arguslog.org/api/v1/webhooks/nowpayments}
@@ -106,7 +110,7 @@ arguslog:
       api-base-url: ${INVITE_EMAIL_API_URL:https://api.resend.com}
       api-key: ${RESEND_API_KEY:}
       from: ${RESEND_FROM:noreply@arguslog.local}
-      dashboard-base-url: ${DASHBOARD_BASE_URL:http://localhost:5173}
+      dashboard-base-url: ${DASHBOARD_BASE_URL:http://${DEV_HOST:localhost}:5173}
       timeout: 5s
 
 logging:
