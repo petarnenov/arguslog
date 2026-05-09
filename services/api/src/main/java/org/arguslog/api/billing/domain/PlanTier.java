@@ -20,7 +20,7 @@ import java.util.Locale;
  */
 public enum PlanTier {
   FREE(0, 5_000L, 1, Duration.ofDays(30)),
-  PRO(999, 100_000L, 10, Duration.ofDays(30)),
+  PRO(1199, 100_000L, 10, Duration.ofDays(30)),
   ENTERPRISE(0, Long.MAX_VALUE, Integer.MAX_VALUE, Duration.ofDays(365));
 
   private final int monthlyPriceCents;
@@ -57,17 +57,17 @@ public enum PlanTier {
 
   /**
    * Total price in cents for a one-time purchase covering {@code months}. PRO uses an aggressive
-   * ladder ($9.99 / $24.99 / $44.99 / $79.99 for 1/3/6/12 months — 0% / 17% / 25% / 33% discount
+   * ladder ($11.99 / $29.99 / $53.99 / $95.99 for 1/3/6/12 months — 0% / 17% / 25% / 33% discount
    * versus the base rate). Other tiers return 0; FREE and ENTERPRISE are not sold via the
    * checkout flow.
    */
   public int priceCentsForDuration(int months) {
     if (this != PRO) return 0;
     return switch (months) {
-      case 1 -> 999;
-      case 3 -> 2499;
-      case 6 -> 4499;
-      case 12 -> 7999;
+      case 1 -> 1199;
+      case 3 -> 2999;
+      case 6 -> 5399;
+      case 12 -> 9599;
       default -> throw new IllegalArgumentException(
           "Unsupported duration for "
               + name()

@@ -22,10 +22,10 @@ const PLANS = {
     projectCap: 10,
     retentionDays: 30,
     durations: [
-      { months: 1, amountCents: 999, perMonthCents: 999, savePercent: 0 },
-      { months: 3, amountCents: 2499, perMonthCents: 833, savePercent: 17 },
-      { months: 6, amountCents: 4499, perMonthCents: 749, savePercent: 25 },
-      { months: 12, amountCents: 7999, perMonthCents: 666, savePercent: 33 },
+      { months: 1, amountCents: 1199, perMonthCents: 1199, savePercent: 0 },
+      { months: 3, amountCents: 2999, perMonthCents: 999, savePercent: 17 },
+      { months: 6, amountCents: 5399, perMonthCents: 899, savePercent: 25 },
+      { months: 12, amountCents: 9599, perMonthCents: 799, savePercent: 33 },
     ],
   },
   enterprise: {
@@ -116,8 +116,8 @@ describe('BillingPage', () => {
     expect(screen.getByTestId('duration-card-12')).toHaveTextContent('Save 33%');
     expect(screen.getByTestId('duration-card-3')).toHaveTextContent('Save 17%');
     // Total prices.
-    expect(screen.getByTestId('duration-card-1')).toHaveTextContent('$9.99');
-    expect(screen.getByTestId('duration-card-12')).toHaveTextContent('$79.99');
+    expect(screen.getByTestId('duration-card-1')).toHaveTextContent('$11.99');
+    expect(screen.getByTestId('duration-card-12')).toHaveTextContent('$95.99');
   });
 
   it('redirects to the NOWPayments checkout url when a duration card is picked', async () => {
@@ -198,7 +198,7 @@ describe('BillingPage', () => {
       '/api/v1/orgs/1/usage': () =>
         jsonResponse({
           plan: 'pro',
-          monthlyPriceCents: 999,
+          monthlyPriceCents: 1199,
           eventsUsed: 12000,
           eventCap: 100000,
           projectCap: 10,
@@ -225,7 +225,7 @@ describe('BillingPage', () => {
       '/api/v1/orgs/1/usage': () =>
         jsonResponse({
           plan: 'pro',
-          monthlyPriceCents: 999,
+          monthlyPriceCents: 1199,
           eventsUsed: 1000,
           eventCap: 100000,
           projectCap: 10,
@@ -252,7 +252,7 @@ describe('BillingPage', () => {
       '/api/v1/orgs/1/usage': () =>
         jsonResponse({
           plan: 'pro',
-          monthlyPriceCents: 999,
+          monthlyPriceCents: 1199,
           eventsUsed: 100,
           eventCap: 100000,
           projectCap: 10,
