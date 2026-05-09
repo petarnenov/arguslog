@@ -357,6 +357,42 @@
         }
       }
     },
+    "/api/v1/webhooks/nowpayments" : {
+      "post" : {
+        "tags" : [ "now-payments-webhook-controller" ],
+        "operationId" : "receive_1",
+        "parameters" : [ {
+          "name" : "x-nowpayments-sig",
+          "in" : "header",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NowPaymentsWebhookResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{projectId}/releases" : {
       "get" : {
         "tags" : [ "release-controller" ],
@@ -827,10 +863,46 @@
         }
       }
     },
+    "/api/v1/orgs/{orgId}/billing/crypto-invoice" : {
+      "post" : {
+        "tags" : [ "crypto-checkout-controller" ],
+        "operationId" : "start",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "duration",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CryptoCheckoutResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{orgId}/billing/checkout-session" : {
       "post" : {
         "tags" : [ "checkout-controller" ],
-        "operationId" : "start",
+        "operationId" : "start_1",
         "parameters" : [ {
           "name" : "orgId",
           "in" : "path",
@@ -1318,6 +1390,24 @@
         }
       }
     },
+    "/api/v1/billing/plans" : {
+      "get" : {
+        "tags" : [ "billing-plans-controller" ],
+        "operationId" : "plans",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BillingPlansResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{projectId}/keys/{keyId}" : {
       "delete" : {
         "tags" : [ "dsn-controller" ],
@@ -1519,6 +1609,14 @@
           }
         }
       },
+      "NowPaymentsWebhookResponse" : {
+        "type" : "object",
+        "properties" : {
+          "outcome" : {
+            "type" : "string"
+          }
+        }
+      },
       "SourceMapArtifactRequest" : {
         "type" : "object",
         "properties" : {
@@ -1710,6 +1808,17 @@
         "type" : "object",
         "properties" : {
           "url" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CryptoCheckoutResponse" : {
+        "type" : "object",
+        "properties" : {
+          "checkoutUrl" : {
+            "type" : "string"
+          },
+          "invoiceReference" : {
             "type" : "string"
           }
         }
@@ -1959,6 +2068,70 @@
           "renewsAt" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }
+      },
+      "BillingPlansResponse" : {
+        "type" : "object",
+        "properties" : {
+          "currency" : {
+            "type" : "string"
+          },
+          "free" : {
+            "$ref" : "#/components/schemas/TierInfo"
+          },
+          "pro" : {
+            "$ref" : "#/components/schemas/TierInfo"
+          },
+          "enterprise" : {
+            "$ref" : "#/components/schemas/TierInfo"
+          }
+        }
+      },
+      "DurationOffer" : {
+        "type" : "object",
+        "properties" : {
+          "months" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "amountCents" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "perMonthCents" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "savePercent" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "TierInfo" : {
+        "type" : "object",
+        "properties" : {
+          "plan" : {
+            "type" : "string"
+          },
+          "monthlyEventCap" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "projectCap" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "retentionDays" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "durations" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DurationOffer"
+            }
           }
         }
       }

@@ -4,20 +4,23 @@ import java.time.Duration;
 import java.util.Locale;
 
 /**
- * Single source of truth for per-plan limits. The DB column {@code organizations.plan} stores the
- * wire string ({@code "free"}, {@code "pro"}, {@code "enterprise"}); this enum mirrors it with the
- * actual numeric caps the rest of the app reads.
+ * Single source of truth for per-plan limits and pricing. The DB column {@code
+ * organizations.plan} stores the wire string ({@code "free"}, {@code "pro"}, {@code
+ * "enterprise"}); this enum mirrors it with the actual numeric caps the rest of the app reads.
  *
- * <p>Anything that needs to know "what's the limit" — quota enforcer, dashboard banner, billing
- * page CTA — comes here, NOT to the column. That way bumping a tier's allowance is one edit + a
- * deploy, not a migration.
+ * <p>Pricing model: PRO is sold as one-time prepaid bundles for 1, 3, 6, or 12 months with an
+ * aggressive discount ladder. The {@link #monthlyPriceCents()} field is kept for backward
+ * compatibility with the existing usage snapshot (frontend reads it as the "base monthly rate"
+ * shown next to the plan name); {@link #priceCentsForDuration(int)} is the canonical price source
+ * for new checkout flows.
  *
- * <p>Pricing lives next to the cap to keep the dashboard coherent with the api. Stripe price IDs
- * stay in env so test + prod can target different price objects without code changes.
+ * <p>Anything that needs a numeric limit — quota enforcer, dashboard banner, billing page CTA —
+ * comes here, NOT to the DB column. Bumping a tier's allowance is one edit + a deploy, not a
+ * migration.
  */
 public enum PlanTier {
   FREE(0, 5_000L, 1, Duration.ofDays(30)),
-  PRO(900, 100_000L, 10, Duration.ofDays(30)), // $9.00 — Stripe expects integer cents
+  PRO(999, 100_000L, 10, Duration.ofDays(30)),
   ENTERPRISE(0, Long.MAX_VALUE, Integer.MAX_VALUE, Duration.ofDays(365));
 
   private final int monthlyPriceCents;
@@ -32,7 +35,6 @@ public enum PlanTier {
     this.retention = retention;
   }
 
-  /** Wire string used in the DB enum + the api responses. */
   public String dbValue() {
     return name().toLowerCase(Locale.ROOT);
   }
@@ -54,10 +56,27 @@ public enum PlanTier {
   }
 
   /**
-   * Parses the wire/DB string into a tier. Unknown values fall back to {@link #FREE} so a stray row
-   * never crashes a controller — the worst case is the most restrictive limits, which is the safer
-   * default.
+   * Total price in cents for a one-time purchase covering {@code months}. PRO uses an aggressive
+   * ladder ($9.99 / $24.99 / $44.99 / $79.99 for 1/3/6/12 months — 0% / 17% / 25% / 33% discount
+   * versus the base rate). Other tiers return 0; FREE and ENTERPRISE are not sold via the
+   * checkout flow.
    */
+  public int priceCentsForDuration(int months) {
+    if (this != PRO) return 0;
+    return switch (months) {
+      case 1 -> 999;
+      case 3 -> 2499;
+      case 6 -> 4499;
+      case 12 -> 7999;
+      default -> throw new IllegalArgumentException(
+          "Unsupported duration for "
+              + name()
+              + ": "
+              + months
+              + " months. Allowed: 1, 3, 6, 12.");
+    };
+  }
+
   public static PlanTier fromDbValue(String raw) {
     if (raw == null) return FREE;
     try {

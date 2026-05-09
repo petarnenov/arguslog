@@ -1,25 +1,32 @@
 import {
   Alert,
   Badge,
+  Box,
   Button,
   Card,
   Group,
   Loader,
   Progress,
-  SegmentedControl,
+  SimpleGrid,
   Stack,
   Text,
   Title,
 } from '@mantine/core';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
-import { openPortal, startCheckout, type BillingInterval } from '../api/billing';
+import { startCryptoCheckout, type DurationOffer, type PlanDuration } from '../api/billing';
 import { ApiError } from '../api/client';
-import { useMyOrgs, useUsage } from '../api/queries';
+import { useBillingPlans, useMyOrgs, useUsage } from '../api/queries';
 import { useReportSoftError } from '../lib/reportSoftError';
+
+const DURATION_LABEL_KEY: Record<PlanDuration, string> = {
+  1: 'billing.duration1',
+  3: 'billing.duration3',
+  6: 'billing.duration6',
+  12: 'billing.duration12',
+};
 
 export function BillingPage() {
   const { t } = useTranslation();
@@ -27,35 +34,23 @@ export function BillingPage() {
   const orgs = useMyOrgs();
   const org = orgs.data?.find((o) => o.slug === orgSlug);
   const usage = useUsage(org?.id);
+  const plans = useBillingPlans();
 
-  // Soft-error capture: if the URL slug doesn't resolve to one of the user's orgs we render the
-  // empty state silently otherwise. Surface the anomaly to dogfood Arguslog so URL/router
-  // regressions (e.g. Stripe redirects with the wrong slug) are visible in the dashboard.
   useReportSoftError(
     Boolean(orgs.data && !org && orgSlug),
     `BillingPage: org slug "${orgSlug}" not in user's memberships ` +
       `(known: ${(orgs.data ?? []).map((o) => o.slug).join(',') || 'none'})`,
   );
 
-  // The picker is only visible BEFORE checkout (free → pro). Once subscribed, switching
-  // monthly↔annual goes through the Stripe Customer Portal so we don't have to write proration
-  // logic ourselves; the webhook informs us of the new cadence.
-  const [interval, setInterval] = useState<BillingInterval>('monthly');
-
-  const checkout = useMutation({
-    mutationFn: () => startCheckout(org!.id, interval),
-    onSuccess: ({ url }) => {
-      window.location.assign(url);
-    },
-  });
-  const portal = useMutation({
-    mutationFn: () => openPortal(org!.id),
-    onSuccess: ({ url }) => {
-      window.location.assign(url);
+  const cryptoCheckout = useMutation({
+    mutationFn: ({ duration }: { duration: PlanDuration }) =>
+      startCryptoCheckout(org!.id, duration),
+    onSuccess: ({ checkoutUrl }) => {
+      window.location.assign(checkoutUrl);
     },
   });
 
-  if (orgs.isLoading || usage.isLoading) {
+  if (orgs.isLoading || usage.isLoading || plans.isLoading) {
     return (
       <Group p="md">
         <Loader size="sm" />
@@ -81,17 +76,23 @@ export function BillingPage() {
   const isPro = snapshot.plan === 'pro';
   const percent = Math.min(100, Math.round(snapshot.ratio * 100));
   const progressColor = snapshot.exceeded ? 'red' : percent >= 80 ? 'yellow' : 'teal';
-  const priceLabel = formatPriceLabel(snapshot.monthlyPriceCents, snapshot.billingInterval, isPro);
   const renewsLabel = isPro && snapshot.renewsAt ? formatRenewalDate(snapshot.renewsAt) : null;
 
-  const checkoutError = errorMessage(checkout.error);
-  const portalError = errorMessage(portal.error);
+  const checkoutError = errorMessage(cryptoCheckout.error);
   const graceDaysRemaining = snapshot.paymentGraceUntil
     ? daysUntil(snapshot.paymentGraceUntil)
     : null;
+  const renewDaysRemaining =
+    isPro && snapshot.renewsAt ? daysUntil(snapshot.renewsAt) : null;
+  const renewSoon =
+    renewDaysRemaining !== null && renewDaysRemaining > 0 && renewDaysRemaining <= 14;
+  const renewExpired = renewDaysRemaining === 0;
+
+  const proOffers: DurationOffer[] = plans.data?.pro.durations ?? [];
+  const showCheckout = !isPro || renewSoon || renewExpired;
 
   return (
-    <Stack maw={760}>
+    <Stack maw={1040}>
       <Title order={3}>{t('billing.title')}</Title>
 
       {graceDaysRemaining !== null && (
@@ -101,16 +102,21 @@ export function BillingPage() {
               <Text fw={600}>{t('billing.paymentFailedTitle')}</Text>
               <Text size="sm">{t('billing.paymentFailedBody', { days: graceDaysRemaining })}</Text>
             </Stack>
-            <Button
-              variant="white"
-              color="red"
-              loading={portal.isPending}
-              onClick={() => portal.mutate()}
-              data-testid="update-payment-button"
-            >
-              {t('billing.updatePayment')}
-            </Button>
           </Group>
+        </Alert>
+      )}
+
+      {(renewSoon || renewExpired) && (
+        <Alert
+          color={renewExpired ? 'red' : 'yellow'}
+          variant="light"
+          data-testid="renew-banner"
+        >
+          <Text size="sm" fw={500}>
+            {renewExpired
+              ? t('billing.renewExpired')
+              : t('billing.renewSoon', { days: renewDaysRemaining })}
+          </Text>
         </Alert>
       )}
 
@@ -125,9 +131,9 @@ export function BillingPage() {
                 <Title order={2} tt="capitalize">
                   {snapshot.plan}
                 </Title>
-                {priceLabel && (
-                  <Badge variant="light" color="blue">
-                    {priceLabel}
+                {!isPro && (
+                  <Badge variant="light" color="gray">
+                    {t('billing.freeBadge')}
                   </Badge>
                 )}
               </Group>
@@ -137,38 +143,6 @@ export function BillingPage() {
                 </Text>
               )}
             </Stack>
-            <Group gap="xs">
-              {!isPro && (
-                <Stack gap="xs" align="flex-end">
-                  <SegmentedControl
-                    value={interval}
-                    onChange={(v) => setInterval(v as BillingInterval)}
-                    data-testid="billing-interval-toggle"
-                    data={[
-                      { label: t('billing.intervalMonthly'), value: 'monthly' },
-                      { label: t('billing.intervalAnnualSave'), value: 'annual' },
-                    ]}
-                  />
-                  <Button
-                    loading={checkout.isPending}
-                    onClick={() => checkout.mutate()}
-                    data-testid="upgrade-button"
-                  >
-                    {t('billing.upgrade')}
-                  </Button>
-                </Stack>
-              )}
-              {isPro && (
-                <Button
-                  variant="default"
-                  loading={portal.isPending}
-                  onClick={() => portal.mutate()}
-                  data-testid="manage-button"
-                >
-                  {t('billing.manage')}
-                </Button>
-              )}
-            </Group>
           </Group>
 
           <Stack gap={4}>
@@ -202,20 +176,105 @@ export function BillingPage() {
               <Text size="sm">{t('billing.retentionDays', { days: snapshot.retentionDays })}</Text>
             </Stack>
           </Group>
+        </Stack>
+      </Card>
 
+      {showCheckout && proOffers.length > 0 && (
+        <Stack gap="sm">
+          <Title order={4}>{isPro ? t('billing.extendPlan') : t('billing.pickPlan')}</Title>
+          <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="md">
+            {proOffers.map((offer) => (
+              <DurationCard
+                key={offer.months}
+                offer={offer}
+                pending={
+                  cryptoCheckout.isPending &&
+                  cryptoCheckout.variables?.duration === offer.months
+                }
+                onPick={() => cryptoCheckout.mutate({ duration: offer.months })}
+              />
+            ))}
+          </SimpleGrid>
+          <Text size="xs" c="dimmed">
+            {t('billing.cryptoNote')}
+          </Text>
           {checkoutError && (
             <Alert color="red" variant="light">
               {checkoutError}
             </Alert>
           )}
-          {portalError && (
-            <Alert color="red" variant="light">
-              {portalError}
-            </Alert>
-          )}
         </Stack>
-      </Card>
+      )}
     </Stack>
+  );
+}
+
+function DurationCard({
+  offer,
+  pending,
+  onPick,
+}: {
+  offer: DurationOffer;
+  pending: boolean;
+  onPick: () => void;
+}) {
+  const { t } = useTranslation();
+  const isHighlighted = offer.months === 12;
+
+  return (
+    <Card
+      withBorder
+      padding="lg"
+      radius="md"
+      data-testid={`duration-card-${offer.months}`}
+      style={
+        isHighlighted
+          ? {
+              borderColor: 'var(--mantine-color-blue-6)',
+              borderWidth: 2,
+              position: 'relative',
+            }
+          : { position: 'relative' }
+      }
+    >
+      {isHighlighted && (
+        <Badge
+          variant="filled"
+          color="blue"
+          size="sm"
+          style={{ position: 'absolute', top: -10, right: 12 }}
+        >
+          {t('billing.bestValue')}
+        </Badge>
+      )}
+      <Stack gap="xs">
+        <Group justify="space-between" align="center">
+          <Text fw={600}>{t(DURATION_LABEL_KEY[offer.months])}</Text>
+          {offer.savePercent > 0 && (
+            <Badge variant="light" color="green" size="sm">
+              {t('billing.saveBadge', { percent: offer.savePercent })}
+            </Badge>
+          )}
+        </Group>
+        <Box>
+          <Text size="xl" fw={700}>
+            {t('billing.totalPrice', { price: formatDollars(offer.amountCents) })}
+          </Text>
+          <Text size="xs" c="dimmed">
+            {t('billing.perMonth', { price: formatDollars(offer.perMonthCents) })}
+          </Text>
+        </Box>
+        <Button
+          fullWidth
+          variant={isHighlighted ? 'filled' : 'light'}
+          loading={pending}
+          onClick={onPick}
+          data-testid={`pay-crypto-${offer.months}`}
+        >
+          {t('billing.payWithCrypto')}
+        </Button>
+      </Stack>
+    </Card>
   );
 }
 
@@ -229,27 +288,13 @@ function formatNumber(n: number): string {
   return new Intl.NumberFormat('en-US').format(n);
 }
 
-function daysUntil(iso: string): number {
-  const ms = new Date(iso).getTime() - Date.now();
-  // Math.ceil so the banner reads "1 day remaining" until the deadline actually passes,
-  // and clamps to 0 once expired (worker hasn't run the downgrade yet).
-  return Math.max(0, Math.ceil(ms / (24 * 3600 * 1000)));
+function formatDollars(cents: number): string {
+  return (cents / 100).toFixed(2);
 }
 
-function formatPriceLabel(
-  monthlyPriceCents: number,
-  interval: BillingInterval,
-  isPro: boolean,
-): string | null {
-  if (monthlyPriceCents <= 0) return null;
-  // For an active Pro subscriber, surface their actual cadence ($9/mo or $90/yr). For a free-tier
-  // viewer, the badge is a teaser of the monthly Pro price — annual pricing is reserved for the
-  // segmented-control row beside the upgrade button.
-  if (isPro && interval === 'annual') {
-    const annual = (monthlyPriceCents * 10) / 100; // ~10× monthly = 17% off 12×, rounded to a whole dollar
-    return `$${annual.toFixed(0)}/yr`;
-  }
-  return `$${(monthlyPriceCents / 100).toFixed(0)}/mo`;
+function daysUntil(iso: string): number {
+  const ms = new Date(iso).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / (24 * 3600 * 1000)));
 }
 
 function formatRenewalDate(iso: string): string {

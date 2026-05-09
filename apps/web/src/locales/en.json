@@ -238,7 +238,22 @@
     "updatePayment": "Update payment method",
     "intervalMonthly": "Monthly",
     "intervalAnnualSave": "Annual (save 17%)",
-    "renewsOn": "Renews on {{date}}"
+    "renewsOn": "Renews on {{date}}",
+    "pickPlan": "Choose your plan",
+    "extendPlan": "Extend your plan",
+    "duration1": "1 month",
+    "duration3": "3 months",
+    "duration6": "6 months",
+    "duration12": "12 months",
+    "perMonth": "${{price}}/mo",
+    "totalPrice": "${{price}}",
+    "saveBadge": "Save {{percent}}%",
+    "bestValue": "Best value",
+    "payWithCrypto": "Pay with crypto",
+    "cryptoNote": "USDT, USDC, BTC, ETH and 200+ tokens accepted. Hosted by NOWPayments.",
+    "renewSoon": "Plan expires in {{days}} day(s) — renew below to keep Pro.",
+    "renewExpired": "Plan expired — purchase a new term to restore Pro features.",
+    "freeBadge": "Free"
   },
   "releases": {
     "title": "Releases",

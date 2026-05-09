@@ -18,10 +18,16 @@ import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
+import org.arguslog.api.billing.application.ApplyPlanPurchaseUseCase;
+import org.arguslog.api.billing.application.CryptoCheckoutUseCase;
+import org.arguslog.api.billing.application.NowPaymentsWebhookUseCase;
 import org.arguslog.api.billing.application.PortalUseCase;
 import org.arguslog.api.billing.application.StripeWebhookUseCase;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
+import org.arguslog.api.billing.application.port.CryptoEventLog;
+import org.arguslog.api.billing.application.port.CryptoInvoiceRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.application.port.PlanPurchaseRepository;
 import org.arguslog.api.billing.application.port.StripeEventLog;
 import org.arguslog.api.billing.application.port.StripeEventVerifier;
 import org.arguslog.api.billing.application.port.UsageRepository;
@@ -81,6 +87,12 @@ class ApiApplicationTests {
   @MockitoBean StripeEventLog stripeEventLog;
   @MockitoBean StripeEventVerifier stripeEventVerifier;
   @MockitoBean StripeClient stripeClient;
+  @MockitoBean PlanPurchaseRepository planPurchaseRepository;
+  @MockitoBean ApplyPlanPurchaseUseCase applyPlanPurchaseUseCase;
+  @MockitoBean CryptoInvoiceRepository cryptoInvoiceRepository;
+  @MockitoBean CryptoEventLog cryptoEventLog;
+  @MockitoBean CryptoCheckoutUseCase cryptoCheckoutUseCase;
+  @MockitoBean NowPaymentsWebhookUseCase nowPaymentsWebhookUseCase;
 
   @Test
   void contextLoads() {}
