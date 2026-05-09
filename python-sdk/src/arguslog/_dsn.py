@@ -60,6 +60,4 @@ def _is_dev_host(host: str) -> bool:
         return True
     if a == 192 and b == 168:
         return True
-    if a == 172 and 16 <= b <= 31:
-        return True
-    return False
+    return a == 172 and 16 <= b <= 31
