@@ -118,6 +118,14 @@ describe('BillingPage', () => {
     // Total prices.
     expect(screen.getByTestId('duration-card-1')).toHaveTextContent('$11.99');
     expect(screen.getByTestId('duration-card-12')).toHaveTextContent('$95.99');
+
+    // The "what you get" panel is rendered before the cards so visitors know
+    // what they're paying for. Quotas come from the API (server-driven).
+    const features = screen.getByTestId('pro-features-panel');
+    expect(features).toHaveTextContent('100,000 events');
+    expect(features).toHaveTextContent('20×');
+    expect(features).toHaveTextContent('10 projects');
+    expect(features).toHaveTextContent(/no auto-renewal/i);
   });
 
   it('redirects to the NOWPayments checkout url when a duration card is picked', async () => {

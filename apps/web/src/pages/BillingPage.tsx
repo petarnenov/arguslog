@@ -5,18 +5,26 @@ import {
   Button,
   Card,
   Group,
+  List,
   Loader,
   Progress,
   SimpleGrid,
   Stack,
   Text,
+  ThemeIcon,
   Title,
 } from '@mantine/core';
+import { IconCheck } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 
-import { startCryptoCheckout, type DurationOffer, type PlanDuration } from '../api/billing';
+import {
+  startCryptoCheckout,
+  type DurationOffer,
+  type PlanDuration,
+  type PlanTierInfo,
+} from '../api/billing';
 import { ApiError } from '../api/client';
 import { useBillingPlans, useMyOrgs, useUsage } from '../api/queries';
 import { useReportSoftError } from '../lib/reportSoftError';
@@ -179,9 +187,10 @@ export function BillingPage() {
         </Stack>
       </Card>
 
-      {showCheckout && proOffers.length > 0 && (
+      {showCheckout && proOffers.length > 0 && plans.data && (
         <Stack gap="sm">
           <Title order={4}>{isPro ? t('billing.extendPlan') : t('billing.pickPlan')}</Title>
+          <ProFeaturesPanel pro={plans.data.pro} free={plans.data.free} />
           <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="md">
             {proOffers.map((offer) => (
               <DurationCard
@@ -206,6 +215,48 @@ export function BillingPage() {
         </Stack>
       )}
     </Stack>
+  );
+}
+
+function ProFeaturesPanel({ pro, free }: { pro: PlanTierInfo; free: PlanTierInfo }) {
+  const { t } = useTranslation();
+  const multiplier = free.monthlyEventCap > 0
+    ? Math.round(pro.monthlyEventCap / free.monthlyEventCap)
+    : 0;
+  const items: string[] = [
+    t('billing.proIncludesEvents', {
+      events: formatNumber(pro.monthlyEventCap),
+      multiplier,
+      freeEvents: formatNumber(free.monthlyEventCap),
+    }),
+    t('billing.proIncludesProjects', { count: pro.projectCap, free: free.projectCap }),
+    t('billing.proIncludesRetention', { days: pro.retentionDays }),
+    t('billing.proIncludesAlerts'),
+    t('billing.proIncludesSdks'),
+    t('billing.proIncludesOneTime'),
+    t('billing.proIncludesCancelAnytime'),
+  ];
+  return (
+    <Card withBorder padding="lg" radius="md" data-testid="pro-features-panel">
+      <Stack gap="sm">
+        <Text fw={600} size="sm" tt="uppercase" c="dimmed">
+          {t('billing.proIncludesTitle')}
+        </Text>
+        <List
+          spacing="xs"
+          size="sm"
+          icon={
+            <ThemeIcon color="teal" size={20} radius="xl">
+              <IconCheck size={14} stroke={3} />
+            </ThemeIcon>
+          }
+        >
+          {items.map((item) => (
+            <List.Item key={item}>{item}</List.Item>
+          ))}
+        </List>
+      </Stack>
+    </Card>
   );
 }
 
