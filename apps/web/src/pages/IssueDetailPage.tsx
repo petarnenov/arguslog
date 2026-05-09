@@ -41,6 +41,7 @@ import {
   type RawFrame,
   StacktraceView,
 } from './issue-detail/Stacktrace';
+import { extractWeb3Summary, Web3Panel, type Web3Summary } from './issue-detail/Web3Panel';
 
 const LEVEL_COLOR: Record<IssueLevel, string> = {
   fatal: 'red',
@@ -94,6 +95,13 @@ export function IssueDetailPage() {
     for (const ev of eventsQ.data?.data ?? []) out[ev.id] = extractEventMeta(ev.payload);
     return out;
   }, [eventsQ.data]);
+  const eventWeb3 = useMemo<Record<string, Web3Summary | undefined>>(() => {
+    const out: Record<string, Web3Summary | undefined> = {};
+    for (const ev of eventsQ.data?.data ?? []) {
+      out[ev.id] = extractWeb3Summary(eventMetas[ev.id]!, eventBreadcrumbs[ev.id] ?? []);
+    }
+    return out;
+  }, [eventsQ.data, eventMetas, eventBreadcrumbs]);
   const anySymbolicated = useMemo(
     () => Object.values(eventFrames).some((f) => hasSymbolication(f)),
     [eventFrames],
@@ -252,6 +260,7 @@ export function IssueDetailPage() {
                     contexts: {},
                     extra: {},
                   };
+                  const web3 = eventWeb3[event.id];
                   const receivedAtMs = new Date(event.receivedAt).getTime();
                   return [
                     <Table.Tr key={event.id}>
@@ -272,6 +281,15 @@ export function IssueDetailPage() {
                           <Table.Tr key={`${event.id}-meta`}>
                             <Table.Td colSpan={3} style={{ paddingTop: 0 }}>
                               <EventDetailsView meta={meta} />
+                            </Table.Td>
+                          </Table.Tr>,
+                        ]
+                      : []),
+                    ...(web3
+                      ? [
+                          <Table.Tr key={`${event.id}-web3`}>
+                            <Table.Td colSpan={3} style={{ paddingTop: 0 }}>
+                              <Web3Panel summary={web3} />
                             </Table.Td>
                           </Table.Tr>,
                         ]
