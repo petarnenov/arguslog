@@ -25,34 +25,8 @@ def test_loopback_127_dotted_quad() -> None:
     assert parsed.scheme == "http"
 
 
-@pytest.mark.parametrize(
-    "host",
-    [
-        "192.168.0.186",
-        "192.168.1.1",
-        "10.0.0.5",
-        "10.255.255.255",
-        "172.16.0.1",
-        "172.31.255.255",
-    ],
-)
-def test_rfc1918_private_uses_http(host: str) -> None:
-    parsed = parse_dsn(f"arguslog://k@{host}:8080/api/1")
-    assert parsed.scheme == "http"
-
-
-@pytest.mark.parametrize(
-    "host",
-    [
-        "172.15.0.1",  # below 172.16
-        "172.32.0.1",  # above 172.31
-        "193.168.0.1",  # 193, not 192
-        "11.0.0.1",  # not 10
-    ],
-)
-def test_just_outside_rfc1918_keeps_https(host: str) -> None:
-    parsed = parse_dsn(f"arguslog://k@{host}:8080/api/1")
-    assert parsed.scheme == "https"
+# RFC1918 + just-outside-the-range cases live in scripts/dsn-test-fixtures.json so all three
+# SDKs run identical assertions; see test_dsn_fixtures.py.
 
 
 @pytest.mark.parametrize(
