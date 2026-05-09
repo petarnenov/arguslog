@@ -360,15 +360,21 @@ function TierCard({
               }}
               data-testid={`pay-${tier.plan}-${selectedDuration}`}
             >
-              {offer && offer.savePercent > 0
-                ? t('billing.payTotalButtonWithSave', {
-                    total: formatDollars(offer.amountCents),
-                    save: offer.savePercent,
-                  })
-                : t('billing.payTotalButton', {
-                    total: formatDollars(offer?.amountCents ?? 0),
-                  })}
+              {t('billing.payTotalButton', {
+                total: formatDollars(offer?.amountCents ?? 0),
+              })}
             </Button>
+            {offer && offer.savePercent > 0 && (
+              <Text
+                size="xs"
+                c="teal.4"
+                fw={600}
+                ta="center"
+                data-testid={`save-hint-${tier.plan}-${selectedDuration}`}
+              >
+                {t('billing.savingsHint', { percent: offer.savePercent })}
+              </Text>
+            )}
           </Stack>
         )}
 
