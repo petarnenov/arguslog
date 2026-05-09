@@ -28,6 +28,45 @@ describe('wrapWalletClient', () => {
     expect(client.writeContract).toHaveBeenCalledOnce();
   });
 
+  it('records a web3.tx success breadcrumb on writeContract', async () => {
+    const client = {
+      writeContract: vi.fn(async (_opts: unknown) => '0xtxhash1234567890abcd'),
+    };
+    const wrapped = wrapWalletClient(client, { chain: { id: 1 }, wallet: 'metamask' });
+    await wrapped.writeContract({ address: '0xCAFE', functionName: 'mint', args: [1n] });
+    expect(addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: 'web3.tx',
+        level: 'info',
+        data: expect.objectContaining({
+          contract: '0xCAFE',
+          functionName: 'mint',
+          result: '0xtxhash1234567890abcd',
+        }),
+      }),
+    );
+  });
+
+  it('records a web3.sign success breadcrumb on signMessage', async () => {
+    const client = {
+      signMessage: vi.fn(async (_opts: unknown) => '0xsig...'),
+    };
+    const wrapped = wrapWalletClient(client);
+    await wrapped.signMessage({ message: 'hello' });
+    expect(addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ category: 'web3.sign' }),
+    );
+  });
+
+  it('skips success breadcrumb when recordSuccess is false', async () => {
+    const client = {
+      writeContract: vi.fn(async (_opts: unknown) => '0xtxhash'),
+    };
+    const wrapped = wrapWalletClient(client, { recordSuccess: false });
+    await wrapped.writeContract({ address: '0xA', functionName: 'mint' });
+    expect(addBreadcrumb).not.toHaveBeenCalled();
+  });
+
   it('captures errors thrown by writeContract with rich context and re-throws', async () => {
     const error = {
       name: 'ContractFunctionRevertedError',

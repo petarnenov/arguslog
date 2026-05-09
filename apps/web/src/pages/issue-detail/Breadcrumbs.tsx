@@ -1,6 +1,17 @@
 import { ActionIcon, Badge, Code, Collapse, Stack, Table, Text, Tooltip } from '@mantine/core';
-import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
-import { useState } from 'react';
+import {
+  IconAlertTriangle,
+  IconArrowsExchange,
+  IconChevronDown,
+  IconChevronRight,
+  IconCoin,
+  IconEye,
+  IconLink,
+  IconPlugConnected,
+  IconSignature,
+  IconWallet,
+} from '@tabler/icons-react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -24,6 +35,39 @@ const LEVEL_COLOR: Record<string, string> = {
   info: 'blue',
   debug: 'gray',
 };
+
+interface CategoryStyle {
+  color: string;
+  icon?: ReactNode;
+}
+
+/**
+ * Per-category visual styling. {@code web3.*} categories get distinctive icons/colors so
+ * the timeline reads as a story even at a glance — wallet connect → switch chain → sign
+ * → tx → confirm → error. Without these, every row is grey "info" and the user has to
+ * read every message.
+ */
+const CATEGORY_STYLE: Record<string, CategoryStyle> = {
+  'web3.wallet': { color: 'violet', icon: <IconWallet size={12} /> },
+  'web3.walletconnect': { color: 'violet', icon: <IconPlugConnected size={12} /> },
+  'web3.solana-wallet': { color: 'violet', icon: <IconWallet size={12} /> },
+  'web3.tx': { color: 'cyan', icon: <IconCoin size={12} /> },
+  'web3.sign': { color: 'teal', icon: <IconSignature size={12} /> },
+  'web3.simulate': { color: 'grape', icon: <IconEye size={12} /> },
+  'web3.confirm': { color: 'green', icon: <IconLink size={12} /> },
+  'web3.read': { color: 'gray', icon: <IconEye size={12} /> },
+  'web3.switch': { color: 'indigo', icon: <IconArrowsExchange size={12} /> },
+  'web3.error': { color: 'red', icon: <IconAlertTriangle size={12} /> },
+};
+
+function categoryStyleFor(category: string | undefined): CategoryStyle {
+  if (!category) return { color: 'gray' };
+  if (CATEGORY_STYLE[category]) return CATEGORY_STYLE[category];
+  // Catch-all for any future web3.* sub-category we haven't styled yet — keep them
+  // visually grouped in violet so the user still recognizes them as the web3 family.
+  if (category.startsWith('web3.')) return { color: 'violet' };
+  return { color: 'gray' };
+}
 
 /** Returns the {@code payload.breadcrumbs} array, hardened against malformed payloads. */
 export function extractBreadcrumbs(payload: unknown): RawBreadcrumb[] {
@@ -113,7 +157,20 @@ function BreadcrumbRow({ breadcrumb, referenceTime, absoluteFormatter }: Breadcr
         </Badge>
       </Table.Td>
       <Table.Td>
-        <Text size="xs">{breadcrumb.category ?? '—'}</Text>
+        {(() => {
+          const style = categoryStyleFor(breadcrumb.category);
+          if (!breadcrumb.category) return <Text size="xs">—</Text>;
+          return (
+            <Badge
+              size="xs"
+              variant="light"
+              color={style.color}
+              leftSection={style.icon ?? undefined}
+            >
+              {breadcrumb.category}
+            </Badge>
+          );
+        })()}
       </Table.Td>
       <Table.Td>
         <Stack gap={2}>

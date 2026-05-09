@@ -22,6 +22,13 @@ export {
   type WrapSolanaConnectionOptions,
 } from './wrap-solana-connection.js';
 export {
+  wrapEthersContract,
+  type WrapEthersContractOptions,
+} from './wrap-ethers-contract.js';
+export { wrapAnchorProgram, type WrapAnchorProgramOptions } from './wrap-anchor-program.js';
+export { wrapPublicClient, type WrapPublicClientOptions } from './wrap-public-client.js';
+export { recordTxBreadcrumb } from './record-tx-breadcrumb.js';
+export {
   installWagmiReporter,
   type MutationCacheLike,
   type MutationCacheNotifyEvent,

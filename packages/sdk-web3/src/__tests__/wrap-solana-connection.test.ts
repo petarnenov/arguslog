@@ -91,6 +91,54 @@ describe('wrapSolanaConnection', () => {
     );
   });
 
+  it('records a web3.tx success breadcrumb on sendTransaction', async () => {
+    const conn = {
+      sendTransaction: vi.fn(async (_tx: unknown) => 'sigOK1234567890ABCDEFGHIJKLMNO'),
+    };
+    const wrapped = wrapSolanaConnection(conn, { chain: { id: 'mainnet-beta' }, wallet: 'phantom' });
+    await wrapped.sendTransaction({});
+    expect(addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: 'web3.tx',
+        data: expect.objectContaining({
+          functionName: 'sendTransaction',
+          result: 'sigOK1234567890ABCDEFGHIJKLMNO',
+        }),
+      }),
+    );
+  });
+
+  it('records a web3.simulate success breadcrumb on simulateTransaction', async () => {
+    const conn = {
+      simulateTransaction: vi.fn(async (_tx: unknown) => ({ value: { logs: ['ok'] } })),
+    };
+    const wrapped = wrapSolanaConnection(conn);
+    await wrapped.simulateTransaction({});
+    expect(addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ category: 'web3.simulate' }),
+    );
+  });
+
+  it('records a web3.confirm success breadcrumb on confirmTransaction', async () => {
+    const conn = {
+      confirmTransaction: vi.fn(async (_strategy: unknown) => ({ value: { err: null } })),
+    };
+    const wrapped = wrapSolanaConnection(conn);
+    await wrapped.confirmTransaction({});
+    expect(addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ category: 'web3.confirm' }),
+    );
+  });
+
+  it('skips success breadcrumbs when recordSuccess: false', async () => {
+    const conn = {
+      sendTransaction: vi.fn(async (_tx: unknown) => 'sig'),
+    };
+    const wrapped = wrapSolanaConnection(conn, { recordSuccess: false });
+    await wrapped.sendTransaction({});
+    expect(addBreadcrumb).not.toHaveBeenCalled();
+  });
+
   it('does NOT wrap untracked methods (read calls)', async () => {
     const getBalance = vi.fn(async (_pk: unknown) => {
       throw new Error('rpc fail');

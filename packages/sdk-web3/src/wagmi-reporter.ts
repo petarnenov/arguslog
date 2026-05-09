@@ -1,4 +1,5 @@
 import { captureWeb3Error } from './capture-web3-error.js';
+import { recordTxBreadcrumb } from './record-tx-breadcrumb.js';
 import type { WalletKind, Web3ErrorContext } from './types.js';
 
 /**
@@ -44,7 +45,7 @@ export interface QueryClientLike {
 export interface MutationCacheNotifyEvent {
   type: string;
   mutation?: {
-    state?: { status?: string; error?: unknown; variables?: unknown };
+    state?: { status?: string; error?: unknown; variables?: unknown; data?: unknown };
     options?: { mutationKey?: readonly unknown[] };
   };
 }
@@ -60,6 +61,12 @@ export interface WagmiReporterOptions {
    * into {@link Web3ErrorContext}.
    */
   enrichContext?: (action: string, variables: unknown) => Partial<Web3ErrorContext>;
+  /**
+   * When true (default), every successful tracked wagmi mutation also leaves an info-level
+   * {@code web3.tx} / {@code web3.sign} / {@code web3.switch} breadcrumb. Set false if you
+   * only want failures recorded.
+   */
+  recordSuccess?: boolean;
 }
 
 export function installWagmiReporter(
@@ -70,10 +77,7 @@ export function installWagmiReporter(
   return cache.subscribe((event) => {
     if (event.type !== 'updated') return;
     const status = event.mutation?.state?.status;
-    if (status !== 'error') return;
-
-    const error = event.mutation?.state?.error;
-    if (!error) return;
+    if (status !== 'error' && status !== 'success') return;
 
     const mutationKey = event.mutation?.options?.mutationKey;
     if (!Array.isArray(mutationKey) || mutationKey.length === 0) return;
@@ -89,8 +93,47 @@ export function installWagmiReporter(
       ...baseCtx,
       ...userCtx,
     };
-    captureWeb3Error(error, ctx);
+
+    if (status === 'error') {
+      const error = event.mutation?.state?.error;
+      if (!error) return;
+      captureWeb3Error(error, ctx);
+      return;
+    }
+
+    // status === 'success'
+    if (options.recordSuccess === false) return;
+    const result = event.mutation?.state?.data;
+    recordTxBreadcrumb({
+      kind: kindFor(action),
+      message: successMessage(action, ctx, result),
+      context: ctx,
+      result: typeof result === 'string' ? result : undefined,
+    });
   });
+}
+
+function kindFor(action: string): 'tx' | 'sign' | 'switch' {
+  if (action === 'signMessage' || action === 'signTypedData') return 'sign';
+  if (action === 'switchChain') return 'switch';
+  return 'tx';
+}
+
+function successMessage(action: string, ctx: Web3ErrorContext, result: unknown): string {
+  if (action === 'writeContract' || action === 'sendTransaction') {
+    const head = ctx.functionName ?? action;
+    const target = ctx.contract ? ` ${ctx.contract}` : '';
+    const hash = typeof result === 'string' ? ` → ${truncateHash(result)}` : '';
+    return `${head}${target}${hash}`;
+  }
+  if (action === 'switchChain') {
+    return `switched chain → ${ctx.chain?.id ?? '?'}`;
+  }
+  return `${action} succeeded`;
+}
+
+function truncateHash(hash: string): string {
+  return hash.length > 14 ? `${hash.slice(0, 10)}…${hash.slice(-4)}` : hash;
 }
 
 function extractContext(action: string, variables: unknown): Partial<Web3ErrorContext> {

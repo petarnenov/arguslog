@@ -201,6 +201,64 @@ const connection = wrapSolanaConnection(new Connection(clusterApiUrl('mainnet-be
 // are auto-captured with chain + wallet + decoded program logs.
 ```
 
+### `wrapEthersContract`
+
+For ethers v6 contract instances — auto-instruments every callable on the contract so
+both writes and reads that fail land in Arguslog with the contract address and method name
+attached:
+
+```ts
+import { Contract } from 'ethers';
+import { wrapEthersContract } from '@arguslog/sdk-web3';
+
+const erc20 = wrapEthersContract(new Contract(addr, abi, signer), {
+  wallet: 'metamask',
+  chain: { id: 1, name: 'Ethereum' },
+});
+
+await erc20.transfer(recipient, amount); // auto-captures revert / user rejection / RPC error
+```
+
+Standard ERC20 reads (`balanceOf`, `totalSupply`, `allowance`, `decimals`, `symbol`,
+`name`) are skipped by default to avoid breadcrumb noise — pass `skip: new Set()` to wrap
+them too.
+
+### `wrapAnchorProgram`
+
+For `@coral-xyz/anchor` programs — wraps `program.methods` so every instruction call's
+terminal `.rpc()` / `.simulate()` / `.transaction()` is auto-instrumented with the program
+ID as the contract field:
+
+```ts
+import { Program } from '@coral-xyz/anchor';
+import { wrapAnchorProgram } from '@arguslog/sdk-web3';
+
+const program = wrapAnchorProgram(new Program(idl, programId, provider), {
+  wallet: 'phantom',
+  chain: { id: 'mainnet-beta', name: 'Solana mainnet' },
+});
+
+await program.methods.swap(amountIn, minOut).accounts({...}).rpc();
+// AnchorError logs are decoded via the Solana decoder; success leaves a `web3.tx` breadcrumb.
+```
+
+### `wrapPublicClient`
+
+For viem `PublicClient` — captures READ-side failures (revert reasons surfaced by
+`simulateContract`, gas-estimation reverts, RPC timeouts on `waitForTransactionReceipt`).
+Successful reads are not breadcrumbed (read calls happen constantly):
+
+```ts
+import { createPublicClient, http } from 'viem';
+import { mainnet } from 'viem/chains';
+import { wrapPublicClient } from '@arguslog/sdk-web3';
+
+const publicClient = wrapPublicClient(
+  createPublicClient({ chain: mainnet, transport: http() }),
+  { chain: { id: 1, name: 'Ethereum' } },
+);
+```
+
 ### `installSolanaWalletBreadcrumbs`
 
 Listen to `@solana/wallet-adapter-base` adapter events:
@@ -242,9 +300,12 @@ installWalletConnectBreadcrumbs(wcProvider);     // + WC session lifecycle
   program-log parsing (Anchor + custom-error hex codes).
 - **Phase 3** ✅ — wagmi v2 mutation cache reporter, `wrapSolanaConnection`,
   `installSolanaWalletBreadcrumbs`, WalletConnect lifecycle breadcrumbs.
-- **Phase 4** — server-side ABI / Anchor IDL upload → richer decoding of custom errors the
-  client-side bundle didn't include; viem `PublicClient` read-side wrapping for RPC failure
-  attribution; first-class wagmi `connector` event listening.
+- **Phase 4** ✅ — full auto-breadcrumb coverage: success-path breadcrumbs across every
+  wrapper, plus `wrapEthersContract`, `wrapAnchorProgram`, `wrapPublicClient` so reads,
+  writes, simulations, confirmations, signs and chain switches all flow into the
+  breadcrumb timeline as a coherent narrative leading up to any failure.
+- **Phase 5** — server-side ABI / Anchor IDL upload → richer decoding of custom errors the
+  client-side bundle didn't include; first-class wagmi `connector` event listening.
 
 ## License
 

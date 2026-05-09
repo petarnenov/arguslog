@@ -1,4 +1,5 @@
 import { captureWeb3Error } from './capture-web3-error.js';
+import { recordTxBreadcrumb } from './record-tx-breadcrumb.js';
 import type { WalletKind, Web3ErrorContext } from './types.js';
 
 /**
@@ -39,6 +40,12 @@ export interface WrapWalletClientOptions {
    * {@link Web3ErrorContext}.
    */
   enrichContext?: (method: string, args: readonly unknown[]) => Partial<Web3ErrorContext>;
+  /**
+   * When true (default), every successful tracked call also leaves an info-level
+   * {@code web3.tx} / {@code web3.sign} breadcrumb. Set false if you only want failures
+   * recorded.
+   */
+  recordSuccess?: boolean;
 }
 
 export function wrapWalletClient<T extends object>(
@@ -52,17 +59,28 @@ export function wrapWalletClient<T extends object>(
       if (!TRACKED_METHODS.has(prop)) return value;
 
       return async (...args: unknown[]) => {
+        const context: Web3ErrorContext = {
+          wallet: options.wallet,
+          chain: options.chain,
+          functionName: extractFunctionName(prop, args),
+          contract: extractContract(prop, args),
+          args: extractArgs(prop, args),
+          ...(options.enrichContext?.(prop, args) ?? {}),
+        };
         try {
-          return await Reflect.apply(value, target, args);
+          const result = await Reflect.apply(value, target, args);
+          // Success path — record a breadcrumb at info level so the timeline reads as a
+          // narrative leading up to whatever failure eventually fires.
+          if (options.recordSuccess !== false) {
+            recordTxBreadcrumb({
+              kind: prop.startsWith('sign') ? 'sign' : 'tx',
+              message: successMessage(prop, context, result),
+              context,
+              result: typeof result === 'string' ? result : undefined,
+            });
+          }
+          return result;
         } catch (error) {
-          const context: Web3ErrorContext = {
-            wallet: options.wallet,
-            chain: options.chain,
-            functionName: extractFunctionName(prop, args),
-            contract: extractContract(prop, args),
-            args: extractArgs(prop, args),
-            ...(options.enrichContext?.(prop, args) ?? {}),
-          };
           captureWeb3Error(error, context);
           throw error;
         }
@@ -98,4 +116,21 @@ function extractArgs(method: string, args: unknown[]): readonly unknown[] | unde
     return opts?.args;
   }
   return undefined;
+}
+
+function successMessage(method: string, context: Web3ErrorContext, result: unknown): string {
+  if (method === 'writeContract' || method === 'sendTransaction' || method === 'deployContract') {
+    const head = context.functionName ?? method;
+    const target = context.contract ? ` ${context.contract}` : '';
+    const hash = typeof result === 'string' ? ` → ${truncateHash(result)}` : '';
+    return `${head}${target}${hash}`;
+  }
+  if (method.startsWith('sign')) {
+    return `${method} signed`;
+  }
+  return method;
+}
+
+function truncateHash(hash: string): string {
+  return hash.length > 14 ? `${hash.slice(0, 10)}…${hash.slice(-4)}` : hash;
 }
