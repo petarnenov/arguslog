@@ -30,7 +30,7 @@ import { ArguslogApiError, ArguslogClient } from './client.js';
 import { executeTool, listMcpTools } from './tools.js';
 
 const PACKAGE_NAME = '@arguslog/mcp-server';
-const PACKAGE_VERSION = '0.1.0';
+const PACKAGE_VERSION = '0.2.0';
 
 const PORT = Number(process.env.PORT ?? 8080);
 const ARGUSLOG_API_URL = process.env.ARGUSLOG_API_URL ?? 'https://api.arguslog.org';
