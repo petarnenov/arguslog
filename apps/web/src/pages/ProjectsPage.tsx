@@ -1,6 +1,8 @@
 import {
   ActionIcon,
   Alert,
+  Badge,
+  Box,
   Button,
   Card,
   Center,
@@ -8,16 +10,19 @@ import {
   CopyButton,
   Group,
   Loader,
+  Menu,
   Modal,
   Select,
   SimpleGrid,
   Stack,
   Text,
   TextInput,
+  ThemeIcon,
   Title,
+  Tooltip,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconTrash } from '@tabler/icons-react';
+import { IconArchive, IconArrowRight, IconDotsVertical } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +32,8 @@ import { ApiError } from '../api/client';
 import { createDsn, type Dsn } from '../api/keys';
 import { archiveProject, createProject, type Project } from '../api/projects';
 import { queryKeys, useMyOrgs, usePlatforms, useProjects } from '../api/queries';
+import { platformVisuals } from '../lib/platformVisuals';
+import { formatRelativeTime } from '../lib/relativeTime';
 import { useReportSoftError } from '../lib/reportSoftError';
 
 interface DsnSuccess {
@@ -204,44 +211,17 @@ export function ProjectsPage() {
       ) : projectsQuery.data && projectsQuery.data.length === 0 ? (
         <Text c="dimmed">{t('projects.empty')}</Text>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
           {projectsQuery.data?.map((p) => (
-            <Card key={p.id} shadow="xs" padding="lg" radius="md" withBorder pos="relative">
-              <Card.Section
-                component={Link}
-                to={`/orgs/${org.slug}/projects/${p.id}/issues`}
-                inheritPadding
-                py="lg"
-                style={{ textDecoration: 'none', color: 'inherit' }}
-              >
-                <Group justify="space-between" wrap="nowrap">
-                  <Title order={5}>{p.name}</Title>
-                  <Text size="xs" c="dimmed">
-                    {p.platform}
-                  </Text>
-                </Group>
-                <Text size="sm" c="dimmed">
-                  {p.slug}
-                </Text>
-              </Card.Section>
-              <ActionIcon
-                variant="subtle"
-                color="red"
-                size="sm"
-                pos="absolute"
-                top={8}
-                right={8}
-                aria-label={t('projects.archiveAria', { name: p.name })}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setArchiveError(null);
-                  setArchiveTarget(p);
-                }}
-              >
-                <IconTrash size={14} />
-              </ActionIcon>
-            </Card>
+            <ProjectCard
+              key={p.id}
+              project={p}
+              orgSlug={org.slug}
+              onArchive={(target) => {
+                setArchiveError(null);
+                setArchiveTarget(target);
+              }}
+            />
           ))}
         </SimpleGrid>
       )}
@@ -372,5 +352,118 @@ export function ProjectsPage() {
         ) : null}
       </Modal>
     </Stack>
+  );
+}
+
+interface ProjectCardProps {
+  project: Project;
+  orgSlug: string;
+  onArchive: (project: Project) => void;
+}
+
+function ProjectCard({ project, orgSlug, onArchive }: ProjectCardProps) {
+  const { t, i18n } = useTranslation();
+  const visuals = platformVisuals(project.platform);
+  const PlatformIcon = visuals.Icon;
+  const issuesUrl = `/orgs/${orgSlug}/projects/${project.id}/issues`;
+  const createdRelative = formatRelativeTime(project.createdAt, i18n.language || 'en');
+  const createdAbsolute = new Date(project.createdAt).toLocaleString(i18n.language || 'en');
+
+  return (
+    <Card
+      component={Link}
+      to={issuesUrl}
+      shadow="xs"
+      padding="lg"
+      radius="md"
+      withBorder
+      data-testid={`project-card-${project.slug}`}
+      aria-label={t('projects.openAria', { name: project.name })}
+      style={{
+        textDecoration: 'none',
+        color: 'inherit',
+        cursor: 'pointer',
+        transition: 'transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = 'var(--mantine-shadow-md)';
+        e.currentTarget.style.borderColor = `var(--mantine-color-${visuals.color}-5)`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = '';
+        e.currentTarget.style.boxShadow = '';
+        e.currentTarget.style.borderColor = '';
+      }}
+    >
+      <Group justify="space-between" wrap="nowrap" align="flex-start" mb="sm">
+        <Group gap="sm" wrap="nowrap" align="flex-start" style={{ minWidth: 0, flex: 1 }}>
+          <ThemeIcon variant="light" color={visuals.color} size={40} radius="md">
+            <PlatformIcon size={22} />
+          </ThemeIcon>
+          <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
+            <Text size="md" fw={600} lineClamp={1}>
+              {project.name}
+            </Text>
+            <Code style={{ fontSize: 11, padding: '0 4px', alignSelf: 'flex-start' }}>
+              {project.slug}
+            </Code>
+          </Stack>
+        </Group>
+        <Box
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          <Menu shadow="md" width={180} position="bottom-end" withinPortal>
+            <Menu.Target>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                aria-label={t('projects.menuAria', { name: project.name })}
+              >
+                <IconDotsVertical size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                component={Link}
+                to={issuesUrl}
+                leftSection={<IconArrowRight size={14} />}
+              >
+                {t('projects.viewIssues')}
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                color="red"
+                leftSection={<IconArchive size={14} />}
+                onClick={() => onArchive(project)}
+                aria-label={t('projects.archiveAria', { name: project.name })}
+              >
+                {t('projects.archiveAction')}
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Box>
+      </Group>
+
+      <Group justify="space-between" wrap="nowrap" gap="xs">
+        <Badge
+          size="sm"
+          variant="light"
+          color={visuals.color}
+          leftSection={<PlatformIcon size={12} />}
+        >
+          {project.platform}
+        </Badge>
+        <Tooltip label={createdAbsolute} withArrow>
+          <Text size="xs" c="dimmed">
+            {t('projects.createdAt', { relative: createdRelative })}
+          </Text>
+        </Tooltip>
+      </Group>
+    </Card>
   );
 }
