@@ -23,9 +23,11 @@ public record BillingPlansResponse(
       @JsonProperty("monthlyEventCap") long monthlyEventCap,
       @JsonProperty("projectCap") int projectCap,
       @JsonProperty("memberCap") int memberCap,
+      @JsonProperty("orgCap") int orgCap,
       @JsonProperty("retentionDays") long retentionDays,
       @JsonProperty("unlimitedProjects") boolean unlimitedProjects,
       @JsonProperty("unlimitedMembers") boolean unlimitedMembers,
+      @JsonProperty("unlimitedOrgs") boolean unlimitedOrgs,
       @JsonProperty("unlimitedEvents") boolean unlimitedEvents,
       @JsonProperty("durations") List<DurationOffer> durations) {}
 
@@ -50,9 +52,11 @@ public record BillingPlansResponse(
         tier.monthlyEventCap(),
         tier.projectCap(),
         tier.memberCap(),
+        tier.orgCap(),
         tier.retention().toDays(),
         tier.projectCap() == Integer.MAX_VALUE,
         tier.memberCap() == Integer.MAX_VALUE,
+        tier.orgCap() == Integer.MAX_VALUE,
         tier.monthlyEventCap() == Long.MAX_VALUE,
         offersFor(tier));
   }

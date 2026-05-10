@@ -9,6 +9,7 @@ import org.arguslog.api.application.OrgUseCase;
 import org.arguslog.api.application.OrgUseCase.DuplicateOrgException;
 import org.arguslog.api.application.OrgUseCase.InvalidOrgException;
 import org.arguslog.api.application.OrgUseCase.OrgAccessDeniedException;
+import org.arguslog.api.application.OrgUseCase.OrgQuotaExceededException;
 import org.arguslog.api.auth.PatScopeGuard;
 import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.domain.Org;
@@ -109,6 +110,17 @@ public class OrgController {
     body.setTitle("Forbidden");
     body.setType(URI.create("https://arguslog.org/problems/org-access-denied"));
     return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(OrgQuotaExceededException.class)
+  ResponseEntity<ProblemDetail> handleOrgQuotaExceeded(OrgQuotaExceededException e) {
+    ProblemDetail body =
+        ProblemDetail.forStatusAndDetail(HttpStatus.PAYMENT_REQUIRED, e.getMessage());
+    body.setTitle("Org cap exceeded");
+    body.setType(URI.create("https://arguslog.org/problems/org-cap-exceeded"));
+    return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }

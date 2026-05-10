@@ -49,9 +49,11 @@ export interface PlanTierInfo {
   monthlyEventCap: number;
   projectCap: number;
   memberCap: number;
+  orgCap: number;
   retentionDays: number;
   unlimitedProjects: boolean;
   unlimitedMembers: boolean;
+  unlimitedOrgs: boolean;
   unlimitedEvents: boolean;
   durations: DurationOffer[];
 }

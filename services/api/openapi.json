@@ -2136,6 +2136,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "orgCap" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "retentionDays" : {
             "type" : "integer",
             "format" : "int64"
@@ -2144,6 +2148,9 @@
             "type" : "boolean"
           },
           "unlimitedMembers" : {
+            "type" : "boolean"
+          },
+          "unlimitedOrgs" : {
             "type" : "boolean"
           },
           "unlimitedEvents" : {

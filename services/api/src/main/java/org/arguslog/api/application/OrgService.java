@@ -5,6 +5,8 @@ import java.util.UUID;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
+import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.domain.PlanTier;
 import org.arguslog.api.domain.Org;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,12 +20,17 @@ public class OrgService implements OrgUseCase {
   private final OrgWriteRepository orgs;
   private final UserRepository users;
   private final MembershipRepository memberships;
+  private final OrgPlanRepository plans;
 
   public OrgService(
-      OrgWriteRepository orgs, UserRepository users, MembershipRepository memberships) {
+      OrgWriteRepository orgs,
+      UserRepository users,
+      MembershipRepository memberships,
+      OrgPlanRepository plans) {
     this.orgs = orgs;
     this.users = users;
     this.memberships = memberships;
+    this.plans = plans;
   }
 
   @Override
@@ -40,9 +47,32 @@ public class OrgService implements OrgUseCase {
     if (actorEmail != null && !actorEmail.isBlank()) {
       users.upsertFromJwt(actorId, actorEmail, actorDisplayName);
     }
+    requireOrgCapAvailable(actorId);
     Org org = orgs.create(slugify(name), name.trim());
     orgs.addMember(org.id(), actorId, "owner");
     return org;
+  }
+
+  /**
+   * Enforces the per-user owner-org cap. Tier comes from the highest-paid org the user already
+   * owns; first-time users default to {@link PlanTier#FREE}. Members of someone else's org are
+   * unaffected — only the {@code owner} role contributes to the count.
+   */
+  private void requireOrgCapAvailable(UUID actorId) {
+    PlanTier tier = plans.findHighestPlanForOwner(actorId).orElse(PlanTier.FREE);
+    int cap = tier.orgCap();
+    if (cap == Integer.MAX_VALUE) return;
+    int existing = orgs.countOwnedBy(actorId);
+    if (existing >= cap) {
+      throw new OrgQuotaExceededException(
+          "Your "
+              + tier.dbValue()
+              + " plan allows "
+              + cap
+              + " organization"
+              + (cap == 1 ? "" : "s")
+              + " per user. Upgrade an existing organization to create another, or get invited to a teammate's workspace.");
+    }
   }
 
   @Override

@@ -94,6 +94,21 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
   }
 
   @Override
+  public int countOwnedBy(UUID userId) {
+    Integer n =
+        jdbc.queryForObject(
+            """
+            SELECT COUNT(*)::int
+              FROM org_members
+             WHERE user_id = ?
+               AND role = 'owner'::org_role
+            """,
+            Integer.class,
+            userId);
+    return n == null ? 0 : n;
+  }
+
+  @Override
   public List<Org> listForUser(UUID userId) {
     return jdbc.query(
         """

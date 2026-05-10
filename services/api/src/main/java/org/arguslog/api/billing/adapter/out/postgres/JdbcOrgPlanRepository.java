@@ -3,6 +3,7 @@ package org.arguslog.api.billing.adapter.out.postgres;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import javax.sql.DataSource;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.domain.BillingInterval;
@@ -30,6 +31,33 @@ public class JdbcOrgPlanRepository implements OrgPlanRepository {
     } catch (EmptyResultDataAccessException e) {
       return Optional.empty();
     }
+  }
+
+  @Override
+  public Optional<PlanTier> findHighestPlanForOwner(UUID userId) {
+    // Tier ordinal climbs FREE → STARTER → PRO → BUSINESS → ENTERPRISE, so MAX over the dbValue
+    // (mapped to ordinal in app code) gives the user's highest tier across owner-orgs. Done in
+    // Java instead of SQL because the enum's dbValue is the only PG-known representation; pulling
+    // every dbValue and computing max in code is a handful of strings — cheap.
+    String[] raws =
+        jdbc.query(
+                """
+                SELECT o.plan::text AS plan
+                  FROM organizations o
+                  JOIN org_members m ON m.org_id = o.id
+                 WHERE m.user_id = ?
+                   AND m.role = 'owner'::org_role
+                """,
+                (rs, rowNum) -> rs.getString("plan"),
+                userId)
+            .toArray(new String[0]);
+    if (raws.length == 0) return Optional.empty();
+    PlanTier best = PlanTier.FREE;
+    for (String raw : raws) {
+      PlanTier t = PlanTier.fromDbValue(raw);
+      if (t.ordinal() > best.ordinal()) best = t;
+    }
+    return Optional.of(best);
   }
 
   @Override

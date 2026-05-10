@@ -331,6 +331,11 @@ function TierCard({
               : t('billing.tierMembersLine', { count: tier.memberCap })}
           </List.Item>
           <List.Item>
+            {tier.unlimitedOrgs
+              ? t('billing.tierOrgsUnlimited')
+              : t('billing.tierOrgsLine', { count: tier.orgCap })}
+          </List.Item>
+          <List.Item>
             {t('billing.tierRetentionLine', { days: tier.retentionDays })}
           </List.Item>
           <List.Item>{t('billing.tierAlertsLine')}</List.Item>

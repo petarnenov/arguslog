@@ -43,4 +43,17 @@ public interface OrgUseCase {
       super(message);
     }
   }
+
+  /**
+   * Thrown when the caller has already reached the per-plan owner-org cap. Maps to a 402 Payment
+   * Required problem at the controller — the customer needs to upgrade an existing org (or get
+   * invited to someone else's) to create another.
+   */
+  final class OrgQuotaExceededException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    public OrgQuotaExceededException(String message) {
+      super(message);
+    }
+  }
 }

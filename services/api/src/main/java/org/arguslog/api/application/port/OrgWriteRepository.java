@@ -22,6 +22,12 @@ public interface OrgWriteRepository {
   /** Returns every org {@code userId} is a member of, ordered by org slug ascending. */
   List<Org> listForUser(UUID userId);
 
+  /**
+   * Returns the count of orgs where {@code userId} holds the {@code owner} role. Used by the org
+   * cap quota check — admins / members of other people's orgs are not included.
+   */
+  int countOwnedBy(UUID userId);
+
   /** Look up a single org by id. Membership is NOT checked here — callers must guard. */
   Optional<Org> findById(long orgId);
 
