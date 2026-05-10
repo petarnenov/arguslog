@@ -22,7 +22,11 @@ COPY packages/mcp-server/package.json ./packages/mcp-server/
 RUN pnpm install --frozen-lockfile --filter @arguslog/mcp-server...
 
 # Sources. mcp-server's codegen reads services/api/openapi.json — bring that file too so the
-# generate step has data to enumerate tools from.
+# generate step has data to enumerate tools from. tsconfig is copied in full because
+# tsconfig.build.json extends @arguslog/tsconfig/base.json — the install layer only had the
+# manifest, the actual config files need to be on disk for tsc.
+COPY packages/tsconfig ./packages/tsconfig
+COPY packages/eslint-config ./packages/eslint-config
 COPY packages/mcp-server ./packages/mcp-server
 COPY services/api/openapi.json ./services/api/openapi.json
 
