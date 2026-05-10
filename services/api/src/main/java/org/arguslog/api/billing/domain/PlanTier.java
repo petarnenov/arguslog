@@ -19,16 +19,29 @@ import java.util.Locale;
  * edit + a deploy, not a migration.
  */
 public enum PlanTier {
-  FREE(0, 5_000L, 1, 1, Duration.ofDays(30)),
-  STARTER(1199, 25_000L, 3, 3, Duration.ofDays(30)),
-  PRO(2999, 100_000L, 10, 10, Duration.ofDays(90)),
-  BUSINESS(7999, Long.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Duration.ofDays(365)),
-  ENTERPRISE(0, Long.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Duration.ofDays(365));
+  FREE(0, 5_000L, 1, 1, 1, Duration.ofDays(30)),
+  STARTER(1199, 25_000L, 3, 3, 3, Duration.ofDays(30)),
+  PRO(2999, 100_000L, 10, 10, 10, Duration.ofDays(90)),
+  BUSINESS(
+      7999,
+      Long.MAX_VALUE,
+      Integer.MAX_VALUE,
+      Integer.MAX_VALUE,
+      Integer.MAX_VALUE,
+      Duration.ofDays(365)),
+  ENTERPRISE(
+      0,
+      Long.MAX_VALUE,
+      Integer.MAX_VALUE,
+      Integer.MAX_VALUE,
+      Integer.MAX_VALUE,
+      Duration.ofDays(365));
 
   private final int monthlyPriceCents;
   private final long monthlyEventCap;
   private final int projectCap;
   private final int memberCap;
+  private final int orgCap;
   private final Duration retention;
 
   PlanTier(
@@ -36,11 +49,13 @@ public enum PlanTier {
       long monthlyEventCap,
       int projectCap,
       int memberCap,
+      int orgCap,
       Duration retention) {
     this.monthlyPriceCents = monthlyPriceCents;
     this.monthlyEventCap = monthlyEventCap;
     this.projectCap = projectCap;
     this.memberCap = memberCap;
+    this.orgCap = orgCap;
     this.retention = retention;
   }
 
@@ -62,6 +77,16 @@ public enum PlanTier {
 
   public int memberCap() {
     return memberCap;
+  }
+
+  /**
+   * Maximum number of organizations a user can <b>own</b> across the platform when their highest
+   * plan is this tier. This is a per-user cap (not per-org), enforced in {@code OrgService.create}
+   * — it stops a single user from spinning up dozens of free orgs to multiply free-tier quotas.
+   * Members invited into other people's orgs are unaffected; only the owner role counts.
+   */
+  public int orgCap() {
+    return orgCap;
   }
 
   public Duration retention() {

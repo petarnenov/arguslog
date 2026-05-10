@@ -15,9 +15,12 @@ import java.util.Optional;
 import java.util.UUID;
 import org.arguslog.api.application.OrgUseCase.InvalidOrgException;
 import org.arguslog.api.application.OrgUseCase.OrgAccessDeniedException;
+import org.arguslog.api.application.OrgUseCase.OrgQuotaExceededException;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
+import org.arguslog.api.billing.application.port.OrgPlanRepository;
+import org.arguslog.api.billing.domain.PlanTier;
 import org.arguslog.api.domain.Org;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +34,7 @@ class OrgServiceTest {
   @Mock OrgWriteRepository orgs;
   @Mock UserRepository users;
   @Mock MembershipRepository memberships;
+  @Mock OrgPlanRepository plans;
 
   OrgService service;
 
@@ -38,7 +42,7 @@ class OrgServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new OrgService(orgs, users, memberships);
+    service = new OrgService(orgs, users, memberships, plans);
   }
 
   @Test
@@ -132,6 +136,59 @@ class OrgServiceTest {
         .isInstanceOf(OrgAccessDeniedException.class)
         .hasMessageContaining("owners");
     verify(orgs, never()).delete(anyLong());
+  }
+
+  @Test
+  void rejectsSecondOrgOnFreePlan() {
+    // First-time free user already owns one org → second create attempt hits the cap.
+    when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.FREE));
+    when(orgs.countOwnedBy(ACTOR)).thenReturn(1);
+
+    assertThatThrownBy(() -> service.create(ACTOR, "a@b.com", "Alice", "Acme"))
+        .isInstanceOf(OrgQuotaExceededException.class)
+        .hasMessageContaining("free")
+        .hasMessageContaining("1 organization");
+    verify(orgs, never()).create(anyString(), anyString());
+    verify(orgs, never()).addMember(anyLong(), any(), anyString());
+  }
+
+  @Test
+  void allowsThirdOrgOnStarterPlan() {
+    // Starter cap is 3 — owning 2 orgs still leaves room for one more.
+    when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.STARTER));
+    when(orgs.countOwnedBy(ACTOR)).thenReturn(2);
+    Org expected = new Org(43L, "acme", "Acme", "free", Instant.parse("2026-05-06T00:00:00Z"));
+    when(orgs.create(eq("acme"), eq("Acme"))).thenReturn(expected);
+
+    Org out = service.create(ACTOR, "a@b.com", "Alice", "Acme");
+
+    assertThat(out).isEqualTo(expected);
+    verify(orgs).create("acme", "Acme");
+  }
+
+  @Test
+  void rejectsFourthOrgOnStarterPlan() {
+    when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.STARTER));
+    when(orgs.countOwnedBy(ACTOR)).thenReturn(3);
+
+    assertThatThrownBy(() -> service.create(ACTOR, "a@b.com", "Alice", "Acme"))
+        .isInstanceOf(OrgQuotaExceededException.class)
+        .hasMessageContaining("starter")
+        .hasMessageContaining("3 organizations");
+    verify(orgs, never()).create(anyString(), anyString());
+  }
+
+  @Test
+  void allowsUnlimitedOrgsOnBusinessPlan() {
+    // Business is uncapped (Integer.MAX_VALUE) — no count query should even be needed, but the
+    // current path still reads it. The point is: 100 owned orgs still go through.
+    when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.BUSINESS));
+    Org expected = new Org(99L, "acme", "Acme", "business", Instant.parse("2026-05-06T00:00:00Z"));
+    when(orgs.create(eq("acme"), eq("Acme"))).thenReturn(expected);
+
+    Org out = service.create(ACTOR, "a@b.com", "Alice", "Acme");
+
+    assertThat(out).isEqualTo(expected);
   }
 
   @Test

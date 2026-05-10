@@ -2,6 +2,7 @@ package org.arguslog.api.billing.application.port;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import org.arguslog.api.billing.domain.BillingInterval;
 import org.arguslog.api.billing.domain.PlanTier;
 
@@ -13,6 +14,14 @@ import org.arguslog.api.billing.domain.PlanTier;
 public interface OrgPlanRepository {
 
   Optional<PlanTier> findPlan(long orgId);
+
+  /**
+   * Returns the highest-tier plan across every org {@code userId} <b>owns</b>. Drives the org-cap
+   * quota check: a user with even a single Pro/Business org gets that tier's {@code orgCap} —
+   * upgrading any one of their orgs raises the per-user org allowance for all of them. Empty when
+   * the user owns no org yet (first-time signup).
+   */
+  Optional<PlanTier> findHighestPlanForOwner(UUID userId);
 
   /**
    * Returns the active payment grace deadline if a {@code invoice.payment_failed} webhook opened
