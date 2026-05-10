@@ -33,7 +33,15 @@ help: ## Show this help
 dev: doctor install build-sdks up ## Start the full stack: doctor → install → build-sdks → up → mprocs
 	@command -v mprocs >/dev/null || { echo "mprocs not installed. Run: brew install mprocs"; exit 1; }
 	@echo "▶ Starting api / ingest / worker / web (quit mprocs with 'q')"
-	@mprocs --config mprocs.yaml
+	@# Source .env.local if present so each developer can keep personal env (e.g.
+	@# ARGUSLOG_PLATFORM_ADMINS) out of the committed mprocs.yaml. Gitignored.
+	@if [ -f .env.local ]; then \
+		echo "▶ Loading .env.local"; \
+		set -a; . ./.env.local; set +a; \
+		mprocs --config mprocs.yaml; \
+	else \
+		mprocs --config mprocs.yaml; \
+	fi
 
 ## ─── Infra (Docker Compose) ────────────────────────────────────────────────
 
