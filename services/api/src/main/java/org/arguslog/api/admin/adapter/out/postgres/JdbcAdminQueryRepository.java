@@ -35,8 +35,9 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
     long orgs = countOrZero("SELECT COUNT(*) FROM organizations");
     long projects = countOrZero("SELECT COUNT(*) FROM projects WHERE archived_at IS NULL");
     long issues = countOrZero("SELECT COUNT(*) FROM issues");
-    long bonus = countOrZero(
-        "SELECT COUNT(*) FROM organizations WHERE bonus_until IS NOT NULL AND bonus_until > NOW()");
+    long bonus =
+        countOrZero(
+            "SELECT COUNT(*) FROM organizations WHERE bonus_until IS NOT NULL AND bonus_until > NOW()");
 
     Map<String, Long> byPlan = new HashMap<>();
     jdbc.query(
@@ -51,9 +52,9 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
   }
 
   /**
-   * Sum of events ingested over the last N days. Pulled from {@code events} via the
-   * {@code received_at} TIMESTAMPTZ column. Returns 0 when the table is empty / unreachable —
-   * never throws into the admin response.
+   * Sum of events ingested over the last N days. Pulled from {@code events} via the {@code
+   * received_at} TIMESTAMPTZ column. Returns 0 when the table is empty / unreachable — never throws
+   * into the admin response.
    */
   private long sumEvents(int days) {
     try {
@@ -149,7 +150,11 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
   @Override
   public List<AdminOrgRow> listOrgs(String search, int offset, int limit) {
     String like = toLikeOrNull(search);
-    return jdbc.query(orgQuery(true, true), this::mapOrgRow, like, like, limit, offset);
+    // The search WHERE clause has three `?` placeholders (the NULL guard plus the two LIKE
+    // operands), then LIMIT and OFFSET — five binds total. Forgetting the first `like` was
+    // the bug behind admin/orgs returning 5xx with "No value specified for parameter 5" while
+    // countOrgs (which only needs three) silently kept working.
+    return jdbc.query(orgQuery(true, true), this::mapOrgRow, like, like, like, limit, offset);
   }
 
   @Override
@@ -174,8 +179,7 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
   @Override
   public Optional<AdminOrgRow> getOrg(long orgId) {
     try {
-      AdminOrgRow row =
-          jdbc.queryForObject(orgQuery(false, false), this::mapOrgRow, orgId);
+      AdminOrgRow row = jdbc.queryForObject(orgQuery(false, false), this::mapOrgRow, orgId);
       return Optional.ofNullable(row);
     } catch (EmptyResultDataAccessException e) {
       return Optional.empty();
@@ -184,7 +188,8 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
 
   private String orgQuery(boolean withSearch, boolean withPaging) {
     StringBuilder sb = new StringBuilder();
-    sb.append("""
+    sb.append(
+        """
         SELECT
           o.id                   AS org_id,
           o.slug                 AS slug,
@@ -212,7 +217,7 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
           SELECT m.user_id
             FROM org_members m
            WHERE m.org_id = o.id AND m.role = 'owner'
-           ORDER BY m.created_at ASC
+           ORDER BY m.added_at ASC
            LIMIT 1
         ) AS owner ON TRUE
         LEFT JOIN users ou ON ou.id = owner.user_id
@@ -248,7 +253,8 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
         toInstant(rs, "payment_grace_until"));
   }
 
-  private static Instant toInstant(java.sql.ResultSet rs, String column) throws java.sql.SQLException {
+  private static Instant toInstant(java.sql.ResultSet rs, String column)
+      throws java.sql.SQLException {
     Timestamp ts = rs.getTimestamp(column);
     return ts == null ? null : ts.toInstant();
   }
