@@ -28,5 +28,12 @@ public interface UsageUseCase {
       boolean exceeded,
       Instant paymentGraceUntil,
       BillingInterval billingInterval,
-      Instant renewsAt) {}
+      Instant renewsAt,
+      Bonus bonus) {}
+
+  /**
+   * Active bonus grant if any. {@code null} on the snapshot means "no active grant"; the
+   * dashboard simply skips the bonus banner.
+   */
+  record Bonus(Instant until, String reason, String grantedByEmail) {}
 }

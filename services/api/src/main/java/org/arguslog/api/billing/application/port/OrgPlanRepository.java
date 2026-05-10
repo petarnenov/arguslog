@@ -42,4 +42,14 @@ public interface OrgPlanRepository {
    * first {@code customer.subscription.updated} event that carries the period end.
    */
   Optional<Instant> findRenewsAt(long orgId);
+
+  /**
+   * Active bonus snapshot for {@code orgId} when an admin has comp'd the plan. Empty when no
+   * active grant exists. The plan column itself is the source of truth for caps; this read is
+   * dashboard-banner metadata only.
+   */
+  Optional<BonusSnapshot> findActiveBonus(long orgId);
+
+  /** Lightweight bonus projection — see {@link #findActiveBonus(long)}. */
+  record BonusSnapshot(Instant until, String reason, String grantedByEmail) {}
 }

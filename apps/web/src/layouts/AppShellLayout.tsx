@@ -43,7 +43,8 @@ import { Link, Outlet, useNavigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
 import { deleteOrg } from '../api/orgs';
-import { queryKeys, useMyOrgs, useProjects } from '../api/queries';
+import { queryKeys, useMe, useMyOrgs, useProjects, useUsage } from '../api/queries';
+import { BonusBanner } from '../components/BonusBanner';
 import { useAuth } from '../auth/useAuth';
 import { DevErrorMenu } from '../components/DevErrorMenu';
 
@@ -60,6 +61,8 @@ export function AppShellLayout() {
   const orgSlug = urlOrgSlug ?? orgs.data?.[0]?.slug;
   const currentOrg = orgs.data?.find((o) => o.slug === orgSlug);
   const projects = useProjects(currentOrg?.id, { enabled: Boolean(currentOrg && projectId) });
+  const me = useMe();
+  const usage = useUsage(currentOrg?.id);
   const currentProject = projectId
     ? projects.data?.find((p) => String(p.id) === projectId)
     : undefined;
@@ -204,6 +207,9 @@ export function AppShellLayout() {
               )}
             </Menu.Dropdown>
           </Menu>
+          {usage.data?.bonus && (
+            <BonusBanner bonus={usage.data.bonus} plan={usage.data.plan} variant="compact" />
+          )}
           <Divider my="xs" />
         </AppShell.Section>
         <AppShell.Section grow component={ScrollArea}>
@@ -237,6 +243,15 @@ export function AppShellLayout() {
               to={`/orgs/${orgSlug}/billing`}
               label={t('nav.billing')}
               leftSection={<IconCreditCard size={16} />}
+            />
+          )}
+          {me.data?.isPlatformAdmin && (
+            <NavLink
+              component={Link}
+              to="/admin"
+              label={t('nav.admin')}
+              leftSection={<IconShieldLock size={16} />}
+              data-testid="nav-admin"
             />
           )}
           {orgSlug && projectId && (

@@ -151,6 +151,7 @@ class SecurityFilterChainIntegrationTest {
 
   @MockitoBean private BillingCustomerRepository billingCustomerRepository;
   @MockitoBean private OrgPlanRepository orgPlanRepository;
+  @MockitoBean private org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
   @MockitoBean private UsageRepository usageRepository;
   @MockitoBean private StripeEventLog stripeEventLog;
   @MockitoBean private StripeEventVerifier stripeEventVerifier;
