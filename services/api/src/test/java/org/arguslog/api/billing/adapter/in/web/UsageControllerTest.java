@@ -29,6 +29,7 @@ class UsageControllerTest extends AbstractControllerTest {
                     false,
                     null,
                     BillingInterval.MONTHLY,
+                    null,
                     null)));
 
     mvc.perform(get("/api/v1/orgs/1/usage").contentType(MediaType.APPLICATION_JSON))
@@ -62,7 +63,8 @@ class UsageControllerTest extends AbstractControllerTest {
                     false,
                     null,
                     BillingInterval.ANNUAL,
-                    renews)));
+                    renews,
+                    null)));
 
     mvc.perform(get("/api/v1/orgs/1/usage").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
@@ -84,6 +86,7 @@ class UsageControllerTest extends AbstractControllerTest {
                     false,
                     grace,
                     BillingInterval.MONTHLY,
+                    null,
                     null)));
 
     mvc.perform(get("/api/v1/orgs/1/usage").contentType(MediaType.APPLICATION_JSON))

@@ -92,6 +92,10 @@ arguslog:
     strict:
       tokens: ${RATELIMIT_STRICT_TOKENS:30}
       window: ${RATELIMIT_STRICT_WINDOW:PT1M}
+  # Comma-separated email allowlist — these accounts can hit /api/v1/admin/** endpoints.
+  # Empty list (default) → no platform admins, every admin request returns 403. Set via env
+  # ARGUSLOG_PLATFORM_ADMINS in production.
+  platform-admins: ${ARGUSLOG_PLATFORM_ADMINS:}
   # Dogfood — when ARGUSLOG_DSN is set the SDK auto-init forwards ERROR-level Logback events
   # back into Arguslog itself. Empty in dev/test → SDK is a no-op so log lines stay local.
   dsn: ${ARGUSLOG_DSN:}

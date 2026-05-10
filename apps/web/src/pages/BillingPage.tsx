@@ -29,6 +29,7 @@ import {
 } from '../api/billing';
 import { ApiError } from '../api/client';
 import { useBillingPlans, useMyOrgs, useUsage } from '../api/queries';
+import { BonusBanner } from '../components/BonusBanner';
 import { useReportSoftError } from '../lib/reportSoftError';
 
 const TIER_NAME_KEY: Record<string, string> = {
@@ -142,6 +143,8 @@ export function BillingPage() {
           </Text>
         </Alert>
       )}
+
+      {snapshot.bonus && <BonusBanner bonus={snapshot.bonus} plan={snapshot.plan} />}
 
       <Card withBorder padding="lg" radius="md">
         <Stack gap="md">

@@ -25,6 +25,14 @@ export interface UsageSnapshot {
   billingInterval: BillingInterval;
   /** Next renewal/expiry; absent for free-tier orgs. */
   renewsAt?: string;
+  /** Active admin-granted bonus, if any. */
+  bonus?: BonusInfo;
+}
+
+export interface BonusInfo {
+  until: string;
+  reason: string | null;
+  grantedByEmail: string | null;
 }
 
 export interface CheckoutResponse {

@@ -37,8 +37,13 @@ public class UsageService implements UsageUseCase {
     var graceUntil = plans.findPaymentGraceUntil(orgId).orElse(null);
     BillingInterval interval = plans.findBillingInterval(orgId).orElse(BillingInterval.MONTHLY);
     var renewsAt = plans.findRenewsAt(orgId).orElse(null);
+    Bonus bonus =
+        plans
+            .findActiveBonus(orgId)
+            .map(b -> new Bonus(b.until(), b.reason(), b.grantedByEmail()))
+            .orElse(null);
     return Optional.of(
-        new UsageSnapshot(tier, used, cap, ratio, exceeded, graceUntil, interval, renewsAt));
+        new UsageSnapshot(tier, used, cap, ratio, exceeded, graceUntil, interval, renewsAt, bonus));
   }
 
   private LocalDate periodStartUtc() {

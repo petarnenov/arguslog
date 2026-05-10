@@ -27,9 +27,20 @@ public record UsageResponse(
     boolean exceeded,
     @JsonProperty("paymentGraceUntil") Instant paymentGraceUntil,
     @JsonProperty("billingInterval") String billingInterval,
-    @JsonProperty("renewsAt") Instant renewsAt) {
+    @JsonProperty("renewsAt") Instant renewsAt,
+    @JsonProperty("bonus") BonusInfo bonus) {
+
+  /** Bonus block in the JSON; absent when no active grant. */
+  public record BonusInfo(
+      @JsonProperty("until") Instant until,
+      @JsonProperty("reason") String reason,
+      @JsonProperty("grantedByEmail") String grantedByEmail) {}
 
   public static UsageResponse from(UsageSnapshot s) {
+    BonusInfo bonus =
+        s.bonus() == null
+            ? null
+            : new BonusInfo(s.bonus().until(), s.bonus().reason(), s.bonus().grantedByEmail());
     return new UsageResponse(
         s.plan().dbValue(),
         s.plan().monthlyPriceCents(),
@@ -41,6 +52,7 @@ public record UsageResponse(
         s.exceeded(),
         s.paymentGraceUntil(),
         s.billingInterval().dbValue(),
-        s.renewsAt());
+        s.renewsAt(),
+        bonus);
   }
 }

@@ -81,6 +81,7 @@ class ApiApplicationTests {
   @MockitoBean TokenHasher tokenHasher;
   @MockitoBean UsageRepository usageRepository;
   @MockitoBean OrgPlanRepository orgPlanRepository;
+  @MockitoBean org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
   @MockitoBean BillingCustomerRepository billingCustomerRepository;
   @MockitoBean PortalUseCase portalUseCase;
   @MockitoBean StripeWebhookUseCase stripeWebhookUseCase;

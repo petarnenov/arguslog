@@ -1,7 +1,14 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
+import {
+  getAdminStats,
+  listAdminAudit,
+  listAdminOrgs,
+  listAdminUsers,
+} from './admin';
 import { listAlertDestinations, listAlertRules } from './alerts';
 import { getBillingPlans, getUsage } from './billing';
+import { getMe } from './me';
 import {
   getIssue,
   listIssueEvents,
@@ -32,6 +39,14 @@ export const queryKeys = {
   platforms: () => ['platforms'] as const,
   releases: (projectId: number) => ['releases', projectId] as const,
   dsns: (projectId: number) => ['dsns', projectId] as const,
+  me: () => ['me'] as const,
+  adminStats: () => ['admin', 'stats'] as const,
+  adminUsers: (q: string, offset: number, limit: number) =>
+    ['admin', 'users', q, offset, limit] as const,
+  adminOrgs: (q: string, offset: number, limit: number) =>
+    ['admin', 'orgs', q, offset, limit] as const,
+  adminAudit: (offset: number, limit: number) =>
+    ['admin', 'audit', offset, limit] as const,
 };
 
 export function useMyOrgs(options: { enabled?: boolean } = {}) {
@@ -166,5 +181,68 @@ export function useBillingPlans(options: { enabled?: boolean } = {}) {
     enabled: options.enabled ?? true,
     // Pricing is server-driven and effectively static — refresh once per page load is plenty.
     staleTime: 10 * 60_000,
+  });
+}
+
+export function useMe() {
+  return useQuery({
+    queryKey: queryKeys.me(),
+    queryFn: getMe,
+    // Identity rarely changes within a session; one fetch on app load is plenty.
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}
+
+export function useAdminStats(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.adminStats(),
+    queryFn: getAdminStats,
+    enabled: options.enabled ?? true,
+    staleTime: 30_000,
+  });
+}
+
+export function useAdminUsers(
+  q: string,
+  offset: number,
+  limit: number,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.adminUsers(q, offset, limit),
+    queryFn: () => listAdminUsers({ q, offset, limit }),
+    enabled: options.enabled ?? true,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+}
+
+export function useAdminOrgs(
+  q: string,
+  offset: number,
+  limit: number,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.adminOrgs(q, offset, limit),
+    queryFn: () => listAdminOrgs({ q, offset, limit }),
+    enabled: options.enabled ?? true,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+}
+
+export function useAdminAudit(
+  offset: number,
+  limit: number,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.adminAudit(offset, limit),
+    queryFn: () => listAdminAudit({ offset, limit }),
+    enabled: options.enabled ?? true,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
   });
 }

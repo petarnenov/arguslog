@@ -95,4 +95,32 @@ public class JdbcOrgPlanRepository implements OrgPlanRepository {
       return Optional.empty();
     }
   }
+
+  @Override
+  public Optional<BonusSnapshot> findActiveBonus(long orgId) {
+    try {
+      return Optional.ofNullable(
+          jdbc.queryForObject(
+              """
+              SELECT o.bonus_until,
+                     o.bonus_reason,
+                     gb.email AS granted_by_email
+                FROM organizations o
+                LEFT JOIN users gb ON gb.id = o.bonus_granted_by
+               WHERE o.id = ?
+                 AND o.bonus_until IS NOT NULL
+                 AND o.bonus_until > NOW()
+              """,
+              (rs, rowNum) -> {
+                Timestamp ts = rs.getTimestamp("bonus_until");
+                return new BonusSnapshot(
+                    ts == null ? null : ts.toInstant(),
+                    rs.getString("bonus_reason"),
+                    rs.getString("granted_by_email"));
+              },
+              orgId));
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
+  }
 }
