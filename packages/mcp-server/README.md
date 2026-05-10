@@ -8,6 +8,17 @@ panel surface. Authenticates with a Personal Access Token issued from the dashbo
 The server exposes **the entire Arguslog REST API** as MCP tools — generated from the
 OpenAPI spec at build time, with hand-curated descriptions for the most common operations.
 
+## Two ways to run
+
+| Mode             | Best for                                       | Setup                                                                |
+| ---------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
+| **Hosted (HTTP)** | Anyone with a PAT — zero install              | Point your MCP client at `https://mcp.arguslog.org/mcp` with a Bearer header. |
+| **Local (stdio)** | Air-gapped envs / self-hosted Arguslog        | `npx -y @arguslog/mcp-server` with `ARGUSLOG_PAT` in env.            |
+
+The hosted endpoint runs the same code as the npm binary, just with per-request PAT auth
+instead of a process-wide env var. Choose stdio if you want zero network hops between your
+client and the MCP server, or if you're running against a self-hosted Arguslog instance.
+
 ## Quick start
 
 ### 1. Generate a PAT
@@ -20,7 +31,29 @@ agent to have (read-only for agents that just look at issues; `orgs:write`,
 
 ### 2. Wire it up in your client
 
-#### Claude Desktop / Claude Code
+#### Hosted — recommended
+
+Use the public endpoint. No install, no version drift, always serves the latest tool
+catalog from production:
+
+```json
+{
+  "mcpServers": {
+    "arguslog": {
+      "url": "https://mcp.arguslog.org/mcp",
+      "headers": {
+        "Authorization": "Bearer arglog_pat_xxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    }
+  }
+}
+```
+
+(Hosted mode requires an MCP client that speaks Streamable HTTP and accepts per-server
+headers. Newer Claude Desktop / Claude Code, Cursor 0.50+, and Continue support this. If
+yours doesn't yet, fall back to the stdio config below.)
+
+#### Local stdio — Claude Desktop / Claude Code
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or the
 equivalent on your platform:

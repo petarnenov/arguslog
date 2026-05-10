@@ -8,7 +8,8 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "arguslog-mcp": "./dist/index.js"
+    "arguslog-mcp": "./dist/index.js",
+    "arguslog-mcp-http": "./dist/http.js"
   },
   "exports": {
     ".": {
@@ -24,7 +25,7 @@
   ],
   "scripts": {
     "generate": "node scripts/generate-tools.mjs",
-    "build": "pnpm run generate && tsc -p tsconfig.build.json && chmod +x dist/index.js",
+    "build": "pnpm run generate && tsc -p tsconfig.build.json && chmod +x dist/index.js dist/http.js",
     "dev": "pnpm run generate && tsc -p tsconfig.build.json --watch",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
@@ -33,11 +34,13 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "express": "^4.21.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "@arguslog/eslint-config": "workspace:*",
     "@arguslog/tsconfig": "workspace:*",
+    "@types/express": "^4.17.21",
     "@types/node": "^22.0.0",
     "typescript": "^5.6.0",
     "vitest": "^3.2.4"
