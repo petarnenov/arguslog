@@ -26,7 +26,7 @@ import { ArguslogApiError, ArguslogClient } from './client.js';
 import { executeTool, listMcpTools } from './tools.js';
 
 const PACKAGE_NAME = '@arguslog/mcp-server';
-const PACKAGE_VERSION = '0.1.0';
+const PACKAGE_VERSION = '0.2.0';
 
 async function main(): Promise<void> {
   // Build the client up-front so a missing PAT fails fast on launch instead of on every
