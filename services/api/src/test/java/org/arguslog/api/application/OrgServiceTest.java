@@ -18,7 +18,6 @@ import org.arguslog.api.application.OrgUseCase.OrgAccessDeniedException;
 import org.arguslog.api.application.OrgUseCase.OrgQuotaExceededException;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
-import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.domain.PlanTier;
 import org.arguslog.api.domain.Org;
@@ -32,7 +31,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class OrgServiceTest {
 
   @Mock OrgWriteRepository orgs;
-  @Mock UserRepository users;
   @Mock MembershipRepository memberships;
   @Mock OrgPlanRepository plans;
 
@@ -42,18 +40,17 @@ class OrgServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new OrgService(orgs, users, memberships, plans);
+    service = new OrgService(orgs, memberships, plans);
   }
 
   @Test
-  void createUpsertsUserBeforeInsertingOrgAndAddsOwnerMembership() {
+  void createInsertsOrgAndAddsOwnerMembership() {
     Org expected = new Org(42L, "acme", "Acme", "free", Instant.parse("2026-05-06T00:00:00Z"));
     when(orgs.create(eq("acme"), eq("Acme"))).thenReturn(expected);
 
-    Org out = service.create(ACTOR, "alice@example.com", "Alice", "Acme");
+    Org out = service.create(ACTOR, "Acme");
 
     assertThat(out).isEqualTo(expected);
-    verify(users).upsertFromJwt(ACTOR, "alice@example.com", "Alice");
     verify(orgs).create("acme", "Acme");
     verify(orgs).addMember(42L, ACTOR, "owner");
   }
@@ -75,47 +72,21 @@ class OrgServiceTest {
 
   @Test
   void rejectsBlankOrShortName() {
-    assertThatThrownBy(() -> service.create(ACTOR, "a@b.com", null, null))
+    assertThatThrownBy(() -> service.create(ACTOR, null))
         .isInstanceOf(InvalidOrgException.class)
         .hasMessageContaining("required");
-    assertThatThrownBy(() -> service.create(ACTOR, "a@b.com", null, " "))
+    assertThatThrownBy(() -> service.create(ACTOR, " "))
         .isInstanceOf(InvalidOrgException.class)
         .hasMessageContaining("at least");
-    assertThatThrownBy(() -> service.create(ACTOR, "a@b.com", null, "x"))
+    assertThatThrownBy(() -> service.create(ACTOR, "x"))
         .isInstanceOf(InvalidOrgException.class)
         .hasMessageContaining("at least");
     verify(orgs, never()).create(anyString(), anyString());
-    verify(users, never()).upsertFromJwt(any(), anyString(), any());
-  }
-
-  @Test
-  void createSkipsUserSyncWhenEmailMissing() {
-    // PAT-driven creates omit JWT claims (PAT users already have a user row). The service still
-    // creates the org and membership, just skips the upsert.
-    Org expected = new Org(42L, "acme", "Acme", "free", Instant.parse("2026-05-06T00:00:00Z"));
-    when(orgs.create(eq("acme"), eq("Acme"))).thenReturn(expected);
-
-    Org out = service.create(ACTOR, null, null, "Acme");
-
-    assertThat(out).isEqualTo(expected);
-    verify(users, never()).upsertFromJwt(any(), anyString(), any());
-    verify(orgs).create("acme", "Acme");
-    verify(orgs).addMember(42L, ACTOR, "owner");
-  }
-
-  @Test
-  void createSkipsUserSyncWhenEmailBlank() {
-    Org expected = new Org(42L, "acme", "Acme", "free", Instant.parse("2026-05-06T00:00:00Z"));
-    when(orgs.create(eq("acme"), eq("Acme"))).thenReturn(expected);
-
-    service.create(ACTOR, " ", "ignored", "Acme");
-
-    verify(users, never()).upsertFromJwt(any(), anyString(), any());
   }
 
   @Test
   void rejectsNullActor() {
-    assertThatThrownBy(() -> service.create(null, "a@b.com", "Alice", "Acme"))
+    assertThatThrownBy(() -> service.create(null, "Acme"))
         .isInstanceOf(IllegalStateException.class);
     verify(orgs, never()).create(anyString(), anyString());
   }
@@ -144,7 +115,7 @@ class OrgServiceTest {
     when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.FREE));
     when(orgs.countOwnedBy(ACTOR)).thenReturn(1);
 
-    assertThatThrownBy(() -> service.create(ACTOR, "a@b.com", "Alice", "Acme"))
+    assertThatThrownBy(() -> service.create(ACTOR, "Acme"))
         .isInstanceOf(OrgQuotaExceededException.class)
         .hasMessageContaining("free")
         .hasMessageContaining("1 organization");
@@ -160,7 +131,7 @@ class OrgServiceTest {
     Org expected = new Org(43L, "acme", "Acme", "free", Instant.parse("2026-05-06T00:00:00Z"));
     when(orgs.create(eq("acme"), eq("Acme"))).thenReturn(expected);
 
-    Org out = service.create(ACTOR, "a@b.com", "Alice", "Acme");
+    Org out = service.create(ACTOR, "Acme");
 
     assertThat(out).isEqualTo(expected);
     verify(orgs).create("acme", "Acme");
@@ -171,7 +142,7 @@ class OrgServiceTest {
     when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.STARTER));
     when(orgs.countOwnedBy(ACTOR)).thenReturn(3);
 
-    assertThatThrownBy(() -> service.create(ACTOR, "a@b.com", "Alice", "Acme"))
+    assertThatThrownBy(() -> service.create(ACTOR, "Acme"))
         .isInstanceOf(OrgQuotaExceededException.class)
         .hasMessageContaining("starter")
         .hasMessageContaining("3 organizations");
@@ -186,7 +157,7 @@ class OrgServiceTest {
     Org expected = new Org(99L, "acme", "Acme", "business", Instant.parse("2026-05-06T00:00:00Z"));
     when(orgs.create(eq("acme"), eq("Acme"))).thenReturn(expected);
 
-    Org out = service.create(ACTOR, "a@b.com", "Alice", "Acme");
+    Org out = service.create(ACTOR, "Acme");
 
     assertThat(out).isEqualTo(expected);
   }
