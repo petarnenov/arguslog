@@ -280,6 +280,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.29.0(zod@3.25.76)
+      express:
+        specifier: ^4.21.0
+        version: 4.22.1
       zod:
         specifier: ^3.23.0
         version: 3.25.76
@@ -290,6 +293,9 @@ importers:
       '@arguslog/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.25
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.17

@@ -18,7 +18,14 @@
   "package": "@arguslog/mcp-server",
   "tags": ["error-tracking", "observability", "monitoring", "issues", "alerts", "ai", "agent"],
   "category": "monitoring",
-  "transports": ["stdio"],
+  "transports": ["stdio", "streamable-http"],
+  "hosted": {
+    "url": "https://mcp.arguslog.org/mcp",
+    "authentication": {
+      "type": "bearer",
+      "description": "Personal Access Token from the Arguslog dashboard."
+    }
+  },
   "config": {
     "env": {
       "ARGUSLOG_PAT": {
