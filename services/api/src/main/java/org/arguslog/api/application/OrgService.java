@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
-import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.domain.PlanTier;
 import org.arguslog.api.domain.Org;
@@ -18,34 +17,22 @@ public class OrgService implements OrgUseCase {
   static final int MAX_NAME = 100;
 
   private final OrgWriteRepository orgs;
-  private final UserRepository users;
   private final MembershipRepository memberships;
   private final OrgPlanRepository plans;
 
   public OrgService(
-      OrgWriteRepository orgs,
-      UserRepository users,
-      MembershipRepository memberships,
-      OrgPlanRepository plans) {
+      OrgWriteRepository orgs, MembershipRepository memberships, OrgPlanRepository plans) {
     this.orgs = orgs;
-    this.users = users;
     this.memberships = memberships;
     this.plans = plans;
   }
 
   @Override
   @Transactional
-  public Org create(UUID actorId, String actorEmail, String actorDisplayName, String name) {
+  public Org create(UUID actorId, String name) {
     requireName(name);
     if (actorId == null) {
       throw new IllegalStateException("create called without an authenticated user");
-    }
-    // JWT path supplies fresh claims; the upsert refreshes the user row (covers first-time login
-    // where the user row doesn't exist yet, and subsequent logins where email or display name
-    // changed in Keycloak). PAT path leaves both null because the user row already exists — PATs
-    // cannot be issued without it — so we skip the sync.
-    if (actorEmail != null && !actorEmail.isBlank()) {
-      users.upsertFromJwt(actorId, actorEmail, actorDisplayName);
     }
     requireOrgCapAvailable(actorId);
     Org org = orgs.create(slugify(name), name.trim());

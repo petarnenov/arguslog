@@ -26,13 +26,25 @@ import { ArguslogApiError, ArguslogClient } from './client.js';
 import { executeTool, listMcpTools } from './tools.js';
 
 const PACKAGE_NAME = '@arguslog/mcp-server';
-const PACKAGE_VERSION = '0.1.0';
+const PACKAGE_VERSION = '0.2.1';
 
 async function main(): Promise<void> {
-  // Build the client up-front so a missing PAT fails fast on launch instead of on every
-  // tool call. Stderr is the only safe place to log under stdio — stdout is the MCP wire.
-  const client = ArguslogClient.fromEnv();
-  process.stderr.write(`[${PACKAGE_NAME}] starting; base URL = ${process.env.ARGUSLOG_API_URL ?? 'https://api.arguslog.org'}\n`);
+  // Build the client lazily — registry probes (Glama's introspection sandbox, Smithery's
+  // listing scanner) start the binary without a PAT just to enumerate tools/list. Throwing
+  // up-front would fail those checks even though the static tool catalog doesn't need a PAT.
+  // Tool execution still requires the PAT and surfaces a clear error if it's missing.
+  let client: ArguslogClient | null = null;
+  function getClient(): ArguslogClient {
+    if (!client) client = ArguslogClient.fromEnv();
+    return client;
+  }
+  if (process.env.ARGUSLOG_PAT && process.env.ARGUSLOG_PAT.trim().length > 0) {
+    process.stderr.write(`[${PACKAGE_NAME}] starting; base URL = ${process.env.ARGUSLOG_API_URL ?? 'https://api.arguslog.org'}\n`);
+  } else {
+    process.stderr.write(
+      `[${PACKAGE_NAME}] starting WITHOUT a PAT — tool calls will fail until ARGUSLOG_PAT is set.\n`,
+    );
+  }
 
   const server = new Server(
     { name: PACKAGE_NAME, version: PACKAGE_VERSION },
@@ -46,7 +58,7 @@ async function main(): Promise<void> {
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
     const { name, arguments: args } = req.params;
     try {
-      const result = await executeTool(client, name, (args ?? {}) as Record<string, unknown>);
+      const result = await executeTool(getClient(), name, (args ?? {}) as Record<string, unknown>);
       return {
         content: [
           {

@@ -6,7 +6,7 @@ import org.arguslog.api.domain.Org;
 
 public interface OrgUseCase {
 
-  Org create(UUID actorId, String actorEmail, String actorDisplayName, String name);
+  Org create(UUID actorId, String name);
 
   List<Org> listForUser(UUID userId);
 
