@@ -56,6 +56,27 @@
       "description": "EVM (viem + ethers + wagmi + WalletConnect) and Solana (web3.js + Anchor + wallet adapter) error decoding. Layers on top of @arguslog/sdk-browser."
     }
   },
+  "mcp": {
+    "heading": "MCP server — Arguslog as tools for any LLM agent",
+    "subheading": "Wire @arguslog/mcp-server into Claude Desktop, Claude Code, Cursor, or Continue and your AI agent gets authenticated, full-fidelity access to issues, projects, alerts, releases, billing, and the platform admin surface — all gated by Personal Access Token scopes.",
+    "bullet1Title": "Install in 30 seconds",
+    "bullet1Body": "Generate a Personal Access Token from the dashboard, drop a 4-line config into your MCP client, and your agent can ask questions like \"what broke today?\" or \"create a Pro grant for the demo org for 3 months\". Stdio transport — no servers to host.",
+    "bullet2Title": "Full API coverage out of the box",
+    "bullet2Body": "Tools are auto-derived from the OpenAPI spec — every endpoint exposed in the dashboard is callable as a tool. The most-used operations have hand-curated descriptions and example payloads so the LLM picks the right tool first try.",
+    "coverage": [
+      "Issues, events, breadcrumbs (the rich payload shape)",
+      "Projects + DSN keys CRUD",
+      "Organizations, members, invites",
+      "Alert rules + Slack/Telegram/email/webhook destinations",
+      "Releases + source-map artifacts",
+      "Billing — plans, usage, crypto checkout",
+      "Admin panel — bonus grants, audit log (allowlisted PATs only)"
+    ],
+    "configHeading": "Claude Desktop config",
+    "configHint": "Edit ~/Library/Application Support/Claude/claude_desktop_config.json (macOS) or the equivalent on your platform.",
+    "linkNpm": "View on npm",
+    "linkDocs": "Read the docs on GitHub"
+  },
   "pricing": {
     "heading": "Pricing that scales with you.",
     "subheading": "Start free. Upgrade when your event volume justifies it. Pay with a card via Lemon Squeezy or in stablecoins (USDT / USDC). Bundles for 1, 3, 6 and 12 months with a -17% / -25% / -33% discount ladder — no auto-renew, no surprise charges.",

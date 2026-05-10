@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   Center,
+  Code,
   Container,
   Divider,
   Group,
@@ -23,7 +24,9 @@ import {
   IconCheck,
   IconCode,
   IconCoin,
+  IconRobot,
   IconRoute,
+  IconTerminal,
   IconUsers,
 } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
@@ -80,6 +83,7 @@ export function LandingPage() {
         <Hero onboardingUrl={onboardingUrl} />
         <Features />
         <Platforms platforms={platformsQuery.data ?? []} loading={platformsQuery.isLoading} />
+        <McpSection />
         <Pricing onboardingUrl={onboardingUrl} />
         <FooterSection dashboardUrl={dashboardUrl} />
       </AppShell.Main>
@@ -238,6 +242,115 @@ function Platforms({
               </Text>
             </Stack>
           </Group>
+        </Card>
+      </Container>
+    </Box>
+  );
+}
+
+function McpSection() {
+  const { t } = useTranslation();
+  const configSnippet = `{
+  "mcpServers": {
+    "arguslog": {
+      "command": "npx",
+      "args": ["-y", "@arguslog/mcp-server"],
+      "env": { "ARGUSLOG_PAT": "arglog_pat_xxx" }
+    }
+  }
+}`;
+
+  return (
+    <Box py={64}>
+      <Container size="lg">
+        <Stack gap="md" mb="xl">
+          <Group gap="sm">
+            <ThemeIcon variant="light" color="violet" size="xl" radius="md">
+              <IconRobot size={28} />
+            </ThemeIcon>
+            <Stack gap={0}>
+              <Title order={2}>{t('mcp.heading')}</Title>
+              <Text c="dimmed" size="sm">
+                {t('mcp.subheading')}
+              </Text>
+            </Stack>
+          </Group>
+        </Stack>
+
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+          <Card withBorder padding="lg" radius="md">
+            <Stack gap="md">
+              <Group gap="sm">
+                <ThemeIcon variant="light" size="lg" radius="md">
+                  <IconTerminal size={20} />
+                </ThemeIcon>
+                <Title order={4}>{t('mcp.bullet1Title')}</Title>
+              </Group>
+              <Text c="dimmed">{t('mcp.bullet1Body')}</Text>
+              <Group gap="xs">
+                <Badge variant="light" color="violet">@arguslog/mcp-server</Badge>
+                <Badge variant="light" color="gray">stdio</Badge>
+                <Badge variant="light" color="gray">node ≥ 20</Badge>
+              </Group>
+            </Stack>
+          </Card>
+
+          <Card withBorder padding="lg" radius="md">
+            <Stack gap="md">
+              <Group gap="sm">
+                <ThemeIcon variant="light" color="cyan" size="lg" radius="md">
+                  <IconCode size={20} />
+                </ThemeIcon>
+                <Title order={4}>{t('mcp.bullet2Title')}</Title>
+              </Group>
+              <Text c="dimmed">{t('mcp.bullet2Body')}</Text>
+              <Stack gap={4}>
+                {(t('mcp.coverage', { returnObjects: true }) as string[]).map((line) => (
+                  <Group key={line} gap={6} wrap="nowrap">
+                    <ThemeIcon variant="transparent" color="green" size="xs">
+                      <IconCheck size={12} />
+                    </ThemeIcon>
+                    <Text size="sm">{line}</Text>
+                  </Group>
+                ))}
+              </Stack>
+            </Stack>
+          </Card>
+        </SimpleGrid>
+
+        <Card withBorder padding="lg" radius="md" mt="lg">
+          <Stack gap="sm">
+            <Text size="sm" fw={600}>
+              {t('mcp.configHeading')}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {t('mcp.configHint')}
+            </Text>
+            <Code
+              block
+              style={{ fontSize: 12, padding: 12, background: 'var(--mantine-color-dark-7)' }}
+            >
+              {configSnippet}
+            </Code>
+            <Group gap="md">
+              <Anchor
+                href="https://www.npmjs.com/package/@arguslog/mcp-server"
+                target="_blank"
+                rel="noopener noreferrer"
+                size="sm"
+              >
+                {t('mcp.linkNpm')}
+              </Anchor>
+              <Anchor
+                href={`${GITHUB_URL}/blob/main/packages/mcp-server/README.md`}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="sm"
+              >
+                {t('mcp.linkDocs')}
+              </Anchor>
+            </Group>
+          </Stack>
         </Card>
       </Container>
     </Box>
