@@ -19,9 +19,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,23 +45,15 @@ public class OrgController {
   }
 
   /**
-   * Creates an org and adds the caller as owner. Works under both JWT (Keycloak browser session)
-   * and PAT auth: JWT path refreshes the user row from token claims (covers first-login user
-   * provisioning); PAT path skips the refresh because the user row necessarily already exists.
+   * Creates an org and adds the caller as owner. The user row is provisioned/refreshed earlier in
+   * the request by {@code JwtUserSyncInterceptor} for JWT auth; PAT auth requires an existing user
+   * row by definition, so no per-request sync is needed here.
    */
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<OrgResponse> create(@RequestBody OrgRequest body, Authentication auth) {
+  public ResponseEntity<OrgResponse> create(@RequestBody OrgRequest body) {
     PatScopeGuard.require(PatScope.ORGS_WRITE);
     UUID userId = AuthActor.currentUserId();
-    String email = null;
-    String displayName = null;
-    if (auth instanceof JwtAuthenticationToken jwtAuth) {
-      Jwt jwt = jwtAuth.getToken();
-      email = jwt.getClaimAsString("email");
-      displayName =
-          firstNonBlank(jwt.getClaimAsString("name"), jwt.getClaimAsString("preferred_username"));
-    }
-    Org created = useCase.create(userId, email, displayName, body.name());
+    Org created = useCase.create(userId, body.name());
     return ResponseEntity.created(URI.create(String.valueOf(created.id())))
         .body(OrgResponse.from(created));
   }
@@ -123,11 +112,5 @@ public class OrgController {
     return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
-  }
-
-  private static String firstNonBlank(String a, String b) {
-    if (a != null && !a.isBlank()) return a;
-    if (b != null && !b.isBlank()) return b;
-    return null;
   }
 }
