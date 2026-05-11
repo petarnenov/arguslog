@@ -7,7 +7,7 @@ import {
   listAdminUsers,
 } from './admin';
 import { listAlertDestinations, listAlertRules } from './alerts';
-import { getBillingPlans, getUsage } from './billing';
+import { getBillingPlans } from './billing';
 import { getMe } from './me';
 import {
   getIssue,
@@ -32,7 +32,6 @@ export const queryKeys = {
   issueEvents: (params: ListIssueEventsParams) => ['issueEvents', params] as const,
   alertRules: (projectId: number) => ['alert-rules', projectId] as const,
   alertDestinations: (orgId: number) => ['alert-destinations', orgId] as const,
-  usage: (orgId: number) => ['usage', orgId] as const,
   billingPlans: () => ['billing-plans'] as const,
   myTokens: () => ['tokens', 'mine'] as const,
   orgMembers: (orgId: number) => ['org-members', orgId] as const,
@@ -161,16 +160,6 @@ export function useDsns(projectId: number | undefined, options: { enabled?: bool
     queryFn: () => listDsns(projectId as number),
     enabled: (options.enabled ?? true) && projectId != null,
     staleTime: 30_000,
-  });
-}
-
-export function useUsage(orgId: number | undefined, options: { enabled?: boolean } = {}) {
-  return useQuery({
-    queryKey: queryKeys.usage(orgId ?? -1),
-    queryFn: () => getUsage(orgId as number),
-    enabled: (options.enabled ?? true) && orgId != null,
-    // 60s — usage moves slowly and the API doc commits to a once-per-minute poll.
-    staleTime: 60_000,
   });
 }
 

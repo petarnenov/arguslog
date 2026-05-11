@@ -43,7 +43,7 @@ import { Link, Outlet, useNavigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
 import { deleteOrg } from '../api/orgs';
-import { queryKeys, useMe, useMyOrgs, useProjects, useUsage } from '../api/queries';
+import { queryKeys, useMe, useMyOrgs, useProjects } from '../api/queries';
 import { BonusBanner } from '../components/BonusBanner';
 import { useAuth } from '../auth/useAuth';
 import { DevErrorMenu } from '../components/DevErrorMenu';
@@ -62,7 +62,6 @@ export function AppShellLayout() {
   const currentOrg = orgs.data?.find((o) => o.slug === orgSlug);
   const projects = useProjects(currentOrg?.id, { enabled: Boolean(currentOrg && projectId) });
   const me = useMe();
-  const usage = useUsage(currentOrg?.id);
   const currentProject = projectId
     ? projects.data?.find((p) => String(p.id) === projectId)
     : undefined;
@@ -256,14 +255,6 @@ export function AppShellLayout() {
               to={`/orgs/${orgSlug}/settings`}
               label={t('nav.members')}
               leftSection={<IconUsers size={16} />}
-            />
-          )}
-          {orgSlug && (
-            <NavLink
-              component={Link}
-              to={`/orgs/${orgSlug}/billing`}
-              label={t('nav.billing')}
-              leftSection={<IconCreditCard size={16} />}
             />
           )}
           {me.data?.isPlatformAdmin && (
