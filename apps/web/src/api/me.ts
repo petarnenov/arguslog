@@ -5,6 +5,12 @@ export interface Me {
   email: string | null;
   displayName: string | null;
   isPlatformAdmin: boolean;
+  /** User's effective billing tier (per-user billing, V26+). */
+  plan: string;
+  planRenewsAt: string | null;
+  paymentGraceUntil: string | null;
+  bonusUntil: string | null;
+  bonusReason: string | null;
 }
 
 export function getMe(): Promise<Me> {

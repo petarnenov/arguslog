@@ -386,6 +386,109 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
   }
 
   @Override
+  public void recordUserGrant(
+      UUID userId, String plan, Instant until, UUID grantedBy, String reason) {
+    String planLc = plan.toLowerCase(Locale.ROOT);
+    Timestamp untilTs = Timestamp.from(until);
+    // Source of truth — users row.
+    jdbc.update(
+        """
+        UPDATE users
+           SET plan = ?::org_plan,
+               bonus_until      = ?,
+               bonus_granted_by = ?,
+               bonus_granted_at = NOW(),
+               bonus_reason     = ?
+         WHERE id = ?
+        """,
+        planLc,
+        untilTs,
+        grantedBy,
+        reason,
+        userId);
+    // Mirror to every org the user owns — keeps legacy o.plan reads consistent during the V27
+    // deprecation window. New code paths read user.plan; this dual-write only matters until the
+    // org-level columns are dropped.
+    jdbc.update(
+        """
+        UPDATE organizations o
+           SET plan = ?::org_plan,
+               bonus_until      = ?,
+               bonus_granted_by = ?,
+               bonus_granted_at = NOW(),
+               bonus_reason     = ?
+          FROM org_members m
+         WHERE m.org_id = o.id
+           AND m.user_id = ?
+           AND m.role = 'owner'::org_role
+        """,
+        planLc,
+        untilTs,
+        grantedBy,
+        reason,
+        userId);
+  }
+
+  @Override
+  public void revokeUserGrant(UUID userId) {
+    jdbc.update(
+        """
+        UPDATE users
+           SET plan = 'free'::org_plan,
+               bonus_until      = NULL,
+               bonus_granted_by = NULL,
+               bonus_granted_at = NULL,
+               bonus_reason     = NULL
+         WHERE id = ?
+        """,
+        userId);
+    jdbc.update(
+        """
+        UPDATE organizations o
+           SET plan = 'free'::org_plan,
+               bonus_until      = NULL,
+               bonus_granted_by = NULL,
+               bonus_granted_at = NULL,
+               bonus_reason     = NULL
+          FROM org_members m
+         WHERE m.org_id = o.id
+           AND m.user_id = ?
+           AND m.role = 'owner'::org_role
+        """,
+        userId);
+  }
+
+  @Override
+  public Optional<BonusGrant> findActiveUserBonus(UUID userId) {
+    try {
+      return Optional.ofNullable(
+          jdbc.queryForObject(
+              """
+              SELECT u.bonus_until,
+                     u.bonus_granted_at,
+                     u.bonus_granted_by,
+                     gb.email AS granted_by_email,
+                     u.bonus_reason
+                FROM users u
+                LEFT JOIN users gb ON gb.id = u.bonus_granted_by
+               WHERE u.id = ?
+                 AND u.bonus_until IS NOT NULL
+                 AND u.bonus_until > NOW()
+              """,
+              (rs, rowNum) ->
+                  new BonusGrant(
+                      toInstant(rs, "bonus_until"),
+                      toInstant(rs, "bonus_granted_at"),
+                      (UUID) rs.getObject("bonus_granted_by"),
+                      rs.getString("granted_by_email"),
+                      rs.getString("bonus_reason")),
+              userId));
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
+  }
+
+  @Override
   public List<AdminAuditEntry> listAudit(int offset, int limit) {
     return jdbc.query(
         """

@@ -1401,6 +1401,64 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     }
   },
   {
+    "name": "admin_grant_user",
+    "title": "Admin grant user",
+    "description": "POST /api/v1/admin/users/{userId}/grant\n\nMethod: POST /api/v1/admin/users/{userId}/grant",
+    "method": "POST",
+    "path": "/api/v1/admin/users/{userId}/grant",
+    "pathParams": [
+      {
+        "name": "userId",
+        "required": true,
+        "type": "string",
+        "description": "userId (string) — required."
+      }
+    ],
+    "queryParams": [],
+    "hasBody": true,
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "No response body — successful response is a 204 No Content or similar."
+    },
+    "annotations": {
+      "title": "POST /api/v1/admin/users/{userId}/grant",
+      "readOnlyHint": false,
+      "idempotentHint": false,
+      "destructiveHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "admin_revoke_user",
+    "title": "Admin revoke user",
+    "description": "DELETE /api/v1/admin/users/{userId}/grant\n\nMethod: DELETE /api/v1/admin/users/{userId}/grant",
+    "method": "DELETE",
+    "path": "/api/v1/admin/users/{userId}/grant",
+    "pathParams": [
+      {
+        "name": "userId",
+        "required": true,
+        "type": "string",
+        "description": "userId (string) — required."
+      }
+    ],
+    "queryParams": [],
+    "hasBody": false,
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "No response body — successful response is a 204 No Content or similar."
+    },
+    "annotations": {
+      "title": "DELETE /api/v1/admin/users/{userId}/grant",
+      "readOnlyHint": false,
+      "idempotentHint": true,
+      "destructiveHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
     "name": "grant_admin",
     "title": "Grant admin",
     "description": "POST /api/v1/admin/orgs/{orgId}/grant\n\nMethod: POST /api/v1/admin/orgs/{orgId}/grant",
@@ -1954,6 +2012,24 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         },
         "isPlatformAdmin": {
           "type": "boolean"
+        },
+        "plan": {
+          "type": "string"
+        },
+        "planRenewsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "paymentGraceUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "bonusUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "bonusReason": {
+          "type": "string"
         }
       }
     },

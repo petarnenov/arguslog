@@ -107,6 +107,21 @@ export function revokeBonus(orgId: number): Promise<void> {
   return apiFetch<void>(`/api/v1/admin/orgs/${orgId}/grant`, { method: 'DELETE' });
 }
 
+/** Per-user grant — V26+ direct surface. Covers every org the user owns automatically. */
+export function grantUserBonus(
+  userId: string,
+  body: { tier: GrantTier; months: GrantMonths; reason: string },
+): Promise<void> {
+  return apiFetch<void>(`/api/v1/admin/users/${userId}/grant`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export function revokeUserBonus(userId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/admin/users/${userId}/grant`, { method: 'DELETE' });
+}
+
 function toQuery(params: Record<string, unknown>): string {
   const out = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
