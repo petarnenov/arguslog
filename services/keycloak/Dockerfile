@@ -36,7 +36,10 @@ RUN mkdir -p /opt/keycloak/data/import \
 # Custom login theme (Arguslog dark + brand green) — referenced from realm.template.json via
 # loginTheme="arguslog". Inherits all templates from parent=keycloak; we only ship CSS + logo
 # so future KC upgrades don't require keeping FreeMarker templates in sync.
-COPY services/keycloak/themes/arguslog /opt/keycloak/themes/arguslog
+# --chown is mandatory: the Keycloak image runs `kc.sh build` as uid 1000 (keycloak user) and
+# COPY without ownership would land files as root, which the keycloak user can't read at
+# runtime (and possibly fails the build pass too).
+COPY --chown=1000:0 services/keycloak/themes/arguslog /opt/keycloak/themes/arguslog
 
 RUN /opt/keycloak/bin/kc.sh build
 
