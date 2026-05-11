@@ -75,21 +75,29 @@ body.login-pf,
   border: 0 !important;
 }
 
-/* Replace the default text title with our logo + wordmark. */
+/* Replace the default text title with our logo + wordmark — logo on the left, "Arguslog"
+ * inline next to it on the same row. Wrapper hides KC's default "realm-name" text via
+ * font-size: 0 / color: transparent; the ::after pseudo-element supplies our wordmark with
+ * a real font-size so it renders. */
 #kc-header-wrapper {
-  background: url('../img/logo.svg') no-repeat center top;
-  background-size: 56px;
-  padding-top: 72px;
+  background: url('../img/logo.svg') no-repeat left center;
+  background-size: 32px 32px;
+  display: inline-block;
+  padding: 0 0 0 44px;
+  min-height: 32px;
+  line-height: 32px;
   font-size: 0;
   color: transparent;
+  vertical-align: middle;
 }
 #kc-header-wrapper::after {
   content: 'Arguslog';
-  display: block;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--arguslog-text);
   letter-spacing: -0.01em;
+  line-height: 32px;
+  vertical-align: middle;
 }
 
 /* The actual form card. KC 25/26 uses .card-pf for legacy templates and .kc-form-card /
