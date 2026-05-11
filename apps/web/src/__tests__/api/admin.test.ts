@@ -34,7 +34,16 @@ describe('admin api client', () => {
   });
 
   it('getAdminStats calls /admin/stats', async () => {
-    const f = mockFetch({ totalUsers: 1, totalOrgs: 1, totalProjects: 1, totalIssues: 1, orgsByPlan: {}, activeBonusGrants: 0, events7d: 0, events30d: 0 });
+    const f = mockFetch({
+      totalUsers: 1,
+      totalOrgs: 1,
+      totalProjects: 1,
+      totalIssues: 1,
+      orgsByPlan: {},
+      activeBonusGrants: 0,
+      events7d: 0,
+      events30d: 0,
+    });
     await getAdminStats();
     expect(f.mock.calls[0]?.[0]).toContain('/api/v1/admin/stats');
   });
@@ -93,7 +102,8 @@ describe('admin api client', () => {
       months: 1,
       reason: 'trial',
     });
-    expect(f.mock.calls[0]?.[0]).toContain('/api/v1/admin/users/11111111-1111-1111-1111-111111111111/grant',
+    expect(f.mock.calls[0]?.[0]).toContain(
+      '/api/v1/admin/users/11111111-1111-1111-1111-111111111111/grant',
     );
   });
 

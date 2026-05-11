@@ -46,14 +46,16 @@ describe('billing api client', () => {
   it('startMeCheckout respects the annual interval', async () => {
     const f = mockFetch({ url: 'x' });
     await startMeCheckout('annual');
-    expect(String(f.mock.calls[0]?.[0])).toContain('/api/v1/me/billing/checkout-session?interval=annual',
+    expect(String(f.mock.calls[0]?.[0])).toContain(
+      '/api/v1/me/billing/checkout-session?interval=annual',
     );
   });
 
   it('startMeCryptoCheckout encodes tier + duration', async () => {
     const f = mockFetch({ checkoutUrl: 'x', invoiceReference: 'ref' });
     await startMeCryptoCheckout('pro', 6);
-    expect(String(f.mock.calls[0]?.[0])).toContain('/api/v1/me/billing/crypto-invoice?tier=pro&duration=6',
+    expect(String(f.mock.calls[0]?.[0])).toContain(
+      '/api/v1/me/billing/crypto-invoice?tier=pro&duration=6',
     );
   });
 

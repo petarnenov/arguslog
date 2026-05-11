@@ -31,6 +31,8 @@ describe('me api client', () => {
     const me = await getMe();
 
     expect(me).toEqual(body);
-    expect((globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toContain('/api/v1/me');
+    expect((globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toContain(
+      '/api/v1/me',
+    );
   });
 });
