@@ -53,17 +53,46 @@
   --pf-v5-c-button--after--BorderWidth: 0;
   --pf-v5-c-input-group--BackgroundColor: transparent;
   --pf-v5-c-input-group--c-form-control--BorderColor: transparent;
+
+  /* PatternFly 4 (KC 25 ships PF4, not PF5 — class prefix is .pf-c-* without -v5-). Same
+   * variables, different namespace. KC 26+ moves to PF5; we set both so the theme works
+   * across either Keycloak version. */
+  --pf-c-form-control--BorderTopColor: transparent;
+  --pf-c-form-control--BorderRightColor: transparent;
+  --pf-c-form-control--BorderBottomColor: transparent;
+  --pf-c-form-control--BorderLeftColor: transparent;
+  --pf-c-form-control--after--BorderBottomColor: transparent;
+  --pf-c-form-control--after--BorderBottomWidth: 0;
+  --pf-c-form-control--BackgroundColor: var(--arguslog-bg);
+  --pf-c-button--BorderColor: transparent;
+  --pf-c-button--BorderWidth: 0;
+  --pf-c-input-group--BackgroundColor: transparent;
+  --pf-c-input-group--c-form-control--BorderColor: transparent;
+}
+
+/* Force the input-group wrapper transparent — its inline / cascaded background was
+ * rgb(255, 255, 255) on KC 25 (PF4) before this rule. */
+.pf-c-input-group,
+.pf-v5-c-input-group {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 /* Nuclear pass for ::after / ::before pseudo-elements PatternFly uses to fake the form
  * control bottom-border + the button hover/focus ring. Zero-ing the CSS vars above
  * should be enough, but inline-style or template-level overrides occasionally slip past
  * so we belt-and-braces this. */
+.pf-c-form-control,
 .pf-v5-c-form-control::after,
+.pf-c-form-control,
 .pf-v5-c-form-control::before,
+.pf-c-input-group,
 .pf-v5-c-input-group::after,
+.pf-c-input-group,
 .pf-v5-c-input-group::before,
+.pf-c-button,
 .pf-v5-c-button::after,
+.pf-c-button,
 .pf-v5-c-button::before {
   border: 0 !important;
   box-shadow: none !important;
@@ -177,6 +206,7 @@ input,
 input[type='text'],
 input[type='password'],
 input[type='email'],
+.pf-c-form-control,
 .pf-v5-c-form-control,
 .form-control {
   background: var(--arguslog-bg) !important;
@@ -186,6 +216,7 @@ input[type='email'],
   box-shadow: none !important;
 }
 input:focus,
+.pf-c-form-control,
 .pf-v5-c-form-control:focus,
 .form-control:focus {
   outline: 2px solid var(--arguslog-primary);
@@ -196,6 +227,7 @@ input:focus,
 
 /* Password input group — flatten the wrapper + button so input + toggle read as a single
  * borderless dark element. */
+.pf-c-input-group,
 .pf-v5-c-input-group,
 .input-group,
 div[class*='kcInputGroup'] {
@@ -206,12 +238,16 @@ div[class*='kcInputGroup'] {
   align-items: stretch;
   gap: 0;
 }
+.pf-c-input-group,
 .pf-v5-c-input-group > input,
 .input-group > input {
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
 }
-.pf-v5-c-input-group > .pf-v5-c-button,
+.pf-c-input-group,
+.pf-v5-c-input-group > .pf-c-button,
+.pf-v5-c-button,
+.pf-c-input-group,
 .pf-v5-c-input-group > button,
 .input-group > button,
 button[aria-label*='Show password'],
@@ -230,7 +266,9 @@ button[aria-label*='Hide password'] {
   align-items: center;
   justify-content: center;
 }
-.pf-v5-c-input-group > .pf-v5-c-button:hover,
+.pf-c-input-group,
+.pf-v5-c-input-group > .pf-c-button,
+.pf-v5-c-button:hover,
 button[aria-label*='Show password']:hover,
 button[aria-label*='Hide password']:hover {
   background: var(--arguslog-card) !important;
@@ -238,9 +276,15 @@ button[aria-label*='Hide password']:hover {
 }
 /* Suppress every focus-state outline PatternFly + browsers paint around the toggle —
  * focus-visible adds a 2px dotted/solid ring that reads as white on the dark surface. */
-.pf-v5-c-input-group > .pf-v5-c-button:focus,
-.pf-v5-c-input-group > .pf-v5-c-button:focus-visible,
-.pf-v5-c-input-group > .pf-v5-c-button:active,
+.pf-c-input-group,
+.pf-v5-c-input-group > .pf-c-button,
+.pf-v5-c-button:focus,
+.pf-c-input-group,
+.pf-v5-c-input-group > .pf-c-button,
+.pf-v5-c-button:focus-visible,
+.pf-c-input-group,
+.pf-v5-c-input-group > .pf-c-button,
+.pf-v5-c-button:active,
 .input-group > button:focus,
 .input-group > button:focus-visible,
 .input-group > button:active,
@@ -258,7 +302,9 @@ button[aria-label*='Hide password']:active {
 /* The eye icon inside the toggle — PatternFly ships it as an inline SVG with currentColor
  * stroke OR as a Font Awesome <i> with hardcoded color. Force both to inherit our dim text
  * so it sits on the dark button properly. */
+.pf-c-input-group,
 .pf-v5-c-input-group svg,
+.pf-c-input-group,
 .pf-v5-c-input-group i,
 .input-group svg,
 .input-group i,
@@ -276,6 +322,7 @@ label,
 }
 
 /* Primary button — brand green, no PatternFly blue. */
+.pf-c-button,
 .pf-v5-c-button.pf-m-primary,
 .btn-primary,
 input[type='submit'].btn-primary,
@@ -290,6 +337,7 @@ button[name='login'] {
     background 120ms ease,
     border-color 120ms ease;
 }
+.pf-c-button,
 .pf-v5-c-button.pf-m-primary:hover,
 .btn-primary:hover,
 #kc-login:hover {
@@ -298,11 +346,13 @@ button[name='login'] {
 }
 
 /* Secondary / link buttons (forgot password, back, register-here). */
+.pf-c-button,
 .pf-v5-c-button.pf-m-link,
 .btn-link,
 a {
   color: var(--arguslog-primary-hover);
 }
+.pf-c-button,
 .pf-v5-c-button.pf-m-link:hover,
 .btn-link:hover,
 a:hover {
