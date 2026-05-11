@@ -58,6 +58,8 @@ class JdbcPaymentDowngradeRepositoryTest {
   void truncate() {
     new org.springframework.jdbc.core.JdbcTemplate(dataSource)
         .execute("TRUNCATE organizations RESTART IDENTITY CASCADE");
+    new org.springframework.jdbc.core.JdbcTemplate(dataSource)
+        .execute("DELETE FROM users WHERE email LIKE 'downgrade-test-%'");
   }
 
   @Test
@@ -101,6 +103,36 @@ class JdbcPaymentDowngradeRepositoryTest {
     List<Long> ids = repo.downgradeExpired(Instant.parse("2026-05-13T04:00:00Z"));
 
     assertThat(ids).isEmpty();
+  }
+
+  @Test
+  void downgradesAlsoMirrorsToOwnerUserRow() throws Exception {
+    // Per-user billing (V26+): the downgrade must flip the owner's users.plan back to free in
+    // the same transaction, otherwise cap-checks would still see the cached paid tier on the
+    // user row until the next webhook event came in.
+    java.util.UUID owner = java.util.UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    seedUser(owner, "downgrade-test-owner@example.com", "pro");
+    seedOrg(1L, "pro", Instant.parse("2026-05-01T00:00:00Z"));
+    seedMembership(1L, owner);
+
+    repo.downgradeExpired(Instant.parse("2026-05-13T04:00:00Z"));
+
+    assertOrgState(1L, "free", null);
+    assertUserPlan(owner, "free");
+  }
+
+  @Test
+  void downgradesStarterAndBusinessTiersToo() throws Exception {
+    // Pre-V26 the predicate was `plan = 'pro'`, so STARTER/BUSINESS orgs that went into grace
+    // would never actually downgrade — quiet bug. Phase 4 broadens to plan != 'free'.
+    seedOrg(1L, "starter", Instant.parse("2026-05-01T00:00:00Z"));
+    seedOrg(2L, "business", Instant.parse("2026-05-02T00:00:00Z"));
+
+    List<Long> ids = repo.downgradeExpired(Instant.parse("2026-05-13T04:00:00Z"));
+
+    assertThat(ids).containsExactlyInAnyOrder(1L, 2L);
+    assertOrgState(1L, "free", null);
+    assertOrgState(2L, "free", null);
   }
 
   @Test
@@ -150,6 +182,44 @@ class JdbcPaymentDowngradeRepositoryTest {
         } else {
           assertThat(ts.toInstant()).isEqualTo(expectedGrace);
         }
+      }
+    }
+  }
+
+  private static void seedUser(java.util.UUID id, String email, String plan) throws Exception {
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement stmt =
+            conn.prepareStatement(
+                "INSERT INTO users (id, email, display_name, plan)"
+                    + " VALUES (?, ?, ?, ?::org_plan)")) {
+      stmt.setObject(1, id);
+      stmt.setString(2, email);
+      stmt.setString(3, email);
+      stmt.setString(4, plan);
+      stmt.execute();
+    }
+  }
+
+  private static void seedMembership(long orgId, java.util.UUID userId) throws Exception {
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement stmt =
+            conn.prepareStatement(
+                "INSERT INTO org_members (org_id, user_id, role)"
+                    + " VALUES (?, ?, 'owner'::org_role)")) {
+      stmt.setLong(1, orgId);
+      stmt.setObject(2, userId);
+      stmt.execute();
+    }
+  }
+
+  private static void assertUserPlan(java.util.UUID id, String expectedPlan) throws Exception {
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement stmt =
+            conn.prepareStatement("SELECT plan::text FROM users WHERE id = ?")) {
+      stmt.setObject(1, id);
+      try (ResultSet rs = stmt.executeQuery()) {
+        rs.next();
+        assertThat(rs.getString(1)).isEqualTo(expectedPlan);
       }
     }
   }
