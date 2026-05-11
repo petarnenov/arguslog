@@ -28,10 +28,13 @@ WORKDIR /opt/keycloak
 # already in the template; localhost is just an extra entry that nobody on the public internet
 # can hit.
 COPY services/keycloak/realm.template.json /tmp/realm.template.json
+# No `rm /tmp/realm.template.json` at the end — the KC 26.1 base image runs as uid 1000 and
+# can't delete a root-owned file in /tmp. The temp file never reaches the runtime stage (the
+# final image COPYs --from=builder /opt/keycloak/ only), so leaving it in the builder fs is
+# free.
 RUN mkdir -p /opt/keycloak/data/import \
  && sed 's|__DEV_HOST__|localhost|g' /tmp/realm.template.json \
-      > /opt/keycloak/data/import/arguslog-realm.json \
- && rm /tmp/realm.template.json
+      > /opt/keycloak/data/import/arguslog-realm.json
 
 # Custom login theme (Arguslog dark + brand green) — referenced from realm.template.json via
 # loginTheme="arguslog". Inherits all templates from parent=keycloak; we only ship CSS + logo
