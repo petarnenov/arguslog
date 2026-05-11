@@ -257,12 +257,6 @@ export function AppShellLayout() {
               leftSection={<IconUsers size={16} />}
             />
           )}
-          <NavLink
-            component={Link}
-            to="/billing"
-            label={t('nav.billing')}
-            leftSection={<IconCreditCard size={16} />}
-          />
           {me.data?.isPlatformAdmin && (
             <NavLink
               component={Link}
