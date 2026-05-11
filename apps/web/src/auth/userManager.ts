@@ -19,7 +19,7 @@ export function getUserManager(): UserManager {
       authority: `${env.VITE_KEYCLOAK_URL}/realms/${env.VITE_KEYCLOAK_REALM}`,
       client_id: env.VITE_KEYCLOAK_CLIENT_ID,
       redirect_uri: `${window.location.origin}/auth/callback`,
-      post_logout_redirect_uri: `${window.location.origin}/login`,
+      post_logout_redirect_uri: `${window.location.origin}/`,
       response_type: 'code',
       scope: 'openid profile email',
       loadUserInfo: true,

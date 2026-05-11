@@ -36,7 +36,7 @@ export function useAuth() {
     // isn't trapped on a "still logged in" UI. The Keycloak SSO cookie may persist; that's OK,
     // the next signinRedirect will reuse it (or prompt fresh) without an error page.
     await um.removeUser();
-    window.location.assign(`${window.location.origin}/login`);
+    window.location.assign(`${window.location.origin}/`);
   }, []);
 
   return { status, user, error, signIn, signOut };

@@ -8,7 +8,6 @@ import { AlertRulesPage } from './pages/AlertRulesPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { IssueDetailPage } from './pages/IssueDetailPage';
 import { IssuesPage } from './pages/IssuesPage';
-import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { OrgSettingsPage } from './pages/OrgSettingsPage';
@@ -22,7 +21,6 @@ import { UserBillingPage } from './pages/UserBillingPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/orgs" replace /> },
-  { path: '/login', element: <LoginPage /> },
   { path: '/auth/callback', element: <AuthCallbackPage /> },
   {
     element: (
