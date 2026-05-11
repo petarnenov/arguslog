@@ -139,7 +139,7 @@ div[class*='kcFormCard'],
   margin-bottom: 16px;
 }
 
-/* Inputs */
+/* Inputs — borderless on the dark surface. Focus ring (no border) is the visual cue. */
 input,
 input[type='text'],
 input[type='password'],
@@ -148,20 +148,21 @@ input[type='email'],
 .form-control {
   background: var(--arguslog-bg) !important;
   color: var(--arguslog-text) !important;
-  border: 1px solid var(--arguslog-border) !important;
+  border: 0 !important;
   border-radius: 6px;
+  box-shadow: none !important;
 }
 input:focus,
 .pf-v5-c-form-control:focus,
 .form-control:focus {
-  border-color: var(--arguslog-primary) !important;
-  outline: 2px solid rgba(43, 138, 62, 0.25);
+  outline: 2px solid var(--arguslog-primary);
   outline-offset: 0;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
-/* Password input group — KC wraps <input> + show/hide-password toggle button in an
- * input-group div. PatternFly's defaults paint the toggle button white and leave the
- * wrapper opaque, which clashes with the dark surface. Flatten both. */
+/* Password input group — flatten the wrapper + button so input + toggle read as a single
+ * borderless dark element. */
 .pf-v5-c-input-group,
 .input-group,
 div[class*='kcInputGroup'] {
@@ -176,7 +177,6 @@ div[class*='kcInputGroup'] {
 .input-group > input {
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
-  border-right: 0 !important;
 }
 .pf-v5-c-input-group > .pf-v5-c-button,
 .pf-v5-c-input-group > button,
@@ -184,8 +184,8 @@ div[class*='kcInputGroup'] {
 button[aria-label*='Show password'],
 button[aria-label*='Hide password'] {
   background: var(--arguslog-bg) !important;
-  border: 1px solid var(--arguslog-border) !important;
-  border-left: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
   border-top-right-radius: 6px !important;
