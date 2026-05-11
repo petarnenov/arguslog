@@ -27,7 +27,7 @@ export default defineConfig({
         'src/auth/userManager.ts',
         'src/auth/useAuth.ts',
       ],
-      thresholds: { statements: 75, branches: 70, functions: 75, lines: 75 },
+      thresholds: { statements: 75, branches: 75, functions: 75, lines: 75 },
     },
   },
 });
