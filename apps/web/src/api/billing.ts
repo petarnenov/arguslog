@@ -107,3 +107,32 @@ export function openPortal(orgId: number): Promise<CheckoutResponse> {
     method: 'POST',
   });
 }
+
+// ── User-level billing (V26+) ─────────────────────────────────────────────
+// New endpoints under /me/billing don't take an orgId — the backend resolves the user's
+// "primary owned org" (highest tier, earliest membership) under the hood and delegates to the
+// org-scoped Stripe/NOWPayments flow. After per-user dual-write, the webhook lands on both
+// org and user rows, so the indirection is invisible to the caller.
+
+export function startMeCheckout(
+  interval: BillingInterval = 'monthly',
+): Promise<CheckoutResponse> {
+  return apiFetch<CheckoutResponse>(
+    `/api/v1/me/billing/checkout-session?interval=${interval}`,
+    { method: 'POST' },
+  );
+}
+
+export function startMeCryptoCheckout(
+  tier: PaidTier,
+  duration: PlanDuration,
+): Promise<CryptoCheckoutResponse> {
+  return apiFetch<CryptoCheckoutResponse>(
+    `/api/v1/me/billing/crypto-invoice?tier=${tier}&duration=${duration}`,
+    { method: 'POST' },
+  );
+}
+
+export function openMePortal(): Promise<CheckoutResponse> {
+  return apiFetch<CheckoutResponse>('/api/v1/me/billing/portal', { method: 'POST' });
+}

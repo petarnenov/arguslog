@@ -22,4 +22,13 @@ public interface MembershipRepository {
    * How many members of {@code orgId} hold the {@code owner} role. Used to block last-owner exits.
    */
   int countOwnersOf(long orgId);
+
+  /**
+   * The user's "primary owned org" — same picker rule that resolves billing-relevant joins
+   * everywhere else: highest current tier wins, ties broken by earliest membership. Returns
+   * empty for users who own no org yet (first-time signup or member-only access). Per-user
+   * billing endpoints use this to delegate to the org-scoped Stripe/NOWPayments flow without
+   * the frontend having to pick an org for the user.
+   */
+  Optional<Long> findPrimaryOwnedOrg(UUID userId);
 }

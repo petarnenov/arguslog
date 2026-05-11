@@ -19,6 +19,7 @@ import { ProjectKeysPage } from './pages/ProjectKeysPage';
 import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ReleasesPage } from './pages/ReleasesPage';
+import { UserBillingPage } from './pages/UserBillingPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/orgs" replace /> },
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
       { path: '/orgs/:orgSlug/settings/destinations', element: <AlertDestinationsPage /> },
       { path: '/orgs/:orgSlug/billing', element: <BillingPage /> },
       { path: '/me/tokens', element: <PersonalAccessTokensPage /> },
+      { path: '/billing', element: <UserBillingPage /> },
       { path: '/admin', element: <AdminPage /> },
     ],
   },
