@@ -51,10 +51,28 @@ body.login-pf,
     sans-serif;
 }
 
+/* The page-level container — KC defaults stretch the form to viewport width. Constrain to a
+ * card width matching the old in-app splash so input lines don't span the whole screen.
+ * Selector list is broad because KC 25/26 wraps the form in slightly different containers
+ * depending on the template (kc-content vs login-pf-page vs PatternFly main). */
+.login-pf-page,
+#kc-content,
+#kc-content-wrapper,
+.pf-v5-c-login__main {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
 #kc-header,
-.login-pf-page-header {
-  padding: 24px 0 8px;
+.login-pf-page-header,
+.login-pf-header {
+  padding: 32px 0 16px;
   text-align: center;
+  border: 0 !important;
 }
 
 /* Replace the default text title with our logo + wordmark. */
@@ -74,18 +92,36 @@ body.login-pf,
   letter-spacing: -0.01em;
 }
 
-/* The big white card — flip it to our dark surface. */
+/* The actual form card. KC 25/26 uses .card-pf for legacy templates and .kc-form-card /
+ * PatternFly 5 classes for newer ones — style both so we don't depend on which template
+ * variant the realm hands back. */
 .card-pf,
-.login-pf-page,
 .kc-form-card,
-div[class*='kcFormCard'] {
+.pf-v5-c-login__main-body,
+div[class*='kcFormCard'],
+#kc-form-wrapper {
   background: var(--arguslog-card) !important;
   border: 1px solid var(--arguslog-border) !important;
   border-radius: 12px;
+  padding: 24px !important;
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.2),
     0 0 0 1px rgba(0, 0, 0, 0.1);
   color: var(--arguslog-text);
+}
+
+/* When KC renders the form without a dedicated card wrapper (older base template at 25.x),
+ * the .login-pf-page > div directly under it is the closest equivalent. Style it as a card
+ * fallback. */
+.login-pf-page > div:not(#kc-header):not(#kc-info-wrapper):not(.login-pf-page-header) {
+  background: var(--arguslog-card);
+  border: 1px solid var(--arguslog-border);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 0;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 #kc-page-title {
