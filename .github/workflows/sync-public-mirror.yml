@@ -29,6 +29,7 @@ on:
       - 'java-sdk/**'
       - 'python-sdk/**'
       - 'docs/sdks.md'
+      - 'services/api/openapi.json'
       - 'scripts/sync-public-mirror.sh'
       - 'scripts/public-mirror/**'
       - 'scripts/verify-tag-version.mjs'
