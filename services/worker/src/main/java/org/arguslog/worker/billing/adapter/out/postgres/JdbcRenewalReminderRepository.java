@@ -11,18 +11,29 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Per-user renewal-reminder lookup (V27+). Billing identity lives on the owner-user row, so plan +
+ * {@code plan_renews_at} are read from {@code users}; the email recipient is that same user. The
+ * dedup table {@code renewal_reminders_sent} stays keyed by {@code org_id} since the email body is
+ * org-scoped ("Org &lt;name&gt; is expiring") — a user who owns multiple orgs gets one email per
+ * org, mirroring how their dashboard surfaces each org's expiry independently.
+ *
+ * <p>The {@code plan != 'free'} predicate catches every paid tier (STARTER / PRO / BUSINESS /
+ * ENTERPRISE). The pre-V23 {@code plan = 'pro'} predicate was a holdover that silently skipped
+ * starter/business owners from the T-14/-7/-1 reminder cycle.
+ */
 @Repository
 public class JdbcRenewalReminderRepository implements RenewalReminderRepository {
 
   private static final String FIND_CANDIDATES_SQL =
       """
-      SELECT o.id, o.slug, o.name, u.email, o.plan_renews_at::date AS expires_on
+      SELECT o.id, o.slug, o.name, u.email, u.plan_renews_at::date AS expires_on
       FROM organizations o
-      JOIN org_members m ON m.org_id = o.id AND m.role = 'owner'
+      JOIN org_members m ON m.org_id = o.id AND m.role = 'owner'::org_role
       JOIN users u ON u.id = m.user_id
-      WHERE o.plan = 'pro'
-        AND o.plan_renews_at IS NOT NULL
-        AND o.plan_renews_at::date = ?
+      WHERE u.plan != 'free'::org_plan
+        AND u.plan_renews_at IS NOT NULL
+        AND u.plan_renews_at::date = ?
         AND NOT EXISTS (
           SELECT 1 FROM renewal_reminders_sent rs
           WHERE rs.org_id = o.id AND rs.target_date = ? AND rs.kind = ?

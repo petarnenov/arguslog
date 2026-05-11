@@ -10,10 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * Hourly pass: for each Pro org whose one-time {@code plan_renews_at} has lapsed without a
- * follow-up purchase extending it, opens a payment-grace window. Re-uses the existing grace
- * mechanism + downgrade job — semantically identical to "Stripe payment_failed" but driven by
- * time rather than an external event, since one-time crypto + LS purchases never auto-renew.
+ * Hourly pass: for each user on a paid plan whose one-time {@code plan_renews_at} has lapsed
+ * without a follow-up purchase extending it, opens a payment-grace window on the user row. Re-uses
+ * the existing grace mechanism + downgrade job — semantically identical to "Stripe payment_failed"
+ * but driven by time rather than an external event, since one-time crypto + LS purchases never
+ * auto-renew. Reports affected owner-orgs so the dashboard / alerts mirror the pre-V27 shape.
  */
 @Service
 public class PlanExpiryService {

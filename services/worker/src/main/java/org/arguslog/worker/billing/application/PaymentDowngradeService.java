@@ -8,9 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Daily auto-downgrade of Pro orgs whose payment grace window has expired. Designed to be a
- * one-line wrapper around the atomic UPDATE so the only state lives in the DB — re-running on the
- * same instant is a safe no-op.
+ * Daily auto-downgrade of users on any paid plan whose payment grace window has expired (V27+
+ * per-user billing). Designed to be a one-line wrapper around the atomic UPDATE so the only state
+ * lives in the DB — re-running on the same instant is a safe no-op. Returns affected owner-org ids
+ * so callers can audit / alert with the pre-V27 shape.
  */
 @Service
 public class PaymentDowngradeService {
