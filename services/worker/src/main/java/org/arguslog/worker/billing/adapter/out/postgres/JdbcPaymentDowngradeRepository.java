@@ -14,45 +14,33 @@ import org.arguslog.worker.billing.application.port.PaymentDowngradeRepository;
 import org.springframework.stereotype.Repository;
 
 /**
- * Single-transaction downgrade with {@code RETURNING id} so the orchestrator gets the affected ids
- * without a follow-up SELECT that would race concurrent webhook writes.
+ * Per-user payment downgrade (V27+). Billing identity lives on users, so the worker downgrades
+ * the user row directly when their grace window expires and returns the affected org ids
+ * (resolved from the downgraded users' owned orgs) so the orchestrator can emit per-org audit /
+ * alert events with the same shape it had before V27.
  *
- * <p>The {@code plan != 'free'} predicate is required even though grace is set only on paid orgs —
- * Stripe could deliver a {@code customer.subscription.deleted} after grace was opened but before
- * the worker runs, leaving the row on Free with a stale grace timestamp; the predicate stops the
- * worker from "downgrading" an already-Free org and emitting noise audit events.
- *
- * <p>Per-user billing (V26+): the downgrade mirrors onto the user rows of every affected org's
- * owners, so cap-checks (which read users.plan as the source of truth) flip to Free in lockstep
- * with the org row. Without the mirror the user would keep their cached paid tier until the next
- * webhook touched their user row.
+ * <p>The {@code plan != 'free'} predicate catches every paid tier — STARTER / PRO / BUSINESS /
+ * ENTERPRISE. The original {@code plan = 'pro'} predicate was a pre-V23 holdover that quietly
+ * left starter/business customers sitting in grace forever.
  */
 @Repository
 public class JdbcPaymentDowngradeRepository implements PaymentDowngradeRepository {
 
-  private static final String DOWNGRADE_ORGS_SQL =
+  private static final String DOWNGRADE_SQL =
       """
-      UPDATE organizations
-      SET plan = 'free',
-          payment_grace_until = NULL,
-          plan_renews_at = NULL,
-          updated_at = NOW()
-      WHERE plan != 'free'
-        AND payment_grace_until IS NOT NULL
-        AND payment_grace_until < ?
-      RETURNING id
-      """;
-
-  private static final String DOWNGRADE_OWNER_USERS_SQL =
-      """
-      UPDATE users u
-         SET plan = 'free',
-             payment_grace_until = NULL,
-             plan_renews_at = NULL
-        FROM org_members m
-       WHERE m.user_id = u.id
-         AND m.role = 'owner'::org_role
-         AND m.org_id = ANY (?)
+      WITH downgraded AS (
+        UPDATE users
+           SET plan = 'free',
+               payment_grace_until = NULL,
+               plan_renews_at = NULL
+         WHERE plan != 'free'::org_plan
+           AND payment_grace_until IS NOT NULL
+           AND payment_grace_until < ?
+        RETURNING id
+      )
+      SELECT DISTINCT m.org_id
+        FROM downgraded d
+        JOIN org_members m ON m.user_id = d.id AND m.role = 'owner'::org_role
       """;
 
   private final DataSource dataSource;
@@ -63,31 +51,16 @@ public class JdbcPaymentDowngradeRepository implements PaymentDowngradeRepositor
 
   @Override
   public List<Long> downgradeExpired(Instant now) {
-    List<Long> ids = new ArrayList<>();
-    try (Connection conn = dataSource.getConnection()) {
-      conn.setAutoCommit(false);
-      try {
-        try (PreparedStatement stmt = conn.prepareStatement(DOWNGRADE_ORGS_SQL)) {
-          stmt.setObject(1, Timestamp.from(now), Types.TIMESTAMP);
-          try (ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) ids.add(rs.getLong(1));
-          }
-        }
-        if (!ids.isEmpty()) {
-          try (PreparedStatement stmt = conn.prepareStatement(DOWNGRADE_OWNER_USERS_SQL)) {
-            Long[] idArray = ids.toArray(new Long[0]);
-            stmt.setArray(1, conn.createArrayOf("bigint", idArray));
-            stmt.executeUpdate();
-          }
-        }
-        conn.commit();
-      } catch (SQLException e) {
-        conn.rollback();
-        throw e;
+    List<Long> orgIds = new ArrayList<>();
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement stmt = conn.prepareStatement(DOWNGRADE_SQL)) {
+      stmt.setObject(1, Timestamp.from(now), Types.TIMESTAMP);
+      try (ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) orgIds.add(rs.getLong(1));
       }
     } catch (SQLException e) {
       throw new RuntimeException("Payment downgrade failed for cutoff " + now, e);
     }
-    return ids;
+    return orgIds;
   }
 }

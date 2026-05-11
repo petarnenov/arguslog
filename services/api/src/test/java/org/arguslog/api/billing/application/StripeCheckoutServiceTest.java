@@ -33,6 +33,7 @@ class StripeCheckoutServiceTest {
   @Mock SessionService sessions;
   @Mock BillingCustomerRepository customers;
   @Mock org.arguslog.api.application.port.OrgWriteRepository orgs;
+  @Mock org.arguslog.api.application.port.MembershipRepository memberships;
 
   StripeCheckoutService service;
   StripeProperties props;
@@ -46,7 +47,7 @@ class StripeCheckoutServiceTest {
             "price_pro_test",
             "price_pro_annual_test",
             "https://app.example");
-    service = new StripeCheckoutService(stripe, props, customers, orgs);
+    service = new StripeCheckoutService(stripe, props, customers, orgs, memberships);
     // lenient — unconfigured-key test never reaches the Stripe SDK so the stubs go unused there.
     org.mockito.Mockito.lenient().when(stripe.checkout()).thenReturn(checkout);
     org.mockito.Mockito.lenient().when(checkout.sessions()).thenReturn(sessions);
@@ -61,7 +62,7 @@ class StripeCheckoutServiceTest {
   @Test
   void unconfiguredKeyOrPriceRaises503Exception() {
     StripeProperties bad = new StripeProperties("", "", "", "", "https://app.example");
-    StripeCheckoutService unconfigured = new StripeCheckoutService(stripe, bad, customers, orgs);
+    StripeCheckoutService unconfigured = new StripeCheckoutService(stripe, bad, customers, orgs, memberships);
     assertThatThrownBy(
             () -> unconfigured.createCheckoutUrl(1L, "user@example.com", BillingInterval.MONTHLY))
         .isInstanceOf(StripeNotConfiguredException.class);
@@ -72,7 +73,7 @@ class StripeCheckoutServiceTest {
     StripeProperties noAnnual =
         new StripeProperties("sk_test_123", "whsec_x", "price_pro_test", "", "https://app.example");
     StripeCheckoutService monthlyOnly =
-        new StripeCheckoutService(stripe, noAnnual, customers, orgs);
+        new StripeCheckoutService(stripe, noAnnual, customers, orgs, memberships);
     assertThatThrownBy(
             () -> monthlyOnly.createCheckoutUrl(1L, "user@example.com", BillingInterval.ANNUAL))
         .isInstanceOf(StripeNotConfiguredException.class)

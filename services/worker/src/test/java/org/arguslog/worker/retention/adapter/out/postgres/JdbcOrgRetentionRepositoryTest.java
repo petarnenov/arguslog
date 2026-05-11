@@ -57,6 +57,8 @@ class JdbcOrgRetentionRepositoryTest {
   void truncate() throws Exception {
     new org.springframework.jdbc.core.JdbcTemplate(dataSource)
         .execute("TRUNCATE organizations RESTART IDENTITY CASCADE");
+    new org.springframework.jdbc.core.JdbcTemplate(dataSource)
+        .execute("DELETE FROM users WHERE email LIKE 'retention-test-%'");
   }
 
   @Test
@@ -112,18 +114,39 @@ class JdbcOrgRetentionRepositoryTest {
   }
 
   private static void insertOrg(long id, String plan, Integer overrideDays) throws Exception {
-    try (Connection conn = dataSource.getConnection();
-        PreparedStatement stmt =
-            conn.prepareStatement(
-                "INSERT INTO organizations (id, slug, name, plan, retention_days_override)"
-                    + " VALUES (?, ?, ?, ?::org_plan, ?)")) {
-      stmt.setLong(1, id);
-      stmt.setString(2, "org-" + id);
-      stmt.setString(3, "Org " + id);
-      stmt.setString(4, plan);
-      if (overrideDays == null) stmt.setNull(5, java.sql.Types.INTEGER);
-      else stmt.setInt(5, overrideDays);
-      stmt.execute();
+    // V27+: org.plan dropped — seed a user with that plan and own the org so the JOIN through
+    // the primary owner returns the desired effective tier.
+    java.util.UUID owner = new java.util.UUID(0L, id);
+    try (Connection conn = dataSource.getConnection()) {
+      try (PreparedStatement stmt =
+          conn.prepareStatement(
+              "INSERT INTO users (id, email, display_name, plan)"
+                  + " VALUES (?, ?, ?, ?::org_plan)")) {
+        stmt.setObject(1, owner);
+        stmt.setString(2, "retention-test-" + id + "@example.com");
+        stmt.setString(3, "owner-" + id);
+        stmt.setString(4, plan);
+        stmt.execute();
+      }
+      try (PreparedStatement stmt =
+          conn.prepareStatement(
+              "INSERT INTO organizations (id, slug, name, retention_days_override)"
+                  + " VALUES (?, ?, ?, ?)")) {
+        stmt.setLong(1, id);
+        stmt.setString(2, "org-" + id);
+        stmt.setString(3, "Org " + id);
+        if (overrideDays == null) stmt.setNull(4, java.sql.Types.INTEGER);
+        else stmt.setInt(4, overrideDays);
+        stmt.execute();
+      }
+      try (PreparedStatement stmt =
+          conn.prepareStatement(
+              "INSERT INTO org_members (org_id, user_id, role)"
+                  + " VALUES (?, ?, 'owner'::org_role)")) {
+        stmt.setLong(1, id);
+        stmt.setObject(2, owner);
+        stmt.execute();
+      }
     }
   }
 

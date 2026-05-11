@@ -23,10 +23,9 @@ public class JdbcOrgPlanRepository implements OrgPlanRepository {
 
   @Override
   public Optional<PlanTier> findPlan(long orgId) {
-    // Per-user billing: the org's effective plan is the MAX tier across its owners' user.plan
-    // (Phase 2 of the per-user billing migration — see V26). Multi-owner orgs inherit the most
-    // generous owner's tier; ownerless orgs (rare orphans) fall back to organizations.plan
-    // until V27 drops that column.
+    // Per-user billing (V27+): the org's effective plan is the MAX tier across its owners'
+    // user.plan. Multi-owner orgs inherit the most generous owner's tier. Ownerless orgs (rare
+    // orphans) return empty so callers can fall back to FREE explicitly.
     String[] raws =
         jdbc.query(
                 """
@@ -38,16 +37,7 @@ public class JdbcOrgPlanRepository implements OrgPlanRepository {
                 (rs, rowNum) -> rs.getString("plan"),
                 orgId)
             .toArray(new String[0]);
-    if (raws.length == 0) {
-      try {
-        String raw =
-            jdbc.queryForObject(
-                "SELECT plan::text FROM organizations WHERE id = ?", String.class, orgId);
-        return Optional.of(PlanTier.fromDbValue(raw));
-      } catch (EmptyResultDataAccessException e) {
-        return Optional.empty();
-      }
-    }
+    if (raws.length == 0) return Optional.empty();
     PlanTier best = PlanTier.FREE;
     for (String raw : raws) {
       PlanTier t = PlanTier.fromDbValue(raw);

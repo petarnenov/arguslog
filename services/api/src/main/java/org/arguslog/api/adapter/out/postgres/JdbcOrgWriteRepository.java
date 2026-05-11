@@ -27,15 +27,16 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
     // "current transaction is aborted"). We surface a domain-level duplicate exception so the
     // controller can map it to a friendly 409 instead of leaking a 500.
     //
-    // planDbValue carries the creator's highest active plan tier (GH #38) so a paying user who
-    // spins up a side org gets the same coverage automatically. Renewal/billing identity is NOT
-    // copied — the new org starts a fresh cycle on the same tier.
+    // V27+: organizations.plan is dropped — billing identity lives on users. The {@code
+    // planDbValue} arg is no longer persisted; it's only carried back in the returned Org so the
+    // immediate response reflects the creator's effective tier (the row's owners are added in
+    // the same transaction by OrgService, so subsequent reads via findById JOIN through them).
     Org inserted =
         jdbc.query(
             """
-            INSERT INTO organizations (slug, name, plan) VALUES (?, ?, ?::org_plan)
+            INSERT INTO organizations (slug, name) VALUES (?, ?)
             ON CONFLICT (slug) DO NOTHING
-            RETURNING id, plan::text AS plan, created_at
+            RETURNING id, created_at
             """,
             rs -> {
               if (!rs.next()) return null;
@@ -43,12 +44,11 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
                   rs.getLong("id"),
                   slug,
                   name,
-                  rs.getString("plan"),
+                  planDbValue,
                   rs.getTimestamp("created_at").toInstant());
             },
             slug,
-            name,
-            planDbValue);
+            name);
     if (inserted == null) {
       throw new DuplicateOrgException(
           "An organization with this name already exists. Please choose a different name.");
@@ -83,7 +83,7 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
       Org org =
           jdbc.queryForObject(
               """
-              SELECT o.id, o.slug, o.name, COALESCE(ou.plan, o.plan)::text AS plan, o.created_at
+              SELECT o.id, o.slug, o.name, COALESCE(ou.plan::text, 'free') AS plan, o.created_at
                 FROM organizations o
                 LEFT JOIN LATERAL (
                   SELECT m.user_id
@@ -139,7 +139,7 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
     // every Org dropdown shows the effective tier regardless of which org was last billed.
     return jdbc.query(
         """
-        SELECT o.id, o.slug, o.name, COALESCE(ou.plan, o.plan)::text AS plan, o.created_at
+        SELECT o.id, o.slug, o.name, COALESCE(ou.plan::text, 'free') AS plan, o.created_at
           FROM organizations o
           JOIN org_members m ON m.org_id = o.id
           LEFT JOIN LATERAL (

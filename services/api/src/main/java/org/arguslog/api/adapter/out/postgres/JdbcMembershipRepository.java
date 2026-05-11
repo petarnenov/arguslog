@@ -77,6 +77,35 @@ public class JdbcMembershipRepository implements MembershipRepository, Membershi
   }
 
   @Override
+  public java.util.Optional<UUID> findPrimaryOwnerOfOrg(long orgId) {
+    try {
+      UUID id =
+          jdbc.queryForObject(
+              """
+              SELECT m.user_id
+                FROM org_members m
+                JOIN users u ON u.id = m.user_id
+               WHERE m.org_id = ? AND m.role = 'owner'::org_role
+               ORDER BY CASE u.plan
+                          WHEN 'enterprise' THEN 5
+                          WHEN 'business'   THEN 4
+                          WHEN 'pro'        THEN 3
+                          WHEN 'starter'    THEN 2
+                          WHEN 'free'       THEN 1
+                          ELSE 0
+                        END DESC,
+                        m.added_at ASC
+               LIMIT 1
+              """,
+              UUID.class,
+              orgId);
+      return java.util.Optional.ofNullable(id);
+    } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+      return java.util.Optional.empty();
+    }
+  }
+
+  @Override
   public java.util.Optional<Long> findPrimaryOwnedOrg(UUID userId) {
     // Same picker rule as JdbcOrgPlanRepository / JdbcBillingCustomerRepository — highest plan
     // tier first, earliest membership tiebreak. Keeps the per-user billing endpoints pointing at

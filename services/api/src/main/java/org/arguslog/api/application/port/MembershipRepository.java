@@ -31,4 +31,12 @@ public interface MembershipRepository {
    * the frontend having to pick an org for the user.
    */
   Optional<Long> findPrimaryOwnedOrg(UUID userId);
+
+  /**
+   * Reverse of {@link #findPrimaryOwnedOrg(UUID)} — given an org, returns the user that owns it
+   * under the same "highest tier, earliest membership tiebreak" rule. Used by the checkout flow
+   * to look up the org-owner's user-level Stripe customer for reuse instead of spinning up a
+   * duplicate Stripe customer per org.
+   */
+  Optional<UUID> findPrimaryOwnerOfOrg(long orgId);
 }
