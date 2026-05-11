@@ -61,6 +61,31 @@ class JwtUserSyncInterceptorTest {
   }
 
   @Test
+  void fallsBackToEmailLocalPartWhenNoNameAndNoPreferredUsername() {
+    // GH #39 — Keycloak magic-link sign-in can issue an access token that carries `email`
+    // but no `name` and no `preferred_username` claim (e.g. when the client scope config
+    // omits `profile`). Without a fallback the upsert wrote display_name=NULL, which the
+    // Members UI keys on to render "(invitation pending)" — so the invitee appeared stuck
+    // on pending even after they had successfully signed in.
+    authenticateJwt(sub, Map.of("email", "petar_nenov@abv.bg"));
+
+    interceptor.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
+
+    verify(users).upsertFromJwt(sub, "petar_nenov@abv.bg", "petar_nenov");
+  }
+
+  @Test
+  void fallsBackToWholeEmailWhenLocalPartIsEmpty() {
+    // Pathological "@foo" email — we still must not write a NULL display_name, so degrade
+    // to the whole string rather than NPE-ing on substring(0, 0).
+    authenticateJwt(sub, Map.of("email", "@weird.example"));
+
+    interceptor.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
+
+    verify(users).upsertFromJwt(sub, "@weird.example", "@weird.example");
+  }
+
+  @Test
   void skipsWhenAuthIsNotJwt() {
     SecurityContextHolder.getContext()
         .setAuthentication(
