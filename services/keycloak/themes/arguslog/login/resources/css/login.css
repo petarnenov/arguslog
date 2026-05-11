@@ -226,7 +226,8 @@ input:focus,
 }
 
 /* Password input group — flatten the wrapper + button so input + toggle read as a single
- * borderless dark element. */
+ * borderless dark element. PF4 defaults add padding: 0 12px (pushes input right) and
+ * align-items: center (button doesn't stretch to input height) — zero both with !important. */
 .pf-c-input-group,
 .pf-v5-c-input-group,
 .input-group,
@@ -234,8 +235,9 @@ div[class*='kcInputGroup'] {
   background: transparent !important;
   border: 0 !important;
   border-radius: 6px;
-  display: flex;
-  align-items: stretch;
+  display: flex !important;
+  align-items: stretch !important;
+  padding: 0 !important;
   gap: 0;
 }
 .pf-c-input-group,
@@ -244,10 +246,9 @@ div[class*='kcInputGroup'] {
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
 }
-.pf-c-input-group,
-.pf-v5-c-input-group > .pf-c-button,
-.pf-v5-c-button,
-.pf-c-input-group,
+.pf-c-input-group > .pf-c-button,
+.pf-c-input-group > button,
+.pf-v5-c-input-group > .pf-v5-c-button,
 .pf-v5-c-input-group > button,
 .input-group > button,
 button[aria-label*='Show password'],
@@ -261,14 +262,21 @@ button[aria-label*='Hide password'] {
   border-top-right-radius: 6px !important;
   border-bottom-right-radius: 6px !important;
   color: var(--arguslog-text-dim) !important;
-  padding: 0 12px;
-  display: flex;
+  padding: 0 12px !important;
+  margin: 0 !important;
+  /* Stretch to the input-group height so the toggle reads as the right edge of the input,
+   * not a floating mini-icon. PF4's default button height is short (≈16px). */
+  align-self: stretch !important;
+  height: auto !important;
+  min-height: 100%;
+  display: flex !important;
   align-items: center;
   justify-content: center;
 }
-.pf-c-input-group,
-.pf-v5-c-input-group > .pf-c-button,
-.pf-v5-c-button:hover,
+.pf-c-input-group > .pf-c-button:hover,
+.pf-c-input-group > button:hover,
+.pf-v5-c-input-group > .pf-v5-c-button:hover,
+.pf-v5-c-input-group > button:hover,
 button[aria-label*='Show password']:hover,
 button[aria-label*='Hide password']:hover {
   background: var(--arguslog-card) !important;
@@ -276,15 +284,15 @@ button[aria-label*='Hide password']:hover {
 }
 /* Suppress every focus-state outline PatternFly + browsers paint around the toggle —
  * focus-visible adds a 2px dotted/solid ring that reads as white on the dark surface. */
-.pf-c-input-group,
-.pf-v5-c-input-group > .pf-c-button,
-.pf-v5-c-button:focus,
-.pf-c-input-group,
-.pf-v5-c-input-group > .pf-c-button,
-.pf-v5-c-button:focus-visible,
-.pf-c-input-group,
-.pf-v5-c-input-group > .pf-c-button,
-.pf-v5-c-button:active,
+.pf-c-input-group > .pf-c-button:focus,
+.pf-c-input-group > .pf-c-button:focus-visible,
+.pf-c-input-group > .pf-c-button:active,
+.pf-c-input-group > button:focus,
+.pf-c-input-group > button:focus-visible,
+.pf-c-input-group > button:active,
+.pf-v5-c-input-group > .pf-v5-c-button:focus,
+.pf-v5-c-input-group > .pf-v5-c-button:focus-visible,
+.pf-v5-c-input-group > .pf-v5-c-button:active,
 .input-group > button:focus,
 .input-group > button:focus-visible,
 .input-group > button:active,
