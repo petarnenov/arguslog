@@ -112,6 +112,7 @@ export function AppShellLayout() {
         <Group h="100%" px="md" justify="space-between">
           <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <img src="/arguslog.svg" alt="" width={24} height={24} style={{ flexShrink: 0 }} />
             <Title order={4} style={{ whiteSpace: 'nowrap' }}>
               {t('app.name')}
             </Title>
