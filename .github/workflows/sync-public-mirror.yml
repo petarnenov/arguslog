@@ -1,0 +1,88 @@
+name: Sync public mirror
+
+# Pushes the customer-facing subset of the monorepo (SDKs, MCP server, CLI, Java SDK,
+# Python SDK, shared eslint/tsconfig) into the public mirror at
+# https://github.com/petarnenov/arguslog-sdks on every push to main. Source of truth
+# stays here; the mirror is read-only and only carries what users need to read /
+# install. Workflow can also be triggered manually for one-shot syncs.
+#
+# Auth: needs a GITHUB token with `repo` scope on petarnenov/arguslog-sdks, set as
+# repository secret PUBLIC_MIRROR_TOKEN. (The default GITHUB_TOKEN can't write to a
+# different repo — hence the PAT.)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/sdk-core/**'
+      - 'packages/sdk-browser/**'
+      - 'packages/sdk-react/**'
+      - 'packages/sdk-vue/**'
+      - 'packages/sdk-angular/**'
+      - 'packages/sdk-nextjs/**'
+      - 'packages/sdk-react-native/**'
+      - 'packages/sdk-node/**'
+      - 'packages/sdk-web3/**'
+      - 'packages/mcp-server/**'
+      - 'packages/eslint-config/**'
+      - 'packages/tsconfig/**'
+      - 'cli/**'
+      - 'java-sdk/**'
+      - 'python-sdk/**'
+      - 'docs/sdks.md'
+      - 'scripts/sync-public-mirror.sh'
+      - 'scripts/public-mirror/**'
+      - 'scripts/verify-tag-version.mjs'
+      - 'pnpm-public-mirror.yaml'
+      - 'pnpm-lock.yaml'
+      - 'LICENSE'
+      - 'scripts/public-mirror/.github/workflows/**'
+  workflow_dispatch:
+
+concurrency:
+  group: sync-public-mirror
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout monorepo (source)
+        uses: actions/checkout@v5
+        with:
+          path: source
+          fetch-depth: 1
+
+      - name: Checkout public mirror (target)
+        uses: actions/checkout@v5
+        with:
+          repository: petarnenov/arguslog-sdks
+          token: ${{ secrets.PUBLIC_MIRROR_TOKEN }}
+          path: mirror
+          fetch-depth: 1
+
+      - name: Run sync script
+        run: |
+          chmod +x source/scripts/sync-public-mirror.sh
+          source/scripts/sync-public-mirror.sh \
+            "$GITHUB_WORKSPACE/source" \
+            "$GITHUB_WORKSPACE/mirror"
+
+      - name: Commit + push to mirror
+        working-directory: mirror
+        run: |
+          git config user.name "arguslog-sync[bot]"
+          git config user.email "noreply@arguslog.org"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "▶ no changes to mirror"
+            exit 0
+          fi
+          # Carry over the upstream commit subject + SHA so the mirror history reads
+          # back to monorepo commits at a glance.
+          UPSTREAM_SHA=$(cd "$GITHUB_WORKSPACE/source" && git rev-parse --short HEAD)
+          UPSTREAM_MSG=$(cd "$GITHUB_WORKSPACE/source" && git log -1 --pretty=%s)
+          git commit -m "Sync from petarnenov/arguslog@${UPSTREAM_SHA}
+
+          ${UPSTREAM_MSG}"
+          git push origin main
