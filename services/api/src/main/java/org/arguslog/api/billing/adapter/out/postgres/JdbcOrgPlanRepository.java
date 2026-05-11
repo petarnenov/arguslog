@@ -23,35 +23,31 @@ public class JdbcOrgPlanRepository implements OrgPlanRepository {
 
   @Override
   public Optional<PlanTier> findPlan(long orgId) {
-    try {
-      String raw =
-          jdbc.queryForObject(
-              "SELECT plan::text FROM organizations WHERE id = ?", String.class, orgId);
-      return Optional.of(PlanTier.fromDbValue(raw));
-    } catch (EmptyResultDataAccessException e) {
-      return Optional.empty();
-    }
-  }
-
-  @Override
-  public Optional<PlanTier> findHighestPlanForOwner(UUID userId) {
-    // Tier ordinal climbs FREE → STARTER → PRO → BUSINESS → ENTERPRISE, so MAX over the dbValue
-    // (mapped to ordinal in app code) gives the user's highest tier across owner-orgs. Done in
-    // Java instead of SQL because the enum's dbValue is the only PG-known representation; pulling
-    // every dbValue and computing max in code is a handful of strings — cheap.
+    // Per-user billing: the org's effective plan is the MAX tier across its owners' user.plan
+    // (Phase 2 of the per-user billing migration — see V26). Multi-owner orgs inherit the most
+    // generous owner's tier; ownerless orgs (rare orphans) fall back to organizations.plan
+    // until V27 drops that column.
     String[] raws =
         jdbc.query(
                 """
-                SELECT o.plan::text AS plan
-                  FROM organizations o
-                  JOIN org_members m ON m.org_id = o.id
-                 WHERE m.user_id = ?
-                   AND m.role = 'owner'::org_role
+                SELECT u.plan::text AS plan
+                  FROM org_members m
+                  JOIN users u ON u.id = m.user_id
+                 WHERE m.org_id = ? AND m.role = 'owner'::org_role
                 """,
                 (rs, rowNum) -> rs.getString("plan"),
-                userId)
+                orgId)
             .toArray(new String[0]);
-    if (raws.length == 0) return Optional.empty();
+    if (raws.length == 0) {
+      try {
+        String raw =
+            jdbc.queryForObject(
+                "SELECT plan::text FROM organizations WHERE id = ?", String.class, orgId);
+        return Optional.of(PlanTier.fromDbValue(raw));
+      } catch (EmptyResultDataAccessException e) {
+        return Optional.empty();
+      }
+    }
     PlanTier best = PlanTier.FREE;
     for (String raw : raws) {
       PlanTier t = PlanTier.fromDbValue(raw);
@@ -61,55 +57,64 @@ public class JdbcOrgPlanRepository implements OrgPlanRepository {
   }
 
   @Override
-  public Optional<Instant> findPaymentGraceUntil(long orgId) {
+  public Optional<PlanTier> findHighestPlanForOwner(UUID userId) {
+    // Post-V26 this is a direct read of users.plan; no need to JOIN through orgs anymore since
+    // the user's tier IS the source of truth, not derived from orgs.
     try {
-      Timestamp ts =
+      String raw =
           jdbc.queryForObject(
-              "SELECT payment_grace_until FROM organizations WHERE id = ?", Timestamp.class, orgId);
-      return Optional.ofNullable(ts).map(Timestamp::toInstant);
+              "SELECT plan::text FROM users WHERE id = ?", String.class, userId);
+      return Optional.of(PlanTier.fromDbValue(raw));
     } catch (EmptyResultDataAccessException e) {
       return Optional.empty();
     }
+  }
+
+  @Override
+  public Optional<Instant> findPaymentGraceUntil(long orgId) {
+    Timestamp ts = ownerBilling(orgId, "payment_grace_until");
+    return Optional.ofNullable(ts).map(Timestamp::toInstant);
   }
 
   @Override
   public Optional<BillingInterval> findBillingInterval(long orgId) {
-    try {
-      String raw =
-          jdbc.queryForObject(
-              "SELECT billing_interval::text FROM organizations WHERE id = ?", String.class, orgId);
-      return Optional.of(BillingInterval.fromDbValue(raw));
-    } catch (EmptyResultDataAccessException e) {
-      return Optional.empty();
-    }
+    Object raw = ownerBilling(orgId, "billing_interval::text");
+    return raw == null ? Optional.empty() : Optional.of(BillingInterval.fromDbValue((String) raw));
   }
 
   @Override
   public Optional<Instant> findRenewsAt(long orgId) {
-    try {
-      Timestamp ts =
-          jdbc.queryForObject(
-              "SELECT plan_renews_at FROM organizations WHERE id = ?", Timestamp.class, orgId);
-      return Optional.ofNullable(ts).map(Timestamp::toInstant);
-    } catch (EmptyResultDataAccessException e) {
-      return Optional.empty();
-    }
+    Timestamp ts = ownerBilling(orgId, "plan_renews_at");
+    return Optional.ofNullable(ts).map(Timestamp::toInstant);
   }
 
   @Override
   public Optional<BonusSnapshot> findActiveBonus(long orgId) {
+    // Resolve the highest-plan owner — ties broken by earliest membership so we have a stable
+    // "primary owner" choice. Bonus metadata is attached to a user row, not an org row, post-V26.
     try {
       return Optional.ofNullable(
           jdbc.queryForObject(
               """
-              SELECT o.bonus_until,
-                     o.bonus_reason,
+              SELECT u.bonus_until,
+                     u.bonus_reason,
                      gb.email AS granted_by_email
-                FROM organizations o
-                LEFT JOIN users gb ON gb.id = o.bonus_granted_by
-               WHERE o.id = ?
-                 AND o.bonus_until IS NOT NULL
-                 AND o.bonus_until > NOW()
+                FROM org_members m
+                JOIN users u ON u.id = m.user_id
+                LEFT JOIN users gb ON gb.id = u.bonus_granted_by
+               WHERE m.org_id = ? AND m.role = 'owner'::org_role
+                 AND u.bonus_until IS NOT NULL
+                 AND u.bonus_until > NOW()
+               ORDER BY CASE u.plan
+                          WHEN 'enterprise' THEN 5
+                          WHEN 'business'   THEN 4
+                          WHEN 'pro'        THEN 3
+                          WHEN 'starter'    THEN 2
+                          WHEN 'free'       THEN 1
+                          ELSE 0
+                        END DESC,
+                        m.added_at ASC
+               LIMIT 1
               """,
               (rs, rowNum) -> {
                 Timestamp ts = rs.getTimestamp("bonus_until");
@@ -121,6 +126,43 @@ public class JdbcOrgPlanRepository implements OrgPlanRepository {
               orgId));
     } catch (EmptyResultDataAccessException e) {
       return Optional.empty();
+    }
+  }
+
+  /**
+   * Returns one column from the "primary owner" of {@code orgId} — the highest-tier owner with the
+   * earliest membership as the deterministic tiebreaker. Returns null when the org has no owners
+   * (rare orphan). Column expression is interpolated, so callers must hardcode it — never accept
+   * untrusted input here.
+   */
+  private <T> T ownerBilling(long orgId, String columnExpr) {
+    String sql =
+        "SELECT "
+            + columnExpr
+            + " FROM org_members m"
+            + " JOIN users u ON u.id = m.user_id"
+            + " WHERE m.org_id = ? AND m.role = 'owner'::org_role"
+            + " ORDER BY CASE u.plan"
+            + "            WHEN 'enterprise' THEN 5"
+            + "            WHEN 'business'   THEN 4"
+            + "            WHEN 'pro'        THEN 3"
+            + "            WHEN 'starter'    THEN 2"
+            + "            WHEN 'free'       THEN 1"
+            + "            ELSE 0"
+            + "          END DESC,"
+            + "          m.added_at ASC"
+            + " LIMIT 1";
+    try {
+      return jdbc.queryForObject(
+          sql,
+          (rs, rowNum) -> {
+            @SuppressWarnings("unchecked")
+            T v = (T) rs.getObject(1);
+            return v;
+          },
+          orgId);
+    } catch (EmptyResultDataAccessException e) {
+      return null;
     }
   }
 }

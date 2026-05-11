@@ -116,6 +116,7 @@ class OpenApiContractTest {
   @MockitoBean TokenHasher tokenHasher;
   @MockitoBean UsageRepository usageRepository;
   @MockitoBean OrgPlanRepository orgPlanRepository;
+  @MockitoBean org.arguslog.api.billing.application.port.UserBillingRepository userBillingRepository;
   @MockitoBean org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
   @MockitoBean BillingCustomerRepository billingCustomerRepository;
   @MockitoBean PortalUseCase portalUseCase;

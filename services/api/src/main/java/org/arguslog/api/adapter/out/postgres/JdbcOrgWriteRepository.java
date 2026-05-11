@@ -76,13 +76,33 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
 
   @Override
   public Optional<Org> findById(long orgId) {
+    // V26+: the displayed plan is the org's primary-owner's user.plan, not the legacy o.plan.
+    // Without this JOIN, a user's other orgs render their old FREE tier even after a grant
+    // hits one of them — the visible bug behind the per-user billing rewrite.
     try {
       Org org =
           jdbc.queryForObject(
               """
-              SELECT id, slug, name, plan::text AS plan, created_at
-                FROM organizations
-               WHERE id = ?
+              SELECT o.id, o.slug, o.name, COALESCE(ou.plan, o.plan)::text AS plan, o.created_at
+                FROM organizations o
+                LEFT JOIN LATERAL (
+                  SELECT m.user_id
+                    FROM org_members m
+                    JOIN users u ON u.id = m.user_id
+                   WHERE m.org_id = o.id AND m.role = 'owner'::org_role
+                   ORDER BY CASE u.plan
+                              WHEN 'enterprise' THEN 5
+                              WHEN 'business'   THEN 4
+                              WHEN 'pro'        THEN 3
+                              WHEN 'starter'    THEN 2
+                              WHEN 'free'       THEN 1
+                              ELSE 0
+                            END DESC,
+                            m.added_at ASC
+                   LIMIT 1
+                ) AS owner ON TRUE
+                LEFT JOIN users ou ON ou.id = owner.user_id
+               WHERE o.id = ?
               """,
               (rs, rowNum) ->
                   new Org(
@@ -115,11 +135,30 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
 
   @Override
   public List<Org> listForUser(UUID userId) {
+    // Plan column resolved via primary-owner's user.plan (V26+). The user's "My orgs" list and
+    // every Org dropdown shows the effective tier regardless of which org was last billed.
     return jdbc.query(
         """
-        SELECT o.id, o.slug, o.name, o.plan::text AS plan, o.created_at
+        SELECT o.id, o.slug, o.name, COALESCE(ou.plan, o.plan)::text AS plan, o.created_at
           FROM organizations o
           JOIN org_members m ON m.org_id = o.id
+          LEFT JOIN LATERAL (
+            SELECT mm.user_id
+              FROM org_members mm
+              JOIN users u ON u.id = mm.user_id
+             WHERE mm.org_id = o.id AND mm.role = 'owner'::org_role
+             ORDER BY CASE u.plan
+                        WHEN 'enterprise' THEN 5
+                        WHEN 'business'   THEN 4
+                        WHEN 'pro'        THEN 3
+                        WHEN 'starter'    THEN 2
+                        WHEN 'free'       THEN 1
+                        ELSE 0
+                      END DESC,
+                      mm.added_at ASC
+             LIMIT 1
+          ) AS owner ON TRUE
+          LEFT JOIN users ou ON ou.id = owner.user_id
          WHERE m.user_id = ?
          ORDER BY o.slug ASC
         """,
