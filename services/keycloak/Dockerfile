@@ -33,6 +33,11 @@ RUN mkdir -p /opt/keycloak/data/import \
       > /opt/keycloak/data/import/arguslog-realm.json \
  && rm /tmp/realm.template.json
 
+# Custom login theme (Arguslog dark + brand green) — referenced from realm.template.json via
+# loginTheme="arguslog". Inherits all templates from parent=keycloak; we only ship CSS + logo
+# so future KC upgrades don't require keeping FreeMarker templates in sync.
+COPY services/keycloak/themes/arguslog /opt/keycloak/themes/arguslog
+
 RUN /opt/keycloak/bin/kc.sh build
 
 FROM quay.io/keycloak/keycloak:26.1 AS runtime

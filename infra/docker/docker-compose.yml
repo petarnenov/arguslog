@@ -48,6 +48,10 @@ services:
       - '8180:8180'
     volumes:
       - ../../services/keycloak/realm:/opt/keycloak/data/import:ro
+      # Custom Arguslog login theme — the Dockerfile bakes it into the prod image, but dev
+      # uses the upstream KC image so we mount the directory directly. Referenced from the
+      # realm via "loginTheme": "arguslog".
+      - ../../services/keycloak/themes/arguslog:/opt/keycloak/themes/arguslog:ro
     healthcheck:
       test:
         [

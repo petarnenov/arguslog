@@ -1,0 +1,192 @@
+/*
+ * Arguslog Keycloak theme — dark dashboard look + brand green accents.
+ *
+ * Selectors target PatternFly 5 classes (KC 25's UI framework) AND legacy login-pf wrappers
+ * for older templates that haven't migrated. Tested against the 25.0 base templates; if KC
+ * bumps to a UI framework that drops PatternFly entirely, this file needs revisiting — but
+ * the parent=keycloak fallback in theme.properties keeps the page functional in the meantime.
+ *
+ * Mantine dark palette references (mirrors apps/web's defaultColorScheme="auto" → dark):
+ *   bg page:    #1a1b1e  (dark.8)
+ *   bg card:    #25262b  (dark.7)
+ *   border:     #373a40  (dark.4)
+ *   text:       #c1c2c5  (dark.1)
+ *   text dim:   #909296  (dark.2)
+ *   primary:    #2b8a3e  (Arguslog brand green from the logo)
+ *   primary hi: #37b24d  (lighter for hover)
+ *   danger:     #fa5252  (red.6)
+ */
+
+:root {
+  --arguslog-bg: #1a1b1e;
+  --arguslog-card: #25262b;
+  --arguslog-border: #373a40;
+  --arguslog-text: #c1c2c5;
+  --arguslog-text-dim: #909296;
+  --arguslog-primary: #2b8a3e;
+  --arguslog-primary-hover: #37b24d;
+  --arguslog-danger: #fa5252;
+
+  --pf-v5-global--primary-color--100: var(--arguslog-primary);
+  --pf-v5-global--link--Color: var(--arguslog-primary-hover);
+  --pf-v5-global--link--Color--hover: var(--arguslog-text);
+  --pf-v5-global--BackgroundColor--100: var(--arguslog-card);
+  --pf-v5-global--BackgroundColor--dark-100: var(--arguslog-bg);
+  --pf-v5-global--Color--100: var(--arguslog-text);
+  --pf-v5-global--Color--200: var(--arguslog-text-dim);
+  --pf-v5-global--BorderColor--100: var(--arguslog-border);
+}
+
+html,
+body,
+body.login-pf,
+.login-pf body {
+  background: var(--arguslog-bg) !important;
+  color: var(--arguslog-text);
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+#kc-header,
+.login-pf-page-header {
+  padding: 24px 0 8px;
+  text-align: center;
+}
+
+/* Replace the default text title with our logo + wordmark. */
+#kc-header-wrapper {
+  background: url('../img/logo.svg') no-repeat center top;
+  background-size: 56px;
+  padding-top: 72px;
+  font-size: 0;
+  color: transparent;
+}
+#kc-header-wrapper::after {
+  content: 'Arguslog';
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--arguslog-text);
+  letter-spacing: -0.01em;
+}
+
+/* The big white card — flip it to our dark surface. */
+.card-pf,
+.login-pf-page,
+.kc-form-card,
+div[class*='kcFormCard'] {
+  background: var(--arguslog-card) !important;
+  border: 1px solid var(--arguslog-border) !important;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(0, 0, 0, 0.1);
+  color: var(--arguslog-text);
+}
+
+#kc-page-title {
+  color: var(--arguslog-text);
+  font-weight: 600;
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+/* Inputs */
+input,
+input[type='text'],
+input[type='password'],
+input[type='email'],
+.pf-v5-c-form-control,
+.form-control {
+  background: var(--arguslog-bg) !important;
+  color: var(--arguslog-text) !important;
+  border: 1px solid var(--arguslog-border) !important;
+  border-radius: 6px;
+}
+input:focus,
+.pf-v5-c-form-control:focus,
+.form-control:focus {
+  border-color: var(--arguslog-primary) !important;
+  outline: 2px solid rgba(43, 138, 62, 0.25);
+  outline-offset: 0;
+}
+
+label,
+.pf-v5-c-form__label,
+.control-label {
+  color: var(--arguslog-text) !important;
+  font-weight: 500;
+}
+
+/* Primary button — brand green, no PatternFly blue. */
+.pf-v5-c-button.pf-m-primary,
+.btn-primary,
+input[type='submit'].btn-primary,
+#kc-login,
+button[name='login'] {
+  background: var(--arguslog-primary) !important;
+  border-color: var(--arguslog-primary) !important;
+  color: #fff !important;
+  font-weight: 600;
+  border-radius: 6px;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+.pf-v5-c-button.pf-m-primary:hover,
+.btn-primary:hover,
+#kc-login:hover {
+  background: var(--arguslog-primary-hover) !important;
+  border-color: var(--arguslog-primary-hover) !important;
+}
+
+/* Secondary / link buttons (forgot password, back, register-here). */
+.pf-v5-c-button.pf-m-link,
+.btn-link,
+a {
+  color: var(--arguslog-primary-hover);
+}
+.pf-v5-c-button.pf-m-link:hover,
+.btn-link:hover,
+a:hover {
+  color: var(--arguslog-text);
+}
+
+/* Error & warning alerts — keep red but harmonise with the dark surface. */
+.pf-v5-c-alert.pf-m-danger,
+.alert-error,
+.alert-danger,
+#input-error,
+.kc-feedback-text {
+  background: rgba(250, 82, 82, 0.08) !important;
+  border: 1px solid rgba(250, 82, 82, 0.4) !important;
+  color: var(--arguslog-danger) !important;
+  border-radius: 6px;
+}
+
+/* Footer / "powered by" — dim. */
+.pf-v5-c-login__main-footer,
+#kc-info,
+#kc-info-wrapper {
+  color: var(--arguslog-text-dim) !important;
+}
+
+/* "Remember me" + register-here helpers — keep readable on dark. */
+#kc-form-options,
+#kc-registration {
+  color: var(--arguslog-text-dim);
+}
+#kc-form-options a,
+#kc-registration a {
+  color: var(--arguslog-primary-hover);
+}
+
+/* Social-login providers, if any are configured. */
+.kc-social-section,
+.zocial {
+  filter: brightness(0.9);
+}

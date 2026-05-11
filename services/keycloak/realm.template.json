@@ -1,6 +1,7 @@
 {
   "realm": "arguslog",
   "enabled": true,
+  "loginTheme": "arguslog",
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
   "verifyEmail": true,
