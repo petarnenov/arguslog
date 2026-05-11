@@ -21,15 +21,19 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
   }
 
   @Override
-  public Org create(String slug, String name) {
+  public Org create(String slug, String name, String planDbValue) {
     // ON CONFLICT DO NOTHING returns zero rows on collision instead of throwing — the surrounding
     // @Transactional in OrgService stays clean (a raised unique-violation would poison the tx with
     // "current transaction is aborted"). We surface a domain-level duplicate exception so the
     // controller can map it to a friendly 409 instead of leaking a 500.
+    //
+    // planDbValue carries the creator's highest active plan tier (GH #38) so a paying user who
+    // spins up a side org gets the same coverage automatically. Renewal/billing identity is NOT
+    // copied — the new org starts a fresh cycle on the same tier.
     Org inserted =
         jdbc.query(
             """
-            INSERT INTO organizations (slug, name) VALUES (?, ?)
+            INSERT INTO organizations (slug, name, plan) VALUES (?, ?, ?::org_plan)
             ON CONFLICT (slug) DO NOTHING
             RETURNING id, plan::text AS plan, created_at
             """,
@@ -43,7 +47,8 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
                   rs.getTimestamp("created_at").toInstant());
             },
             slug,
-            name);
+            name,
+            planDbValue);
     if (inserted == null) {
       throw new DuplicateOrgException(
           "An organization with this name already exists. Please choose a different name.");

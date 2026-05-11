@@ -34,8 +34,11 @@ public class OrgService implements OrgUseCase {
     if (actorId == null) {
       throw new IllegalStateException("create called without an authenticated user");
     }
-    requireOrgCapAvailable(actorId);
-    Org org = orgs.create(slugify(name), name.trim());
+    // Compute the creator's highest active plan once — it drives BOTH the org-cap check and
+    // the new org's inherited plan tier (GH #38). First-time creators default to FREE.
+    PlanTier inherited = plans.findHighestPlanForOwner(actorId).orElse(PlanTier.FREE);
+    requireOrgCapAvailable(actorId, inherited);
+    Org org = orgs.create(slugify(name), name.trim(), inherited.dbValue());
     orgs.addMember(org.id(), actorId, "owner");
     return org;
   }
@@ -45,8 +48,7 @@ public class OrgService implements OrgUseCase {
    * owns; first-time users default to {@link PlanTier#FREE}. Members of someone else's org are
    * unaffected — only the {@code owner} role contributes to the count.
    */
-  private void requireOrgCapAvailable(UUID actorId) {
-    PlanTier tier = plans.findHighestPlanForOwner(actorId).orElse(PlanTier.FREE);
+  private void requireOrgCapAvailable(UUID actorId, PlanTier tier) {
     int cap = tier.orgCap();
     if (cap == Integer.MAX_VALUE) return;
     int existing = orgs.countOwnedBy(actorId);
