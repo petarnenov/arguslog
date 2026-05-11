@@ -3,7 +3,7 @@ package org.arguslog.api.billing.application;
 import java.time.Instant;
 import java.util.Optional;
 import org.arguslog.api.billing.domain.BillingInterval;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 
 public interface UsageUseCase {
 

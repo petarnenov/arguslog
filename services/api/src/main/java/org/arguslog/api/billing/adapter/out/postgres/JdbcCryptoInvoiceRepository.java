@@ -12,7 +12,7 @@ import javax.sql.DataSource;
 import org.arguslog.api.billing.application.port.CryptoInvoiceRepository;
 import org.arguslog.api.billing.domain.CryptoInvoice;
 import org.arguslog.api.billing.domain.CryptoInvoiceStatus;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;

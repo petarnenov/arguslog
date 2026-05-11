@@ -7,7 +7,6 @@ import {
   Group,
   List,
   Loader,
-  Progress,
   SegmentedControl,
   SimpleGrid,
   Stack,
@@ -19,18 +18,18 @@ import { IconCheck } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router';
 
 import {
-  startCryptoCheckout,
+  openMePortal,
+  startMeCheckout,
+  startMeCryptoCheckout,
   type PaidTier,
   type PlanDuration,
   type PlanTierInfo,
 } from '../api/billing';
 import { ApiError } from '../api/client';
-import { useBillingPlans, useMyOrgs, useUsage } from '../api/queries';
+import { useBillingPlans, useMe } from '../api/queries';
 import { BonusBanner } from '../components/BonusBanner';
-import { useReportSoftError } from '../lib/reportSoftError';
 
 const TIER_NAME_KEY: Record<string, string> = {
   free: 'billing.tierFree',
@@ -52,46 +51,74 @@ function isPaidTier(plan: string): plan is PaidTier {
   return (PAID_TIERS as string[]).includes(plan);
 }
 
-export function BillingPage() {
-  const { t } = useTranslation();
-  const { orgSlug } = useParams();
-  const orgs = useMyOrgs();
-  const org = orgs.data?.find((o) => o.slug === orgSlug);
-  const usage = useUsage(org?.id);
-  const plans = useBillingPlans();
+function errorMessage(err: unknown): string | null {
+  if (!err) return null;
+  if (err instanceof ApiError) return err.problem.detail ?? err.problem.title;
+  return String(err);
+}
 
-  useReportSoftError(
-    Boolean(orgs.data && !org && orgSlug),
-    `BillingPage: org slug "${orgSlug}" not in user's memberships ` +
-      `(known: ${(orgs.data ?? []).map((o) => o.slug).join(',') || 'none'})`,
-  );
+function formatNumber(n: number): string {
+  if (n >= Number.MAX_SAFE_INTEGER) return '∞';
+  return new Intl.NumberFormat('en-US').format(n);
+}
+
+function formatDollars(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
+
+function daysUntil(iso: string): number {
+  const ms = new Date(iso).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / (24 * 3600 * 1000)));
+}
+
+function formatRenewalDate(iso: string): string {
+  return new Date(iso).toLocaleDateString();
+}
+
+/**
+ * User-level Billing page (V27+). Reads plan / renew / bonus / grace from /me and routes
+ * checkout + portal + crypto through /me/billing — the backend resolves the user's primary
+ * owned org under the hood. Per-user is the source of truth post-V27; this page is the only
+ * place a user pays from.
+ */
+export function UserBillingPage() {
+  const { t } = useTranslation();
+  const me = useMe();
+  const plans = useBillingPlans();
 
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<PlanDuration>(12);
 
+  const cardCheckout = useMutation({
+    mutationFn: () => startMeCheckout('monthly'),
+    onSuccess: ({ url }) => {
+      window.location.assign(url);
+    },
+  });
+
+  const portal = useMutation({
+    mutationFn: () => openMePortal(),
+    onSuccess: ({ url }) => {
+      window.location.assign(url);
+    },
+  });
+
   const cryptoCheckout = useMutation({
     mutationFn: ({ tier, duration }: { tier: PaidTier; duration: PlanDuration }) =>
-      startCryptoCheckout(org!.id, tier, duration),
+      startMeCryptoCheckout(tier, duration),
     onSuccess: ({ checkoutUrl }) => {
       window.location.assign(checkoutUrl);
     },
   });
 
-  if (orgs.isLoading || usage.isLoading || plans.isLoading) {
+  if (me.isLoading || plans.isLoading) {
     return (
       <Group p="md">
         <Loader size="sm" />
       </Group>
     );
   }
-  if (!org) {
-    return (
-      <Alert color="red" variant="light">
-        {t('projects.orgNotFound')}
-      </Alert>
-    );
-  }
-  if (usage.isError || !usage.data || !plans.data) {
+  if (me.isError || !me.data || plans.isError || !plans.data) {
     return (
       <Alert color="red" variant="light">
         {t('errors.generic')}
@@ -99,21 +126,18 @@ export function BillingPage() {
     );
   }
 
-  const snapshot = usage.data;
-  const percent = Math.min(100, Math.round(snapshot.ratio * 100));
-  const progressColor = snapshot.exceeded ? 'red' : percent >= 80 ? 'yellow' : 'teal';
-  const renewsLabel =
-    snapshot.plan !== 'free' && snapshot.renewsAt ? formatRenewalDate(snapshot.renewsAt) : null;
-
-  const checkoutError = errorMessage(cryptoCheckout.error);
-  const graceDaysRemaining = snapshot.paymentGraceUntil
-    ? daysUntil(snapshot.paymentGraceUntil)
-    : null;
-  const renewDaysRemaining =
-    snapshot.plan !== 'free' && snapshot.renewsAt ? daysUntil(snapshot.renewsAt) : null;
+  const data = me.data;
+  const isPaid = isPaidTier(data.plan);
+  const renewsLabel = data.planRenewsAt ? formatRenewalDate(data.planRenewsAt) : null;
+  const graceDaysRemaining = data.paymentGraceUntil ? daysUntil(data.paymentGraceUntil) : null;
+  const renewDaysRemaining = data.planRenewsAt ? daysUntil(data.planRenewsAt) : null;
   const renewSoon =
     renewDaysRemaining !== null && renewDaysRemaining > 0 && renewDaysRemaining <= 14;
   const renewExpired = renewDaysRemaining === 0;
+  const checkoutError =
+    errorMessage(cardCheckout.error) ??
+    errorMessage(cryptoCheckout.error) ??
+    errorMessage(portal.error);
 
   return (
     <Stack maw={1200}>
@@ -131,11 +155,7 @@ export function BillingPage() {
       )}
 
       {(renewSoon || renewExpired) && (
-        <Alert
-          color={renewExpired ? 'red' : 'yellow'}
-          variant="light"
-          data-testid="renew-banner"
-        >
+        <Alert color={renewExpired ? 'red' : 'yellow'} variant="light" data-testid="renew-banner">
           <Text size="sm" fw={500}>
             {renewExpired
               ? t('billing.renewExpired')
@@ -144,7 +164,16 @@ export function BillingPage() {
         </Alert>
       )}
 
-      {snapshot.bonus && <BonusBanner bonus={snapshot.bonus} plan={snapshot.plan} />}
+      {data.bonusUntil && (
+        <BonusBanner
+          bonus={{
+            until: data.bonusUntil,
+            reason: data.bonusReason ?? null,
+            grantedByEmail: null,
+          }}
+          plan={data.plan}
+        />
+      )}
 
       <Card withBorder padding="lg" radius="md">
         <Stack gap="md">
@@ -155,7 +184,7 @@ export function BillingPage() {
               </Text>
               <Group gap="xs" align="center">
                 <Title order={2} tt="capitalize">
-                  {snapshot.plan}
+                  {data.plan}
                 </Title>
               </Group>
               {renewsLabel && (
@@ -164,39 +193,20 @@ export function BillingPage() {
                 </Text>
               )}
             </Stack>
-          </Group>
-
-          <Stack gap={4}>
-            <Group justify="space-between">
-              <Text size="sm" fw={500}>
-                {t('billing.eventsThisMonth')}
-              </Text>
-              <Text size="sm" c="dimmed" data-testid="usage-ratio">
-                {formatNumber(snapshot.eventsUsed)} / {formatNumber(snapshot.eventCap)}
-              </Text>
-            </Group>
-            <Progress value={percent} color={progressColor} size="lg" radius="sm" />
-            {snapshot.exceeded && (
-              <Text size="xs" c="red.7" fw={500}>
-                {t('billing.capExceeded')}
-              </Text>
+            {isPaid && (
+              <Button
+                variant="light"
+                loading={portal.isPending}
+                onClick={() => portal.mutate()}
+              >
+                {t('billing.managePortal') ?? 'Manage subscription'}
+              </Button>
             )}
-          </Stack>
-
-          <Group gap="xl">
-            <Stack gap={2}>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-                {t('billing.projectCap')}
-              </Text>
-              <Text size="sm">{snapshot.projectCap}</Text>
-            </Stack>
-            <Stack gap={2}>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-                {t('billing.retention')}
-              </Text>
-              <Text size="sm">{t('billing.retentionDays', { days: snapshot.retentionDays })}</Text>
-            </Stack>
           </Group>
+          <Text size="xs" c="dimmed">
+            {t('billing.userScopeHint') ??
+              'Your plan covers every organization you own. Granting a teammate ownership of a separate org gives them their own billing.'}
+          </Text>
         </Stack>
       </Card>
 
@@ -206,17 +216,22 @@ export function BillingPage() {
           <TierCard
             key={tier.plan}
             tier={tier}
-            isCurrent={tier.plan === snapshot.plan}
+            isCurrent={tier.plan === data.plan}
             isSelected={selectedTier === tier.plan}
             onSelect={() => setSelectedTier(tier.plan)}
             selectedDuration={selectedDuration}
             onSelectDuration={setSelectedDuration}
             paying={
-              cryptoCheckout.isPending && cryptoCheckout.variables?.tier === tier.plan
+              (cryptoCheckout.isPending && cryptoCheckout.variables?.tier === tier.plan) ||
+              cardCheckout.isPending
             }
-            onPay={() => {
+            onPayCrypto={() => {
               if (!isPaidTier(tier.plan)) return;
               cryptoCheckout.mutate({ tier: tier.plan, duration: selectedDuration });
+            }}
+            onPayCard={() => {
+              if (!isPaidTier(tier.plan)) return;
+              cardCheckout.mutate();
             }}
           />
         ))}
@@ -241,7 +256,8 @@ function TierCard({
   selectedDuration,
   onSelectDuration,
   paying,
-  onPay,
+  onPayCrypto,
+  onPayCard,
 }: {
   tier: PlanTierInfo;
   isCurrent: boolean;
@@ -250,17 +266,13 @@ function TierCard({
   selectedDuration: PlanDuration;
   onSelectDuration: (d: PlanDuration) => void;
   paying: boolean;
-  onPay: () => void;
+  onPayCrypto: () => void;
+  onPayCard: () => void;
 }) {
   const { t } = useTranslation();
   const isPaid = isPaidTier(tier.plan);
   const isPopular = tier.plan === 'pro';
   const offer = tier.durations.find((d) => d.months === selectedDuration);
-
-  // Selection border is the only blue accent — the popular tier differentiates
-  // itself via the badge inline at the top of the card. Two cards lighting up
-  // simultaneously (selection on one, "popular" on another) read as ambiguous,
-  // so we keep the border state binary.
   const isHighlighted = isSelected;
 
   return (
@@ -302,9 +314,7 @@ function TierCard({
         <Box>
           <Text size="xl" fw={700}>
             {isPaid
-              ? t('billing.perMonthFromCents', {
-                  price: formatDollars(tier.monthlyPriceCents),
-                })
+              ? t('billing.perMonthFromCents', { price: formatDollars(tier.monthlyPriceCents) })
               : t('billing.freeTierPrice')}
           </Text>
         </Box>
@@ -338,9 +348,7 @@ function TierCard({
               ? t('billing.tierOrgsUnlimited')
               : t('billing.tierOrgsLine', { count: tier.orgCap })}
           </List.Item>
-          <List.Item>
-            {t('billing.tierRetentionLine', { days: tier.retentionDays })}
-          </List.Item>
+          <List.Item>{t('billing.tierRetentionLine', { days: tier.retentionDays })}</List.Item>
           <List.Item>{t('billing.tierAlertsLine')}</List.Item>
         </List>
 
@@ -364,13 +372,21 @@ function TierCard({
               loading={paying}
               onClick={(e) => {
                 e.stopPropagation();
-                onPay();
+                onPayCrypto();
               }}
               data-testid={`pay-${tier.plan}-${selectedDuration}`}
             >
-              {t('billing.payTotalButton', {
-                total: formatDollars(offer?.amountCents ?? 0),
-              })}
+              {t('billing.payTotalButton', { total: formatDollars(offer?.amountCents ?? 0) })}
+            </Button>
+            <Button
+              fullWidth
+              variant="default"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPayCard();
+              }}
+            >
+              {t('billing.subscribeCard') ?? 'Subscribe via card'}
             </Button>
             {offer && offer.savePercent > 0 && (
               <Text
@@ -402,28 +418,4 @@ function TierCard({
       </Stack>
     </Card>
   );
-}
-
-function errorMessage(err: unknown): string | null {
-  if (!err) return null;
-  if (err instanceof ApiError) return err.problem.detail ?? err.problem.title;
-  return String(err);
-}
-
-function formatNumber(n: number): string {
-  if (n >= Number.MAX_SAFE_INTEGER) return '∞';
-  return new Intl.NumberFormat('en-US').format(n);
-}
-
-function formatDollars(cents: number): string {
-  return (cents / 100).toFixed(2);
-}
-
-function daysUntil(iso: string): number {
-  const ms = new Date(iso).getTime() - Date.now();
-  return Math.max(0, Math.ceil(ms / (24 * 3600 * 1000)));
-}
-
-function formatRenewalDate(iso: string): string {
-  return new Date(iso).toLocaleDateString();
 }

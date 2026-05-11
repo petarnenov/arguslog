@@ -2,6 +2,7 @@ package org.arguslog.api.billing.application.port;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Read + write port for the Stripe-side metadata an org carries — {@code stripe_customer_id} and
@@ -13,12 +14,26 @@ public interface BillingCustomerRepository {
   Optional<String> findCustomerId(long orgId);
 
   /**
+   * Per-user lookup (V26+). The user is the source of truth for billing identity; checkout reuses
+   * this customer instead of spinning up a new Stripe customer for every owned org. Empty for
+   * users who have never reached checkout.
+   */
+  Optional<String> findCustomerIdForUser(UUID userId);
+
+  /**
    * Reverse lookup — webhook events arrive with the Stripe customer id, not our org id, so the
    * handler resolves which row to mutate via this. Returns empty when Stripe sends an event for a
    * customer that was never created through our checkout (e.g. someone added the same customer to a
    * different api environment by hand).
    */
   Optional<Long> findOrgIdByCustomerId(String customerId);
+
+  /**
+   * Per-user reverse lookup (V26+). Used by the webhook handler once it switches to user-primary
+   * writes — resolves "which user does this Stripe customer belong to" without going through the
+   * org indirection.
+   */
+  Optional<UUID> findUserIdByCustomerId(String customerId);
 
   /**
    * Persists the Stripe customer id created by {@code checkout.session.completed}. Idempotent —

@@ -1,5 +1,7 @@
 package org.arguslog.worker.adapter.out.r2;
 
+import org.arguslog.storage.R2Properties;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import org.arguslog.worker.application.port.SourceMapStore;

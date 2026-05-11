@@ -8,7 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.arguslog.api.admin.application.port.AdminQueryPort;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

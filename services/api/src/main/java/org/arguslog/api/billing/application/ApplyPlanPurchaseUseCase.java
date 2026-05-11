@@ -3,7 +3,7 @@ package org.arguslog.api.billing.application;
 import java.util.Optional;
 import org.arguslog.api.billing.domain.BillingProvider;
 import org.arguslog.api.billing.domain.PlanPurchase;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 
 /**
  * Applies a successful plan purchase from any provider. Records the purchase row, extends the

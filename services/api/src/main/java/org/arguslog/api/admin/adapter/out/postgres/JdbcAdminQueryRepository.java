@@ -35,13 +35,38 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
     long orgs = countOrZero("SELECT COUNT(*) FROM organizations");
     long projects = countOrZero("SELECT COUNT(*) FROM projects WHERE archived_at IS NULL");
     long issues = countOrZero("SELECT COUNT(*) FROM issues");
+    // V27+: bonus / plan distribution live on users. The "orgs by plan" overview now reflects
+    // the org-effective-tier (max of owners' user.plan); for a single-owner org this is the
+    // owner's tier, for multi-owner it's the max. Bonus count is the number of users with an
+    // active grant — that's what platform admins actually want to track.
     long bonus =
         countOrZero(
-            "SELECT COUNT(*) FROM organizations WHERE bonus_until IS NOT NULL AND bonus_until > NOW()");
+            "SELECT COUNT(*) FROM users WHERE bonus_until IS NOT NULL AND bonus_until > NOW()");
 
     Map<String, Long> byPlan = new HashMap<>();
     jdbc.query(
-        "SELECT plan::text AS plan, COUNT(*) AS n FROM organizations GROUP BY plan",
+        """
+        SELECT effective_plan AS plan, COUNT(*) AS n
+          FROM (
+            SELECT DISTINCT ON (o.id)
+                   o.id,
+                   COALESCE(u.plan::text, 'free') AS effective_plan
+              FROM organizations o
+              LEFT JOIN org_members m ON m.org_id = o.id AND m.role = 'owner'::org_role
+              LEFT JOIN users u ON u.id = m.user_id
+             ORDER BY o.id,
+                      CASE u.plan
+                        WHEN 'enterprise' THEN 5
+                        WHEN 'business'   THEN 4
+                        WHEN 'pro'        THEN 3
+                        WHEN 'starter'    THEN 2
+                        WHEN 'free'       THEN 1
+                        ELSE 0
+                      END DESC NULLS LAST,
+                      m.added_at ASC NULLS LAST
+          ) AS effective
+         GROUP BY effective_plan
+        """,
         rs -> {
           byPlan.put(rs.getString("plan"), rs.getLong("n"));
         });
@@ -261,20 +286,34 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
 
   @Override
   public Optional<BonusGrant> findActiveBonus(long orgId) {
+    // V27+: bonus columns dropped from organizations. Read from the org's primary owner —
+    // same picker rule as everywhere else. Empty for ownerless orgs or owners with no grant.
     try {
       return Optional.ofNullable(
           jdbc.queryForObject(
               """
-              SELECT o.bonus_until,
-                     o.bonus_granted_at,
-                     o.bonus_granted_by,
+              SELECT u.bonus_until,
+                     u.bonus_granted_at,
+                     u.bonus_granted_by,
                      gb.email AS granted_by_email,
-                     o.bonus_reason
-                FROM organizations o
-                LEFT JOIN users gb ON gb.id = o.bonus_granted_by
-               WHERE o.id = ?
-                 AND o.bonus_until IS NOT NULL
-                 AND o.bonus_until > NOW()
+                     u.bonus_reason
+                FROM org_members m
+                JOIN users u ON u.id = m.user_id
+                LEFT JOIN users gb ON gb.id = u.bonus_granted_by
+               WHERE m.org_id = ?
+                 AND m.role = 'owner'::org_role
+                 AND u.bonus_until IS NOT NULL
+                 AND u.bonus_until > NOW()
+               ORDER BY CASE u.plan
+                          WHEN 'enterprise' THEN 5
+                          WHEN 'business'   THEN 4
+                          WHEN 'pro'        THEN 3
+                          WHEN 'starter'    THEN 2
+                          WHEN 'free'       THEN 1
+                          ELSE 0
+                        END DESC,
+                        m.added_at ASC
+               LIMIT 1
               """,
               (rs, rowNum) ->
                   new BonusGrant(
@@ -291,26 +330,11 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
 
   @Override
   public void recordGrant(long orgId, String plan, Instant until, UUID grantedBy, String reason) {
-    // Dual-write: org row keeps the historical record so V27 can drop it cleanly later, but the
-    // user row is the new source of truth for cap-checks and admin reads. The grant lands on the
-    // org's primary owner (highest tier, earliest membership tiebreak — same rule as readers).
+    // V27+: bonus + plan live on users only. The org-keyed grant endpoint is kept for legacy
+    // callers but resolves the org's primary owner and writes the user row — same effect as the
+    // direct per-user grant API.
     String planLc = plan.toLowerCase(Locale.ROOT);
     Timestamp untilTs = Timestamp.from(until);
-    jdbc.update(
-        """
-        UPDATE organizations
-           SET plan = ?::org_plan,
-               bonus_until      = ?,
-               bonus_granted_by = ?,
-               bonus_granted_at = NOW(),
-               bonus_reason     = ?
-         WHERE id = ?
-        """,
-        planLc,
-        untilTs,
-        grantedBy,
-        reason,
-        orgId);
     jdbc.update(
         """
         UPDATE users
@@ -345,18 +369,7 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
 
   @Override
   public void revokeGrant(long orgId) {
-    jdbc.update(
-        """
-        UPDATE organizations
-           SET plan = 'free'::org_plan,
-               bonus_until      = NULL,
-               bonus_granted_by = NULL,
-               bonus_granted_at = NULL,
-               bonus_reason     = NULL
-         WHERE id = ?
-        """,
-        orgId);
-    // Mirror revoke to the org's primary owner — see recordGrant for the picker logic.
+    // V27+: revoke targets the org's primary owner's user row.
     jdbc.update(
         """
         UPDATE users
@@ -388,9 +401,7 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
   @Override
   public void recordUserGrant(
       UUID userId, String plan, Instant until, UUID grantedBy, String reason) {
-    String planLc = plan.toLowerCase(Locale.ROOT);
-    Timestamp untilTs = Timestamp.from(until);
-    // Source of truth — users row.
+    // V27+: source of truth is users row, no org mirror needed.
     jdbc.update(
         """
         UPDATE users
@@ -401,29 +412,8 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
                bonus_reason     = ?
          WHERE id = ?
         """,
-        planLc,
-        untilTs,
-        grantedBy,
-        reason,
-        userId);
-    // Mirror to every org the user owns — keeps legacy o.plan reads consistent during the V27
-    // deprecation window. New code paths read user.plan; this dual-write only matters until the
-    // org-level columns are dropped.
-    jdbc.update(
-        """
-        UPDATE organizations o
-           SET plan = ?::org_plan,
-               bonus_until      = ?,
-               bonus_granted_by = ?,
-               bonus_granted_at = NOW(),
-               bonus_reason     = ?
-          FROM org_members m
-         WHERE m.org_id = o.id
-           AND m.user_id = ?
-           AND m.role = 'owner'::org_role
-        """,
-        planLc,
-        untilTs,
+        plan.toLowerCase(Locale.ROOT),
+        Timestamp.from(until),
         grantedBy,
         reason,
         userId);
@@ -440,20 +430,6 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
                bonus_granted_at = NULL,
                bonus_reason     = NULL
          WHERE id = ?
-        """,
-        userId);
-    jdbc.update(
-        """
-        UPDATE organizations o
-           SET plan = 'free'::org_plan,
-               bonus_until      = NULL,
-               bonus_granted_by = NULL,
-               bonus_granted_at = NULL,
-               bonus_reason     = NULL
-          FROM org_members m
-         WHERE m.org_id = o.id
-           AND m.user_id = ?
-           AND m.role = 'owner'::org_role
         """,
         userId);
   }

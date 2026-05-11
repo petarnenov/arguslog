@@ -1,5 +1,7 @@
 package org.arguslog.api.releases.adapter.out.r2;
 
+import org.arguslog.storage.R2Properties;
+
 import java.net.URI;
 import java.time.Duration;
 import org.arguslog.api.releases.application.port.SourceMapStorage;

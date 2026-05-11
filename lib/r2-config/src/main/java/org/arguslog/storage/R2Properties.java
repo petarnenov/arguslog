@@ -1,10 +1,14 @@
-package org.arguslog.api.releases.adapter.out.r2;
+package org.arguslog.storage;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * R2 / S3 connection config. {@code endpoint} points at MinIO in dev (path-style buckets) and at
  * Cloudflare R2 in prod (also path-style — R2 uses a per-account endpoint, no virtual-host).
+ *
+ * <p>Shared between api (presigns uploads) and worker (fetches sourcemaps) so the env namespace
+ * {@code arguslog.r2.*} resolves to the same bucket on both sides. Drift here would silently
+ * break "sourcemap not found" with no clear error message.
  */
 @ConfigurationProperties(prefix = "arguslog.r2")
 public record R2Properties(String endpoint, String bucket, String accessKey, String secretKey) {

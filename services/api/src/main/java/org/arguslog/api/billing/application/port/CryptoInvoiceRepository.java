@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.arguslog.api.billing.domain.CryptoInvoice;
 import org.arguslog.api.billing.domain.CryptoInvoiceStatus;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 
 /**
  * State for one NOWPayments hosted checkout we minted. The invoice row is created BEFORE we hit

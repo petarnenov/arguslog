@@ -19,7 +19,7 @@ import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.arguslog.api.domain.Project;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -22,4 +22,6 @@ include(
     ":services:api",
     ":java-sdk",
     ":lib:crypto-aes-gcm",
+    ":lib:plan-tier",
+    ":lib:r2-config",
 )

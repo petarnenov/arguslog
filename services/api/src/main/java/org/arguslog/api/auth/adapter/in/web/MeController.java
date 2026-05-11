@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.arguslog.api.admin.PlatformAdminGuard;
 import org.arguslog.api.billing.application.port.OrgPlanRepository.BonusSnapshot;
 import org.arguslog.api.billing.application.port.UserBillingRepository;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.arguslog.api.security.AuthActor;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;

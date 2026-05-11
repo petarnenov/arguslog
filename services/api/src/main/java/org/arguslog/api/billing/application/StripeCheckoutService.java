@@ -5,6 +5,7 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
 import java.util.Optional;
+import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.billing.adapter.out.stripe.StripeProperties;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
@@ -28,16 +29,19 @@ public class StripeCheckoutService implements CheckoutUseCase {
   private final StripeProperties props;
   private final BillingCustomerRepository customers;
   private final OrgWriteRepository orgs;
+  private final MembershipRepository memberships;
 
   public StripeCheckoutService(
       StripeClient stripe,
       StripeProperties props,
       BillingCustomerRepository customers,
-      OrgWriteRepository orgs) {
+      OrgWriteRepository orgs,
+      MembershipRepository memberships) {
     this.stripe = stripe;
     this.props = props;
     this.customers = customers;
     this.orgs = orgs;
+    this.memberships = memberships;
   }
 
   @Override
@@ -75,10 +79,19 @@ public class StripeCheckoutService implements CheckoutUseCase {
             .addLineItem(
                 SessionCreateParams.LineItem.builder().setPrice(priceId).setQuantity(1L).build());
 
-    Optional<String> existing = customers.findCustomerId(orgId);
-    if (existing.isPresent()) {
+    // Stripe customer resolution (V26+): the user is the source of truth for billing identity,
+    // so reuse users.stripe_customer_id first. Without this, a user with two owned orgs would
+    // spin up TWO Stripe customers — duplicate invoices, duplicate dunning, support headache.
+    // Fall back to org-level lookup for legacy rows stamped before the dual-write landed; final
+    // fallback is the user's email so Stripe creates a fresh customer at checkout time.
+    Optional<String> customer =
+        memberships
+            .findPrimaryOwnerOfOrg(orgId)
+            .flatMap(customers::findCustomerIdForUser)
+            .or(() -> customers.findCustomerId(orgId));
+    if (customer.isPresent()) {
       // Stripe rejects setting both customer + customer_email; pick one.
-      params.setCustomer(existing.get());
+      params.setCustomer(customer.get());
     } else if (userEmail != null && !userEmail.isBlank()) {
       params.setCustomerEmail(userEmail);
     }

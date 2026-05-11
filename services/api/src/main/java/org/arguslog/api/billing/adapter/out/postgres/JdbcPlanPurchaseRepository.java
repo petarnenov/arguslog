@@ -11,7 +11,7 @@ import javax.sql.DataSource;
 import org.arguslog.api.billing.application.port.PlanPurchaseRepository;
 import org.arguslog.api.billing.domain.BillingProvider;
 import org.arguslog.api.billing.domain.PlanPurchase;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;

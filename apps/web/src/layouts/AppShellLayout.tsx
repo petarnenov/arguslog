@@ -43,7 +43,7 @@ import { Link, Outlet, useNavigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
 import { deleteOrg } from '../api/orgs';
-import { queryKeys, useMe, useMyOrgs, useProjects, useUsage } from '../api/queries';
+import { queryKeys, useMe, useMyOrgs, useProjects } from '../api/queries';
 import { BonusBanner } from '../components/BonusBanner';
 import { useAuth } from '../auth/useAuth';
 import { DevErrorMenu } from '../components/DevErrorMenu';
@@ -62,7 +62,6 @@ export function AppShellLayout() {
   const currentOrg = orgs.data?.find((o) => o.slug === orgSlug);
   const projects = useProjects(currentOrg?.id, { enabled: Boolean(currentOrg && projectId) });
   const me = useMe();
-  const usage = useUsage(currentOrg?.id);
   const currentProject = projectId
     ? projects.data?.find((p) => String(p.id) === projectId)
     : undefined;
@@ -139,6 +138,9 @@ export function AppShellLayout() {
                       {t('auth.signedInAs', { name: userLabel })}
                     </Text>
                   </Menu.Label>
+                  <Menu.Item component={Link} to="/billing" leftSection={<IconCreditCard size={14} />}>
+                    {t('nav.billing')}
+                  </Menu.Item>
                   <Menu.Item component={Link} to="/me/tokens" leftSection={<IconKey size={14} />}>
                     {t('nav.tokens')}
                   </Menu.Item>
@@ -214,8 +216,19 @@ export function AppShellLayout() {
               )}
             </Menu.Dropdown>
           </Menu>
-          {usage.data?.bonus && (
-            <BonusBanner bonus={usage.data.bonus} plan={usage.data.plan} variant="compact" />
+          {me.data?.bonusUntil && (
+            // Per-user billing (V26+): the banner is keyed off the signed-in user's bonus, not
+            // the currently-selected org. Users with multiple orgs see the same banner across
+            // them; users with no current org context (e.g. /onboarding) still see it.
+            <BonusBanner
+              bonus={{
+                until: me.data.bonusUntil,
+                reason: me.data.bonusReason ?? null,
+                grantedByEmail: null,
+              }}
+              plan={me.data.plan}
+              variant="compact"
+            />
           )}
           <Divider my="xs" />
         </AppShell.Section>
@@ -242,14 +255,6 @@ export function AppShellLayout() {
               to={`/orgs/${orgSlug}/settings`}
               label={t('nav.members')}
               leftSection={<IconUsers size={16} />}
-            />
-          )}
-          {orgSlug && (
-            <NavLink
-              component={Link}
-              to={`/orgs/${orgSlug}/billing`}
-              label={t('nav.billing')}
-              leftSection={<IconCreditCard size={16} />}
             />
           )}
           {me.data?.isPlatformAdmin && (

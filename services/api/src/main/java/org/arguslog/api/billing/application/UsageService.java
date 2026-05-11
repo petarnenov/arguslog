@@ -7,7 +7,7 @@ import java.util.Optional;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.application.port.UsageRepository;
 import org.arguslog.api.billing.domain.BillingInterval;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -10,25 +10,6 @@ export type BillingInterval =
 
 export type PlanDuration = 1 | 3 | 6 | 12;
 
-export interface UsageSnapshot {
-  plan: string;
-  monthlyPriceCents: number;
-  eventsUsed: number;
-  eventCap: number;
-  projectCap: number;
-  retentionDays: number;
-  ratio: number;
-  exceeded: boolean;
-  /** ISO-8601 timestamp; absent unless a payment failure or expiry opened a grace window. */
-  paymentGraceUntil?: string;
-  /** Billing cadence the org is on. Defaults to monthly via DB migration. */
-  billingInterval: BillingInterval;
-  /** Next renewal/expiry; absent for free-tier orgs. */
-  renewsAt?: string;
-  /** Active admin-granted bonus, if any. */
-  bonus?: BonusInfo;
-}
-
 export interface BonusInfo {
   until: string;
   reason: string | null;
@@ -71,39 +52,36 @@ export interface BillingPlansResponse {
   tiers: PlanTierInfo[];
 }
 
-export function getUsage(orgId: number): Promise<UsageSnapshot> {
-  return apiFetch<UsageSnapshot>(`/api/v1/orgs/${orgId}/usage`);
-}
+export type PaidTier = 'starter' | 'pro' | 'business';
 
 export function getBillingPlans(): Promise<BillingPlansResponse> {
   return apiFetch<BillingPlansResponse>('/api/v1/billing/plans');
 }
 
-export function startCheckout(
-  orgId: number,
+// ── User-level billing (V26+) ─────────────────────────────────────────────
+// /me/billing endpoints resolve the user's "primary owned org" (highest tier, earliest
+// membership) under the hood. The org-scoped /api/v1/orgs/:orgId/billing/* endpoints stayed
+// alive on the backend for MCP / external API callers; the dashboard no longer calls them.
+
+export function startMeCheckout(
   interval: BillingInterval = 'monthly',
 ): Promise<CheckoutResponse> {
   return apiFetch<CheckoutResponse>(
-    `/api/v1/orgs/${orgId}/billing/checkout-session?interval=${interval}`,
+    `/api/v1/me/billing/checkout-session?interval=${interval}`,
     { method: 'POST' },
   );
 }
 
-export type PaidTier = 'starter' | 'pro' | 'business';
-
-export function startCryptoCheckout(
-  orgId: number,
+export function startMeCryptoCheckout(
   tier: PaidTier,
   duration: PlanDuration,
 ): Promise<CryptoCheckoutResponse> {
   return apiFetch<CryptoCheckoutResponse>(
-    `/api/v1/orgs/${orgId}/billing/crypto-invoice?tier=${tier}&duration=${duration}`,
+    `/api/v1/me/billing/crypto-invoice?tier=${tier}&duration=${duration}`,
     { method: 'POST' },
   );
 }
 
-export function openPortal(orgId: number): Promise<CheckoutResponse> {
-  return apiFetch<CheckoutResponse>(`/api/v1/orgs/${orgId}/billing/portal`, {
-    method: 'POST',
-  });
+export function openMePortal(): Promise<CheckoutResponse> {
+  return apiFetch<CheckoutResponse>('/api/v1/me/billing/portal', { method: 'POST' });
 }

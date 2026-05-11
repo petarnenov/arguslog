@@ -7,7 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import javax.sql.DataSource;
 import org.arguslog.worker.application.port.AlertDestinationRepository;
-import org.arguslog.worker.application.port.SecretCipher;
+import org.arguslog.crypto.SecretCipher;
 import org.arguslog.worker.domain.AlertDestination;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

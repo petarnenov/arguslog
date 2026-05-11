@@ -9,7 +9,7 @@ import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
-import org.arguslog.api.alerts.adapter.out.crypto.AesGcmSecretCipher;
+import org.arguslog.crypto.AesGcmSecretCipher;
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
 import org.arguslog.api.alerts.application.port.AlertDestinationWriteRepository;
 import org.arguslog.api.alerts.domain.AlertDestination;

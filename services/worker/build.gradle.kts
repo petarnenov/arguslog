@@ -18,6 +18,8 @@ dependencies {
     // Shared AES-256-GCM wire format with api — bytes-in/bytes-out, no Spring leak. Stops
     // the api/worker copies from drifting on the at-rest secret format.
     implementation(project(":lib:crypto-aes-gcm"))
+    implementation(project(":lib:plan-tier"))
+    implementation(project(":lib:r2-config"))
     // Dogfood — Logback appender emits the worker's own errors back into Arguslog. No-op
     // until ARGUSLOG_DSN is configured.
     implementation(project(":java-sdk"))

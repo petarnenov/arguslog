@@ -6,7 +6,7 @@ import java.time.Duration;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.ingest.application.port.ProjectQuotaContext;
-import org.arguslog.ingest.domain.IngestPlanTier;
+import org.arguslog.billing.PlanTier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -20,11 +20,31 @@ import org.springframework.stereotype.Component;
 @Component
 public class JdbcProjectQuotaContext implements ProjectQuotaContext {
 
+  // V27+: organizations.plan dropped — resolve the plan via the project's org's primary owner
+  // (highest tier + earliest membership tiebreak, same picker the rest of the codebase uses).
+  // Caffeine TTL bounds the cap-staleness window after a Stripe webhook flips the user plan.
   private static final String SQL =
       """
-      SELECT p.org_id, o.plan::text AS plan_text
+      SELECT p.org_id,
+             COALESCE(ou.plan::text, 'free') AS plan_text
         FROM projects p
-        JOIN organizations o ON o.id = p.org_id
+        LEFT JOIN LATERAL (
+          SELECT m.user_id
+            FROM org_members m
+            JOIN users u ON u.id = m.user_id
+           WHERE m.org_id = p.org_id AND m.role = 'owner'::org_role
+           ORDER BY CASE u.plan
+                      WHEN 'enterprise' THEN 5
+                      WHEN 'business'   THEN 4
+                      WHEN 'pro'        THEN 3
+                      WHEN 'starter'    THEN 2
+                      WHEN 'free'       THEN 1
+                      ELSE 0
+                    END DESC,
+                    m.added_at ASC
+           LIMIT 1
+        ) AS owner ON TRUE
+        LEFT JOIN users ou ON ou.id = owner.user_id
        WHERE p.id = ?
       """;
 
@@ -53,7 +73,7 @@ public class JdbcProjectQuotaContext implements ProjectQuotaContext {
               SQL,
               (rs, rowNum) ->
                   new Context(
-                      rs.getLong("org_id"), IngestPlanTier.fromDbValue(rs.getString("plan_text"))),
+                      rs.getLong("org_id"), PlanTier.fromDbValue(rs.getString("plan_text"))),
               projectId);
       return Optional.ofNullable(row);
     } catch (EmptyResultDataAccessException e) {

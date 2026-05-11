@@ -6,7 +6,6 @@ import { AdminPage } from './pages/AdminPage';
 import { AlertDestinationsPage } from './pages/AlertDestinationsPage';
 import { AlertRulesPage } from './pages/AlertRulesPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
-import { BillingPage } from './pages/BillingPage';
 import { IssueDetailPage } from './pages/IssueDetailPage';
 import { IssuesPage } from './pages/IssuesPage';
 import { LoginPage } from './pages/LoginPage';
@@ -19,6 +18,7 @@ import { ProjectKeysPage } from './pages/ProjectKeysPage';
 import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ReleasesPage } from './pages/ReleasesPage';
+import { UserBillingPage } from './pages/UserBillingPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/orgs" replace /> },
@@ -45,8 +45,8 @@ export const router = createBrowserRouter([
       { path: '/orgs/:orgSlug/projects/:projectId/releases', element: <ReleasesPage /> },
       { path: '/orgs/:orgSlug/settings', element: <OrgSettingsPage /> },
       { path: '/orgs/:orgSlug/settings/destinations', element: <AlertDestinationsPage /> },
-      { path: '/orgs/:orgSlug/billing', element: <BillingPage /> },
       { path: '/me/tokens', element: <PersonalAccessTokensPage /> },
+      { path: '/billing', element: <UserBillingPage /> },
       { path: '/admin', element: <AdminPage /> },
     ],
   },

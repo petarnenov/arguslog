@@ -99,8 +99,8 @@ class JdbcAdminQueryRepositoryTest {
   }
 
   private void seed(String slug, String name) {
+    // V27+: organizations.plan dropped — plan lives on users now.
     JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-    jdbc.update(
-        "INSERT INTO organizations (slug, name, plan) VALUES (?, ?, 'free'::org_plan)", slug, name);
+    jdbc.update("INSERT INTO organizations (slug, name) VALUES (?, ?)", slug, name);
   }
 }

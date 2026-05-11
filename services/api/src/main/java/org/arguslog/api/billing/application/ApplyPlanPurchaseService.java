@@ -11,7 +11,7 @@ import org.arguslog.api.billing.application.port.PlanPurchaseRepository;
 import org.arguslog.api.billing.domain.BillingInterval;
 import org.arguslog.api.billing.domain.BillingProvider;
 import org.arguslog.api.billing.domain.PlanPurchase;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

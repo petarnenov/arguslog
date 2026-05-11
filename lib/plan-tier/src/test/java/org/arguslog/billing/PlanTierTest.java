@@ -1,4 +1,4 @@
-package org.arguslog.api.billing.domain;
+package org.arguslog.billing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

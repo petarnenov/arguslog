@@ -1,7 +1,7 @@
 package org.arguslog.ingest.application.port;
 
 import java.util.Optional;
-import org.arguslog.ingest.domain.IngestPlanTier;
+import org.arguslog.billing.PlanTier;
 
 /**
  * Resolves the static metadata needed for a quota check: which org owns this project, and what tier
@@ -12,5 +12,5 @@ public interface ProjectQuotaContext {
 
   Optional<Context> lookup(long projectId);
 
-  record Context(long orgId, IngestPlanTier plan) {}
+  record Context(long orgId, PlanTier plan) {}
 }

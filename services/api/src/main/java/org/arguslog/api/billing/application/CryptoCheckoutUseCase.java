@@ -1,6 +1,6 @@
 package org.arguslog.api.billing.application;
 
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 
 /**
  * Mints a NOWPayments hosted checkout for {@code orgId} buying {@code durationMonths} of {@code
