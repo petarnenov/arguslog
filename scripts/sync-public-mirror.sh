@@ -108,6 +108,11 @@ mkdir -p "$DST/scripts"
 cp "$SRC/scripts/verify-tag-version.mjs" "$DST/scripts/verify-tag-version.mjs"
 [[ -f "$SRC/scripts/package.json" ]] && cp "$SRC/scripts/package.json" "$DST/scripts/package.json"
 
+# Cross-SDK DSN parity fixture — python-sdk, java-sdk, and the browser SDKs all run
+# tests/test_dsn_fixtures.py against this file. Must ship with every SDK release.
+[[ -f "$SRC/scripts/dsn-test-fixtures.json" ]] && \
+  cp "$SRC/scripts/dsn-test-fixtures.json" "$DST/scripts/dsn-test-fixtures.json"
+
 # OpenAPI snapshot — packages/mcp-server's codegen (scripts/generate-tools.mjs) reads this
 # at build time to enumerate the MCP tool catalog. Safe to mirror: it's the public REST
 # contract that any customer sees through their dashboard, not service code.
