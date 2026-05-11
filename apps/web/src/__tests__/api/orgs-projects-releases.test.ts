@@ -87,7 +87,7 @@ describe('releases api client', () => {
 
   it('createRelease POSTs the body', async () => {
     const f = mockFetch({});
-    await createRelease(9, { version: '1.2.3', environment: 'production' });
+    await createRelease(9, '1.2.3');
     expect((f.mock.calls[0]?.[1] as RequestInit).method).toBe('POST');
   });
 
