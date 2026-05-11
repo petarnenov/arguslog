@@ -38,7 +38,7 @@ describe('OnboardingPage', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('runs org → project → key in sequence and shows the DSN modal on success', async () => {
+  it('runs org → atomic project+DSN and shows the DSN modal on success', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url.endsWith('/api/v1/platforms')) {
@@ -50,23 +50,24 @@ describe('OnboardingPage', () => {
         return jsonResponse({ id: 1, slug: 'acme', name: 'Acme', plan: 'free', createdAt: 't' });
       }
       if (url.endsWith('/api/v1/orgs/1/projects')) {
+        // Atomic create — project + first DSN come back together (GH #26).
         return jsonResponse({
-          id: 9,
-          orgId: 1,
-          slug: 'web',
-          name: 'Web',
-          platform: 'javascript',
-          createdAt: 't',
-        });
-      }
-      if (url.endsWith('/api/v1/projects/9/keys')) {
-        return jsonResponse({
-          id: 100,
-          projectId: 9,
-          dsnPublic: 'PUB',
-          dsn: 'arguslog://PUB@localhost:8080/api/9',
-          active: true,
-          createdAt: 't',
+          project: {
+            id: 9,
+            orgId: 1,
+            slug: 'web',
+            name: 'Web',
+            platform: 'javascript',
+            createdAt: 't',
+          },
+          dsn: {
+            id: 100,
+            projectId: 9,
+            dsnPublic: 'PUB',
+            dsn: 'arguslog://PUB@localhost:8080/api/9',
+            active: true,
+            createdAt: 't',
+          },
         });
       }
       throw new Error('unexpected ' + url);
@@ -83,8 +84,8 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.getByText('arguslog://PUB@localhost:8080/api/9')).toBeInTheDocument();
     });
-    // 4 calls: platforms catalog + org create + project create + DSN create.
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    // 3 calls: platforms catalog + org create + atomic project+DSN create.
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it('surfaces api errors without opening the modal', async () => {

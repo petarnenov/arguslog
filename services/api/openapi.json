@@ -763,7 +763,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ProjectResponse"
+                  "$ref" : "#/components/schemas/ProjectCreateResponse"
                 }
               }
             }
@@ -1980,6 +1980,17 @@
           },
           "platform" : {
             "type" : "string"
+          }
+        }
+      },
+      "ProjectCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "project" : {
+            "$ref" : "#/components/schemas/ProjectResponse"
+          },
+          "dsn" : {
+            "$ref" : "#/components/schemas/DsnResponse"
           }
         }
       },

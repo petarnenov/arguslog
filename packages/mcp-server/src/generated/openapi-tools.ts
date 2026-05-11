@@ -1012,26 +1012,11 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     "outputSchema": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "integer",
-          "format": "int64"
+        "project": {
+          "$ref": "#/components/schemas/ProjectResponse"
         },
-        "orgId": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "slug": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "platform": {
-          "type": "string"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
+        "dsn": {
+          "$ref": "#/components/schemas/DsnResponse"
         }
       }
     },

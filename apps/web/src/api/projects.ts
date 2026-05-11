@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import type { Dsn } from './keys';
 
 export interface Project {
   id: number;
@@ -9,6 +10,17 @@ export interface Project {
   createdAt: string;
 }
 
+/**
+ * Server response from `POST /api/v1/orgs/{orgId}/projects` — bundles the project with its
+ * auto-minted first DSN so the UI can show the "copy your key" modal in one round-trip.
+ * The full `dsn.dsn` string is visible exactly once here (GH #26 / PAT pattern); subsequent
+ * listings return DSN summaries without it.
+ */
+export interface ProjectCreate {
+  project: Project;
+  dsn: Dsn;
+}
+
 export function listProjects(orgId: number): Promise<Project[]> {
   return apiFetch<Project[]>(`/api/v1/orgs/${orgId}/projects`);
 }
@@ -16,8 +28,8 @@ export function listProjects(orgId: number): Promise<Project[]> {
 export function createProject(
   orgId: number,
   body: { name: string; platform: string },
-): Promise<Project> {
-  return apiFetch<Project>(`/api/v1/orgs/${orgId}/projects`, {
+): Promise<ProjectCreate> {
+  return apiFetch<ProjectCreate>(`/api/v1/orgs/${orgId}/projects`, {
     method: 'POST',
     body: JSON.stringify(body),
   });

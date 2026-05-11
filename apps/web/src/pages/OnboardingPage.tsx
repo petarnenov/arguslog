@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
 import { ApiError } from '../api/client';
-import { createDsn, type Dsn } from '../api/keys';
+import { type Dsn } from '../api/keys';
 import { createOrg, type Org } from '../api/orgs';
 import { createProject, type Project } from '../api/projects';
 import { queryKeys, usePlatforms } from '../api/queries';
@@ -53,11 +53,11 @@ export function OnboardingPage() {
   const mutation = useMutation({
     mutationFn: async (values: { orgName: string; projectName: string; platform: string }) => {
       const org = await createOrg(values.orgName);
-      const project = await createProject(org.id, {
+      // Project + first DSN are minted in one atomic call (GH #26).
+      const { project, dsn } = await createProject(org.id, {
         name: values.projectName,
         platform: values.platform,
       });
-      const dsn = await createDsn(project.id);
       return { org, project, dsn };
     },
     onSuccess: async (result) => {

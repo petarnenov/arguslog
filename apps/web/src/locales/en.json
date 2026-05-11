@@ -131,8 +131,6 @@
     "archiveConfirm": "Archive project",
     "dsnTitle": "Project created",
     "dsnHint": "Copy this DSN into your app's config — it's the only way the SDK can authenticate to ingest.",
-    "dsnRetry": "Retry generating DSN",
-    "dsnRetryHint": "The project was created but the DSN could not be generated. Retry to issue one now, or open the project later to issue it from the keys settings.",
     "copyDsn": "Copy DSN",
     "copied": "Copied!",
     "continue": "Open project"

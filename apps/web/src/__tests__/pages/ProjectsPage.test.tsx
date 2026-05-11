@@ -69,7 +69,7 @@ describe('ProjectsPage', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('chains createProject then createDsn and shows the DSN modal on success', async () => {
+  it('creates project + DSN atomically and shows the DSN modal on success', async () => {
     let projectsListed = 0;
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
@@ -83,10 +83,8 @@ describe('ProjectsPage', () => {
         return jsonResponse(projectsListed === 1 ? [] : [NEW_PROJECT]);
       }
       if (url.endsWith('/api/v1/orgs/1/projects') && method === 'POST') {
-        return jsonResponse(NEW_PROJECT);
-      }
-      if (url.endsWith('/api/v1/projects/9/keys') && method === 'POST') {
-        return jsonResponse(NEW_DSN);
+        // Server now mints the first DSN inline (GH #26).
+        return jsonResponse({ project: NEW_PROJECT, dsn: NEW_DSN });
       }
       throw new Error(`unexpected ${method} ${url}`);
     });
@@ -116,7 +114,7 @@ describe('ProjectsPage', () => {
       expect(screen.getByTestId('issues-page')).toBeInTheDocument();
     });
 
-    // Both endpoints were hit.
+    // Only one POST — the chained createDsn is gone.
     const calls = fetchMock.mock.calls.map(([input, init]) => {
       const url = typeof input === 'string' ? input : (input as URL | Request).toString();
       const method = (init as RequestInit | undefined)?.method ?? 'GET';
@@ -126,12 +124,11 @@ describe('ProjectsPage', () => {
       true,
     );
     expect(calls.some((c) => c.startsWith('POST ') && c.endsWith('/api/v1/projects/9/keys'))).toBe(
-      true,
+      false,
     );
   });
 
-  it('shows a retry path when project is created but DSN issuance fails', async () => {
-    let keysAttempts = 0;
+  it('surfaces create errors in the form without opening the success modal', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       const method = init?.method ?? 'GET';
@@ -142,14 +139,7 @@ describe('ProjectsPage', () => {
         return jsonResponse([]);
       }
       if (url.endsWith('/api/v1/orgs/1/projects') && method === 'POST') {
-        return jsonResponse(NEW_PROJECT);
-      }
-      if (url.endsWith('/api/v1/projects/9/keys') && method === 'POST') {
-        keysAttempts += 1;
-        // First attempt fails; retry succeeds.
-        return keysAttempts === 1
-          ? problemResponse('temporary keystore outage')
-          : jsonResponse(NEW_DSN);
+        return problemResponse('temporary keystore outage');
       }
       throw new Error(`unexpected ${method} ${url}`);
     });
@@ -165,16 +155,11 @@ describe('ProjectsPage', () => {
     if (!submitBtn) throw new Error('submit button not found');
     await user.click(submitBtn);
 
-    // Failure surfaced in the success modal, with a retry control.
+    // Failure surfaced in the create form (no half-created project — atomic backend).
     await waitFor(() => {
       expect(screen.getByText('temporary keystore outage')).toBeInTheDocument();
     });
-    const retryBtn = screen.getByRole('button', { name: /Retry generating DSN/i });
-    await user.click(retryBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText('arguslog://PUB@localhost:8080/api/9')).toBeInTheDocument();
-    });
-    expect(keysAttempts).toBe(2);
+    // DSN modal should not appear.
+    expect(screen.queryByText(/arguslog:\/\/PUB/)).not.toBeInTheDocument();
   });
 });
