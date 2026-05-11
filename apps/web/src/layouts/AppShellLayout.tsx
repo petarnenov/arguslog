@@ -214,8 +214,19 @@ export function AppShellLayout() {
               )}
             </Menu.Dropdown>
           </Menu>
-          {usage.data?.bonus && (
-            <BonusBanner bonus={usage.data.bonus} plan={usage.data.plan} variant="compact" />
+          {me.data?.bonusUntil && (
+            // Per-user billing (V26+): the banner is keyed off the signed-in user's bonus, not
+            // the currently-selected org. Users with multiple orgs see the same banner across
+            // them; users with no current org context (e.g. /onboarding) still see it.
+            <BonusBanner
+              bonus={{
+                until: me.data.bonusUntil,
+                reason: me.data.bonusReason ?? null,
+                grantedByEmail: null,
+              }}
+              plan={me.data.plan}
+              variant="compact"
+            />
           )}
           <Divider my="xs" />
         </AppShell.Section>
