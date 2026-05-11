@@ -108,6 +108,14 @@ mkdir -p "$DST/scripts"
 cp "$SRC/scripts/verify-tag-version.mjs" "$DST/scripts/verify-tag-version.mjs"
 [[ -f "$SRC/scripts/package.json" ]] && cp "$SRC/scripts/package.json" "$DST/scripts/package.json"
 
+# OpenAPI snapshot — packages/mcp-server's codegen (scripts/generate-tools.mjs) reads this
+# at build time to enumerate the MCP tool catalog. Safe to mirror: it's the public REST
+# contract that any customer sees through their dashboard, not service code.
+if [[ -f "$SRC/services/api/openapi.json" ]]; then
+  mkdir -p "$DST/services/api"
+  cp "$SRC/services/api/openapi.json" "$DST/services/api/openapi.json"
+fi
+
 # Public packages.
 for pkg in "${PUBLIC_PACKAGES[@]}"; do
   if [[ ! -d "$SRC/$pkg" ]]; then
