@@ -35,7 +35,7 @@ on:
       - 'pnpm-public-mirror.yaml'
       - 'pnpm-lock.yaml'
       - 'LICENSE'
-      - '.github/workflows/release-*.yml'
+      - 'scripts/public-mirror/.github/workflows/**'
   workflow_dispatch:
 
 concurrency:

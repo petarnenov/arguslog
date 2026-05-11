@@ -76,14 +76,18 @@ ROOT_DIRS=(
   buildSrc
 )
 
-# Workflow files customers / contributors need to see — every release-*.yml. We leave
-# deploy-staging.yml, deploy.yml, pr.yml in the private repo because they reference
-# Railway tokens, dashboard endpoints, etc.
+# Workflow files for the public mirror. We keep release-*.yml under
+# scripts/public-mirror/.github/workflows/ in the source repo (NOT in private's own
+# .github/workflows/) so they never accidentally fire on the private repo — releases run
+# only from the public repo where npm provenance can reference a publicly-readable
+# source. deploy-*.yml + pr.yml + sync-public-mirror.yml stay in private's .github/.
 mkdir -p "$DST/.github/workflows"
-for wf in "$SRC"/.github/workflows/release-*.yml; do
-  [[ -f "$wf" ]] || continue
-  cp "$wf" "$DST/.github/workflows/$(basename "$wf")"
-done
+if [[ -d "$SRC/scripts/public-mirror/.github/workflows" ]]; then
+  for wf in "$SRC"/scripts/public-mirror/.github/workflows/*.yml; do
+    [[ -f "$wf" ]] || continue
+    cp "$wf" "$DST/.github/workflows/$(basename "$wf")"
+  done
+fi
 
 # Public-mirror-specific top-level files. README, package.json, settings.gradle.kts and
 # pnpm-workspace.yaml are crafted in scripts/public-mirror/ — the monorepo versions
