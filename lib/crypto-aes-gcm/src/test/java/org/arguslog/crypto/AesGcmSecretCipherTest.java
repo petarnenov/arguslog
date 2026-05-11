@@ -1,4 +1,4 @@
-package org.arguslog.api.alerts.adapter.out.crypto;
+package org.arguslog.crypto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,7 +21,7 @@ class AesGcmSecretCipherTest {
     byte[] encrypted = cipher.encrypt(payload);
 
     assertThat(encrypted).isNotEqualTo(payload);
-    assertThat(encrypted.length).isGreaterThan(payload.length); // version + iv + tag
+    assertThat(encrypted.length).isGreaterThan(payload.length);
     assertThat(cipher.decrypt(encrypted)).isEqualTo(payload);
   }
 
@@ -30,14 +30,14 @@ class AesGcmSecretCipherTest {
     AesGcmSecretCipher cipher = new AesGcmSecretCipher(TEST_KEY);
     byte[] a = cipher.encrypt("same".getBytes(StandardCharsets.UTF_8));
     byte[] b = cipher.encrypt("same".getBytes(StandardCharsets.UTF_8));
-    assertThat(a).isNotEqualTo(b); // different IV → different ciphertext for the same plaintext
+    assertThat(a).isNotEqualTo(b);
   }
 
   @Test
   void tamperedCiphertextIsRefused() {
     AesGcmSecretCipher cipher = new AesGcmSecretCipher(TEST_KEY);
     byte[] encrypted = cipher.encrypt("hi".getBytes(StandardCharsets.UTF_8));
-    encrypted[encrypted.length - 1] ^= 1; // flip the last bit of the auth tag
+    encrypted[encrypted.length - 1] ^= 1;
     assertThatThrownBy(() -> cipher.decrypt(encrypted)).isInstanceOf(IllegalStateException.class);
   }
 
@@ -61,7 +61,6 @@ class AesGcmSecretCipherTest {
 
   @Test
   void emptyKeyFallsBackToDevModeKey() {
-    // Doesn't throw; ciphertext still round-trips. Loud warning is logged separately.
     AesGcmSecretCipher cipher = new AesGcmSecretCipher("");
     byte[] payload = "x".getBytes(StandardCharsets.UTF_8);
     assertThat(cipher.decrypt(cipher.encrypt(payload))).isEqualTo(payload);

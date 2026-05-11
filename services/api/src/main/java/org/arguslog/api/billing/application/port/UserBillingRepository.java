@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.arguslog.api.billing.application.port.OrgPlanRepository.BonusSnapshot;
 import org.arguslog.api.billing.domain.BillingInterval;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 
 /**
  * Read-side port for "what's this user's billing state". The new source of truth for plan

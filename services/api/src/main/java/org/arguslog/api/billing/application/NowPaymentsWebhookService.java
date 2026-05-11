@@ -12,7 +12,7 @@ import org.arguslog.api.billing.application.port.CryptoInvoiceRepository;
 import org.arguslog.api.billing.domain.BillingProvider;
 import org.arguslog.api.billing.domain.CryptoInvoice;
 import org.arguslog.api.billing.domain.CryptoInvoiceStatus;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

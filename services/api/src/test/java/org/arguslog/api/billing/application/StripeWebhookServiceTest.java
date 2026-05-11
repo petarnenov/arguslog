@@ -25,7 +25,7 @@ import org.arguslog.api.billing.application.StripeWebhookUseCase.Outcome;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.application.port.StripeEventLog;
 import org.arguslog.api.billing.domain.BillingInterval;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

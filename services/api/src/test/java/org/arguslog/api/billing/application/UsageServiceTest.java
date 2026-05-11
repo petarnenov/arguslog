@@ -11,7 +11,7 @@ import java.util.Optional;
 import org.arguslog.api.billing.application.UsageUseCase.UsageSnapshot;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.application.port.UsageRepository;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

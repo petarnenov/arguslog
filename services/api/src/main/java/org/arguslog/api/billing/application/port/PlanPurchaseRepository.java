@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import org.arguslog.api.billing.domain.BillingProvider;
 import org.arguslog.api.billing.domain.PlanPurchase;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 
 /**
  * Persistence port for {@link PlanPurchase}. The {@link #recordIfNew} contract guarantees

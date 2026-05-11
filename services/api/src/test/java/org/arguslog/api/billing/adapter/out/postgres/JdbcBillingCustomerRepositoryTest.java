@@ -12,7 +12,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

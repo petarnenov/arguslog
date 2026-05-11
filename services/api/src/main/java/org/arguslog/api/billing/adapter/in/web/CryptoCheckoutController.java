@@ -7,7 +7,7 @@ import org.arguslog.api.billing.application.CryptoCheckoutFailedException;
 import org.arguslog.api.billing.application.CryptoCheckoutNotConfiguredException;
 import org.arguslog.api.billing.application.CryptoCheckoutUseCase;
 import org.arguslog.api.billing.application.CryptoCheckoutUseCase.CheckoutResult;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;

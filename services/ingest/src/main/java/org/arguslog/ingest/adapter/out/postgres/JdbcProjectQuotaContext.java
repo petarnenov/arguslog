@@ -6,7 +6,7 @@ import java.time.Duration;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.ingest.application.port.ProjectQuotaContext;
-import org.arguslog.ingest.domain.IngestPlanTier;
+import org.arguslog.billing.PlanTier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -73,7 +73,7 @@ public class JdbcProjectQuotaContext implements ProjectQuotaContext {
               SQL,
               (rs, rowNum) ->
                   new Context(
-                      rs.getLong("org_id"), IngestPlanTier.fromDbValue(rs.getString("plan_text"))),
+                      rs.getLong("org_id"), PlanTier.fromDbValue(rs.getString("plan_text"))),
               projectId);
       return Optional.ofNullable(row);
     } catch (EmptyResultDataAccessException e) {

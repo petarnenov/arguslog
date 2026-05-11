@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.arguslog.api.billing.domain.BillingInterval;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 
 /**
  * Tiny read-side port for "what's this org currently subscribed to". Lives in the billing module

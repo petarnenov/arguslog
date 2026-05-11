@@ -7,7 +7,7 @@ import java.util.UUID;
 import javax.sql.DataSource;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.billing.domain.BillingInterval;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;

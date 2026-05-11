@@ -10,12 +10,12 @@ import java.util.List;
 import javax.sql.DataSource;
 import org.arguslog.worker.retention.application.port.OrgRetentionRepository;
 import org.arguslog.worker.retention.domain.OrgRetention;
-import org.arguslog.worker.retention.domain.WorkerPlanTier;
+import org.arguslog.billing.PlanTier;
 import org.springframework.stereotype.Repository;
 
 /**
  * Reads {@code organizations.plan} + {@code retention_days_override} and computes effective
- * retention in Java. Plan→duration mapping lives in {@link WorkerPlanTier} so it stays in one place
+ * retention in Java. Plan→duration mapping lives in {@link PlanTier} so it stays in one place
  * (the SQL stays free of CASE statements that would drift from the enum).
  *
  * <p>Filtered in-memory rather than in SQL because org counts are small (one row per tenant) and
@@ -66,7 +66,7 @@ public class JdbcOrgRetentionRepository implements OrgRetentionRepository {
         ResultSet rs = stmt.executeQuery()) {
       while (rs.next()) {
         long orgId = rs.getLong(1);
-        WorkerPlanTier tier = WorkerPlanTier.fromDbValue(rs.getString(2));
+        PlanTier tier = PlanTier.fromDbValue(rs.getString(2));
         int overrideDays = rs.getInt(3);
         boolean hasOverride = !rs.wasNull();
         Duration effective = hasOverride ? Duration.ofDays(overrideDays) : tier.retention();

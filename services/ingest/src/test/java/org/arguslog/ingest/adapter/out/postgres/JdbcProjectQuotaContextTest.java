@@ -13,7 +13,7 @@ import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.ingest.application.port.ProjectQuotaContext;
 import org.arguslog.ingest.application.port.ProjectQuotaContext.Context;
-import org.arguslog.ingest.domain.IngestPlanTier;
+import org.arguslog.billing.PlanTier;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -64,7 +64,7 @@ class JdbcProjectQuotaContextTest {
     Optional<Context> ctx = repository.lookup(101L);
     assertThat(ctx).isPresent();
     assertThat(ctx.orElseThrow().orgId()).isEqualTo(1L);
-    assertThat(ctx.orElseThrow().plan()).isEqualTo(IngestPlanTier.FREE);
+    assertThat(ctx.orElseThrow().plan()).isEqualTo(PlanTier.FREE);
   }
 
   @Test

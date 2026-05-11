@@ -1,5 +1,7 @@
 package org.arguslog.api.billing.domain;
 
+import org.arguslog.billing.PlanTier;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;

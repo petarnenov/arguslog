@@ -22,7 +22,7 @@ import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.MembershipWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.arguslog.api.domain.Member;
 import org.arguslog.api.email.InviteEmailSender;
 import org.junit.jupiter.api.BeforeEach;

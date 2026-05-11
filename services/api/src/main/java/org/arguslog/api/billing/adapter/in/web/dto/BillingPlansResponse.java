@@ -3,7 +3,7 @@ package org.arguslog.api.billing.adapter.in.web.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 
 /**
  * Server-driven pricing config consumed by the public billing page. Frontend reads this once on

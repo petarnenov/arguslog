@@ -30,6 +30,7 @@ dependencies {
     implementation(libs.caffeine)
     // Dogfood — Logback appender emits ingest's own errors back into Arguslog. No-op until
     // ARGUSLOG_DSN is configured.
+    implementation(project(":lib:plan-tier"))
     implementation(project(":java-sdk"))
     // TODO(P5): bucket4j-redis for cross-instance burst limiting; OTel starter for traces.
 

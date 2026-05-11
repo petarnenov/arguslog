@@ -11,7 +11,7 @@ public interface OrgWriteRepository {
   /**
    * Insert a new org with a unique slug derived from {@code baseSlug}. The slug is appended with
    * {@code -2}, {@code -3}, … on collision until a free one is found. {@code planDbValue} is the
-   * lower-case wire value from {@link org.arguslog.api.billing.domain.PlanTier#dbValue()} —
+   * lower-case wire value from {@link org.arguslog.billing.PlanTier#dbValue()} —
    * pass {@code "free"} for first-time creators, or the creator's highest-active tier so new orgs
    * inherit existing paid coverage (GH #38). The renewal/billing identity is NOT inherited; the
    * new org starts a fresh cycle.

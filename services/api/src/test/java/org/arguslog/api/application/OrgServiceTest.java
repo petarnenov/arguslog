@@ -19,7 +19,7 @@ import org.arguslog.api.application.OrgUseCase.OrgQuotaExceededException;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.arguslog.api.domain.Org;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

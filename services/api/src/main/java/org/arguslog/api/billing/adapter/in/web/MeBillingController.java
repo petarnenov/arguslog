@@ -11,7 +11,7 @@ import org.arguslog.api.billing.application.CryptoCheckoutUseCase.CheckoutResult
 import org.arguslog.api.billing.application.PortalUseCase;
 import org.arguslog.api.billing.application.PortalUseCase.NoCustomerException;
 import org.arguslog.api.billing.domain.BillingInterval;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.arguslog.api.security.AuthActor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

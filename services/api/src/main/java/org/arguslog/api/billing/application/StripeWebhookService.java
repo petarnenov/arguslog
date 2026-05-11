@@ -14,7 +14,7 @@ import org.arguslog.api.billing.adapter.out.stripe.StripeProperties;
 import org.arguslog.api.billing.application.port.BillingCustomerRepository;
 import org.arguslog.api.billing.application.port.StripeEventLog;
 import org.arguslog.api.billing.domain.BillingInterval;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

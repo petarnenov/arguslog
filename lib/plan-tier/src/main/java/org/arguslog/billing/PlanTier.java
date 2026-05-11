@@ -1,18 +1,19 @@
-package org.arguslog.api.billing.domain;
+package org.arguslog.billing;
 
 import java.time.Duration;
 import java.util.Locale;
 
 /**
- * Single source of truth for per-plan limits and pricing. The DB column {@code
- * organizations.plan} stores the wire string ({@code "free"}, {@code "starter"}, {@code "pro"},
- * {@code "business"}, {@code "enterprise"}); this enum mirrors it with the actual numeric caps
- * the rest of the app reads.
+ * Single source of truth for per-plan limits and pricing. The DB column {@code users.plan}
+ * (post-V27; previously {@code organizations.plan}) stores the wire string ({@code "free"},
+ * {@code "starter"}, {@code "pro"}, {@code "business"}, {@code "enterprise"}); this enum mirrors
+ * it with the actual numeric caps the rest of the platform reads.
  *
- * <p>Each paid tier is sold as one-time prepaid bundles for 1, 3, 6, or 12 months with an
- * aggressive 0% / 17% / 25% / 33% discount ladder against the monthly base. {@link
- * #priceCentsForDuration(int)} is the canonical price source for new checkout flows; {@link
- * #monthlyPriceCents()} is kept as the per-tier "headline" rate the dashboard renders.
+ * <p>Lives in {@code :lib:plan-tier} so api / ingest / worker all import the same definition —
+ * caps cannot drift between services. Each paid tier is sold as one-time prepaid bundles for 1,
+ * 3, 6, or 12 months with an aggressive 0% / 17% / 25% / 33% discount ladder against the monthly
+ * base. {@link #priceCentsForDuration(int)} is the canonical price source for new checkout flows;
+ * {@link #monthlyPriceCents()} is kept as the per-tier "headline" rate the dashboard renders.
  *
  * <p>Anything that needs a numeric limit — quota enforcer, dashboard banner, project create
  * endpoint, billing page — comes here, NOT to the DB column. Bumping a tier's allowance is one
@@ -137,6 +138,11 @@ public enum PlanTier {
         "Unsupported duration for " + name() + ": " + months + " months. Allowed: 1, 3, 6, 12.");
   }
 
+  /**
+   * Maps the wire/DB string to a tier. Unknown / null values fall back to {@link #FREE} so a
+   * stray row never opens the floodgates (ingest) or keeps data forever (worker retention) —
+   * most restrictive default is the safer pick.
+   */
   public static PlanTier fromDbValue(String raw) {
     if (raw == null) return FREE;
     try {

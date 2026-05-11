@@ -9,7 +9,7 @@ import org.arguslog.api.billing.adapter.out.nowpayments.NowPaymentsClient.Create
 import org.arguslog.api.billing.adapter.out.nowpayments.NowPaymentsProperties;
 import org.arguslog.api.billing.application.port.CryptoInvoiceRepository;
 import org.arguslog.api.billing.domain.CryptoInvoice;
-import org.arguslog.api.billing.domain.PlanTier;
+import org.arguslog.billing.PlanTier;
 import org.arguslog.api.domain.Org;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
