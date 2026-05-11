@@ -138,7 +138,9 @@ export function Web3Panel({ summary }: Web3PanelProps) {
   const { t } = useTranslation();
   const explorer = explorerForChain(summary.chain?.id);
   const chainLabel =
-    summary.chain?.name ?? explorer?.name ?? (summary.chain?.id !== undefined ? String(summary.chain.id) : null);
+    summary.chain?.name ??
+    explorer?.name ??
+    (summary.chain?.id !== undefined ? String(summary.chain.id) : null);
   const kindColor = (summary.kind && KIND_COLOR[summary.kind]) || 'red';
 
   // Decode the most useful one-liner: Anchor error → "ConstraintHasOne: …", EVM → errorName,
@@ -154,7 +156,7 @@ export function Web3Panel({ summary }: Web3PanelProps) {
           ? `${t('issueDetail.web3.customError')} ${summary.customErrorHex}${
               summary.customErrorCode !== undefined ? ` (${summary.customErrorCode})` : ''
             }`
-          : summary.message ?? null;
+          : (summary.message ?? null);
 
   return (
     <Stack gap="xs" data-testid="web3-panel">
@@ -205,7 +207,9 @@ export function Web3Panel({ summary }: Web3PanelProps) {
         <Table.Tbody>
           {summary.contract && (
             <KvRow
-              label={summary.programId ? t('issueDetail.web3.program') : t('issueDetail.web3.contract')}
+              label={
+                summary.programId ? t('issueDetail.web3.program') : t('issueDetail.web3.contract')
+              }
               value={summary.contract}
               href={explorer?.address(summary.contract)}
               testId="web3-contract"

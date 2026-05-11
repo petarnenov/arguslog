@@ -46,19 +46,10 @@ export function BonusBanner({ bonus, plan, variant = 'full' }: BonusBannerProps)
   }
 
   return (
-    <Alert
-      color="violet"
-      variant="light"
-      icon={<IconGift size={20} />}
-      data-testid="bonus-banner"
-    >
+    <Alert color="violet" variant="light" icon={<IconGift size={20} />} data-testid="bonus-banner">
       <Stack gap={4}>
-        <Text fw={600}>
-          {t('bonus.title', { plan: plan.toUpperCase() })}
-        </Text>
-        <Text size="sm">
-          {t('bonus.body', { until: untilAbs, untilRel })}
-        </Text>
+        <Text fw={600}>{t('bonus.title', { plan: plan.toUpperCase() })}</Text>
+        <Text size="sm">{t('bonus.body', { until: untilAbs, untilRel })}</Text>
         {bonus.reason && (
           <Text size="xs" c="dimmed" fs="italic">
             {t('bonus.reasonPrefix')}: {bonus.reason}

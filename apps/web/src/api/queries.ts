@@ -1,11 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
-import {
-  getAdminStats,
-  listAdminAudit,
-  listAdminOrgs,
-  listAdminUsers,
-} from './admin';
+import { getAdminStats, listAdminAudit, listAdminOrgs, listAdminUsers } from './admin';
 import { listAlertDestinations, listAlertRules } from './alerts';
 import { getBillingPlans } from './billing';
 import { getMe } from './me';
@@ -44,8 +39,7 @@ export const queryKeys = {
     ['admin', 'users', q, offset, limit] as const,
   adminOrgs: (q: string, offset: number, limit: number) =>
     ['admin', 'orgs', q, offset, limit] as const,
-  adminAudit: (offset: number, limit: number) =>
-    ['admin', 'audit', offset, limit] as const,
+  adminAudit: (offset: number, limit: number) => ['admin', 'audit', offset, limit] as const,
 };
 
 export function useMyOrgs(options: { enabled?: boolean } = {}) {
@@ -222,11 +216,7 @@ export function useAdminOrgs(
   });
 }
 
-export function useAdminAudit(
-  offset: number,
-  limit: number,
-  options: { enabled?: boolean } = {},
-) {
+export function useAdminAudit(offset: number, limit: number, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.adminAudit(offset, limit),
     queryFn: () => listAdminAudit({ offset, limit }),

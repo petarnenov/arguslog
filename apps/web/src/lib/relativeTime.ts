@@ -18,8 +18,9 @@ export function formatRelativeTime(iso: string, locale = 'en'): string {
   if (!Number.isFinite(ts)) return iso;
   const diffMs = ts - Date.now();
   const abs = Math.abs(diffMs);
-  const unit: { unit: Intl.RelativeTimeFormatUnit; ms: number } =
-    UNITS.find((u) => abs >= u.ms) ?? { unit: 'second', ms: 1000 };
+  const unit: { unit: Intl.RelativeTimeFormatUnit; ms: number } = UNITS.find(
+    (u) => abs >= u.ms,
+  ) ?? { unit: 'second', ms: 1000 };
   const value = Math.round(diffMs / unit.ms);
   return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(value, unit.unit);
 }

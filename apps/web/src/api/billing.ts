@@ -63,13 +63,10 @@ export function getBillingPlans(): Promise<BillingPlansResponse> {
 // membership) under the hood. The org-scoped /api/v1/orgs/:orgId/billing/* endpoints stayed
 // alive on the backend for MCP / external API callers; the dashboard no longer calls them.
 
-export function startMeCheckout(
-  interval: BillingInterval = 'monthly',
-): Promise<CheckoutResponse> {
-  return apiFetch<CheckoutResponse>(
-    `/api/v1/me/billing/checkout-session?interval=${interval}`,
-    { method: 'POST' },
-  );
+export function startMeCheckout(interval: BillingInterval = 'monthly'): Promise<CheckoutResponse> {
+  return apiFetch<CheckoutResponse>(`/api/v1/me/billing/checkout-session?interval=${interval}`, {
+    method: 'POST',
+  });
 }
 
 export function startMeCryptoCheckout(

@@ -69,9 +69,7 @@ export function listAdminUsers(params: {
   offset?: number;
   limit?: number;
 }): Promise<AdminPage<AdminUser>> {
-  return apiFetch<AdminPage<AdminUser>>(
-    `/api/v1/admin/users?${toQuery(params)}`,
-  );
+  return apiFetch<AdminPage<AdminUser>>(`/api/v1/admin/users?${toQuery(params)}`);
 }
 
 export function listAdminOrgs(params: {
@@ -79,18 +77,14 @@ export function listAdminOrgs(params: {
   offset?: number;
   limit?: number;
 }): Promise<AdminPage<AdminOrg>> {
-  return apiFetch<AdminPage<AdminOrg>>(
-    `/api/v1/admin/orgs?${toQuery(params)}`,
-  );
+  return apiFetch<AdminPage<AdminOrg>>(`/api/v1/admin/orgs?${toQuery(params)}`);
 }
 
 export function listAdminAudit(params: {
   offset?: number;
   limit?: number;
 }): Promise<AdminPage<AdminAuditEntry>> {
-  return apiFetch<AdminPage<AdminAuditEntry>>(
-    `/api/v1/admin/audit?${toQuery(params)}`,
-  );
+  return apiFetch<AdminPage<AdminAuditEntry>>(`/api/v1/admin/audit?${toQuery(params)}`);
 }
 
 export function grantBonus(

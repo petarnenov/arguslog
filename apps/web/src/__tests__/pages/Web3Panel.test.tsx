@@ -130,13 +130,9 @@ describe('Web3Panel', () => {
 
   it('renders a clickable etherscan link for an Ethereum mainnet contract', () => {
     renderPanel(
-      <Web3Panel
-        summary={{ kind: 'contract.reverted', chain: { id: 1 }, contract: '0xABCDEF' }}
-      />,
+      <Web3Panel summary={{ kind: 'contract.reverted', chain: { id: 1 }, contract: '0xABCDEF' }} />,
     );
-    const link = screen
-      .getByTestId('web3-contract')
-      .querySelector('a') as HTMLAnchorElement | null;
+    const link = screen.getByTestId('web3-contract').querySelector('a') as HTMLAnchorElement | null;
     expect(link?.href).toBe('https://etherscan.io/address/0xABCDEF');
     expect(link?.target).toBe('_blank');
   });
@@ -159,11 +155,11 @@ describe('Web3Panel', () => {
 
   it('omits explorer link when chain is unknown — value still rendered as code', () => {
     renderPanel(
-      <Web3Panel summary={{ kind: 'contract.reverted', chain: { id: 99999 }, contract: '0xABC' }} />,
+      <Web3Panel
+        summary={{ kind: 'contract.reverted', chain: { id: 99999 }, contract: '0xABC' }}
+      />,
     );
-    const link = screen
-      .getByTestId('web3-contract')
-      .querySelector('a') as HTMLAnchorElement | null;
+    const link = screen.getByTestId('web3-contract').querySelector('a') as HTMLAnchorElement | null;
     expect(link).toBeNull();
     expect(screen.getByTestId('web3-contract')).toHaveTextContent('0xABC');
   });

@@ -194,11 +194,7 @@ export function UserBillingPage() {
               )}
             </Stack>
             {isPaid && (
-              <Button
-                variant="light"
-                loading={portal.isPending}
-                onClick={() => portal.mutate()}
-              >
+              <Button variant="light" loading={portal.isPending} onClick={() => portal.mutate()}>
                 {t('billing.managePortal') ?? 'Manage subscription'}
               </Button>
             )}

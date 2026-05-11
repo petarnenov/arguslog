@@ -111,18 +111,18 @@ ecosystems. The dashboard's project-create dropdown and the marketing
 landing page are both fed live from `/api/v1/platforms` so the catalog
 stays in lockstep with what's actually shipped.
 
-| Runtime         | Package                          | Source                       |
-| --------------- | -------------------------------- | ---------------------------- |
-| Browser (JS/TS) | `@arguslog/sdk-browser`          | `packages/sdk-browser/`      |
-| React           | `@arguslog/sdk-react`            | `packages/sdk-react/`        |
-| Next.js         | `@arguslog/sdk-nextjs`           | `packages/sdk-nextjs/`       |
-| Angular         | `@arguslog/sdk-angular`          | `packages/sdk-angular/`      |
-| Vue 3           | `@arguslog/sdk-vue`              | `packages/sdk-vue/`          |
-| React Native    | `@arguslog/sdk-react-native`     | `packages/sdk-react-native/` |
-| Node.js         | `@arguslog/sdk-node`             | `packages/sdk-node/`         |
-| Java / Spring   | `org.arguslog:arguslog-java-sdk` | `java-sdk/`                  |
-| Python 3.9+     | `arguslog` (PyPI)                | `python-sdk/`                |
-| Web3 (EVM + Solana) | `@arguslog/sdk-web3`         | `packages/sdk-web3/`         |
+| Runtime             | Package                          | Source                       |
+| ------------------- | -------------------------------- | ---------------------------- |
+| Browser (JS/TS)     | `@arguslog/sdk-browser`          | `packages/sdk-browser/`      |
+| React               | `@arguslog/sdk-react`            | `packages/sdk-react/`        |
+| Next.js             | `@arguslog/sdk-nextjs`           | `packages/sdk-nextjs/`       |
+| Angular             | `@arguslog/sdk-angular`          | `packages/sdk-angular/`      |
+| Vue 3               | `@arguslog/sdk-vue`              | `packages/sdk-vue/`          |
+| React Native        | `@arguslog/sdk-react-native`     | `packages/sdk-react-native/` |
+| Node.js             | `@arguslog/sdk-node`             | `packages/sdk-node/`         |
+| Java / Spring       | `org.arguslog:arguslog-java-sdk` | `java-sdk/`                  |
+| Python 3.9+         | `arguslog` (PyPI)                | `python-sdk/`                |
+| Web3 (EVM + Solana) | `@arguslog/sdk-web3`             | `packages/sdk-web3/`         |
 
 A standalone install + quickstart index for every SDK lives in
 [`docs/sdks.md`](docs/sdks.md). The Web3 add-on layers on top of any

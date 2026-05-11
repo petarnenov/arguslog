@@ -288,9 +288,15 @@ function McpSection() {
               </Group>
               <Text c="dimmed">{t('mcp.bullet1Body')}</Text>
               <Group gap="xs">
-                <Badge variant="light" color="violet">@arguslog/mcp-server</Badge>
-                <Badge variant="light" color="gray">stdio</Badge>
-                <Badge variant="light" color="gray">node ≥ 20</Badge>
+                <Badge variant="light" color="violet">
+                  @arguslog/mcp-server
+                </Badge>
+                <Badge variant="light" color="gray">
+                  stdio
+                </Badge>
+                <Badge variant="light" color="gray">
+                  node ≥ 20
+                </Badge>
               </Group>
             </Stack>
           </Card>

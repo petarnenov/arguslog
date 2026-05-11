@@ -37,13 +37,7 @@ import {
   type GrantTier,
 } from '../api/admin';
 import { ApiError } from '../api/client';
-import {
-  useAdminAudit,
-  useAdminOrgs,
-  useAdminStats,
-  useAdminUsers,
-  useMe,
-} from '../api/queries';
+import { useAdminAudit, useAdminOrgs, useAdminStats, useAdminUsers, useMe } from '../api/queries';
 import { formatRelativeTime } from '../lib/relativeTime';
 
 const PAGE_SIZE = 25;
@@ -107,7 +101,11 @@ function OverviewPanel() {
 
   if (stats.isLoading) return <Loader size="sm" />;
   if (stats.isError || !stats.data) {
-    return <Alert color="red" variant="light">{t('errors.generic')}</Alert>;
+    return (
+      <Alert color="red" variant="light">
+        {t('errors.generic')}
+      </Alert>
+    );
   }
   const data = stats.data;
 
@@ -215,7 +213,9 @@ function UsersPanel() {
                         {u.highestPlan}
                       </Badge>
                     ) : (
-                      <Text c="dimmed" size="xs">—</Text>
+                      <Text c="dimmed" size="xs">
+                        —
+                      </Text>
                     )}
                   </Table.Td>
                   <Table.Td>
@@ -233,7 +233,7 @@ function UsersPanel() {
                       >
                         {t('admin.grantAction')}
                       </Button>
-                      {(u.highestPlan && u.highestPlan !== 'free') && (
+                      {u.highestPlan && u.highestPlan !== 'free' && (
                         <UserRevokeButton userId={u.userId} />
                       )}
                     </Group>
@@ -303,12 +303,16 @@ function OrgsPanel() {
                 <Table.Tr key={o.orgId}>
                   <Table.Td>
                     <Stack gap={0}>
-                      <Text size="sm" fw={500}>{o.name}</Text>
+                      <Text size="sm" fw={500}>
+                        {o.name}
+                      </Text>
                       <Code style={{ fontSize: 10 }}>{o.slug}</Code>
                     </Stack>
                   </Table.Td>
                   <Table.Td>
-                    <Text size="xs" c="dimmed">{o.ownerEmail ?? '—'}</Text>
+                    <Text size="xs" c="dimmed">
+                      {o.ownerEmail ?? '—'}
+                    </Text>
                   </Table.Td>
                   <Table.Td>
                     <Badge variant="light" color={planColor(o.plan)}>
@@ -326,7 +330,9 @@ function OrgsPanel() {
                         {formatRelativeTime(o.bonusUntil, i18n.language || 'en')}
                       </Badge>
                     ) : (
-                      <Text c="dimmed" size="xs">—</Text>
+                      <Text c="dimmed" size="xs">
+                        —
+                      </Text>
                     )}
                   </Table.Td>
                   <Table.Td>
@@ -445,7 +451,11 @@ function GrantModal({ org, onClose }: { org: AdminOrg | null; onClose: () => voi
             minRows={2}
             {...form.getInputProps('reason')}
           />
-          {error && <Alert color="red" variant="light">{error}</Alert>}
+          {error && (
+            <Alert color="red" variant="light">
+              {error}
+            </Alert>
+          )}
           <Group justify="flex-end">
             <Button variant="default" onClick={onClose} disabled={mutation.isPending}>
               {t('admin.cancel')}
@@ -540,7 +550,11 @@ function UserGrantModal({ user, onClose }: { user: AdminUser | null; onClose: ()
             minRows={2}
             {...form.getInputProps('reason')}
           />
-          {error && <Alert color="red" variant="light">{error}</Alert>}
+          {error && (
+            <Alert color="red" variant="light">
+              {error}
+            </Alert>
+          )}
           <Group justify="flex-end">
             <Button variant="default" onClick={onClose} disabled={mutation.isPending}>
               {t('admin.cancel')}

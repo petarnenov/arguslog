@@ -138,7 +138,11 @@ export function AppShellLayout() {
                       {t('auth.signedInAs', { name: userLabel })}
                     </Text>
                   </Menu.Label>
-                  <Menu.Item component={Link} to="/billing" leftSection={<IconCreditCard size={14} />}>
+                  <Menu.Item
+                    component={Link}
+                    to="/billing"
+                    leftSection={<IconCreditCard size={14} />}
+                  >
                     {t('nav.billing')}
                   </Menu.Item>
                   <Menu.Item component={Link} to="/me/tokens" leftSection={<IconKey size={14} />}>

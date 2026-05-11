@@ -377,11 +377,7 @@ function ProjectCard({ project, orgSlug, onArchive }: ProjectCardProps) {
               </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item
-                component={Link}
-                to={issuesUrl}
-                leftSection={<IconArrowRight size={14} />}
-              >
+              <Menu.Item component={Link} to={issuesUrl} leftSection={<IconArrowRight size={14} />}>
                 {t('projects.viewIssues')}
               </Menu.Item>
               <Menu.Divider />
