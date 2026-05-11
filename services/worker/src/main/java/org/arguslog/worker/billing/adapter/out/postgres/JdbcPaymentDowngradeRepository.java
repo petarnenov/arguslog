@@ -14,14 +14,14 @@ import org.arguslog.worker.billing.application.port.PaymentDowngradeRepository;
 import org.springframework.stereotype.Repository;
 
 /**
- * Per-user payment downgrade (V27+). Billing identity lives on users, so the worker downgrades
- * the user row directly when their grace window expires and returns the affected org ids
- * (resolved from the downgraded users' owned orgs) so the orchestrator can emit per-org audit /
- * alert events with the same shape it had before V27.
+ * Per-user payment downgrade (V27+). Billing identity lives on users, so the worker downgrades the
+ * user row directly when their grace window expires and returns the affected org ids (resolved from
+ * the downgraded users' owned orgs) so the orchestrator can emit per-org audit / alert events with
+ * the same shape it had before V27.
  *
  * <p>The {@code plan != 'free'} predicate catches every paid tier — STARTER / PRO / BUSINESS /
- * ENTERPRISE. The original {@code plan = 'pro'} predicate was a pre-V23 holdover that quietly
- * left starter/business customers sitting in grace forever.
+ * ENTERPRISE. The original {@code plan = 'pro'} predicate was a pre-V23 holdover that quietly left
+ * starter/business customers sitting in grace forever.
  */
 @Repository
 public class JdbcPaymentDowngradeRepository implements PaymentDowngradeRepository {

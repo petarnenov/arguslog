@@ -16,9 +16,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Resend HTTP send for renewal-reminder emails. Re-uses the alert {@code EmailProperties} (same
- * Resend API key, dashboard base URL) so a single env var configures both surfaces. From-address
- * is hard-coded to {@code billing@<sender-domain>} derived from the alert sender — keeps reply
- * routing predictable without adding more config knobs.
+ * Resend API key, dashboard base URL) so a single env var configures both surfaces. From-address is
+ * hard-coded to {@code billing@<sender-domain>} derived from the alert sender — keeps reply routing
+ * predictable without adding more config knobs.
  */
 @Component
 public class ResendRenewalEmailSender implements RenewalEmailSender {
@@ -37,11 +37,7 @@ public class ResendRenewalEmailSender implements RenewalEmailSender {
 
   @Override
   public boolean send(
-      String recipientEmail,
-      String orgName,
-      String orgSlug,
-      LocalDate expiresAt,
-      int daysAhead) {
+      String recipientEmail, String orgName, String orgSlug, LocalDate expiresAt, int daysAhead) {
     if (!props.configured()) {
       log.warn(
           "resend api key unset; skipping renewal reminder to {} (org={}, days={})",

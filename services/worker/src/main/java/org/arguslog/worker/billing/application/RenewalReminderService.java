@@ -14,10 +14,10 @@ import org.springframework.stereotype.Service;
 /**
  * Daily renewal-reminder pass. For each of T-14 / T-7 / T-1 buckets, queries Pro orgs whose
  * one-time plan expires on that exact day, marks the (org, target_date, kind) as sent (atomic
- * INSERT ON CONFLICT), and only on a successful insert dispatches the Resend email. The dedup
- * write happens FIRST so a re-run of this job — or a sibling worker on Railway — never
- * double-sends the same reminder; the trade-off is that an email transport failure leaves the
- * dedup row in place (we'd rather skip a reminder than spam).
+ * INSERT ON CONFLICT), and only on a successful insert dispatches the Resend email. The dedup write
+ * happens FIRST so a re-run of this job — or a sibling worker on Railway — never double-sends the
+ * same reminder; the trade-off is that an email transport failure leaves the dedup row in place
+ * (we'd rather skip a reminder than spam).
  */
 @Service
 public class RenewalReminderService {

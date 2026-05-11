@@ -8,15 +8,15 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
+import org.arguslog.billing.PlanTier;
 import org.arguslog.worker.retention.application.port.OrgRetentionRepository;
 import org.arguslog.worker.retention.domain.OrgRetention;
-import org.arguslog.billing.PlanTier;
 import org.springframework.stereotype.Repository;
 
 /**
  * Reads {@code organizations.plan} + {@code retention_days_override} and computes effective
- * retention in Java. Plan→duration mapping lives in {@link PlanTier} so it stays in one place
- * (the SQL stays free of CASE statements that would drift from the enum).
+ * retention in Java. Plan→duration mapping lives in {@link PlanTier} so it stays in one place (the
+ * SQL stays free of CASE statements that would drift from the enum).
  *
  * <p>Filtered in-memory rather than in SQL because org counts are small (one row per tenant) and
  * the alternative would duplicate the plan defaults across SQL + Java.

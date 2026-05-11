@@ -25,9 +25,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * V27+ per-user payment downgrade. State lives on users.plan / users.payment_grace_until; this
- * test seeds users (with owned orgs so the repository can resolve org ids for the return value)
- * and asserts the user row flips to free + the org id is returned.
+ * V27+ per-user payment downgrade. State lives on users.plan / users.payment_grace_until; this test
+ * seeds users (with owned orgs so the repository can resolve org ids for the return value) and
+ * asserts the user row flips to free + the org id is returned.
  */
 @Testcontainers
 class JdbcPaymentDowngradeRepositoryTest {
@@ -129,8 +129,16 @@ class JdbcPaymentDowngradeRepositoryTest {
     // ignored their expired grace. V27 broadens to `plan != 'free'` so every paid tier downgrades.
     UUID starterOwner = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa0005");
     UUID businessOwner = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa0006");
-    seedUser(starterOwner, "downgrade-test-5@example.com", "starter", Instant.parse("2026-05-01T00:00:00Z"));
-    seedUser(businessOwner, "downgrade-test-6@example.com", "business", Instant.parse("2026-05-02T00:00:00Z"));
+    seedUser(
+        starterOwner,
+        "downgrade-test-5@example.com",
+        "starter",
+        Instant.parse("2026-05-01T00:00:00Z"));
+    seedUser(
+        businessOwner,
+        "downgrade-test-6@example.com",
+        "business",
+        Instant.parse("2026-05-02T00:00:00Z"));
     long starterOrg = seedOrg("org-5", "Starter Org");
     long businessOrg = seedOrg("org-6", "Business Org");
     seedMembership(starterOrg, starterOwner);
