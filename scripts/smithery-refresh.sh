@@ -28,7 +28,7 @@ PAYLOAD=$(cat <<JSON
         "x-to": { "header": "Authorization" },
         "x-from": { "header": "bearerToken" },
         "x-order": 0,
-        "description": "Personal Access Token from your Arguslog dashboard → Personal access tokens (format: arglog_pat_...). PAT scopes gate writes server-side — read tools work with any PAT, writes require the matching scope (orgs:write, releases:write, etc.).",
+        "description": "PAT from your Arguslog dashboard → Personal access tokens (format: arglog_pat_...).",
         "format": "password"
       },
       "apiUrl": {
@@ -36,7 +36,7 @@ PAYLOAD=$(cat <<JSON
         "x-to": { "header": "X-Arguslog-Api-Url" },
         "x-order": 1,
         "default": "https://api.arguslog.org",
-        "description": "Override only for self-hosted Arguslog or a staging environment. Leave blank for the production cloud at https://api.arguslog.org.",
+        "description": "Override only for self-hosted Arguslog. Leave blank for https://api.arguslog.org.",
         "format": "uri"
       }
     }
