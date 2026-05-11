@@ -35,6 +35,39 @@
   --pf-v5-global--Color--100: var(--arguslog-text);
   --pf-v5-global--Color--200: var(--arguslog-text-dim);
   --pf-v5-global--BorderColor--100: var(--arguslog-border);
+
+  /* PatternFly draws a 1px bottom-border on every form control via ::after pseudo and a
+   * full-perimeter border on buttons. The dark theme makes that line read as white. Zero
+   * the relevant CSS vars in one place so we don't have to chase pseudo-element rules. */
+  --pf-v5-c-form-control--BorderTopColor: transparent;
+  --pf-v5-c-form-control--BorderRightColor: transparent;
+  --pf-v5-c-form-control--BorderBottomColor: transparent;
+  --pf-v5-c-form-control--BorderLeftColor: transparent;
+  --pf-v5-c-form-control--after--BorderBottomColor: transparent;
+  --pf-v5-c-form-control--after--BorderBottomWidth: 0;
+  --pf-v5-c-form-control--hover--after--BorderBottomColor: var(--arguslog-primary);
+  --pf-v5-c-form-control--focus--after--BorderBottomColor: var(--arguslog-primary);
+  --pf-v5-c-button--BorderColor: transparent;
+  --pf-v5-c-button--BorderWidth: 0;
+  --pf-v5-c-button--after--BorderColor: transparent;
+  --pf-v5-c-button--after--BorderWidth: 0;
+  --pf-v5-c-input-group--BackgroundColor: transparent;
+  --pf-v5-c-input-group--c-form-control--BorderColor: transparent;
+}
+
+/* Nuclear pass for ::after / ::before pseudo-elements PatternFly uses to fake the form
+ * control bottom-border + the button hover/focus ring. Zero-ing the CSS vars above
+ * should be enough, but inline-style or template-level overrides occasionally slip past
+ * so we belt-and-braces this. */
+.pf-v5-c-form-control::after,
+.pf-v5-c-form-control::before,
+.pf-v5-c-input-group::after,
+.pf-v5-c-input-group::before,
+.pf-v5-c-button::after,
+.pf-v5-c-button::before {
+  border: 0 !important;
+  box-shadow: none !important;
+  content: none !important;
 }
 
 html,
