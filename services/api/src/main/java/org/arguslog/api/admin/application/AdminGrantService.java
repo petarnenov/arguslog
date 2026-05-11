@@ -68,6 +68,47 @@ public class AdminGrantService {
     audit(adminUser, adminEmail, "revoke_grant", "org", String.valueOf(orgId), Map.of());
   }
 
+  /**
+   * Per-user grant — the V26+ direct path. Granting at the user level avoids the legacy "which
+   * org gets the bonus" ambiguity for users with multiple owned orgs; the bonus tier now covers
+   * every org the user owns automatically (per-user billing model).
+   */
+  @Transactional
+  public void grantToUser(
+      UUID targetUserId,
+      String tierRaw,
+      int months,
+      String reason,
+      UUID adminUser,
+      String adminEmail) {
+    PlanTier tier = parseTier(tierRaw);
+    if (!tier.isPaid()) {
+      throw new IllegalArgumentException(
+          "Bonus grants only apply to paid tiers (starter / pro / business). Use revokeUser() to drop to free.");
+    }
+    requireValidMonths(months);
+    Instant until = Instant.now().plus(Duration.ofDays(months * 30L));
+    port.recordUserGrant(targetUserId, tier.dbValue(), until, adminUser, reason);
+    audit(
+        adminUser,
+        adminEmail,
+        "grant_plan",
+        "user",
+        targetUserId.toString(),
+        Map.of(
+            "tier", tier.dbValue(),
+            "months", months,
+            "until", until.toString(),
+            "reason", reason == null ? "" : reason));
+  }
+
+  @Transactional
+  public void revokeUser(UUID targetUserId, UUID adminUser, String adminEmail) {
+    port.revokeUserGrant(targetUserId);
+    audit(
+        adminUser, adminEmail, "revoke_grant", "user", targetUserId.toString(), Map.of());
+  }
+
   private void audit(
       UUID adminUser,
       String adminEmail,

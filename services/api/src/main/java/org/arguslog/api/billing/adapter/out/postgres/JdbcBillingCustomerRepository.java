@@ -49,6 +49,12 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
         "UPDATE organizations SET stripe_customer_id = ?, updated_at = NOW() WHERE id = ?",
         customerId,
         orgId);
+    // Dual-write Stripe customer identity onto the org's primary owner so the per-user billing
+    // path (V26+) can resolve "which user is this Stripe customer" without a JOIN through orgs.
+    jdbc.update(
+        "UPDATE users SET stripe_customer_id = ? WHERE id = " + primaryOwnerSubquery(),
+        customerId,
+        orgId);
   }
 
   @Override
@@ -60,6 +66,12 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
         // Use TIMESTAMP not TIMESTAMP_WITH_TIMEZONE — the latter refuses java.sql.Timestamp; the
         // Postgres JDBC driver coerces UTC-anchored Timestamps into TIMESTAMPTZ correctly anyway.
         new int[] {Types.OTHER, Types.TIMESTAMP, Types.BIGINT});
+    // Mirror onto the org's primary owner — readers (cap-checks, admin table) consult users.plan
+    // since V26, so without this dual-write a Stripe upgrade would silently miss the cap raise.
+    jdbc.update(
+        "UPDATE users SET plan = ?::org_plan, plan_renews_at = ? WHERE id = " + primaryOwnerSubquery(),
+        new Object[] {planDbValue, renewsAt == null ? null : Timestamp.from(renewsAt), orgId},
+        new int[] {Types.OTHER, Types.TIMESTAMP, Types.BIGINT});
   }
 
   @Override
@@ -67,6 +79,11 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
     jdbc.update(
         "UPDATE organizations SET billing_interval = ?::billing_interval_t, updated_at = NOW()"
             + " WHERE id = ?",
+        new Object[] {intervalDbValue, orgId},
+        new int[] {Types.OTHER, Types.BIGINT});
+    jdbc.update(
+        "UPDATE users SET billing_interval = ?::billing_interval_t WHERE id = "
+            + primaryOwnerSubquery(),
         new Object[] {intervalDbValue, orgId},
         new int[] {Types.OTHER, Types.BIGINT});
   }
@@ -79,6 +96,12 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
                 + " WHERE id = ? AND (payment_grace_until IS NULL OR payment_grace_until < NOW())",
             new Object[] {Timestamp.from(graceUntil), orgId},
             new int[] {Types.TIMESTAMP, Types.BIGINT});
+    if (rows == 1) {
+      jdbc.update(
+          "UPDATE users SET payment_grace_until = ? WHERE id = " + primaryOwnerSubquery(),
+          new Object[] {Timestamp.from(graceUntil), orgId},
+          new int[] {Types.TIMESTAMP, Types.BIGINT});
+    }
     return rows == 1;
   }
 
@@ -87,5 +110,32 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
     jdbc.update(
         "UPDATE organizations SET payment_grace_until = NULL, updated_at = NOW() WHERE id = ?",
         orgId);
+    jdbc.update(
+        "UPDATE users SET payment_grace_until = NULL WHERE id = " + primaryOwnerSubquery(), orgId);
+  }
+
+  /**
+   * SQL fragment that resolves to the "primary owner" user_id of {@code ?} (the org id). The
+   * tiebreak rule matches {@link JdbcOrgPlanRepository}: highest current plan tier wins, ties
+   * broken by earliest membership. Inlined as a subquery so each dual-write stays a single
+   * statement — the alternative was two round-trips per Stripe event, which add up under load.
+   */
+  private static String primaryOwnerSubquery() {
+    return """
+        (SELECT m.user_id
+           FROM org_members m
+           JOIN users u ON u.id = m.user_id
+          WHERE m.org_id = ? AND m.role = 'owner'::org_role
+          ORDER BY CASE u.plan
+                     WHEN 'enterprise' THEN 5
+                     WHEN 'business'   THEN 4
+                     WHEN 'pro'        THEN 3
+                     WHEN 'starter'    THEN 2
+                     WHEN 'free'       THEN 1
+                     ELSE 0
+                   END DESC,
+                   m.added_at ASC
+          LIMIT 1)
+        """;
   }
 }

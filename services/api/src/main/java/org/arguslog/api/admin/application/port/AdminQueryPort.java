@@ -39,6 +39,21 @@ public interface AdminQueryPort {
 
   void revokeGrant(long orgId);
 
+  /**
+   * Per-user grant — bonus plan applied directly to a user (V26+ source of truth). Updates the
+   * org rows of the user's owned orgs too, mirroring the dual-write semantics in {@link
+   * #recordGrant(long, String, java.time.Instant, UUID, String)} so old org-level reads stay
+   * consistent during the V27 deprecation window.
+   */
+  void recordUserGrant(
+      UUID userId, String plan, java.time.Instant until, UUID grantedBy, String reason);
+
+  /** Per-user revoke — clears the user's bonus + plan back to free, mirrors onto owned orgs. */
+  void revokeUserGrant(UUID userId);
+
+  /** Active per-user grant if any (users.bonus_until in the future), else empty. */
+  Optional<BonusGrant> findActiveUserBonus(UUID userId);
+
   List<AdminAuditEntry> listAudit(int offset, int limit);
 
   long countAudit();

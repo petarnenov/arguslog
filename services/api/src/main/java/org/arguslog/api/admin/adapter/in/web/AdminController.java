@@ -111,6 +111,28 @@ public class AdminController {
     return ResponseEntity.noContent().build();
   }
 
+  /**
+   * Per-user grant — the V26+ direct surface. Targets a user instead of an org, so the bonus tier
+   * automatically covers every org that user owns (per-user billing). The old org-scoped grant
+   * endpoint above stays around as a compat shim; new code paths should call this one.
+   */
+  @PostMapping(value = "/users/{userId}/grant", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> grantUser(
+      @PathVariable UUID userId, @RequestBody GrantBonusRequest body) {
+    String adminEmail = guard.requireAdmin();
+    UUID adminUser = AuthActor.currentUserId();
+    grants.grantToUser(userId, body.tier(), body.months(), body.reason(), adminUser, adminEmail);
+    return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/users/{userId}/grant")
+  public ResponseEntity<Void> revokeUser(@PathVariable UUID userId) {
+    String adminEmail = guard.requireAdmin();
+    UUID adminUser = AuthActor.currentUserId();
+    grants.revokeUser(userId, adminUser, adminEmail);
+    return ResponseEntity.noContent().build();
+  }
+
   @GetMapping("/audit")
   public AdminPageResponse<AdminAuditResponse> audit(
       @RequestParam(required = false) Integer offset,

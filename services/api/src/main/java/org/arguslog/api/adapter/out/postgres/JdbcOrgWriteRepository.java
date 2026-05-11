@@ -21,15 +21,19 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
   }
 
   @Override
-  public Org create(String slug, String name) {
+  public Org create(String slug, String name, String planDbValue) {
     // ON CONFLICT DO NOTHING returns zero rows on collision instead of throwing — the surrounding
     // @Transactional in OrgService stays clean (a raised unique-violation would poison the tx with
     // "current transaction is aborted"). We surface a domain-level duplicate exception so the
     // controller can map it to a friendly 409 instead of leaking a 500.
+    //
+    // planDbValue carries the creator's highest active plan tier (GH #38) so a paying user who
+    // spins up a side org gets the same coverage automatically. Renewal/billing identity is NOT
+    // copied — the new org starts a fresh cycle on the same tier.
     Org inserted =
         jdbc.query(
             """
-            INSERT INTO organizations (slug, name) VALUES (?, ?)
+            INSERT INTO organizations (slug, name, plan) VALUES (?, ?, ?::org_plan)
             ON CONFLICT (slug) DO NOTHING
             RETURNING id, plan::text AS plan, created_at
             """,
@@ -43,7 +47,8 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
                   rs.getTimestamp("created_at").toInstant());
             },
             slug,
-            name);
+            name,
+            planDbValue);
     if (inserted == null) {
       throw new DuplicateOrgException(
           "An organization with this name already exists. Please choose a different name.");
@@ -71,13 +76,33 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
 
   @Override
   public Optional<Org> findById(long orgId) {
+    // V26+: the displayed plan is the org's primary-owner's user.plan, not the legacy o.plan.
+    // Without this JOIN, a user's other orgs render their old FREE tier even after a grant
+    // hits one of them — the visible bug behind the per-user billing rewrite.
     try {
       Org org =
           jdbc.queryForObject(
               """
-              SELECT id, slug, name, plan::text AS plan, created_at
-                FROM organizations
-               WHERE id = ?
+              SELECT o.id, o.slug, o.name, COALESCE(ou.plan, o.plan)::text AS plan, o.created_at
+                FROM organizations o
+                LEFT JOIN LATERAL (
+                  SELECT m.user_id
+                    FROM org_members m
+                    JOIN users u ON u.id = m.user_id
+                   WHERE m.org_id = o.id AND m.role = 'owner'::org_role
+                   ORDER BY CASE u.plan
+                              WHEN 'enterprise' THEN 5
+                              WHEN 'business'   THEN 4
+                              WHEN 'pro'        THEN 3
+                              WHEN 'starter'    THEN 2
+                              WHEN 'free'       THEN 1
+                              ELSE 0
+                            END DESC,
+                            m.added_at ASC
+                   LIMIT 1
+                ) AS owner ON TRUE
+                LEFT JOIN users ou ON ou.id = owner.user_id
+               WHERE o.id = ?
               """,
               (rs, rowNum) ->
                   new Org(
@@ -110,11 +135,30 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
 
   @Override
   public List<Org> listForUser(UUID userId) {
+    // Plan column resolved via primary-owner's user.plan (V26+). The user's "My orgs" list and
+    // every Org dropdown shows the effective tier regardless of which org was last billed.
     return jdbc.query(
         """
-        SELECT o.id, o.slug, o.name, o.plan::text AS plan, o.created_at
+        SELECT o.id, o.slug, o.name, COALESCE(ou.plan, o.plan)::text AS plan, o.created_at
           FROM organizations o
           JOIN org_members m ON m.org_id = o.id
+          LEFT JOIN LATERAL (
+            SELECT mm.user_id
+              FROM org_members mm
+              JOIN users u ON u.id = mm.user_id
+             WHERE mm.org_id = o.id AND mm.role = 'owner'::org_role
+             ORDER BY CASE u.plan
+                        WHEN 'enterprise' THEN 5
+                        WHEN 'business'   THEN 4
+                        WHEN 'pro'        THEN 3
+                        WHEN 'starter'    THEN 2
+                        WHEN 'free'       THEN 1
+                        ELSE 0
+                      END DESC,
+                      mm.added_at ASC
+             LIMIT 1
+          ) AS owner ON TRUE
+          LEFT JOIN users ou ON ou.id = owner.user_id
          WHERE m.user_id = ?
          ORDER BY o.slug ASC
         """,

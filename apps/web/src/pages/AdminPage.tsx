@@ -29,6 +29,9 @@ import { Navigate } from 'react-router';
 import {
   grantBonus,
   revokeBonus,
+  grantUserBonus,
+  revokeUserBonus,
+  type AdminUser,
   type AdminOrg,
   type GrantMonths,
   type GrantTier,
@@ -154,6 +157,7 @@ function UsersPanel() {
   const { t, i18n } = useTranslation();
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
+  const [userGrantTarget, setUserGrantTarget] = useState<AdminUser | null>(null);
   const offset = (page - 1) * PAGE_SIZE;
   const users = useAdminUsers(q, offset, PAGE_SIZE);
   const total = users.data?.total ?? 0;
@@ -189,6 +193,7 @@ function UsersPanel() {
                 <Table.Th>{t('admin.colMember')}</Table.Th>
                 <Table.Th>{t('admin.colPlan')}</Table.Th>
                 <Table.Th>{t('admin.colCreated')}</Table.Th>
+                <Table.Th style={{ textAlign: 'right' }}>{t('admin.colActions')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -218,12 +223,28 @@ function UsersPanel() {
                       {formatRelativeTime(u.createdAt, i18n.language || 'en')}
                     </Text>
                   </Table.Td>
+                  <Table.Td>
+                    <Group gap="xs" justify="flex-end">
+                      <Button
+                        size="xs"
+                        variant="light"
+                        leftSection={<IconGift size={12} />}
+                        onClick={() => setUserGrantTarget(u)}
+                      >
+                        {t('admin.grantAction')}
+                      </Button>
+                      {(u.highestPlan && u.highestPlan !== 'free') && (
+                        <UserRevokeButton userId={u.userId} />
+                      )}
+                    </Group>
+                  </Table.Td>
                 </Table.Tr>
               ))}
             </Table.Tbody>
           </Table>
         </Card>
       )}
+      <UserGrantModal user={userGrantTarget} onClose={() => setUserGrantTarget(null)} />
       {totalPages > 1 && (
         <Group justify="center">
           <Pagination total={totalPages} value={page} onChange={setPage} />
@@ -394,6 +415,101 @@ function GrantModal({ org, onClose }: { org: AdminOrg | null; onClose: () => voi
       opened={org !== null}
       onClose={onClose}
       title={t('admin.grantTitle', { name: org?.name ?? '' })}
+      size="md"
+    >
+      <form onSubmit={form.onSubmit((values) => mutation.mutate(values))}>
+        <Stack>
+          <Select
+            label={t('admin.grantTierLabel')}
+            data={[
+              { value: 'starter', label: 'Starter — $11.99/mo' },
+              { value: 'pro', label: 'Pro — $29.99/mo' },
+              { value: 'business', label: 'Business — $79.99/mo' },
+            ]}
+            {...form.getInputProps('tier')}
+          />
+          <Select
+            label={t('admin.grantMonthsLabel')}
+            data={[
+              { value: '1', label: '1 month' },
+              { value: '3', label: '3 months' },
+              { value: '6', label: '6 months' },
+              { value: '12', label: '12 months' },
+            ]}
+            value={String(form.values.months)}
+            onChange={(v) => form.setFieldValue('months', Number(v) as GrantMonths)}
+          />
+          <Textarea
+            label={t('admin.grantReasonLabel')}
+            description={t('admin.grantReasonHint')}
+            minRows={2}
+            {...form.getInputProps('reason')}
+          />
+          {error && <Alert color="red" variant="light">{error}</Alert>}
+          <Group justify="flex-end">
+            <Button variant="default" onClick={onClose} disabled={mutation.isPending}>
+              {t('admin.cancel')}
+            </Button>
+            <Button type="submit" loading={mutation.isPending}>
+              {t('admin.grantConfirm')}
+            </Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
+  );
+}
+
+function UserRevokeButton({ userId }: { userId: string }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const m = useMutation({
+    mutationFn: () => revokeUserBonus(userId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin'] });
+    },
+  });
+  return (
+    <Button
+      size="xs"
+      variant="subtle"
+      color="red"
+      leftSection={<IconTrash size={12} />}
+      loading={m.isPending}
+      onClick={() => m.mutate()}
+    >
+      {t('admin.revokeAction')}
+    </Button>
+  );
+}
+
+function UserGrantModal({ user, onClose }: { user: AdminUser | null; onClose: () => void }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const form = useForm<GrantFormValues>({
+    initialValues: { tier: 'pro', months: 1, reason: '' },
+  });
+  const mutation = useMutation({
+    mutationFn: async (values: GrantFormValues) => {
+      if (!user) throw new Error('no user');
+      await grantUserBonus(user.userId, values);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin'] });
+      form.reset();
+      onClose();
+    },
+  });
+  const error =
+    mutation.error instanceof ApiError
+      ? (mutation.error.problem.detail ?? mutation.error.problem.title)
+      : null;
+
+  return (
+    <Modal
+      opened={user !== null}
+      onClose={onClose}
+      title={t('admin.grantTitle', { name: user?.email ?? user?.displayName ?? '' })}
       size="md"
     >
       <form onSubmit={form.onSubmit((values) => mutation.mutate(values))}>

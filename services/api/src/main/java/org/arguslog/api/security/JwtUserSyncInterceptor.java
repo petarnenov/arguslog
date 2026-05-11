@@ -63,6 +63,14 @@ public class JwtUserSyncInterceptor implements HandlerInterceptor {
     if (displayName == null || displayName.isBlank()) {
       displayName = jwt.getClaimAsString("preferred_username");
     }
+    if (displayName == null || displayName.isBlank()) {
+      // GH #39 — magic-link sign-in tokens can carry only `email` (no `name`, no
+      // `preferred_username`), so the email's local-part is our last-resort display name.
+      // Writing NULL here is forbidden: the Members UI keys "(invitation pending)" off
+      // display_name == NULL, so a NULL write makes a fully-signed-in invitee look stuck.
+      int at = email.indexOf('@');
+      displayName = at > 0 ? email.substring(0, at) : email;
+    }
 
     UUID sub;
     try {

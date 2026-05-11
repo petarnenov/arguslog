@@ -91,20 +91,7 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
           u.created_at      AS created_at,
           (SELECT COUNT(*) FROM org_members m WHERE m.user_id = u.id AND m.role = 'owner') AS owned,
           (SELECT COUNT(*) FROM org_members m WHERE m.user_id = u.id AND m.role <> 'owner') AS membered,
-          (
-            SELECT o.plan::text
-              FROM org_members m
-              JOIN organizations o ON o.id = m.org_id
-             WHERE m.user_id = u.id AND m.role = 'owner'
-             ORDER BY CASE o.plan
-                        WHEN 'business' THEN 4
-                        WHEN 'pro'      THEN 3
-                        WHEN 'starter'  THEN 2
-                        WHEN 'free'     THEN 1
-                        ELSE 0
-                      END DESC
-             LIMIT 1
-          ) AS highest_plan
+          u.plan::text AS highest_plan
         FROM users u
         WHERE (?::text IS NULL
                OR LOWER(u.email) LIKE ?
@@ -188,13 +175,17 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
 
   private String orgQuery(boolean withSearch, boolean withPaging) {
     StringBuilder sb = new StringBuilder();
+    // Per-user billing (V26+): plan / renews / bonus / grace come from the org's primary
+    // owner's user row, not the org row itself. Tiebreaker for multi-owner is "highest tier
+    // first, then earliest membership" — same rule as JdbcOrgPlanRepository so the admin table
+    // and runtime cap-checks always agree on which owner is "primary".
     sb.append(
         """
         SELECT
           o.id                   AS org_id,
           o.slug                 AS slug,
           o.name                 AS name,
-          o.plan::text           AS plan,
+          ou.plan::text          AS plan,
           o.created_at           AS created_at,
           owner.user_id          AS owner_id,
           ou.email               AS owner_email,
@@ -207,17 +198,26 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
              WHERE p.org_id = o.id
                AND e.received_at > NOW() - INTERVAL '30 days'
           ), 0) AS events30d,
-          o.plan_renews_at       AS plan_renews_at,
-          o.bonus_until          AS bonus_until,
-          o.bonus_reason         AS bonus_reason,
-          (SELECT bu.email FROM users bu WHERE bu.id = o.bonus_granted_by) AS bonus_granted_by_email,
-          o.payment_grace_until  AS payment_grace_until
+          ou.plan_renews_at      AS plan_renews_at,
+          ou.bonus_until         AS bonus_until,
+          ou.bonus_reason        AS bonus_reason,
+          (SELECT bu.email FROM users bu WHERE bu.id = ou.bonus_granted_by) AS bonus_granted_by_email,
+          ou.payment_grace_until AS payment_grace_until
         FROM organizations o
         LEFT JOIN LATERAL (
           SELECT m.user_id
             FROM org_members m
+            JOIN users u ON u.id = m.user_id
            WHERE m.org_id = o.id AND m.role = 'owner'
-           ORDER BY m.added_at ASC
+           ORDER BY CASE u.plan
+                      WHEN 'enterprise' THEN 5
+                      WHEN 'business'   THEN 4
+                      WHEN 'pro'        THEN 3
+                      WHEN 'starter'    THEN 2
+                      WHEN 'free'       THEN 1
+                      ELSE 0
+                    END DESC,
+                    m.added_at ASC
            LIMIT 1
         ) AS owner ON TRUE
         LEFT JOIN users ou ON ou.id = owner.user_id
@@ -291,6 +291,11 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
 
   @Override
   public void recordGrant(long orgId, String plan, Instant until, UUID grantedBy, String reason) {
+    // Dual-write: org row keeps the historical record so V27 can drop it cleanly later, but the
+    // user row is the new source of truth for cap-checks and admin reads. The grant lands on the
+    // org's primary owner (highest tier, earliest membership tiebreak — same rule as readers).
+    String planLc = plan.toLowerCase(Locale.ROOT);
+    Timestamp untilTs = Timestamp.from(until);
     jdbc.update(
         """
         UPDATE organizations
@@ -301,8 +306,38 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
                bonus_reason     = ?
          WHERE id = ?
         """,
-        plan.toLowerCase(Locale.ROOT),
-        Timestamp.from(until),
+        planLc,
+        untilTs,
+        grantedBy,
+        reason,
+        orgId);
+    jdbc.update(
+        """
+        UPDATE users
+           SET plan = ?::org_plan,
+               bonus_until      = ?,
+               bonus_granted_by = ?,
+               bonus_granted_at = NOW(),
+               bonus_reason     = ?
+         WHERE id = (
+           SELECT m.user_id
+             FROM org_members m
+             JOIN users u ON u.id = m.user_id
+            WHERE m.org_id = ? AND m.role = 'owner'::org_role
+            ORDER BY CASE u.plan
+                       WHEN 'enterprise' THEN 5
+                       WHEN 'business'   THEN 4
+                       WHEN 'pro'        THEN 3
+                       WHEN 'starter'    THEN 2
+                       WHEN 'free'       THEN 1
+                       ELSE 0
+                     END DESC,
+                     m.added_at ASC
+            LIMIT 1
+         )
+        """,
+        planLc,
+        untilTs,
         grantedBy,
         reason,
         orgId);
@@ -321,6 +356,136 @@ public class JdbcAdminQueryRepository implements AdminQueryPort {
          WHERE id = ?
         """,
         orgId);
+    // Mirror revoke to the org's primary owner — see recordGrant for the picker logic.
+    jdbc.update(
+        """
+        UPDATE users
+           SET plan = 'free'::org_plan,
+               bonus_until      = NULL,
+               bonus_granted_by = NULL,
+               bonus_granted_at = NULL,
+               bonus_reason     = NULL
+         WHERE id = (
+           SELECT m.user_id
+             FROM org_members m
+             JOIN users u ON u.id = m.user_id
+            WHERE m.org_id = ? AND m.role = 'owner'::org_role
+            ORDER BY CASE u.plan
+                       WHEN 'enterprise' THEN 5
+                       WHEN 'business'   THEN 4
+                       WHEN 'pro'        THEN 3
+                       WHEN 'starter'    THEN 2
+                       WHEN 'free'       THEN 1
+                       ELSE 0
+                     END DESC,
+                     m.added_at ASC
+            LIMIT 1
+         )
+        """,
+        orgId);
+  }
+
+  @Override
+  public void recordUserGrant(
+      UUID userId, String plan, Instant until, UUID grantedBy, String reason) {
+    String planLc = plan.toLowerCase(Locale.ROOT);
+    Timestamp untilTs = Timestamp.from(until);
+    // Source of truth — users row.
+    jdbc.update(
+        """
+        UPDATE users
+           SET plan = ?::org_plan,
+               bonus_until      = ?,
+               bonus_granted_by = ?,
+               bonus_granted_at = NOW(),
+               bonus_reason     = ?
+         WHERE id = ?
+        """,
+        planLc,
+        untilTs,
+        grantedBy,
+        reason,
+        userId);
+    // Mirror to every org the user owns — keeps legacy o.plan reads consistent during the V27
+    // deprecation window. New code paths read user.plan; this dual-write only matters until the
+    // org-level columns are dropped.
+    jdbc.update(
+        """
+        UPDATE organizations o
+           SET plan = ?::org_plan,
+               bonus_until      = ?,
+               bonus_granted_by = ?,
+               bonus_granted_at = NOW(),
+               bonus_reason     = ?
+          FROM org_members m
+         WHERE m.org_id = o.id
+           AND m.user_id = ?
+           AND m.role = 'owner'::org_role
+        """,
+        planLc,
+        untilTs,
+        grantedBy,
+        reason,
+        userId);
+  }
+
+  @Override
+  public void revokeUserGrant(UUID userId) {
+    jdbc.update(
+        """
+        UPDATE users
+           SET plan = 'free'::org_plan,
+               bonus_until      = NULL,
+               bonus_granted_by = NULL,
+               bonus_granted_at = NULL,
+               bonus_reason     = NULL
+         WHERE id = ?
+        """,
+        userId);
+    jdbc.update(
+        """
+        UPDATE organizations o
+           SET plan = 'free'::org_plan,
+               bonus_until      = NULL,
+               bonus_granted_by = NULL,
+               bonus_granted_at = NULL,
+               bonus_reason     = NULL
+          FROM org_members m
+         WHERE m.org_id = o.id
+           AND m.user_id = ?
+           AND m.role = 'owner'::org_role
+        """,
+        userId);
+  }
+
+  @Override
+  public Optional<BonusGrant> findActiveUserBonus(UUID userId) {
+    try {
+      return Optional.ofNullable(
+          jdbc.queryForObject(
+              """
+              SELECT u.bonus_until,
+                     u.bonus_granted_at,
+                     u.bonus_granted_by,
+                     gb.email AS granted_by_email,
+                     u.bonus_reason
+                FROM users u
+                LEFT JOIN users gb ON gb.id = u.bonus_granted_by
+               WHERE u.id = ?
+                 AND u.bonus_until IS NOT NULL
+                 AND u.bonus_until > NOW()
+              """,
+              (rs, rowNum) ->
+                  new BonusGrant(
+                      toInstant(rs, "bonus_until"),
+                      toInstant(rs, "bonus_granted_at"),
+                      (UUID) rs.getObject("bonus_granted_by"),
+                      rs.getString("granted_by_email"),
+                      rs.getString("bonus_reason")),
+              userId));
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
   }
 
   @Override

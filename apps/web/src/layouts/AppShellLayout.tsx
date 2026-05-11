@@ -79,7 +79,14 @@ export function AppShellLayout() {
       return deleteOrg(currentOrg.id);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.myOrgs() });
+      // Both the user's own org list AND every cached admin view (orgs list, stats counters,
+      // future audit entries) reference this org by id, so invalidate the whole admin prefix.
+      // Without this, a platform admin who navigates to /admin/orgs after deleting their own
+      // org sees the deleted row until React Query's 30s staleTime elapses (GH #42).
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.myOrgs() }),
+        queryClient.invalidateQueries({ queryKey: ['admin'] }),
+      ]);
       setDeleteOpen(false);
       setConfirmName('');
       setDeleteError(null);
