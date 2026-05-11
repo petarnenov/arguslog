@@ -81,18 +81,18 @@
 /* Nuclear pass for ::after / ::before pseudo-elements PatternFly uses to fake the form
  * control bottom-border + the button hover/focus ring. Zero-ing the CSS vars above
  * should be enough, but inline-style or template-level overrides occasionally slip past
- * so we belt-and-braces this. */
-.pf-c-form-control,
+ * so we belt-and-braces this. Covers both PF4 (.pf-c-*) and PF5 (.pf-v5-c-*). */
+.pf-c-form-control::after,
+.pf-c-form-control::before,
 .pf-v5-c-form-control::after,
-.pf-c-form-control,
 .pf-v5-c-form-control::before,
-.pf-c-input-group,
+.pf-c-input-group::after,
+.pf-c-input-group::before,
 .pf-v5-c-input-group::after,
-.pf-c-input-group,
 .pf-v5-c-input-group::before,
-.pf-c-button,
+.pf-c-button::after,
+.pf-c-button::before,
 .pf-v5-c-button::after,
-.pf-c-button,
 .pf-v5-c-button::before {
   border: 0 !important;
   box-shadow: none !important;
@@ -216,7 +216,7 @@ input[type='email'],
   box-shadow: none !important;
 }
 input:focus,
-.pf-c-form-control,
+.pf-c-form-control:focus,
 .pf-v5-c-form-control:focus,
 .form-control:focus {
   outline: 2px solid var(--arguslog-primary);
