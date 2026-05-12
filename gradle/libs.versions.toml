@@ -22,7 +22,7 @@ argon2 = "2.11"
 caffeine = "3.1.8"
 mockito = "5.15.2"
 pact = "4.6.16"
-mavenPublish = "0.30.0"
+mavenPublish = "0.36.0"
 
 [libraries]
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
