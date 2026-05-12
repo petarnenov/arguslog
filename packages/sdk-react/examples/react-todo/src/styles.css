@@ -1,0 +1,246 @@
+:root {
+  color-scheme: light dark;
+  --bg: #0f1115;
+  --panel: #161922;
+  --border: #262a36;
+  --text: #e7e9ee;
+  --muted: #8a92a6;
+  --accent: #4f7cff;
+  --accent-hover: #6b91ff;
+  --danger: #e25555;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 1.25rem 1rem;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.05rem;
+}
+
+.sidebar-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 1rem 0;
+}
+
+.sidebar-group {
+  margin-bottom: 1rem;
+}
+
+.sidebar-group-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0.5rem 0 0.25rem 0;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-link {
+  display: block;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-link.active {
+  background: var(--accent);
+  color: white;
+}
+
+.content {
+  padding: 2rem;
+  max-width: 760px;
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 1.5rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+h3 {
+  font-size: 0.95rem;
+  margin-top: 1.5rem;
+}
+
+pre {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+}
+
+code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 1rem 0;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem 0;
+}
+
+.form-grid label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.form-grid span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+input,
+textarea,
+select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+textarea {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button:hover {
+  background: var(--accent-hover);
+}
+
+button.ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+button.ghost:hover {
+  border-color: var(--accent);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.todo-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.todo-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 0.4rem;
+  background: var(--panel);
+}
+
+.todo-list li.done span {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.todo-list label {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex: 1;
+}
+
+.todo-list button {
+  background: transparent;
+  color: var(--danger);
+  font-size: 1.1rem;
+  padding: 0 0.5rem;
+}
+
+.error-fallback {
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  background: rgba(226, 85, 85, 0.06);
+}
+
+.error-message {
+  color: var(--danger);
+}
