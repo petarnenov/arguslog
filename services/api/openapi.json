@@ -321,78 +321,6 @@
         }
       }
     },
-    "/api/v1/webhooks/stripe" : {
-      "post" : {
-        "tags" : [ "stripe-webhook-controller" ],
-        "operationId" : "receive",
-        "parameters" : [ {
-          "name" : "Stripe-Signature",
-          "in" : "header",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "string"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/StripeWebhookResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/webhooks/nowpayments" : {
-      "post" : {
-        "tags" : [ "now-payments-webhook-controller" ],
-        "operationId" : "receive_1",
-        "parameters" : [ {
-          "name" : "x-nowpayments-sig",
-          "in" : "header",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "string"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/NowPaymentsWebhookResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/projects/{projectId}/releases" : {
       "get" : {
         "tags" : [ "release-controller" ],
@@ -836,112 +764,6 @@
         }
       }
     },
-    "/api/v1/orgs/{orgId}/billing/portal" : {
-      "post" : {
-        "tags" : [ "checkout-controller" ],
-        "operationId" : "portal",
-        "parameters" : [ {
-          "name" : "orgId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CheckoutResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/orgs/{orgId}/billing/crypto-invoice" : {
-      "post" : {
-        "tags" : [ "crypto-checkout-controller" ],
-        "operationId" : "start",
-        "parameters" : [ {
-          "name" : "orgId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        }, {
-          "name" : "tier",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "default" : "pro"
-          }
-        }, {
-          "name" : "duration",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 1
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CryptoCheckoutResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/orgs/{orgId}/billing/checkout-session" : {
-      "post" : {
-        "tags" : [ "checkout-controller" ],
-        "operationId" : "start_1",
-        "parameters" : [ {
-          "name" : "orgId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        }, {
-          "name" : "interval",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "default" : "monthly"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CheckoutResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/orgs/{orgId}/alert-destinations" : {
       "get" : {
         "tags" : [ "alert-destination-controller" ],
@@ -1054,87 +876,6 @@
         }
       }
     },
-    "/api/v1/me/billing/portal" : {
-      "post" : {
-        "tags" : [ "me-billing-controller" ],
-        "operationId" : "portal_1",
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CheckoutResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/me/billing/crypto-invoice" : {
-      "post" : {
-        "tags" : [ "me-billing-controller" ],
-        "operationId" : "cryptoInvoice",
-        "parameters" : [ {
-          "name" : "tier",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "default" : "pro"
-          }
-        }, {
-          "name" : "duration",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "default" : 1
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CryptoCheckoutResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/me/billing/checkout-session" : {
-      "post" : {
-        "tags" : [ "me-billing-controller" ],
-        "operationId" : "start_2",
-        "parameters" : [ {
-          "name" : "interval",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "default" : "monthly"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CheckoutResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/admin/users/{userId}/grant" : {
       "post" : {
         "tags" : [ "admin-controller" ],
@@ -1174,54 +915,6 @@
           "schema" : {
             "type" : "string",
             "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/orgs/{orgId}/grant" : {
-      "post" : {
-        "tags" : [ "admin-controller" ],
-        "operationId" : "grant",
-        "parameters" : [ {
-          "name" : "orgId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/GrantBonusRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK"
-          }
-        }
-      },
-      "delete" : {
-        "tags" : [ "admin-controller" ],
-        "operationId" : "revoke",
-        "parameters" : [ {
-          "name" : "orgId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
           }
         } ],
         "responses" : {
@@ -1466,33 +1159,6 @@
         }
       }
     },
-    "/api/v1/orgs/{orgId}/usage" : {
-      "get" : {
-        "tags" : [ "usage-controller" ],
-        "operationId" : "current",
-        "parameters" : [ {
-          "name" : "orgId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/UsageResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/orgs/{orgId}/projects/{projectId}" : {
       "get" : {
         "tags" : [ "project-controller" ],
@@ -1586,24 +1252,6 @@
                   "additionalProperties" : {
                     "type" : "string"
                   }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/billing/plans" : {
-      "get" : {
-        "tags" : [ "billing-plans-controller" ],
-        "operationId" : "plans",
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/BillingPlansResponse"
                 }
               }
             }
@@ -1778,7 +1426,7 @@
     "/api/v1/projects/{projectId}/keys/{keyId}" : {
       "delete" : {
         "tags" : [ "dsn-controller" ],
-        "operationId" : "revoke_1",
+        "operationId" : "revoke",
         "parameters" : [ {
           "name" : "projectId",
           "in" : "path",
@@ -1965,22 +1613,6 @@
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
-          }
-        }
-      },
-      "StripeWebhookResponse" : {
-        "type" : "object",
-        "properties" : {
-          "outcome" : {
-            "type" : "string"
-          }
-        }
-      },
-      "NowPaymentsWebhookResponse" : {
-        "type" : "object",
-        "properties" : {
-          "outcome" : {
-            "type" : "string"
           }
         }
       },
@@ -2179,25 +1811,6 @@
           "addedAt" : {
             "type" : "string",
             "format" : "date-time"
-          }
-        }
-      },
-      "CheckoutResponse" : {
-        "type" : "object",
-        "properties" : {
-          "url" : {
-            "type" : "string"
-          }
-        }
-      },
-      "CryptoCheckoutResponse" : {
-        "type" : "object",
-        "properties" : {
-          "checkoutUrl" : {
-            "type" : "string"
-          },
-          "invoiceReference" : {
-            "type" : "string"
           }
         }
       },
@@ -2418,70 +2031,6 @@
           }
         }
       },
-      "BonusInfo" : {
-        "type" : "object",
-        "properties" : {
-          "until" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "reason" : {
-            "type" : "string"
-          },
-          "grantedByEmail" : {
-            "type" : "string"
-          }
-        }
-      },
-      "UsageResponse" : {
-        "type" : "object",
-        "properties" : {
-          "plan" : {
-            "type" : "string"
-          },
-          "monthlyPriceCents" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "eventsUsed" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "eventCap" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "projectCap" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "retentionDays" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "ratio" : {
-            "type" : "number",
-            "format" : "double"
-          },
-          "exceeded" : {
-            "type" : "boolean"
-          },
-          "paymentGraceUntil" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "billingInterval" : {
-            "type" : "string"
-          },
-          "renewsAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "bonus" : {
-            "$ref" : "#/components/schemas/BonusInfo"
-          }
-        }
-      },
       "MeResponse" : {
         "type" : "object",
         "properties" : {
@@ -2498,108 +2047,15 @@
           "isPlatformAdmin" : {
             "type" : "boolean"
           },
-          "plan" : {
+          "tier" : {
             "type" : "string"
           },
-          "planRenewsAt" : {
+          "tierExpiresAt" : {
             "type" : "string",
             "format" : "date-time"
           },
-          "paymentGraceUntil" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "bonusUntil" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "bonusReason" : {
+          "tierReason" : {
             "type" : "string"
-          }
-        }
-      },
-      "BillingPlansResponse" : {
-        "type" : "object",
-        "properties" : {
-          "currency" : {
-            "type" : "string"
-          },
-          "tiers" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/TierInfo"
-            }
-          }
-        }
-      },
-      "DurationOffer" : {
-        "type" : "object",
-        "properties" : {
-          "months" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "amountCents" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "perMonthCents" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "savePercent" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }
-      },
-      "TierInfo" : {
-        "type" : "object",
-        "properties" : {
-          "plan" : {
-            "type" : "string"
-          },
-          "monthlyPriceCents" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "monthlyEventCap" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "projectCap" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "memberCap" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "orgCap" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "retentionDays" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "unlimitedProjects" : {
-            "type" : "boolean"
-          },
-          "unlimitedMembers" : {
-            "type" : "boolean"
-          },
-          "unlimitedOrgs" : {
-            "type" : "boolean"
-          },
-          "unlimitedEvents" : {
-            "type" : "boolean"
-          },
-          "durations" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/DurationOffer"
-            }
           }
         }
       },
@@ -2709,7 +2165,7 @@
           "name" : {
             "type" : "string"
           },
-          "plan" : {
+          "tier" : {
             "type" : "string"
           },
           "createdAt" : {
@@ -2735,23 +2191,15 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "renewsAt" : {
+          "tierExpiresAt" : {
             "type" : "string",
             "format" : "date-time"
           },
-          "bonusUntil" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "bonusReason" : {
+          "tierReason" : {
             "type" : "string"
           },
-          "bonusGrantedByEmail" : {
+          "tierGrantedByEmail" : {
             "type" : "string"
-          },
-          "paymentGraceUntil" : {
-            "type" : "string",
-            "format" : "date-time"
           }
         }
       },

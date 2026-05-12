@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.UUID;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.domain.Org;
+import org.arguslog.api.tier.application.port.TierLookupRepository;
 import org.arguslog.billing.PlanTier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,13 +18,13 @@ public class OrgService implements OrgUseCase {
 
   private final OrgWriteRepository orgs;
   private final MembershipRepository memberships;
-  private final OrgPlanRepository plans;
+  private final TierLookupRepository tiers;
 
   public OrgService(
-      OrgWriteRepository orgs, MembershipRepository memberships, OrgPlanRepository plans) {
+      OrgWriteRepository orgs, MembershipRepository memberships, TierLookupRepository tiers) {
     this.orgs = orgs;
     this.memberships = memberships;
-    this.plans = plans;
+    this.tiers = tiers;
   }
 
   @Override
@@ -34,9 +34,9 @@ public class OrgService implements OrgUseCase {
     if (actorId == null) {
       throw new IllegalStateException("create called without an authenticated user");
     }
-    // Compute the creator's highest active plan once — it drives BOTH the org-cap check and
-    // the new org's inherited plan tier (GH #38). First-time creators default to FREE.
-    PlanTier inherited = plans.findHighestPlanForOwner(actorId).orElse(PlanTier.FREE);
+    // Compute the creator's tier once — it drives BOTH the org-cap check and the new org's
+    // inherited display tier. First-time creators default to REGULAR.
+    PlanTier inherited = tiers.findTierForUser(actorId).orElse(PlanTier.REGULAR);
     requireOrgCapAvailable(actorId, inherited);
     Org org = orgs.create(slugify(name), name.trim(), inherited.dbValue());
     orgs.addMember(org.id(), actorId, "owner");
@@ -44,9 +44,9 @@ public class OrgService implements OrgUseCase {
   }
 
   /**
-   * Enforces the per-user owner-org cap. Tier comes from the highest-paid org the user already
-   * owns; first-time users default to {@link PlanTier#FREE}. Members of someone else's org are
-   * unaffected — only the {@code owner} role contributes to the count.
+   * Enforces the per-user owner-org cap. Tier comes from {@code users.tier}; first-time users
+   * default to {@link PlanTier#REGULAR}. Members of someone else's org are unaffected — only the
+   * {@code owner} role contributes to the count.
    */
   private void requireOrgCapAvailable(UUID actorId, PlanTier tier) {
     int cap = tier.orgCap();
@@ -56,7 +56,7 @@ public class OrgService implements OrgUseCase {
       throw new OrgQuotaExceededException(
           "Your "
               + tier.dbValue()
-              + " plan allows "
+              + " tier allows "
               + cap
               + " organization"
               + (cap == 1 ? "" : "s")

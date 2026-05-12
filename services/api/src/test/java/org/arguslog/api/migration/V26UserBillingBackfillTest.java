@@ -81,10 +81,13 @@ class V26UserBillingBackfillTest {
       // userNone exists but owns no org — verifies the LEFT-side default behaviour.
     }
 
-    // 2. Run V26.
+    // 2. Run V26 — target it explicitly. The OSS-conversion migrations (V29+) rename plan→tier
+    // and drop the billing columns this test reads, so pinning to V26 keeps the regression
+    // guard meaningful for the V25→V26 transition specifically.
     Flyway.configure()
         .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
         .locations("classpath:db/migration")
+        .target("26")
         .load()
         .migrate();
 

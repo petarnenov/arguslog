@@ -7,8 +7,8 @@ import java.util.UUID;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.domain.Project;
+import org.arguslog.api.tier.application.port.TierLookupRepository;
 import org.arguslog.billing.PlanTier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,17 +25,17 @@ public class ProjectService implements ProjectUseCase {
   private final ProjectWriteRepository projects;
   private final MembershipRepository memberships;
   private final PlatformRepository platforms;
-  private final OrgPlanRepository plans;
+  private final TierLookupRepository tiers;
 
   public ProjectService(
       ProjectWriteRepository projects,
       MembershipRepository memberships,
       PlatformRepository platforms,
-      OrgPlanRepository plans) {
+      TierLookupRepository tiers) {
     this.projects = projects;
     this.memberships = memberships;
     this.platforms = platforms;
-    this.plans = plans;
+    this.tiers = tiers;
   }
 
   @Override
@@ -48,7 +48,7 @@ public class ProjectService implements ProjectUseCase {
   }
 
   private void requireProjectCapAvailable(long orgId) {
-    PlanTier tier = plans.findPlan(orgId).orElse(PlanTier.FREE);
+    PlanTier tier = tiers.findTier(orgId).orElse(PlanTier.REGULAR);
     int cap = tier.projectCap();
     if (cap == Integer.MAX_VALUE) return;
     int existing = projects.listForOrg(orgId).size();
@@ -56,7 +56,7 @@ public class ProjectService implements ProjectUseCase {
       throw new ProjectCapExceededException(
           "Your "
               + tier.dbValue()
-              + " plan is limited to "
+              + " tier is limited to "
               + cap
               + " project"
               + (cap == 1 ? "" : "s")

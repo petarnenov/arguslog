@@ -13,17 +13,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Admin-only operation: comp a paid plan to an org for a fixed window. Updates {@code
- * organizations.plan} so all existing cap / quota enforcement (events, projects, members,
- * retention) automatically respects the bonus tier; the {@code bonus_*} columns are pure metadata
- * for the dashboard banner. Always writes an entry into {@code admin_audit_log} so the action is
- * forensically traceable.
+ * Admin-only operation: elevate a user's tier (silver / gold / platinum) for a fixed window or
+ * permanently. Updates {@code users.tier} so all existing cap / quota enforcement (events,
+ * projects, members, retention) automatically respects the new tier; the {@code tier_*} columns
+ * carry the grant metadata for the dashboard banner. Always writes an entry into {@code
+ * admin_audit_log} so the action is forensically traceable.
+ *
+ * <p>OSS conversion (V30+): grants are per-user. The legacy per-org grant path is gone — a user's
+ * tier covers every org they own automatically.
  */
 @Service
 public class AdminGrantService {
 
-  /** Months actually accepted from the API — mirrors the regular billing ladder. */
-  private static final int[] ALLOWED_MONTHS = {1, 3, 6, 12};
+  /**
+   * Months accepted from the API. Zero means a permanent grant (no {@code tier_expires_at} set);
+   * positive values write a future expiry which the worker downgrades back to regular on lapse.
+   */
+  private static final int[] ALLOWED_MONTHS = {0, 1, 3, 6, 12};
 
   private final AdminQueryPort port;
   private final ObjectMapper json;
@@ -33,44 +39,9 @@ public class AdminGrantService {
     this.json = json;
   }
 
-  @Transactional
-  public void grant(
-      long orgId, String tierRaw, int months, String reason, UUID adminUser, String adminEmail) {
-    PlanTier tier = parseTier(tierRaw);
-    if (!tier.isPaid()) {
-      throw new IllegalArgumentException(
-          "Bonus grants only apply to paid tiers (starter / pro / business). Use revoke() to drop to free.");
-    }
-    requireValidMonths(months);
-    Instant until = Instant.now().plus(Duration.ofDays(months * 30L));
-    port.recordGrant(orgId, tier.dbValue(), until, adminUser, reason);
-    audit(
-        adminUser,
-        adminEmail,
-        "grant_plan",
-        "org",
-        String.valueOf(orgId),
-        Map.of(
-            "tier",
-            tier.dbValue(),
-            "months",
-            months,
-            "until",
-            until.toString(),
-            "reason",
-            reason == null ? "" : reason));
-  }
-
-  @Transactional
-  public void revoke(long orgId, UUID adminUser, String adminEmail) {
-    port.revokeGrant(orgId);
-    audit(adminUser, adminEmail, "revoke_grant", "org", String.valueOf(orgId), Map.of());
-  }
-
   /**
-   * Per-user grant — the V26+ direct path. Granting at the user level avoids the legacy "which org
-   * gets the bonus" ambiguity for users with multiple owned orgs; the bonus tier now covers every
-   * org the user owns automatically (per-user billing model).
+   * Per-user grant — elevates {@code targetUserId} to {@code tier} for {@code months} (0 = no
+   * expiry). The new tier covers every org the user owns automatically (per-user billing model).
    */
   @Transactional
   public void grantToUser(
@@ -81,17 +52,17 @@ public class AdminGrantService {
       UUID adminUser,
       String adminEmail) {
     PlanTier tier = parseTier(tierRaw);
-    if (!tier.isPaid()) {
+    if (tier == PlanTier.REGULAR) {
       throw new IllegalArgumentException(
-          "Bonus grants only apply to paid tiers (starter / pro / business). Use revokeUser() to drop to free.");
+          "Tier grants only apply to elevated tiers (silver / gold / platinum). Use revokeUser() to drop to regular.");
     }
     requireValidMonths(months);
-    Instant until = Instant.now().plus(Duration.ofDays(months * 30L));
+    Instant until = months == 0 ? null : Instant.now().plus(Duration.ofDays(months * 30L));
     port.recordUserGrant(targetUserId, tier.dbValue(), until, adminUser, reason);
     audit(
         adminUser,
         adminEmail,
-        "grant_plan",
+        "grant_tier",
         "user",
         targetUserId.toString(),
         Map.of(
@@ -100,7 +71,7 @@ public class AdminGrantService {
             "months",
             months,
             "until",
-            until.toString(),
+            until == null ? "" : until.toString(),
             "reason",
             reason == null ? "" : reason));
   }
@@ -108,7 +79,7 @@ public class AdminGrantService {
   @Transactional
   public void revokeUser(UUID targetUserId, UUID adminUser, String adminEmail) {
     port.revokeUserGrant(targetUserId);
-    audit(adminUser, adminEmail, "revoke_grant", "user", targetUserId.toString(), Map.of());
+    audit(adminUser, adminEmail, "revoke_tier", "user", targetUserId.toString(), Map.of());
   }
 
   private void audit(
@@ -133,7 +104,7 @@ public class AdminGrantService {
       return PlanTier.valueOf(raw.trim().toUpperCase(Locale.ROOT));
     } catch (IllegalArgumentException e) {
       throw new IllegalArgumentException(
-          "Unknown tier '" + raw + "'. Allowed: starter, pro, business.");
+          "Unknown tier '" + raw + "'. Allowed: silver, gold, platinum.");
     }
   }
 
@@ -141,6 +112,6 @@ public class AdminGrantService {
     for (int allowed : ALLOWED_MONTHS) {
       if (allowed == months) return;
     }
-    throw new IllegalArgumentException("months must be 1, 3, 6, or 12");
+    throw new IllegalArgumentException("months must be 0 (permanent), 1, 3, 6, or 12");
   }
 }

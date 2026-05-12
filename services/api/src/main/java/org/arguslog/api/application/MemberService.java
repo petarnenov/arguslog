@@ -7,9 +7,9 @@ import java.util.UUID;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.MembershipWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.domain.Member;
 import org.arguslog.api.email.InviteEmailSender;
+import org.arguslog.api.tier.application.port.TierLookupRepository;
 import org.arguslog.billing.PlanTier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,19 +27,19 @@ public class MemberService implements MemberUseCase {
   private final MembershipWriteRepository membershipWrites;
   private final UserRepository users;
   private final InviteEmailSender inviteEmails;
-  private final OrgPlanRepository plans;
+  private final TierLookupRepository tiers;
 
   public MemberService(
       MembershipRepository memberships,
       MembershipWriteRepository membershipWrites,
       UserRepository users,
       InviteEmailSender inviteEmails,
-      OrgPlanRepository plans) {
+      TierLookupRepository tiers) {
     this.memberships = memberships;
     this.membershipWrites = membershipWrites;
     this.users = users;
     this.inviteEmails = inviteEmails;
-    this.plans = plans;
+    this.tiers = tiers;
   }
 
   @Override
@@ -73,7 +73,7 @@ public class MemberService implements MemberUseCase {
   }
 
   private void requireMemberCapAvailable(long orgId) {
-    PlanTier tier = plans.findPlan(orgId).orElse(PlanTier.FREE);
+    PlanTier tier = tiers.findTier(orgId).orElse(PlanTier.REGULAR);
     int cap = tier.memberCap();
     if (cap == Integer.MAX_VALUE) return;
     int existing = memberships.listMembersOf(orgId).size();
@@ -81,7 +81,7 @@ public class MemberService implements MemberUseCase {
       throw new MemberCapExceededException(
           "Your "
               + tier.dbValue()
-              + " plan is limited to "
+              + " tier is limited to "
               + cap
               + " member"
               + (cap == 1 ? "" : "s")

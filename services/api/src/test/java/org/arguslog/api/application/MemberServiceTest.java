@@ -21,9 +21,9 @@ import org.arguslog.api.application.MemberUseCase.MemberNotFoundException;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.MembershipWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.domain.Member;
 import org.arguslog.api.email.InviteEmailSender;
+import org.arguslog.api.tier.application.port.TierLookupRepository;
 import org.arguslog.billing.PlanTier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ class MemberServiceTest {
   @Mock MembershipWriteRepository membershipWrites;
   @Mock UserRepository users;
   @Mock InviteEmailSender inviteEmails;
-  @Mock OrgPlanRepository plans;
+  @Mock TierLookupRepository plans;
 
   MemberService service;
 
@@ -52,8 +52,8 @@ class MemberServiceTest {
   void setUp() {
     service = new MemberService(memberships, membershipWrites, users, inviteEmails, plans);
     org.mockito.Mockito.lenient()
-        .when(plans.findPlan(anyLong()))
-        .thenReturn(Optional.of(PlanTier.BUSINESS));
+        .when(plans.findTier(anyLong()))
+        .thenReturn(Optional.of(PlanTier.PLATINUM));
   }
 
   // ── invite ─────────────────────────────────────────────────────────────

@@ -1,6 +1,5 @@
 package org.arguslog.api.testsupport;
 
-import com.stripe.StripeClient;
 import org.arguslog.api.alerts.application.AlertDestinationUseCase;
 import org.arguslog.api.alerts.application.AlertRuleUseCase;
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
@@ -27,21 +26,6 @@ import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.auth.application.PatUseCase;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
-import org.arguslog.api.billing.application.ApplyPlanPurchaseUseCase;
-import org.arguslog.api.billing.application.CheckoutUseCase;
-import org.arguslog.api.billing.application.CryptoCheckoutUseCase;
-import org.arguslog.api.billing.application.NowPaymentsWebhookUseCase;
-import org.arguslog.api.billing.application.PortalUseCase;
-import org.arguslog.api.billing.application.StripeWebhookUseCase;
-import org.arguslog.api.billing.application.UsageUseCase;
-import org.arguslog.api.billing.application.port.BillingCustomerRepository;
-import org.arguslog.api.billing.application.port.CryptoEventLog;
-import org.arguslog.api.billing.application.port.CryptoInvoiceRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
-import org.arguslog.api.billing.application.port.PlanPurchaseRepository;
-import org.arguslog.api.billing.application.port.StripeEventLog;
-import org.arguslog.api.billing.application.port.StripeEventVerifier;
-import org.arguslog.api.billing.application.port.UsageRepository;
 import org.arguslog.api.email.InviteEmailSender;
 import org.arguslog.api.releases.application.ReleaseUseCase;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase;
@@ -49,6 +33,7 @@ import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
 import org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository;
 import org.arguslog.api.releases.application.port.SourceMapStorage;
+import org.arguslog.api.tier.application.port.TierLookupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -104,10 +89,6 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected PatUseCase patUseCase;
   @MockitoBean protected ReleaseUseCase releaseUseCase;
   @MockitoBean protected SourceMapArtifactUseCase sourceMapArtifactUseCase;
-  @MockitoBean protected CheckoutUseCase checkoutUseCase;
-  @MockitoBean protected PortalUseCase portalUseCase;
-  @MockitoBean protected StripeWebhookUseCase stripeWebhookUseCase;
-  @MockitoBean protected UsageUseCase usageUseCase;
   @MockitoBean protected MemberUseCase memberUseCase;
   @MockitoBean protected PlatformUseCase platformUseCase;
   @MockitoBean protected DsnUseCase dsnUseCase;
@@ -137,23 +118,8 @@ public abstract class AbstractControllerTest {
   @MockitoBean protected SourceMapArtifactWriteRepository sourceMapArtifactWriteRepository;
   @MockitoBean protected SourceMapStorage sourceMapStorage;
 
-  // ── billing wiring ─────────────────────────────────────────────────────────────────────────
+  // ── tier wiring ───────────────────────────────────────────────────────────────────────────
 
-  @MockitoBean protected BillingCustomerRepository billingCustomerRepository;
-  @MockitoBean protected OrgPlanRepository orgPlanRepository;
-
-  @MockitoBean
-  protected org.arguslog.api.billing.application.port.UserBillingRepository userBillingRepository;
-
+  @MockitoBean protected TierLookupRepository tierLookupRepository;
   @MockitoBean protected org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
-  @MockitoBean protected UsageRepository usageRepository;
-  @MockitoBean protected StripeEventLog stripeEventLog;
-  @MockitoBean protected StripeEventVerifier stripeEventVerifier;
-  @MockitoBean protected StripeClient stripeClient;
-  @MockitoBean protected PlanPurchaseRepository planPurchaseRepository;
-  @MockitoBean protected ApplyPlanPurchaseUseCase applyPlanPurchaseUseCase;
-  @MockitoBean protected CryptoInvoiceRepository cryptoInvoiceRepository;
-  @MockitoBean protected CryptoEventLog cryptoEventLog;
-  @MockitoBean protected CryptoCheckoutUseCase cryptoCheckoutUseCase;
-  @MockitoBean protected NowPaymentsWebhookUseCase nowPaymentsWebhookUseCase;
 }

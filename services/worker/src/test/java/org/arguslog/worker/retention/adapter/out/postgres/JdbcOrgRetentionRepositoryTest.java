@@ -62,8 +62,8 @@ class JdbcOrgRetentionRepositoryTest {
   }
 
   @Test
-  void freePlanOrgIsBelowOneYearFloor() throws Exception {
-    insertOrg(1L, "free", null);
+  void regularTierOrgIsBelowOneYearFloor() throws Exception {
+    insertOrg(1L, "regular", null);
 
     List<OrgRetention> below = repo.orgsBelowFloor(Duration.ofDays(365));
 
@@ -71,8 +71,8 @@ class JdbcOrgRetentionRepositoryTest {
   }
 
   @Test
-  void enterprisePlanIsAtFloorAndExcluded() throws Exception {
-    insertOrg(1L, "enterprise", null);
+  void platinumTierIsAtFloorAndExcluded() throws Exception {
+    insertOrg(1L, "platinum", null);
 
     List<OrgRetention> below = repo.orgsBelowFloor(Duration.ofDays(365));
 
@@ -81,7 +81,7 @@ class JdbcOrgRetentionRepositoryTest {
 
   @Test
   void overrideShortenedBelowDefaultIsHonored() throws Exception {
-    insertOrg(1L, "enterprise", 60);
+    insertOrg(1L, "platinum", 60);
 
     List<OrgRetention> below = repo.orgsBelowFloor(Duration.ofDays(365));
 
@@ -90,7 +90,7 @@ class JdbcOrgRetentionRepositoryTest {
 
   @Test
   void overrideAtFloorIsExcluded() throws Exception {
-    insertOrg(1L, "free", 365);
+    insertOrg(1L, "regular", 365);
 
     List<OrgRetention> below = repo.orgsBelowFloor(Duration.ofDays(365));
 
@@ -99,10 +99,10 @@ class JdbcOrgRetentionRepositoryTest {
 
   @Test
   void mixedOrgListReturnsOnlyThoseBelowFloor() throws Exception {
-    insertOrg(1L, "free", null);
-    insertOrg(2L, "pro", null);
-    insertOrg(3L, "enterprise", null);
-    insertOrg(4L, "enterprise", 90);
+    insertOrg(1L, "regular", null);
+    insertOrg(2L, "gold", null);
+    insertOrg(3L, "platinum", null);
+    insertOrg(4L, "platinum", 90);
 
     List<OrgRetention> below = repo.orgsBelowFloor(Duration.ofDays(365));
 
@@ -113,19 +113,19 @@ class JdbcOrgRetentionRepositoryTest {
             new OrgRetention(4L, Duration.ofDays(90)));
   }
 
-  private static void insertOrg(long id, String plan, Integer overrideDays) throws Exception {
-    // V27+: org.plan dropped — seed a user with that plan and own the org so the JOIN through
-    // the primary owner returns the desired effective tier.
+  private static void insertOrg(long id, String tier, Integer overrideDays) throws Exception {
+    // V30+: users.tier; seed a user with that tier and own the org so the JOIN through the
+    // primary owner returns the desired effective tier.
     java.util.UUID owner = new java.util.UUID(0L, id);
     try (Connection conn = dataSource.getConnection()) {
       try (PreparedStatement stmt =
           conn.prepareStatement(
-              "INSERT INTO users (id, email, display_name, plan)"
-                  + " VALUES (?, ?, ?, ?::org_plan)")) {
+              "INSERT INTO users (id, email, display_name, tier)"
+                  + " VALUES (?, ?, ?, ?::org_tier)")) {
         stmt.setObject(1, owner);
         stmt.setString(2, "retention-test-" + id + "@example.com");
         stmt.setString(3, "owner-" + id);
-        stmt.setString(4, plan);
+        stmt.setString(4, tier);
         stmt.execute();
       }
       try (PreparedStatement stmt =

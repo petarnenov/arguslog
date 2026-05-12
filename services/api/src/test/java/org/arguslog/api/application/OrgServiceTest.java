@@ -18,8 +18,8 @@ import org.arguslog.api.application.OrgUseCase.OrgAccessDeniedException;
 import org.arguslog.api.application.OrgUseCase.OrgQuotaExceededException;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.domain.Org;
+import org.arguslog.api.tier.application.port.TierLookupRepository;
 import org.arguslog.billing.PlanTier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ class OrgServiceTest {
 
   @Mock OrgWriteRepository orgs;
   @Mock MembershipRepository memberships;
-  @Mock OrgPlanRepository plans;
+  @Mock TierLookupRepository tiers;
 
   OrgService service;
 
@@ -40,18 +40,18 @@ class OrgServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new OrgService(orgs, memberships, plans);
+    service = new OrgService(orgs, memberships, tiers);
   }
 
   @Test
   void createInsertsOrgAndAddsOwnerMembership() {
-    Org expected = new Org(42L, "acme", "Acme", "free", Instant.parse("2026-05-06T00:00:00Z"));
-    when(orgs.create(eq("acme"), eq("Acme"), eq("free"))).thenReturn(expected);
+    Org expected = new Org(42L, "acme", "Acme", "regular", Instant.parse("2026-05-06T00:00:00Z"));
+    when(orgs.create(eq("acme"), eq("Acme"), eq("regular"))).thenReturn(expected);
 
     Org out = service.create(ACTOR, "Acme");
 
     assertThat(out).isEqualTo(expected);
-    verify(orgs).create("acme", "Acme", "free");
+    verify(orgs).create("acme", "Acme", "regular");
     verify(orgs).addMember(42L, ACTOR, "owner");
   }
 
@@ -110,52 +110,48 @@ class OrgServiceTest {
   }
 
   @Test
-  void rejectsSecondOrgOnFreePlan() {
-    // First-time free user already owns one org → second create attempt hits the cap.
-    when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.FREE));
+  void rejectsSecondOrgOnRegularTier() {
+    when(tiers.findTierForUser(ACTOR)).thenReturn(Optional.of(PlanTier.REGULAR));
     when(orgs.countOwnedBy(ACTOR)).thenReturn(1);
 
     assertThatThrownBy(() -> service.create(ACTOR, "Acme"))
         .isInstanceOf(OrgQuotaExceededException.class)
-        .hasMessageContaining("free")
+        .hasMessageContaining("regular")
         .hasMessageContaining("1 organization");
     verify(orgs, never()).create(anyString(), anyString(), anyString());
     verify(orgs, never()).addMember(anyLong(), any(), anyString());
   }
 
   @Test
-  void allowsThirdOrgOnStarterPlan() {
-    // Starter cap is 3 — owning 2 orgs still leaves room for one more.
-    when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.STARTER));
+  void allowsThirdOrgOnSilverTier() {
+    when(tiers.findTierForUser(ACTOR)).thenReturn(Optional.of(PlanTier.SILVER));
     when(orgs.countOwnedBy(ACTOR)).thenReturn(2);
-    Org expected = new Org(43L, "acme", "Acme", "starter", Instant.parse("2026-05-06T00:00:00Z"));
-    when(orgs.create(eq("acme"), eq("Acme"), eq("starter"))).thenReturn(expected);
+    Org expected = new Org(43L, "acme", "Acme", "silver", Instant.parse("2026-05-06T00:00:00Z"));
+    when(orgs.create(eq("acme"), eq("Acme"), eq("silver"))).thenReturn(expected);
 
     Org out = service.create(ACTOR, "Acme");
 
     assertThat(out).isEqualTo(expected);
-    verify(orgs).create("acme", "Acme", "starter");
+    verify(orgs).create("acme", "Acme", "silver");
   }
 
   @Test
-  void rejectsFourthOrgOnStarterPlan() {
-    when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.STARTER));
+  void rejectsFourthOrgOnSilverTier() {
+    when(tiers.findTierForUser(ACTOR)).thenReturn(Optional.of(PlanTier.SILVER));
     when(orgs.countOwnedBy(ACTOR)).thenReturn(3);
 
     assertThatThrownBy(() -> service.create(ACTOR, "Acme"))
         .isInstanceOf(OrgQuotaExceededException.class)
-        .hasMessageContaining("starter")
+        .hasMessageContaining("silver")
         .hasMessageContaining("3 organizations");
     verify(orgs, never()).create(anyString(), anyString(), anyString());
   }
 
   @Test
-  void allowsUnlimitedOrgsOnBusinessPlan() {
-    // Business is uncapped (Integer.MAX_VALUE) — no count query should even be needed, but the
-    // current path still reads it. The point is: 100 owned orgs still go through.
-    when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.BUSINESS));
-    Org expected = new Org(99L, "acme", "Acme", "business", Instant.parse("2026-05-06T00:00:00Z"));
-    when(orgs.create(eq("acme"), eq("Acme"), eq("business"))).thenReturn(expected);
+  void allowsUnlimitedOrgsOnPlatinumTier() {
+    when(tiers.findTierForUser(ACTOR)).thenReturn(Optional.of(PlanTier.PLATINUM));
+    Org expected = new Org(99L, "acme", "Acme", "platinum", Instant.parse("2026-05-06T00:00:00Z"));
+    when(orgs.create(eq("acme"), eq("Acme"), eq("platinum"))).thenReturn(expected);
 
     Org out = service.create(ACTOR, "Acme");
 
@@ -163,33 +159,30 @@ class OrgServiceTest {
   }
 
   @Test
-  void newOrgInheritsProTierFromCreatorsExistingOrg() {
-    // GH #38 — when a paying user creates a new org, it should inherit their highest active tier
-    // instead of silently defaulting to free. Renewal/billing stays per-org (fresh cycle).
-    when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.of(PlanTier.PRO));
+  void newOrgInheritsGoldTierFromCreator() {
+    when(tiers.findTierForUser(ACTOR)).thenReturn(Optional.of(PlanTier.GOLD));
     when(orgs.countOwnedBy(ACTOR)).thenReturn(1);
-    Org expected = new Org(50L, "acme", "Acme", "pro", Instant.parse("2026-05-11T00:00:00Z"));
-    when(orgs.create(eq("acme"), eq("Acme"), eq("pro"))).thenReturn(expected);
+    Org expected = new Org(50L, "acme", "Acme", "gold", Instant.parse("2026-05-11T00:00:00Z"));
+    when(orgs.create(eq("acme"), eq("Acme"), eq("gold"))).thenReturn(expected);
 
     Org out = service.create(ACTOR, "Acme");
 
     assertThat(out).isEqualTo(expected);
-    verify(orgs).create("acme", "Acme", "pro");
+    verify(orgs).create("acme", "Acme", "gold");
     verify(orgs).addMember(50L, ACTOR, "owner");
   }
 
   @Test
-  void newOrgDefaultsToFreeForFirstTimeCreator() {
-    // No existing owner-orgs → findHighestPlanForOwner returns empty → fall back to FREE.
-    when(plans.findHighestPlanForOwner(ACTOR)).thenReturn(Optional.empty());
+  void newOrgDefaultsToRegularForFirstTimeCreator() {
+    when(tiers.findTierForUser(ACTOR)).thenReturn(Optional.empty());
     when(orgs.countOwnedBy(ACTOR)).thenReturn(0);
-    Org expected = new Org(51L, "acme", "Acme", "free", Instant.parse("2026-05-11T00:00:00Z"));
-    when(orgs.create(eq("acme"), eq("Acme"), eq("free"))).thenReturn(expected);
+    Org expected = new Org(51L, "acme", "Acme", "regular", Instant.parse("2026-05-11T00:00:00Z"));
+    when(orgs.create(eq("acme"), eq("Acme"), eq("regular"))).thenReturn(expected);
 
     Org out = service.create(ACTOR, "Acme");
 
     assertThat(out).isEqualTo(expected);
-    verify(orgs).create("acme", "Acme", "free");
+    verify(orgs).create("acme", "Acme", "regular");
   }
 
   @Test

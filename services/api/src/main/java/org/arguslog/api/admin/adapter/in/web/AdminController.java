@@ -94,26 +94,11 @@ public class AdminController {
         .orElseThrow(() -> new OrgNotFoundException("Organization " + orgId + " not found."));
   }
 
-  @PostMapping(value = "/orgs/{orgId}/grant", consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Void> grant(@PathVariable long orgId, @RequestBody GrantBonusRequest body) {
-    String adminEmail = guard.requireAdmin();
-    UUID adminUser = AuthActor.currentUserId();
-    grants.grant(orgId, body.tier(), body.months(), body.reason(), adminUser, adminEmail);
-    return ResponseEntity.noContent().build();
-  }
-
-  @DeleteMapping("/orgs/{orgId}/grant")
-  public ResponseEntity<Void> revoke(@PathVariable long orgId) {
-    String adminEmail = guard.requireAdmin();
-    UUID adminUser = AuthActor.currentUserId();
-    grants.revoke(orgId, adminUser, adminEmail);
-    return ResponseEntity.noContent().build();
-  }
-
   /**
-   * Per-user grant — the V26+ direct surface. Targets a user instead of an org, so the bonus tier
-   * automatically covers every org that user owns (per-user billing). The old org-scoped grant
-   * endpoint above stays around as a compat shim; new code paths should call this one.
+   * Per-user tier grant — the canonical OSS-era surface. The granted tier covers every org the user
+   * owns automatically (per-user billing model). Set {@code months = 0} for a permanent grant;
+   * positive values write a {@code tier_expires_at} which the worker downgrades to regular on
+   * lapse.
    */
   @PostMapping(value = "/users/{userId}/grant", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> grantUser(

@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.stripe.StripeClient;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
@@ -40,21 +39,6 @@ import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
 import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
-import org.arguslog.api.billing.application.ApplyPlanPurchaseUseCase;
-import org.arguslog.api.billing.application.CheckoutUseCase;
-import org.arguslog.api.billing.application.CryptoCheckoutUseCase;
-import org.arguslog.api.billing.application.NowPaymentsWebhookUseCase;
-import org.arguslog.api.billing.application.PortalUseCase;
-import org.arguslog.api.billing.application.StripeWebhookUseCase;
-import org.arguslog.api.billing.application.UsageUseCase;
-import org.arguslog.api.billing.application.port.BillingCustomerRepository;
-import org.arguslog.api.billing.application.port.CryptoEventLog;
-import org.arguslog.api.billing.application.port.CryptoInvoiceRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
-import org.arguslog.api.billing.application.port.PlanPurchaseRepository;
-import org.arguslog.api.billing.application.port.StripeEventLog;
-import org.arguslog.api.billing.application.port.StripeEventVerifier;
-import org.arguslog.api.billing.application.port.UsageRepository;
 import org.arguslog.api.email.InviteEmailSender;
 import org.arguslog.api.releases.application.ReleaseUseCase;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase;
@@ -62,6 +46,7 @@ import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
 import org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository;
 import org.arguslog.api.releases.application.port.SourceMapStorage;
+import org.arguslog.api.tier.application.port.TierLookupRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -118,10 +103,6 @@ class SecurityFilterChainIntegrationTest {
   @MockitoBean private AlertDestinationUseCase alertDestinationUseCase;
   @MockitoBean private ReleaseUseCase releaseUseCase;
   @MockitoBean private SourceMapArtifactUseCase sourceMapArtifactUseCase;
-  @MockitoBean private CheckoutUseCase checkoutUseCase;
-  @MockitoBean private PortalUseCase portalUseCase;
-  @MockitoBean private StripeWebhookUseCase stripeWebhookUseCase;
-  @MockitoBean private UsageUseCase usageUseCase;
   @MockitoBean private MemberUseCase memberUseCase;
   @MockitoBean private PlatformUseCase platformUseCase;
   @MockitoBean private DsnUseCase dsnUseCase;
@@ -149,23 +130,8 @@ class SecurityFilterChainIntegrationTest {
   @MockitoBean private SourceMapArtifactWriteRepository sourceMapArtifactWriteRepository;
   @MockitoBean private SourceMapStorage sourceMapStorage;
 
-  @MockitoBean private BillingCustomerRepository billingCustomerRepository;
-  @MockitoBean private OrgPlanRepository orgPlanRepository;
-
-  @MockitoBean
-  private org.arguslog.api.billing.application.port.UserBillingRepository userBillingRepository;
-
+  @MockitoBean private TierLookupRepository tierLookupRepository;
   @MockitoBean private org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
-  @MockitoBean private UsageRepository usageRepository;
-  @MockitoBean private StripeEventLog stripeEventLog;
-  @MockitoBean private StripeEventVerifier stripeEventVerifier;
-  @MockitoBean private StripeClient stripeClient;
-  @MockitoBean private PlanPurchaseRepository planPurchaseRepository;
-  @MockitoBean private ApplyPlanPurchaseUseCase applyPlanPurchaseUseCase;
-  @MockitoBean private CryptoInvoiceRepository cryptoInvoiceRepository;
-  @MockitoBean private CryptoEventLog cryptoEventLog;
-  @MockitoBean private CryptoCheckoutUseCase cryptoCheckoutUseCase;
-  @MockitoBean private NowPaymentsWebhookUseCase nowPaymentsWebhookUseCase;
 
   @Test
   void validPatAuthenticatesAndJwtDecoderIsNeverCalled() throws Exception {

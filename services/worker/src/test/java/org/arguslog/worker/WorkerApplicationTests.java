@@ -8,10 +8,6 @@ import org.arguslog.worker.application.port.PersistedEventPublisher;
 import org.arguslog.worker.application.port.RuleThrottle;
 import org.arguslog.worker.application.port.SourceMapStore;
 import org.arguslog.worker.application.port.SymbolicationRepository;
-import org.arguslog.worker.billing.application.port.PaymentDowngradeRepository;
-import org.arguslog.worker.billing.application.port.PlanExpiryRepository;
-import org.arguslog.worker.billing.application.port.RenewalEmailSender;
-import org.arguslog.worker.billing.application.port.RenewalReminderRepository;
 import org.arguslog.worker.retention.application.port.OrgRetentionRepository;
 import org.arguslog.worker.retention.application.port.RetentionPurgeRepository;
 import org.junit.jupiter.api.Test;
@@ -30,8 +26,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
     })
 class WorkerApplicationTests {
 
-  // Mock every DB/Redis-bound port so the smoke test stays pure-context. Telegram
-  // dispatcher is
+  // Mock every DB/Redis-bound port so the smoke test stays pure-context. Telegram dispatcher is
   // fine to instantiate (no token => log-and-drop) so we don't mock it here.
   @MockitoBean EventStore eventStore;
   @MockitoBean AlertRuleRepository alertRuleRepository;
@@ -43,10 +38,6 @@ class WorkerApplicationTests {
   @MockitoBean SourceMapStore sourceMapStore;
   @MockitoBean OrgRetentionRepository orgRetentionRepository;
   @MockitoBean RetentionPurgeRepository retentionPurgeRepository;
-  @MockitoBean PaymentDowngradeRepository paymentDowngradeRepository;
-  @MockitoBean PlanExpiryRepository planExpiryRepository;
-  @MockitoBean RenewalReminderRepository renewalReminderRepository;
-  @MockitoBean RenewalEmailSender renewalEmailSender;
 
   @Test
   void contextLoads() {}

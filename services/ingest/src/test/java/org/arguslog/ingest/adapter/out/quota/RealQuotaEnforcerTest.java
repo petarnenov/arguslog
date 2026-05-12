@@ -46,7 +46,7 @@ class RealQuotaEnforcerTest {
   @Test
   void allowsWhenBurstAndMonthlyBothPass() {
     when(burst.tryConsume(101L)).thenReturn(true);
-    when(context.lookup(101L)).thenReturn(Optional.of(new Context(1L, PlanTier.PRO)));
+    when(context.lookup(101L)).thenReturn(Optional.of(new Context(1L, PlanTier.GOLD)));
     when(monthly.tryConsume(1L, PERIOD, 100_000L)).thenReturn(true);
 
     assertThat(enforcer.tryConsume(101L)).isEqualTo(Decision.ALLOW);
@@ -65,7 +65,7 @@ class RealQuotaEnforcerTest {
   @Test
   void quotaExceededReportedWhenMonthlyCounterRejects() {
     when(burst.tryConsume(101L)).thenReturn(true);
-    when(context.lookup(101L)).thenReturn(Optional.of(new Context(1L, PlanTier.FREE)));
+    when(context.lookup(101L)).thenReturn(Optional.of(new Context(1L, PlanTier.REGULAR)));
     when(monthly.tryConsume(1L, PERIOD, 5_000L)).thenReturn(false);
 
     assertThat(enforcer.tryConsume(101L)).isEqualTo(Decision.QUOTA_EXCEEDED);
@@ -83,7 +83,7 @@ class RealQuotaEnforcerTest {
   @Test
   void enterpriseUsesItsOwnEffectivelyUnlimitedCap() {
     when(burst.tryConsume(101L)).thenReturn(true);
-    when(context.lookup(101L)).thenReturn(Optional.of(new Context(1L, PlanTier.ENTERPRISE)));
+    when(context.lookup(101L)).thenReturn(Optional.of(new Context(1L, PlanTier.PLATINUM)));
     when(monthly.tryConsume(eq(1L), eq(PERIOD), eq(Long.MAX_VALUE))).thenReturn(true);
 
     assertThat(enforcer.tryConsume(101L)).isEqualTo(Decision.ALLOW);

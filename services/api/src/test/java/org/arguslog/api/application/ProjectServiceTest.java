@@ -18,8 +18,8 @@ import org.arguslog.api.application.ProjectUseCase.ProjectAccessDeniedException;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
 import org.arguslog.api.domain.Project;
+import org.arguslog.api.tier.application.port.TierLookupRepository;
 import org.arguslog.billing.PlanTier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ class ProjectServiceTest {
   @Mock ProjectWriteRepository projects;
   @Mock MembershipRepository memberships;
   @Mock PlatformRepository platforms;
-  @Mock OrgPlanRepository plans;
+  @Mock TierLookupRepository plans;
 
   ProjectService service;
 
@@ -48,8 +48,8 @@ class ProjectServiceTest {
     // Default to BUSINESS so the cap check is a no-op in unrelated tests; per-test overrides set
     // FREE/STARTER/PRO when the cap is the thing under test.
     org.mockito.Mockito.lenient()
-        .when(plans.findPlan(org.mockito.ArgumentMatchers.anyLong()))
-        .thenReturn(Optional.of(PlanTier.BUSINESS));
+        .when(plans.findTier(org.mockito.ArgumentMatchers.anyLong()))
+        .thenReturn(Optional.of(PlanTier.PLATINUM));
   }
 
   @Test

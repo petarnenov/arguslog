@@ -64,7 +64,7 @@ class JdbcProjectQuotaContextTest {
     Optional<Context> ctx = repository.lookup(101L);
     assertThat(ctx).isPresent();
     assertThat(ctx.orElseThrow().orgId()).isEqualTo(1L);
-    assertThat(ctx.orElseThrow().plan()).isEqualTo(PlanTier.FREE);
+    assertThat(ctx.orElseThrow().plan()).isEqualTo(PlanTier.REGULAR);
   }
 
   @Test

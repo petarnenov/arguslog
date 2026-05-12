@@ -1,6 +1,5 @@
 package org.arguslog.api;
 
-import com.stripe.StripeClient;
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
 import org.arguslog.api.alerts.application.port.AlertDestinationWriteRepository;
 import org.arguslog.api.alerts.application.port.AlertRuleRepository;
@@ -18,24 +17,12 @@ import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.application.port.UserRepository;
 import org.arguslog.api.auth.application.port.PatRepository;
 import org.arguslog.api.auth.application.port.TokenHasher;
-import org.arguslog.api.billing.application.ApplyPlanPurchaseUseCase;
-import org.arguslog.api.billing.application.CryptoCheckoutUseCase;
-import org.arguslog.api.billing.application.NowPaymentsWebhookUseCase;
-import org.arguslog.api.billing.application.PortalUseCase;
-import org.arguslog.api.billing.application.StripeWebhookUseCase;
-import org.arguslog.api.billing.application.port.BillingCustomerRepository;
-import org.arguslog.api.billing.application.port.CryptoEventLog;
-import org.arguslog.api.billing.application.port.CryptoInvoiceRepository;
-import org.arguslog.api.billing.application.port.OrgPlanRepository;
-import org.arguslog.api.billing.application.port.PlanPurchaseRepository;
-import org.arguslog.api.billing.application.port.StripeEventLog;
-import org.arguslog.api.billing.application.port.StripeEventVerifier;
-import org.arguslog.api.billing.application.port.UsageRepository;
 import org.arguslog.api.email.InviteEmailSender;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
 import org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository;
 import org.arguslog.api.releases.application.port.SourceMapStorage;
+import org.arguslog.api.tier.application.port.TierLookupRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -79,25 +66,8 @@ class ApiApplicationTests {
   @MockitoBean SourceMapStorage sourceMapStorage;
   @MockitoBean PatRepository patRepository;
   @MockitoBean TokenHasher tokenHasher;
-  @MockitoBean UsageRepository usageRepository;
-  @MockitoBean OrgPlanRepository orgPlanRepository;
-
-  @MockitoBean
-  org.arguslog.api.billing.application.port.UserBillingRepository userBillingRepository;
-
+  @MockitoBean TierLookupRepository tierLookupRepository;
   @MockitoBean org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
-  @MockitoBean BillingCustomerRepository billingCustomerRepository;
-  @MockitoBean PortalUseCase portalUseCase;
-  @MockitoBean StripeWebhookUseCase stripeWebhookUseCase;
-  @MockitoBean StripeEventLog stripeEventLog;
-  @MockitoBean StripeEventVerifier stripeEventVerifier;
-  @MockitoBean StripeClient stripeClient;
-  @MockitoBean PlanPurchaseRepository planPurchaseRepository;
-  @MockitoBean ApplyPlanPurchaseUseCase applyPlanPurchaseUseCase;
-  @MockitoBean CryptoInvoiceRepository cryptoInvoiceRepository;
-  @MockitoBean CryptoEventLog cryptoEventLog;
-  @MockitoBean CryptoCheckoutUseCase cryptoCheckoutUseCase;
-  @MockitoBean NowPaymentsWebhookUseCase nowPaymentsWebhookUseCase;
 
   @Test
   void contextLoads() {}
