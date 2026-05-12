@@ -1,0 +1,72 @@
+name: Self-host smoke test
+
+# Boot the full docker-compose stack on every PR that touches infra / compose / Dockerfile
+# / Keycloak realm template. Asserts each service exposes a healthy probe. Catches the
+# "works in dev but the prod image won't start" class of regressions before merge.
+on:
+  pull_request:
+    paths:
+      - 'infra/docker/docker-compose.full.yml'
+      - 'services/**/Dockerfile'
+      - 'apps/web/Dockerfile'
+      - 'services/keycloak/**'
+      - '.env.example'
+      - '.github/workflows/self-host-smoke.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: self-host-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Boot + healthcheck the full stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Seed .env from example
+        run: cp .env.example .env
+
+      - name: Build the JVM + web images
+        run: |
+          docker compose -f infra/docker/docker-compose.full.yml build --pull api ingest worker web
+
+      - name: Bring up infra first + create MinIO buckets
+        run: |
+          docker compose -f infra/docker/docker-compose.full.yml --profile init up -d --wait \
+            postgres redis keycloak minio mailhog minio-bucket-init
+
+      - name: Bring up the JVM + web services
+        run: |
+          docker compose -f infra/docker/docker-compose.full.yml up -d --wait api ingest worker web
+
+      - name: Verify every health endpoint returns UP
+        run: |
+          set -euo pipefail
+          for svc in 'api:8081/actuator/health/readiness' \
+                     'ingest:8080/actuator/health' \
+                     'worker:8082/actuator/health' \
+                     'web:5173/healthz' \
+                     'keycloak:8180/health/ready'; do
+            name="${svc%%:*}"
+            path="${svc#*:}"
+            echo "→ checking http://localhost:${path}"
+            for i in $(seq 1 30); do
+              if curl -fsS -o /tmp/health-$name.json "http://localhost:${path}"; then
+                echo "  ✓ ${name} healthy"
+                break
+              fi
+              if [ "$i" = 30 ]; then
+                echo "  ✗ ${name} never came up — logs:"
+                docker compose -f infra/docker/docker-compose.full.yml logs "$name" | tail -100
+                exit 1
+              fi
+              sleep 2
+            done
+          done
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f infra/docker/docker-compose.full.yml down -v --remove-orphans

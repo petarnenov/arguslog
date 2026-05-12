@@ -20,6 +20,7 @@ PNPM           := pnpm
         install e2e-install e2e \
         build lint typecheck test python-test python-lint \
         deploy-prod deploy-status \
+        self-host-test self-host-down \
         clean reset doctor
 
 PROD_SERVICES  := arguslog-api arguslog-ingest arguslog-worker arguslog-web arguslog-landing
@@ -230,6 +231,35 @@ if in_flight:
     sys.exit(2)
 endef
 export DEPLOY_STATUS_PY
+
+## ─── Self-host ─────────────────────────────────────────────────────────────
+
+self-host-test: ## Boot the full self-host docker-compose stack + assert health on every service
+	@if [ ! -f .env ]; then echo "→ seeding .env from .env.example (first run only)"; cp .env.example .env; fi
+	@echo "→ building JVM + web images"
+	@docker compose -f infra/docker/docker-compose.full.yml build api ingest worker web
+	@echo "→ bringing up infra + creating MinIO buckets"
+	@docker compose -f infra/docker/docker-compose.full.yml --profile init up -d --wait \
+	  postgres redis keycloak minio mailhog minio-bucket-init
+	@echo "→ bringing up api/ingest/worker/web"
+	@docker compose -f infra/docker/docker-compose.full.yml up -d --wait api ingest worker web
+	@echo "→ probing /actuator/health endpoints"
+	@for url in "http://localhost:8081/actuator/health/readiness" \
+	            "http://localhost:8080/actuator/health" \
+	            "http://localhost:8082/actuator/health" \
+	            "http://localhost:5173/healthz" \
+	            "http://localhost:8180/health/ready"; do \
+	  echo -n "    $$url ... "; \
+	  for i in 1 2 3 4 5 6 7 8 9 10; do \
+	    if curl -fsS "$$url" >/dev/null 2>&1; then echo "✓"; break; fi; \
+	    if [ $$i = 10 ]; then echo "✗"; exit 1; fi; \
+	    sleep 2; \
+	  done; \
+	done
+	@echo "→ stack is healthy. dashboard: http://localhost:5173"
+
+self-host-down: ## Tear down the self-host stack and drop volumes
+	@docker compose -f infra/docker/docker-compose.full.yml down -v --remove-orphans
 
 ## ─── Cleanup ───────────────────────────────────────────────────────────────
 
