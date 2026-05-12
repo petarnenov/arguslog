@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseArgs, run } from '../cli.js';
-import { VERSION } from '../version.js';
+import { VERSION } from '../version.generated.js';
 
 describe('parseArgs', () => {
   it('defaults to help when no command given', () => {

@@ -3,7 +3,7 @@ import { sourcemapsUpload } from './commands/sourcemaps.js';
 import { type CliConfig, CliConfigError, loadConfig } from './config.js';
 import { parseFlags } from './flags.js';
 import { ApiError } from './http.js';
-import { VERSION } from './version.js';
+import { VERSION } from './version.generated.js';
 
 export interface CommandResult {
   exitCode: number;
