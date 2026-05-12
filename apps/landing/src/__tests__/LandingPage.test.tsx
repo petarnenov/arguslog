@@ -72,18 +72,11 @@ describe('LandingPage', () => {
     expect(screen.getByText('React Native')).toBeInTheDocument();
   });
 
-  it('renders all four self-serve pricing tiers and the Enterprise card', () => {
+  it('does not render a pricing section (OSS conversion removed paid plans)', () => {
     globalThis.fetch = vi.fn(async () => jsonResponse([])) as typeof fetch;
     renderLanding();
-    expect(screen.getByTestId('pricing-tier-free')).toBeInTheDocument();
-    expect(screen.getByTestId('pricing-tier-starter')).toBeInTheDocument();
-    expect(screen.getByTestId('pricing-tier-pro')).toBeInTheDocument();
-    expect(screen.getByTestId('pricing-tier-business')).toBeInTheDocument();
-    expect(screen.getByTestId('pricing-tier-enterprise')).toBeInTheDocument();
-    // Headline prices follow the canonical PlanTier ladder.
-    expect(screen.getByText('$11.99')).toBeInTheDocument();
-    expect(screen.getByText('$29.99')).toBeInTheDocument();
-    expect(screen.getByText('$79.99')).toBeInTheDocument();
+    expect(screen.queryByTestId('pricing-tier-free')).toBeNull();
+    expect(screen.queryByTestId('pricing-tier-enterprise')).toBeNull();
   });
 
   it('renders the Web3 add-on highlight card', () => {

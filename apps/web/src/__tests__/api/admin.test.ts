@@ -2,13 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getAdminStats,
-  grantBonus,
-  grantUserBonus,
+  grantUserTier,
   listAdminAudit,
   listAdminOrgs,
   listAdminUsers,
-  revokeBonus,
-  revokeUserBonus,
+  revokeUserTier,
 } from '../../api/admin';
 
 const originalFetch = globalThis.fetch;
@@ -79,37 +77,35 @@ describe('admin api client', () => {
     expect(String(f.mock.calls[0]?.[0])).toContain('/api/v1/admin/audit');
   });
 
-  it('grantBonus POSTs to /admin/orgs/{id}/grant with the body', async () => {
+  it('grantUserTier POSTs to /admin/users/{id}/grant with the body', async () => {
     const f = mockFetch({});
-    await grantBonus(42, { tier: 'pro', months: 3, reason: 'beta' });
-    expect(f.mock.calls[0]?.[0]).toContain('/api/v1/admin/orgs/42/grant');
-    const init = f.mock.calls[0]?.[1] as RequestInit;
-    expect(init.method).toBe('POST');
-    expect(JSON.parse(String(init.body))).toEqual({ tier: 'pro', months: 3, reason: 'beta' });
-  });
-
-  it('revokeBonus DELETEs the org grant', async () => {
-    const f = mockFetch({});
-    await revokeBonus(42);
-    expect(f.mock.calls[0]?.[0]).toContain('/api/v1/admin/orgs/42/grant');
-    expect((f.mock.calls[0]?.[1] as RequestInit).method).toBe('DELETE');
-  });
-
-  it('grantUserBonus POSTs to /admin/users/{id}/grant', async () => {
-    const f = mockFetch({});
-    await grantUserBonus('11111111-1111-1111-1111-111111111111', {
-      tier: 'starter',
-      months: 1,
-      reason: 'trial',
+    await grantUserTier('11111111-1111-1111-1111-111111111111', {
+      tier: 'gold',
+      months: 3,
+      reason: 'beta',
     });
     expect(f.mock.calls[0]?.[0]).toContain(
       '/api/v1/admin/users/11111111-1111-1111-1111-111111111111/grant',
     );
+    const init = f.mock.calls[0]?.[1] as RequestInit;
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(String(init.body))).toEqual({ tier: 'gold', months: 3, reason: 'beta' });
   });
 
-  it('revokeUserBonus DELETEs the user grant', async () => {
+  it('grantUserTier supports months=0 for a permanent grant', async () => {
     const f = mockFetch({});
-    await revokeUserBonus('11111111-1111-1111-1111-111111111111');
+    await grantUserTier('11111111-1111-1111-1111-111111111111', {
+      tier: 'platinum',
+      months: 0,
+      reason: 'core contributor',
+    });
+    const init = f.mock.calls[0]?.[1] as RequestInit;
+    expect(JSON.parse(String(init.body))).toMatchObject({ months: 0 });
+  });
+
+  it('revokeUserTier DELETEs the user grant', async () => {
+    const f = mockFetch({});
+    await revokeUserTier('11111111-1111-1111-1111-111111111111');
     expect((f.mock.calls[0]?.[1] as RequestInit).method).toBe('DELETE');
   });
 });

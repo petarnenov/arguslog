@@ -490,56 +490,6 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'stripe_webhook_receive',
-    title: 'Stripe webhook receive',
-    description: 'POST /api/v1/webhooks/stripe\n\nMethod: POST /api/v1/webhooks/stripe',
-    method: 'POST',
-    path: '/api/v1/webhooks/stripe',
-    pathParams: [],
-    queryParams: [],
-    hasBody: true,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        outcome: {
-          type: 'string',
-        },
-      },
-    },
-    annotations: {
-      title: 'POST /api/v1/webhooks/stripe',
-      readOnlyHint: false,
-      idempotentHint: false,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'now_payments_webhook_receive_1',
-    title: 'Now payments webhook receive 1',
-    description: 'POST /api/v1/webhooks/nowpayments\n\nMethod: POST /api/v1/webhooks/nowpayments',
-    method: 'POST',
-    path: '/api/v1/webhooks/nowpayments',
-    pathParams: [],
-    queryParams: [],
-    hasBody: true,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        outcome: {
-          type: 'string',
-        },
-      },
-    },
-    annotations: {
-      title: 'POST /api/v1/webhooks/nowpayments',
-      readOnlyHint: false,
-      idempotentHint: false,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
     name: 'list_release',
     title: 'List release',
     description:
@@ -1116,128 +1066,6 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'checkout_portal',
-    title: 'Checkout portal',
-    description:
-      'POST /api/v1/orgs/{orgId}/billing/portal\n\nMethod: POST /api/v1/orgs/{orgId}/billing/portal',
-    method: 'POST',
-    path: '/api/v1/orgs/{orgId}/billing/portal',
-    pathParams: [
-      {
-        name: 'orgId',
-        required: true,
-        type: 'integer',
-        description: 'orgId (integer) — required.',
-      },
-    ],
-    queryParams: [],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-        },
-      },
-    },
-    annotations: {
-      title: 'POST /api/v1/orgs/{orgId}/billing/portal',
-      readOnlyHint: false,
-      idempotentHint: false,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'crypto_checkout_start',
-    title: 'Crypto checkout start',
-    description:
-      'POST /api/v1/orgs/{orgId}/billing/crypto-invoice\n\nMethod: POST /api/v1/orgs/{orgId}/billing/crypto-invoice',
-    method: 'POST',
-    path: '/api/v1/orgs/{orgId}/billing/crypto-invoice',
-    pathParams: [
-      {
-        name: 'orgId',
-        required: true,
-        type: 'integer',
-        description: 'orgId (integer) — required.',
-      },
-    ],
-    queryParams: [
-      {
-        name: 'tier',
-        required: false,
-        type: 'string',
-        description: 'tier (string) — optional.',
-      },
-      {
-        name: 'duration',
-        required: false,
-        type: 'integer',
-        description: 'duration (integer) — optional.',
-      },
-    ],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        checkoutUrl: {
-          type: 'string',
-        },
-        invoiceReference: {
-          type: 'string',
-        },
-      },
-    },
-    annotations: {
-      title: 'POST /api/v1/orgs/{orgId}/billing/crypto-invoice',
-      readOnlyHint: false,
-      idempotentHint: false,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'checkout_start_1',
-    title: 'Checkout start 1',
-    description:
-      'POST /api/v1/orgs/{orgId}/billing/checkout-session\n\nMethod: POST /api/v1/orgs/{orgId}/billing/checkout-session',
-    method: 'POST',
-    path: '/api/v1/orgs/{orgId}/billing/checkout-session',
-    pathParams: [
-      {
-        name: 'orgId',
-        required: true,
-        type: 'integer',
-        description: 'orgId (integer) — required.',
-      },
-    ],
-    queryParams: [
-      {
-        name: 'interval',
-        required: false,
-        type: 'string',
-        description: 'interval (string) — optional.',
-      },
-    ],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-        },
-      },
-    },
-    annotations: {
-      title: 'POST /api/v1/orgs/{orgId}/billing/checkout-session',
-      readOnlyHint: false,
-      idempotentHint: false,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
     name: 'list_alert_destination_6',
     title: 'List alert destination 6',
     description:
@@ -1405,106 +1233,6 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'me_billing_portal_1',
-    title: 'Me billing portal 1',
-    description: 'POST /api/v1/me/billing/portal\n\nMethod: POST /api/v1/me/billing/portal',
-    method: 'POST',
-    path: '/api/v1/me/billing/portal',
-    pathParams: [],
-    queryParams: [],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-        },
-      },
-    },
-    annotations: {
-      title: 'POST /api/v1/me/billing/portal',
-      readOnlyHint: false,
-      idempotentHint: false,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'me_billing_crypto_invoice',
-    title: 'Me billing crypto invoice',
-    description:
-      'POST /api/v1/me/billing/crypto-invoice\n\nMethod: POST /api/v1/me/billing/crypto-invoice',
-    method: 'POST',
-    path: '/api/v1/me/billing/crypto-invoice',
-    pathParams: [],
-    queryParams: [
-      {
-        name: 'tier',
-        required: false,
-        type: 'string',
-        description: 'tier (string) — optional.',
-      },
-      {
-        name: 'duration',
-        required: false,
-        type: 'integer',
-        description: 'duration (integer) — optional.',
-      },
-    ],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        checkoutUrl: {
-          type: 'string',
-        },
-        invoiceReference: {
-          type: 'string',
-        },
-      },
-    },
-    annotations: {
-      title: 'POST /api/v1/me/billing/crypto-invoice',
-      readOnlyHint: false,
-      idempotentHint: false,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'me_billing_start_2',
-    title: 'Me billing start 2',
-    description:
-      'POST /api/v1/me/billing/checkout-session\n\nMethod: POST /api/v1/me/billing/checkout-session',
-    method: 'POST',
-    path: '/api/v1/me/billing/checkout-session',
-    pathParams: [],
-    queryParams: [
-      {
-        name: 'interval',
-        required: false,
-        type: 'string',
-        description: 'interval (string) — optional.',
-      },
-    ],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        url: {
-          type: 'string',
-        },
-      },
-    },
-    annotations: {
-      title: 'POST /api/v1/me/billing/checkout-session',
-      readOnlyHint: false,
-      idempotentHint: false,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
     name: 'admin_grant_user',
     title: 'Admin grant user',
     description:
@@ -1558,66 +1286,6 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
     annotations: {
       title: 'DELETE /api/v1/admin/users/{userId}/grant',
-      readOnlyHint: false,
-      idempotentHint: true,
-      destructiveHint: true,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'grant_admin',
-    title: 'Grant admin',
-    description:
-      'POST /api/v1/admin/orgs/{orgId}/grant\n\nMethod: POST /api/v1/admin/orgs/{orgId}/grant',
-    method: 'POST',
-    path: '/api/v1/admin/orgs/{orgId}/grant',
-    pathParams: [
-      {
-        name: 'orgId',
-        required: true,
-        type: 'integer',
-        description: 'orgId (integer) — required.',
-      },
-    ],
-    queryParams: [],
-    hasBody: true,
-    outputSchema: {
-      type: 'object',
-      additionalProperties: true,
-      description: 'No response body — successful response is a 204 No Content or similar.',
-    },
-    annotations: {
-      title: 'POST /api/v1/admin/orgs/{orgId}/grant',
-      readOnlyHint: false,
-      idempotentHint: false,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'revoke_admin',
-    title: 'Revoke admin',
-    description:
-      'DELETE /api/v1/admin/orgs/{orgId}/grant\n\nMethod: DELETE /api/v1/admin/orgs/{orgId}/grant',
-    method: 'DELETE',
-    path: '/api/v1/admin/orgs/{orgId}/grant',
-    pathParams: [
-      {
-        name: 'orgId',
-        required: true,
-        type: 'integer',
-        description: 'orgId (integer) — required.',
-      },
-    ],
-    queryParams: [],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      additionalProperties: true,
-      description: 'No response body — successful response is a 204 No Content or similar.',
-    },
-    annotations: {
-      title: 'DELETE /api/v1/admin/orgs/{orgId}/grant',
       readOnlyHint: false,
       idempotentHint: true,
       destructiveHint: true,
@@ -1936,79 +1604,6 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'usage_current',
-    title: 'Usage current',
-    description: 'GET /api/v1/orgs/{orgId}/usage\n\nMethod: GET /api/v1/orgs/{orgId}/usage',
-    method: 'GET',
-    path: '/api/v1/orgs/{orgId}/usage',
-    pathParams: [
-      {
-        name: 'orgId',
-        required: true,
-        type: 'integer',
-        description: 'orgId (integer) — required.',
-      },
-    ],
-    queryParams: [],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        plan: {
-          type: 'string',
-        },
-        monthlyPriceCents: {
-          type: 'integer',
-          format: 'int32',
-        },
-        eventsUsed: {
-          type: 'integer',
-          format: 'int64',
-        },
-        eventCap: {
-          type: 'integer',
-          format: 'int64',
-        },
-        projectCap: {
-          type: 'integer',
-          format: 'int32',
-        },
-        retentionDays: {
-          type: 'integer',
-          format: 'int64',
-        },
-        ratio: {
-          type: 'number',
-          format: 'double',
-        },
-        exceeded: {
-          type: 'boolean',
-        },
-        paymentGraceUntil: {
-          type: 'string',
-          format: 'date-time',
-        },
-        billingInterval: {
-          type: 'string',
-        },
-        renewsAt: {
-          type: 'string',
-          format: 'date-time',
-        },
-        bonus: {
-          $ref: '#/components/schemas/BonusInfo',
-        },
-      },
-    },
-    annotations: {
-      title: 'GET /api/v1/orgs/{orgId}/usage',
-      readOnlyHint: true,
-      idempotentHint: true,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
     name: 'get_project_3',
     title: 'Get project 3',
     description:
@@ -2126,22 +1721,14 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         isPlatformAdmin: {
           type: 'boolean',
         },
-        plan: {
+        tier: {
           type: 'string',
         },
-        planRenewsAt: {
-          type: 'string',
-          format: 'date-time',
-        },
-        paymentGraceUntil: {
+        tierExpiresAt: {
           type: 'string',
           format: 'date-time',
         },
-        bonusUntil: {
-          type: 'string',
-          format: 'date-time',
-        },
-        bonusReason: {
+        tierReason: {
           type: 'string',
         },
       },
@@ -2170,37 +1757,6 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
     annotations: {
       title: 'GET /api/v1/info',
-      readOnlyHint: true,
-      idempotentHint: true,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'billing_plans_plans',
-    title: 'Billing plans plans',
-    description: 'GET /api/v1/billing/plans\n\nMethod: GET /api/v1/billing/plans',
-    method: 'GET',
-    path: '/api/v1/billing/plans',
-    pathParams: [],
-    queryParams: [],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        currency: {
-          type: 'string',
-        },
-        tiers: {
-          type: 'array',
-          items: {
-            $ref: '#/components/schemas/TierInfo',
-          },
-        },
-      },
-    },
-    annotations: {
-      title: 'GET /api/v1/billing/plans',
       readOnlyHint: true,
       idempotentHint: true,
       destructiveHint: false,
@@ -2411,7 +1967,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         name: {
           type: 'string',
         },
-        plan: {
+        tier: {
           type: 'string',
         },
         createdAt: {
@@ -2437,23 +1993,15 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'integer',
           format: 'int64',
         },
-        renewsAt: {
+        tierExpiresAt: {
           type: 'string',
           format: 'date-time',
         },
-        bonusUntil: {
-          type: 'string',
-          format: 'date-time',
-        },
-        bonusReason: {
+        tierReason: {
           type: 'string',
         },
-        bonusGrantedByEmail: {
+        tierGrantedByEmail: {
           type: 'string',
-        },
-        paymentGraceUntil: {
-          type: 'string',
-          format: 'date-time',
         },
       },
     },
@@ -2519,8 +2067,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'revoke_dsn_1',
-    title: 'Revoke dsn 1',
+    name: 'revoke_dsn',
+    title: 'Revoke dsn',
     description:
       'DELETE /api/v1/projects/{projectId}/keys/{keyId}\n\nMethod: DELETE /api/v1/projects/{projectId}/keys/{keyId}',
     method: 'DELETE',

@@ -25,18 +25,16 @@ export interface AdminOrg {
   orgId: number;
   slug: string;
   name: string;
-  plan: string;
+  tier: string;
   createdAt: string;
   ownerId: string | null;
   ownerEmail: string | null;
   projects: number;
   members: number;
   events30d: number;
-  renewsAt: string | null;
-  bonusUntil: string | null;
-  bonusReason: string | null;
-  bonusGrantedByEmail: string | null;
-  paymentGraceUntil: string | null;
+  tierExpiresAt: string | null;
+  tierReason: string | null;
+  tierGrantedByEmail: string | null;
 }
 
 export interface AdminAuditEntry {
@@ -57,8 +55,9 @@ export interface AdminPage<T> {
   limit: number;
 }
 
-export type GrantTier = 'starter' | 'pro' | 'business';
-export type GrantMonths = 1 | 3 | 6 | 12;
+export type GrantTier = 'silver' | 'gold' | 'platinum';
+/** Duration in months; 0 means a permanent grant with no auto-expiry. */
+export type GrantMonths = 0 | 1 | 3 | 6 | 12;
 
 export function getAdminStats(): Promise<AdminStats> {
   return apiFetch<AdminStats>('/api/v1/admin/stats');
@@ -87,22 +86,8 @@ export function listAdminAudit(params: {
   return apiFetch<AdminPage<AdminAuditEntry>>(`/api/v1/admin/audit?${toQuery(params)}`);
 }
 
-export function grantBonus(
-  orgId: number,
-  body: { tier: GrantTier; months: GrantMonths; reason: string },
-): Promise<void> {
-  return apiFetch<void>(`/api/v1/admin/orgs/${orgId}/grant`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
-export function revokeBonus(orgId: number): Promise<void> {
-  return apiFetch<void>(`/api/v1/admin/orgs/${orgId}/grant`, { method: 'DELETE' });
-}
-
-/** Per-user grant — V26+ direct surface. Covers every org the user owns automatically. */
-export function grantUserBonus(
+/** Per-user tier grant — covers every org the user owns automatically. */
+export function grantUserTier(
   userId: string,
   body: { tier: GrantTier; months: GrantMonths; reason: string },
 ): Promise<void> {
@@ -112,7 +97,7 @@ export function grantUserBonus(
   });
 }
 
-export function revokeUserBonus(userId: string): Promise<void> {
+export function revokeUserTier(userId: string): Promise<void> {
   return apiFetch<void>(`/api/v1/admin/users/${userId}/grant`, { method: 'DELETE' });
 }
 

@@ -4,7 +4,7 @@ export interface Org {
   id: number;
   slug: string;
   name: string;
-  plan: string;
+  tier: string;
   createdAt: string;
 }
 

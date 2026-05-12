@@ -2,7 +2,6 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { getAdminStats, listAdminAudit, listAdminOrgs, listAdminUsers } from './admin';
 import { listAlertDestinations, listAlertRules } from './alerts';
-import { getBillingPlans } from './billing';
 import { getMe } from './me';
 import {
   getIssue,
@@ -27,7 +26,6 @@ export const queryKeys = {
   issueEvents: (params: ListIssueEventsParams) => ['issueEvents', params] as const,
   alertRules: (projectId: number) => ['alert-rules', projectId] as const,
   alertDestinations: (orgId: number) => ['alert-destinations', orgId] as const,
-  billingPlans: () => ['billing-plans'] as const,
   myTokens: () => ['tokens', 'mine'] as const,
   orgMembers: (orgId: number) => ['org-members', orgId] as const,
   platforms: () => ['platforms'] as const,
@@ -154,16 +152,6 @@ export function useDsns(projectId: number | undefined, options: { enabled?: bool
     queryFn: () => listDsns(projectId as number),
     enabled: (options.enabled ?? true) && projectId != null,
     staleTime: 30_000,
-  });
-}
-
-export function useBillingPlans(options: { enabled?: boolean } = {}) {
-  return useQuery({
-    queryKey: queryKeys.billingPlans(),
-    queryFn: getBillingPlans,
-    enabled: options.enabled ?? true,
-    // Pricing is server-driven and effectively static — refresh once per page load is plenty.
-    staleTime: 10 * 60_000,
   });
 }
 

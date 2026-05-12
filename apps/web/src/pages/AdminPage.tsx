@@ -27,10 +27,8 @@ import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router';
 
 import {
-  grantBonus,
-  revokeBonus,
-  grantUserBonus,
-  revokeUserBonus,
+  grantUserTier,
+  revokeUserTier,
   type AdminUser,
   type AdminOrg,
   type GrantMonths,
@@ -262,7 +260,7 @@ function OrgsPanel() {
   const orgs = useAdminOrgs(q, offset, PAGE_SIZE);
   const total = orgs.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const [grantTarget, setGrantTarget] = useState<AdminOrg | null>(null);
+  const [grantTarget, setGrantTarget] = useState<AdminUser | null>(null);
 
   return (
     <Stack>
@@ -315,8 +313,8 @@ function OrgsPanel() {
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <Badge variant="light" color={planColor(o.plan)}>
-                      {o.plan}
+                    <Badge variant="light" color={planColor(o.tier)}>
+                      {o.tier}
                     </Badge>
                   </Table.Td>
                   <Table.Td>{o.projects}</Table.Td>
@@ -325,9 +323,9 @@ function OrgsPanel() {
                     <NumberFormatter value={o.events30d} thousandSeparator />
                   </Table.Td>
                   <Table.Td>
-                    {o.bonusUntil ? (
+                    {o.tierExpiresAt ? (
                       <Badge color="violet" variant="light" leftSection={<IconGift size={10} />}>
-                        {formatRelativeTime(o.bonusUntil, i18n.language || 'en')}
+                        {formatRelativeTime(o.tierExpiresAt, i18n.language || 'en')}
                       </Badge>
                     ) : (
                       <Text c="dimmed" size="xs">
@@ -336,17 +334,30 @@ function OrgsPanel() {
                     )}
                   </Table.Td>
                   <Table.Td>
-                    <Group gap={4}>
+                    {o.ownerId && o.ownerEmail ? (
                       <Button
                         size="xs"
                         variant="light"
                         leftSection={<IconGift size={12} />}
-                        onClick={() => setGrantTarget(o)}
+                        onClick={() =>
+                          setGrantTarget({
+                            userId: o.ownerId!,
+                            email: o.ownerEmail,
+                            displayName: null,
+                            createdAt: '',
+                            ownedOrgs: 0,
+                            memberOrgs: 0,
+                            highestPlan: o.tier,
+                          })
+                        }
                       >
                         {t('admin.grantAction')}
                       </Button>
-                      {o.bonusUntil && <RevokeButton orgId={o.orgId} />}
-                    </Group>
+                    ) : (
+                      <Text c="dimmed" size="xs">
+                        —
+                      </Text>
+                    )}
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -360,31 +371,8 @@ function OrgsPanel() {
         </Group>
       )}
 
-      <GrantModal org={grantTarget} onClose={() => setGrantTarget(null)} />
+      <UserGrantModal user={grantTarget} onClose={() => setGrantTarget(null)} />
     </Stack>
-  );
-}
-
-function RevokeButton({ orgId }: { orgId: number }) {
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const m = useMutation({
-    mutationFn: () => revokeBonus(orgId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin'] });
-    },
-  });
-  return (
-    <Button
-      size="xs"
-      variant="subtle"
-      color="red"
-      leftSection={<IconTrash size={12} />}
-      loading={m.isPending}
-      onClick={() => m.mutate()}
-    >
-      {t('admin.revokeAction')}
-    </Button>
   );
 }
 
@@ -394,87 +382,11 @@ interface GrantFormValues {
   reason: string;
 }
 
-function GrantModal({ org, onClose }: { org: AdminOrg | null; onClose: () => void }) {
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-  const form = useForm<GrantFormValues>({
-    initialValues: { tier: 'pro', months: 1, reason: '' },
-  });
-  const mutation = useMutation({
-    mutationFn: async (values: GrantFormValues) => {
-      if (!org) throw new Error('no org');
-      await grantBonus(org.orgId, values);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['admin'] });
-      form.reset();
-      onClose();
-    },
-  });
-  const error =
-    mutation.error instanceof ApiError
-      ? (mutation.error.problem.detail ?? mutation.error.problem.title)
-      : null;
-
-  return (
-    <Modal
-      opened={org !== null}
-      onClose={onClose}
-      title={t('admin.grantTitle', { name: org?.name ?? '' })}
-      size="md"
-    >
-      <form onSubmit={form.onSubmit((values) => mutation.mutate(values))}>
-        <Stack>
-          <Select
-            label={t('admin.grantTierLabel')}
-            data={[
-              { value: 'starter', label: 'Starter — $11.99/mo' },
-              { value: 'pro', label: 'Pro — $29.99/mo' },
-              { value: 'business', label: 'Business — $79.99/mo' },
-            ]}
-            {...form.getInputProps('tier')}
-          />
-          <Select
-            label={t('admin.grantMonthsLabel')}
-            data={[
-              { value: '1', label: '1 month' },
-              { value: '3', label: '3 months' },
-              { value: '6', label: '6 months' },
-              { value: '12', label: '12 months' },
-            ]}
-            value={String(form.values.months)}
-            onChange={(v) => form.setFieldValue('months', Number(v) as GrantMonths)}
-          />
-          <Textarea
-            label={t('admin.grantReasonLabel')}
-            description={t('admin.grantReasonHint')}
-            minRows={2}
-            {...form.getInputProps('reason')}
-          />
-          {error && (
-            <Alert color="red" variant="light">
-              {error}
-            </Alert>
-          )}
-          <Group justify="flex-end">
-            <Button variant="default" onClick={onClose} disabled={mutation.isPending}>
-              {t('admin.cancel')}
-            </Button>
-            <Button type="submit" loading={mutation.isPending}>
-              {t('admin.grantConfirm')}
-            </Button>
-          </Group>
-        </Stack>
-      </form>
-    </Modal>
-  );
-}
-
 function UserRevokeButton({ userId }: { userId: string }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const m = useMutation({
-    mutationFn: () => revokeUserBonus(userId),
+    mutationFn: () => revokeUserTier(userId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin'] });
     },
@@ -497,12 +409,12 @@ function UserGrantModal({ user, onClose }: { user: AdminUser | null; onClose: ()
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const form = useForm<GrantFormValues>({
-    initialValues: { tier: 'pro', months: 1, reason: '' },
+    initialValues: { tier: 'gold', months: 0, reason: '' },
   });
   const mutation = useMutation({
     mutationFn: async (values: GrantFormValues) => {
       if (!user) throw new Error('no user');
-      await grantUserBonus(user.userId, values);
+      await grantUserTier(user.userId, values);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['admin'] });
@@ -527,15 +439,16 @@ function UserGrantModal({ user, onClose }: { user: AdminUser | null; onClose: ()
           <Select
             label={t('admin.grantTierLabel')}
             data={[
-              { value: 'starter', label: 'Starter — $11.99/mo' },
-              { value: 'pro', label: 'Pro — $29.99/mo' },
-              { value: 'business', label: 'Business — $79.99/mo' },
+              { value: 'silver', label: 'Silver' },
+              { value: 'gold', label: 'Gold' },
+              { value: 'platinum', label: 'Platinum' },
             ]}
             {...form.getInputProps('tier')}
           />
           <Select
             label={t('admin.grantMonthsLabel')}
             data={[
+              { value: '0', label: 'Permanent (no auto-expiry)' },
               { value: '1', label: '1 month' },
               { value: '3', label: '3 months' },
               { value: '6', label: '6 months' },
@@ -638,18 +551,16 @@ function AuditPanel() {
   );
 }
 
-function planColor(plan: string): string {
-  switch (plan) {
-    case 'free':
+function planColor(tier: string): string {
+  switch (tier) {
+    case 'regular':
       return 'gray';
-    case 'starter':
+    case 'silver':
       return 'blue';
-    case 'pro':
-      return 'green';
-    case 'business':
+    case 'gold':
+      return 'yellow';
+    case 'platinum':
       return 'violet';
-    case 'enterprise':
-      return 'red';
     default:
       return 'gray';
   }

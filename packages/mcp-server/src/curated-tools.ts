@@ -128,21 +128,6 @@ Optional: \`afterId\`, \`limit\` (default 50, max 200).`,
     hasBody: false,
   },
 
-  get_org_usage: {
-    name: 'get_org_usage',
-    description: `Current-month event usage + plan caps for an organization. Use to answer
-"are we close to our event cap?" or "what plan are we on?". Returns \`eventsUsed\`,
-\`eventCap\`, \`projectCap\`, \`retentionDays\`, \`plan\`, \`ratio\` (0..1+), \`exceeded\`,
-\`bonus\` (when an admin has comp'd a paid plan).
-
-Method: GET /api/v1/orgs/{orgId}/usage`,
-    method: 'GET',
-    path: '/api/v1/orgs/{orgId}/usage',
-    pathParams: [{ name: 'orgId', required: true, type: 'integer' }],
-    queryParams: [],
-    hasBody: false,
-  },
-
   create_project: {
     name: 'create_project',
     description: `Create a new project under an org. The response carries both the project metadata
@@ -252,54 +237,20 @@ Method: GET /api/v1/projects/{projectId}/keys`,
     hasBody: false,
   },
 
-  list_billing_plans: {
-    name: 'list_billing_plans',
-    description: `Public catalog of all paid plans with caps + duration ladder (-17/-25/-33%
-discount for 3/6/12 months). No org context needed. Use to answer "what's the price of Pro
-for 6 months" or "how many events does Business include".
-
-Method: GET /api/v1/billing/plans`,
-    method: 'GET',
-    path: '/api/v1/billing/plans',
-    pathParams: [],
-    queryParams: [],
-    hasBody: false,
-  },
-
-  grant_bonus_plan: {
-    name: 'grant_bonus_plan',
-    description: `[Platform admin only] Comp a paid plan to a specific organization. Delegates to
-the org's primary owner under the hood — billing identity is per-user (V27+), so this just
-finds the owner and writes their \`users.plan\` + \`bonus_until\`. Prefer \`grant_user_bonus\`
-when you already have the userId; this org-scoped variant stays for legacy callers.
-
-Required: \`orgId\`, \`body.tier\` (\`starter\` | \`pro\` | \`business\`), \`body.months\`
-(1, 3, 6, or 12), \`body.reason\` (free text shown to the customer).
-
-Method: POST /api/v1/admin/orgs/{orgId}/grant
-
-Example: \`{ "orgId": 42, "body": { "tier": "pro", "months": 3, "reason": "Beta tester" } }\``,
-    method: 'POST',
-    path: '/api/v1/admin/orgs/{orgId}/grant',
-    pathParams: [{ name: 'orgId', required: true, type: 'integer' }],
-    queryParams: [],
-    hasBody: true,
-  },
-
-  grant_user_bonus: {
-    name: 'grant_user_bonus',
-    description: `[Platform admin only] Comp a paid plan directly to a user (V27+ direct surface).
-Per-user billing means the bonus tier automatically covers every org that user owns — no
-need to think about which org to apply it to. Writes \`users.plan\` and \`bonus_until\`, and
+  grant_user_tier: {
+    name: 'grant_user_tier',
+    description: `[Platform admin only] Elevate a user's tier (silver / gold / platinum) for a
+fixed window or permanently. The granted tier covers every org that user owns automatically
+(per-user billing model). Writes \`users.tier\` + \`tier_expires_at\` + grant metadata, and
 appends an audit-log entry with target_type=user.
 
-Required: \`userId\` (UUID from list_admin_users), \`body.tier\` (\`starter\` | \`pro\` |
-\`business\`), \`body.months\` (1, 3, 6, or 12), \`body.reason\` (free text).
+Required: \`userId\` (UUID from list_admin_users), \`body.tier\` (\`silver\` | \`gold\` |
+\`platinum\`), \`body.months\` (0 = permanent, or 1 / 3 / 6 / 12), \`body.reason\` (free text).
 
 Method: POST /api/v1/admin/users/{userId}/grant
 
-Example: \`{ "userId": "11111111-1111-1111-1111-111111111111", "body": { "tier": "pro",
-"months": 3, "reason": "Beta tester" } }\``,
+Example: \`{ "userId": "11111111-1111-1111-1111-111111111111", "body": { "tier": "gold",
+"months": 0, "reason": "Core contributor" } }\``,
     method: 'POST',
     path: '/api/v1/admin/users/{userId}/grant',
     pathParams: [{ name: 'userId', required: true, type: 'string' }],
@@ -309,12 +260,13 @@ Example: \`{ "userId": "11111111-1111-1111-1111-111111111111", "body": { "tier":
 
   get_me: {
     name: 'get_me',
-    description: `Get the authenticated user's identity + billing state. Returns \`userId\`,
-\`email\`, \`displayName\`, \`isPlatformAdmin\`, \`plan\` (the user's effective tier), and
-billing timestamps \`planRenewsAt\`, \`paymentGraceUntil\`, \`bonusUntil\`, \`bonusReason\`.
+    description: `Get the authenticated user's identity + tier. Returns \`userId\`, \`email\`,
+\`displayName\`, \`isPlatformAdmin\`, \`tier\` (regular / silver / gold / platinum), and the
+admin-grant fields \`tierExpiresAt\`, \`tierReason\` when an active grant is in effect.
 
-Use to answer "what plan am I on" or "when does my subscription renew" without picking an org —
-post-V27, billing identity lives on the user, not on individual orgs.
+Use to answer "what tier am I on" or "when does my grant expire". Post-OSS-conversion,
+billing identity lives on the user, not on individual orgs, and tier elevation is admin-
+granted (no payment flow).
 
 Method: GET /api/v1/me`,
     method: 'GET',

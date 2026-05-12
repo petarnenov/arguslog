@@ -21,7 +21,7 @@ describe('tool dispatch', () => {
     const names = tools.map((t) => t.name);
     expect(names).toContain('list_my_orgs');
     expect(names).toContain('list_issues');
-    expect(names).toContain('grant_bonus_plan');
+    expect(names).toContain('grant_user_tier');
     // OpenAPI auto-gen contributes the rest — should be a meaningful number.
     expect(tools.length).toBeGreaterThan(20);
   });

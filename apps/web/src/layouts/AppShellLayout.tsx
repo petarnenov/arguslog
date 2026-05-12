@@ -23,7 +23,6 @@ import {
   IconBuilding,
   IconCheck,
   IconChevronDown,
-  IconCreditCard,
   IconFolders,
   IconKey,
   IconLogout,
@@ -139,13 +138,6 @@ export function AppShellLayout() {
                       {t('auth.signedInAs', { name: userLabel })}
                     </Text>
                   </Menu.Label>
-                  <Menu.Item
-                    component={Link}
-                    to="/billing"
-                    leftSection={<IconCreditCard size={14} />}
-                  >
-                    {t('nav.billing')}
-                  </Menu.Item>
                   <Menu.Item component={Link} to="/me/tokens" leftSection={<IconKey size={14} />}>
                     {t('nav.tokens')}
                   </Menu.Item>
@@ -221,17 +213,11 @@ export function AppShellLayout() {
               )}
             </Menu.Dropdown>
           </Menu>
-          {me.data?.bonusUntil && (
-            // Per-user billing (V26+): the banner is keyed off the signed-in user's bonus, not
-            // the currently-selected org. Users with multiple orgs see the same banner across
-            // them; users with no current org context (e.g. /onboarding) still see it.
+          {me.data?.tierExpiresAt && (
             <BonusBanner
-              bonus={{
-                until: me.data.bonusUntil,
-                reason: me.data.bonusReason ?? null,
-                grantedByEmail: null,
-              }}
-              plan={me.data.plan}
+              expiresAt={me.data.tierExpiresAt}
+              reason={me.data.tierReason ?? null}
+              tier={me.data.tier}
               variant="compact"
             />
           )}

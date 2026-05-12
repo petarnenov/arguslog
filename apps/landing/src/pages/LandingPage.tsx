@@ -84,7 +84,6 @@ export function LandingPage() {
         <Features />
         <Platforms platforms={platformsQuery.data ?? []} loading={platformsQuery.isLoading} />
         <McpSection />
-        <Pricing onboardingUrl={onboardingUrl} />
         <FooterSection dashboardUrl={dashboardUrl} />
       </AppShell.Main>
     </AppShell>
@@ -363,120 +362,6 @@ function McpSection() {
   );
 }
 
-interface PricingTier {
-  key: 'free' | 'starter' | 'pro' | 'business';
-  highlight?: boolean;
-}
-
-const TIERS: PricingTier[] = [
-  { key: 'free' },
-  { key: 'starter' },
-  { key: 'pro', highlight: true },
-  { key: 'business' },
-];
-
-function Pricing({ onboardingUrl }: { onboardingUrl: string }) {
-  const { t } = useTranslation();
-
-  return (
-    <Box py={64} bg="var(--mantine-color-body)">
-      <Container size="lg">
-        <Stack gap="xs" mb="xl">
-          <Title order={2}>{t('pricing.heading')}</Title>
-          <Text c="dimmed" maw={760}>
-            {t('pricing.subheading')}
-          </Text>
-        </Stack>
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
-          {TIERS.map((tier) => {
-            const features = t(`pricing.${tier.key}.features`, { returnObjects: true }) as string[];
-            return (
-              <Card
-                key={tier.key}
-                withBorder
-                padding="lg"
-                radius="md"
-                data-testid={`pricing-tier-${tier.key}`}
-                style={
-                  tier.highlight
-                    ? { borderColor: 'var(--mantine-color-green-6)', borderWidth: 2 }
-                    : undefined
-                }
-              >
-                <Stack gap="md" h="100%">
-                  <Stack gap={4}>
-                    <Group justify="space-between" align="flex-start">
-                      <Title order={3}>{t(`pricing.${tier.key}.name`)}</Title>
-                      {tier.highlight ? (
-                        <Badge color="green" variant="light">
-                          {t('pricing.popularBadge')}
-                        </Badge>
-                      ) : null}
-                    </Group>
-                    <Text size="sm" c="dimmed">
-                      {t(`pricing.${tier.key}.tagline`)}
-                    </Text>
-                  </Stack>
-                  <Group gap={4} align="baseline">
-                    <Title order={2}>{t(`pricing.${tier.key}.price`)}</Title>
-                    <Text c="dimmed" size="sm">
-                      {t(`pricing.${tier.key}.period`)}
-                    </Text>
-                  </Group>
-                  <Stack gap="xs" style={{ flex: 1 }}>
-                    {features.map((f) => (
-                      <Group key={f} gap="xs" wrap="nowrap" align="flex-start">
-                        <ThemeIcon variant="light" size="sm" radius="xl" color="green" mt={2}>
-                          <IconCheck size={12} />
-                        </ThemeIcon>
-                        <Text size="sm">{f}</Text>
-                      </Group>
-                    ))}
-                  </Stack>
-                  <Button
-                    component="a"
-                    href={onboardingUrl}
-                    variant={tier.highlight ? 'filled' : 'default'}
-                    fullWidth
-                  >
-                    {t(`pricing.${tier.key}.cta`)}
-                  </Button>
-                </Stack>
-              </Card>
-            );
-          })}
-        </SimpleGrid>
-
-        <Card withBorder padding="lg" radius="md" mt="lg" data-testid="pricing-tier-enterprise">
-          <Group justify="space-between" wrap="wrap" gap="md">
-            <Stack gap={4} style={{ flex: 1, minWidth: 280 }}>
-              <Group gap="sm" align="baseline">
-                <Title order={3}>{t('pricing.enterprise.name')}</Title>
-                <Text c="dimmed" size="sm">
-                  {t('pricing.enterprise.tagline')}
-                </Text>
-              </Group>
-              <Text c="dimmed" size="sm">
-                {t('pricing.enterprise.description')}
-              </Text>
-            </Stack>
-            <Button
-              component="a"
-              href={`mailto:hello@arguslog.org?subject=${encodeURIComponent('Enterprise plan')}`}
-              variant="default"
-            >
-              {t('pricing.enterprise.cta')}
-            </Button>
-          </Group>
-        </Card>
-
-        <Text c="dimmed" size="sm" ta="center" mt="lg" maw={720} mx="auto">
-          {t('pricing.annualNote')}
-        </Text>
-      </Container>
-    </Box>
-  );
-}
 
 function FooterSection({ dashboardUrl }: { dashboardUrl: string }) {
   const { t } = useTranslation();

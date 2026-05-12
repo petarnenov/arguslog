@@ -2,4 +2,4 @@
 // DO NOT EDIT BY HAND — re-run `pnpm run generate` after bumping the version.
 
 export const PACKAGE_NAME = '@arguslog/mcp-server';
-export const PACKAGE_VERSION = '0.5.1';
+export const PACKAGE_VERSION = '2.0.0';

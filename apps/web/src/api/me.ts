@@ -5,12 +5,12 @@ export interface Me {
   email: string | null;
   displayName: string | null;
   isPlatformAdmin: boolean;
-  /** User's effective billing tier (per-user billing, V26+). */
-  plan: string;
-  planRenewsAt: string | null;
-  paymentGraceUntil: string | null;
-  bonusUntil: string | null;
-  bonusReason: string | null;
+  /** User's effective tier (regular / silver / gold / platinum). */
+  tier: string;
+  /** When an admin-granted tier expires, null for permanent / default-regular users. */
+  tierExpiresAt: string | null;
+  /** Optional admin-supplied reason for the grant, null if no active grant. */
+  tierReason: string | null;
 }
 
 export function getMe(): Promise<Me> {

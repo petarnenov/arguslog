@@ -18,11 +18,9 @@ describe('me api client', () => {
       email: 'a@b.c',
       displayName: 'Alice',
       isPlatformAdmin: false,
-      plan: 'pro',
-      planRenewsAt: '2026-07-01T00:00:00Z',
-      paymentGraceUntil: null,
-      bonusUntil: null,
-      bonusReason: null,
+      tier: 'gold',
+      tierExpiresAt: '2026-07-01T00:00:00Z',
+      tierReason: 'beta tester',
     };
     globalThis.fetch = vi.fn(
       async () => new Response(JSON.stringify(body), { status: 200 }),
