@@ -16,4 +16,10 @@ public interface ProjectWriteRepository {
 
   /** Soft-archives a live project. Returns {@code false} if it was already archived or absent. */
   boolean archive(long orgId, long projectId);
+
+  /**
+   * Updates the display name of a live project. Slug is preserved. Returns the refreshed project,
+   * or empty if it does not exist or is already archived.
+   */
+  Optional<Project> rename(long orgId, long projectId, String name);
 }

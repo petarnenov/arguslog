@@ -1293,6 +1293,231 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
+    name: 'delete_org_3',
+    title: 'Delete org 3',
+    description: 'DELETE /api/v1/orgs/{orgId}\n\nMethod: DELETE /api/v1/orgs/{orgId}',
+    method: 'DELETE',
+    path: '/api/v1/orgs/{orgId}',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      additionalProperties: true,
+      description: 'No response body — successful response is a 204 No Content or similar.',
+    },
+    annotations: {
+      title: 'DELETE /api/v1/orgs/{orgId}',
+      readOnlyHint: false,
+      idempotentHint: true,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'org_rename',
+    title: 'Org rename',
+    description: 'PATCH /api/v1/orgs/{orgId}\n\nMethod: PATCH /api/v1/orgs/{orgId}',
+    method: 'PATCH',
+    path: '/api/v1/orgs/{orgId}',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: true,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'integer',
+          format: 'int64',
+        },
+        slug: {
+          type: 'string',
+        },
+        name: {
+          type: 'string',
+        },
+        plan: {
+          type: 'string',
+        },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+      },
+    },
+    annotations: {
+      title: 'PATCH /api/v1/orgs/{orgId}',
+      readOnlyHint: false,
+      idempotentHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'get_project_3',
+    title: 'Get project 3',
+    description:
+      'GET /api/v1/orgs/{orgId}/projects/{projectId}\n\nMethod: GET /api/v1/orgs/{orgId}/projects/{projectId}',
+    method: 'GET',
+    path: '/api/v1/orgs/{orgId}/projects/{projectId}',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+      {
+        name: 'projectId',
+        required: true,
+        type: 'integer',
+        description: 'projectId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'integer',
+          format: 'int64',
+        },
+        orgId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        slug: {
+          type: 'string',
+        },
+        name: {
+          type: 'string',
+        },
+        platform: {
+          type: 'string',
+        },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+      },
+    },
+    annotations: {
+      title: 'GET /api/v1/orgs/{orgId}/projects/{projectId}',
+      readOnlyHint: true,
+      idempotentHint: true,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'archive_project',
+    title: 'Archive project',
+    description:
+      'DELETE /api/v1/orgs/{orgId}/projects/{projectId}\n\nMethod: DELETE /api/v1/orgs/{orgId}/projects/{projectId}',
+    method: 'DELETE',
+    path: '/api/v1/orgs/{orgId}/projects/{projectId}',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+      {
+        name: 'projectId',
+        required: true,
+        type: 'integer',
+        description: 'projectId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      additionalProperties: true,
+      description: 'No response body — successful response is a 204 No Content or similar.',
+    },
+    annotations: {
+      title: 'DELETE /api/v1/orgs/{orgId}/projects/{projectId}',
+      readOnlyHint: false,
+      idempotentHint: true,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'project_rename_1',
+    title: 'Project rename 1',
+    description:
+      'PATCH /api/v1/orgs/{orgId}/projects/{projectId}\n\nMethod: PATCH /api/v1/orgs/{orgId}/projects/{projectId}',
+    method: 'PATCH',
+    path: '/api/v1/orgs/{orgId}/projects/{projectId}',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+      {
+        name: 'projectId',
+        required: true,
+        type: 'integer',
+        description: 'projectId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: true,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'integer',
+          format: 'int64',
+        },
+        orgId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        slug: {
+          type: 'string',
+        },
+        name: {
+          type: 'string',
+        },
+        platform: {
+          type: 'string',
+        },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+      },
+    },
+    annotations: {
+      title: 'PATCH /api/v1/orgs/{orgId}/projects/{projectId}',
+      readOnlyHint: false,
+      idempotentHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
     name: 'remove_member',
     title: 'Remove member',
     description:
@@ -1600,99 +1825,6 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       readOnlyHint: true,
       idempotentHint: true,
       destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'get_project_3',
-    title: 'Get project 3',
-    description:
-      'GET /api/v1/orgs/{orgId}/projects/{projectId}\n\nMethod: GET /api/v1/orgs/{orgId}/projects/{projectId}',
-    method: 'GET',
-    path: '/api/v1/orgs/{orgId}/projects/{projectId}',
-    pathParams: [
-      {
-        name: 'orgId',
-        required: true,
-        type: 'integer',
-        description: 'orgId (integer) — required.',
-      },
-      {
-        name: 'projectId',
-        required: true,
-        type: 'integer',
-        description: 'projectId (integer) — required.',
-      },
-    ],
-    queryParams: [],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'integer',
-          format: 'int64',
-        },
-        orgId: {
-          type: 'integer',
-          format: 'int64',
-        },
-        slug: {
-          type: 'string',
-        },
-        name: {
-          type: 'string',
-        },
-        platform: {
-          type: 'string',
-        },
-        createdAt: {
-          type: 'string',
-          format: 'date-time',
-        },
-      },
-    },
-    annotations: {
-      title: 'GET /api/v1/orgs/{orgId}/projects/{projectId}',
-      readOnlyHint: true,
-      idempotentHint: true,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'archive_project',
-    title: 'Archive project',
-    description:
-      'DELETE /api/v1/orgs/{orgId}/projects/{projectId}\n\nMethod: DELETE /api/v1/orgs/{orgId}/projects/{projectId}',
-    method: 'DELETE',
-    path: '/api/v1/orgs/{orgId}/projects/{projectId}',
-    pathParams: [
-      {
-        name: 'orgId',
-        required: true,
-        type: 'integer',
-        description: 'orgId (integer) — required.',
-      },
-      {
-        name: 'projectId',
-        required: true,
-        type: 'integer',
-        description: 'projectId (integer) — required.',
-      },
-    ],
-    queryParams: [],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      additionalProperties: true,
-      description: 'No response body — successful response is a 204 No Content or similar.',
-    },
-    annotations: {
-      title: 'DELETE /api/v1/orgs/{orgId}/projects/{projectId}',
-      readOnlyHint: false,
-      idempotentHint: true,
-      destructiveHint: true,
       openWorldHint: true,
     },
   },
@@ -2096,35 +2228,6 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
     annotations: {
       title: 'DELETE /api/v1/projects/{projectId}/keys/{keyId}',
-      readOnlyHint: false,
-      idempotentHint: true,
-      destructiveHint: true,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'delete_org_3',
-    title: 'Delete org 3',
-    description: 'DELETE /api/v1/orgs/{orgId}\n\nMethod: DELETE /api/v1/orgs/{orgId}',
-    method: 'DELETE',
-    path: '/api/v1/orgs/{orgId}',
-    pathParams: [
-      {
-        name: 'orgId',
-        required: true,
-        type: 'integer',
-        description: 'orgId (integer) — required.',
-      },
-    ],
-    queryParams: [],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      additionalProperties: true,
-      description: 'No response body — successful response is a 204 No Content or similar.',
-    },
-    annotations: {
-      title: 'DELETE /api/v1/orgs/{orgId}',
       readOnlyHint: false,
       idempotentHint: true,
       destructiveHint: true,

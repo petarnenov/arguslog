@@ -11,6 +11,12 @@ public interface OrgUseCase {
   List<Org> listForUser(UUID userId);
 
   /**
+   * Renames an org's display name. Caller must be {@code owner}. Slug is intentionally NOT changed —
+   * URLs/DSNs/bookmarks remain stable. Returns the updated org, or empty if the org does not exist.
+   */
+  java.util.Optional<Org> rename(UUID actorId, long orgId, String name);
+
+  /**
    * Hard-deletes an org. Caller must be {@code owner}. Returns {@code false} if the org does not
    * exist (after the membership check, so non-members are still rejected with 404 by the access
    * guard).

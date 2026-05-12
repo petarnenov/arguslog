@@ -72,6 +72,21 @@ public class OrgService implements OrgUseCase {
 
   @Override
   @Transactional
+  public java.util.Optional<Org> rename(UUID actorId, long orgId, String name) {
+    requireName(name);
+    String role =
+        memberships
+            .userRoleInOrg(actorId, orgId)
+            .orElseThrow(
+                () -> new OrgAccessDeniedException("You are not a member of this organization."));
+    if (!"owner".equals(role)) {
+      throw new OrgAccessDeniedException("Only org owners can rename an organization.");
+    }
+    return orgs.rename(orgId, name.trim());
+  }
+
+  @Override
+  @Transactional
   public boolean delete(UUID actorId, long orgId) {
     String role =
         memberships

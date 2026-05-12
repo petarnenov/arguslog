@@ -18,6 +18,13 @@ public interface ProjectUseCase {
    */
   boolean archive(java.util.UUID actorId, long orgId, long projectId);
 
+  /**
+   * Renames a project's display name. Caller must be {@code owner} or {@code admin}. Slug is
+   * preserved so DSNs and bookmarks stay valid. Returns the updated project, or empty if it does
+   * not exist (or is archived).
+   */
+  Optional<Project> rename(java.util.UUID actorId, long orgId, long projectId, String name);
+
   /** Thrown when create input fails surface-level validation. */
   final class InvalidProjectException extends RuntimeException {
     private static final long serialVersionUID = 1L;

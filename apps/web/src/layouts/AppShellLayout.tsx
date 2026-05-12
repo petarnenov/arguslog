@@ -26,9 +26,9 @@ import {
   IconFolders,
   IconKey,
   IconLogout,
+  IconPencil,
   IconPlus,
   IconSend,
-  IconSettings,
   IconShieldLock,
   IconTag,
   IconTrash,
@@ -41,7 +41,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useNavigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
-import { deleteOrg } from '../api/orgs';
+import { deleteOrg, renameOrg } from '../api/orgs';
 import { queryKeys, useMe, useMyOrgs, useProjects } from '../api/queries';
 import { BonusBanner } from '../components/BonusBanner';
 import { useAuth } from '../auth/useAuth';
@@ -70,6 +70,9 @@ export function AppShellLayout() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmName, setConfirmName] = useState('');
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
 
   const deleteMutation = useMutation({
     mutationFn: () => {
@@ -100,6 +103,33 @@ export function AppShellLayout() {
   });
 
   const canDelete = Boolean(currentOrg) && confirmName.trim() === (currentOrg?.name ?? '');
+
+  const renameMutation = useMutation({
+    mutationFn: () => {
+      if (!currentOrg) throw new Error('no current org');
+      return renameOrg(currentOrg.id, renameValue.trim());
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.myOrgs() }),
+        queryClient.invalidateQueries({ queryKey: ['admin'] }),
+      ]);
+      setRenameOpen(false);
+      setRenameValue('');
+      setRenameError(null);
+    },
+    onError: (err: unknown) => {
+      setRenameError(
+        err instanceof ApiError ? (err.problem.detail ?? err.problem.title) : String(err),
+      );
+    },
+  });
+
+  const trimmedRename = renameValue.trim();
+  const canRename =
+    Boolean(currentOrg) &&
+    trimmedRename.length >= 2 &&
+    trimmedRename !== (currentOrg?.name ?? '');
 
   return (
     <AppShell
@@ -200,6 +230,19 @@ export function AppShellLayout() {
               </Menu.Item>
               {currentOrg && (
                 <Menu.Item
+                  leftSection={<IconPencil size={14} />}
+                  onClick={() => {
+                    setRenameError(null);
+                    setRenameValue(currentOrg.name);
+                    setRenameOpen(true);
+                  }}
+                  data-testid="org-rename-menu-item"
+                >
+                  {t('orgSwitcher.rename')}
+                </Menu.Item>
+              )}
+              {currentOrg && (
+                <Menu.Item
                   color="red"
                   leftSection={<IconTrash size={14} />}
                   onClick={() => {
@@ -295,12 +338,6 @@ export function AppShellLayout() {
               />
               <NavLink
                 component={Link}
-                to={`/orgs/${orgSlug}/projects/${projectId}/settings`}
-                label={t('nav.settings')}
-                leftSection={<IconSettings size={16} />}
-              />
-              <NavLink
-                component={Link}
                 to={`/orgs/${orgSlug}/projects/${projectId}/settings/keys`}
                 label="Keys"
                 leftSection={<IconShieldLock size={16} />}
@@ -358,6 +395,52 @@ export function AppShellLayout() {
               onClick={() => deleteMutation.mutate()}
             >
               {t('orgSwitcher.deleteConfirm')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={renameOpen}
+        onClose={() => {
+          if (!renameMutation.isPending) {
+            setRenameOpen(false);
+            setRenameValue('');
+            setRenameError(null);
+          }
+        }}
+        title={t('orgSwitcher.renameTitle', { name: currentOrg?.name ?? '' })}
+        size="md"
+      >
+        <Stack>
+          <TextInput
+            label={t('orgSwitcher.renameLabel')}
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.currentTarget.value)}
+            disabled={renameMutation.isPending}
+            data-autofocus
+            data-testid="org-rename-input"
+          />
+          {renameError ? (
+            <Alert color="red" variant="light">
+              {renameError}
+            </Alert>
+          ) : null}
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={() => setRenameOpen(false)}
+              disabled={renameMutation.isPending}
+            >
+              {t('orgSwitcher.renameCancel')}
+            </Button>
+            <Button
+              loading={renameMutation.isPending}
+              disabled={!canRename}
+              onClick={() => renameMutation.mutate()}
+              data-testid="org-rename-submit"
+            >
+              {t('orgSwitcher.renameConfirm')}
             </Button>
           </Group>
         </Stack>

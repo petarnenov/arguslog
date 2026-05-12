@@ -91,6 +91,23 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
   }
 
   @Override
+  public Optional<Project> rename(long orgId, long projectId, String name) {
+    pinOrg();
+    int updated =
+        jdbc.update(
+            """
+            UPDATE projects
+               SET name = ?
+             WHERE org_id = ? AND id = ? AND archived_at IS NULL
+            """,
+            name,
+            orgId,
+            projectId);
+    if (updated == 0) return Optional.empty();
+    return find(orgId, projectId);
+  }
+
+  @Override
   public Optional<Project> find(long orgId, long projectId) {
     pinOrg();
     // Treat archived projects as "not found" for application-level lookups so a

@@ -62,6 +62,13 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
   }
 
   @Override
+  public Optional<Org> rename(long orgId, String name) {
+    int updated = jdbc.update("UPDATE organizations SET name = ? WHERE id = ?", name, orgId);
+    if (updated == 0) return Optional.empty();
+    return findById(orgId);
+  }
+
+  @Override
   public void addMember(long orgId, UUID userId, String role) {
     jdbc.update(
         """

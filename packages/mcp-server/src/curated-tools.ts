@@ -148,6 +148,43 @@ Response shape: \`{ project: {...}, dsn: { dsn: "arguslog://...", dsnPublic, ...
     hasBody: true,
   },
 
+  rename_org: {
+    name: 'rename_org',
+    description: `Rename an organization's display name. Slug/URL is preserved so existing links and
+PATs remain valid. Caller must be the org owner.
+
+Method: PATCH /api/v1/orgs/{orgId}
+
+Required: \`orgId\`, \`body.name\` (2-100 chars after trimming).
+
+Example: \`{ "orgId": 42, "body": { "name": "Acme Renamed" } }\``,
+    method: 'PATCH',
+    path: '/api/v1/orgs/{orgId}',
+    pathParams: [{ name: 'orgId', required: true, type: 'integer' }],
+    queryParams: [],
+    hasBody: true,
+  },
+
+  rename_project: {
+    name: 'rename_project',
+    description: `Rename a project's display name. Slug/DSN/URL is preserved so existing SDK config
+keeps working. Caller must be owner or admin of the org.
+
+Method: PATCH /api/v1/orgs/{orgId}/projects/{projectId}
+
+Required: \`orgId\`, \`projectId\`, \`body.name\` (2-100 chars after trimming).
+
+Example: \`{ "orgId": 42, "projectId": 7, "body": { "name": "Marketing Web (v2)" } }\``,
+    method: 'PATCH',
+    path: '/api/v1/orgs/{orgId}/projects/{projectId}',
+    pathParams: [
+      { name: 'orgId', required: true, type: 'integer' },
+      { name: 'projectId', required: true, type: 'integer' },
+    ],
+    queryParams: [],
+    hasBody: true,
+  },
+
   create_release: {
     name: 'create_release',
     description: `Register a release for a project. Source maps uploaded later via the artifact

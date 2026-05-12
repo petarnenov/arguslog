@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import org.arguslog.api.adapter.in.web.dto.ProjectCreateResponse;
+import org.arguslog.api.adapter.in.web.dto.ProjectRenameRequest;
 import org.arguslog.api.adapter.in.web.dto.ProjectRequest;
 import org.arguslog.api.adapter.in.web.dto.ProjectResponse;
 import org.arguslog.api.application.DsnUseCase;
@@ -25,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -78,6 +80,20 @@ public class ProjectController {
   public ProjectResponse get(@PathVariable long orgId, @PathVariable long projectId) {
     return useCase
         .get(orgId, projectId)
+        .map(ProjectResponse::from)
+        .orElseThrow(() -> AccessException.notFound(projectId));
+  }
+
+  /** Renames a project's display name. Slug is preserved. Owner/admin only. */
+  @PatchMapping(value = "/{projectId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ProjectResponse rename(
+      @PathVariable long orgId,
+      @PathVariable long projectId,
+      @RequestBody ProjectRenameRequest body) {
+    PatScopeGuard.require(PatScope.PROJECTS_WRITE);
+    UUID actorId = AuthActor.currentUserId();
+    return useCase
+        .rename(actorId, orgId, projectId, body.name())
         .map(ProjectResponse::from)
         .orElseThrow(() -> AccessException.notFound(projectId));
   }

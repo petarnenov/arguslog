@@ -35,6 +35,18 @@ export function createProject(
   });
 }
 
+/** Owner/admin only. Renames display name; slug stays so DSN URLs remain valid. */
+export function renameProject(
+  orgId: number,
+  projectId: number,
+  name: string,
+): Promise<Project> {
+  return apiFetch<Project>(`/api/v1/orgs/${orgId}/projects/${projectId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
+  });
+}
+
 /** Soft-archive: server flips archived_at, project disappears from the live list. */
 export function archiveProject(orgId: number, projectId: number): Promise<void> {
   return apiFetch<void>(`/api/v1/orgs/${orgId}/projects/${projectId}`, {

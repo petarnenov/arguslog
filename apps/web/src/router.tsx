@@ -14,7 +14,6 @@ import { OrgSettingsPage } from './pages/OrgSettingsPage';
 import { OrgsLandingPage } from './pages/OrgsLandingPage';
 import { PersonalAccessTokensPage } from './pages/PersonalAccessTokensPage';
 import { ProjectKeysPage } from './pages/ProjectKeysPage';
-import { ProjectSettingsPage } from './pages/ProjectSettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ReleasesPage } from './pages/ReleasesPage';
 
@@ -36,7 +35,6 @@ export const router = createBrowserRouter([
         path: '/orgs/:orgSlug/projects/:projectId/issues/:issueId',
         element: <IssueDetailPage />,
       },
-      { path: '/orgs/:orgSlug/projects/:projectId/settings', element: <ProjectSettingsPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/settings/keys', element: <ProjectKeysPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/alert-rules', element: <AlertRulesPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/releases', element: <ReleasesPage /> },

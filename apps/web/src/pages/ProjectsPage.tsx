@@ -22,7 +22,7 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconArchive, IconArrowRight, IconDotsVertical } from '@tabler/icons-react';
+import { IconArchive, IconArrowRight, IconDotsVertical, IconPencil } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,7 +30,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
 import { type Dsn } from '../api/keys';
-import { archiveProject, createProject, type Project } from '../api/projects';
+import { archiveProject, createProject, renameProject, type Project } from '../api/projects';
 import { queryKeys, useMyOrgs, usePlatforms, useProjects } from '../api/queries';
 import { platformVisuals } from '../lib/platformVisuals';
 import { formatRelativeTime } from '../lib/relativeTime';
@@ -76,6 +76,9 @@ export function ProjectsPage() {
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dsnSuccess, setDsnSuccess] = useState<DsnSuccess | null>(null);
+  const [renameTarget, setRenameTarget] = useState<Project | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
 
   const form = useForm({
     initialValues: { name: '', platform: 'javascript' },
@@ -123,6 +126,30 @@ export function ProjectsPage() {
       );
     },
   });
+
+  const renameMutation = useMutation({
+    mutationFn: () => {
+      if (!org || !renameTarget) throw new Error('rename target missing');
+      return renameProject(org.id, renameTarget.id, renameValue.trim());
+    },
+    onSuccess: async () => {
+      if (org) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.projects(org.id) });
+      }
+      setRenameTarget(null);
+      setRenameValue('');
+      setRenameError(null);
+    },
+    onError: (err: unknown) => {
+      setRenameError(describeApiError(err));
+    },
+  });
+
+  const trimmedRename = renameValue.trim();
+  const canRename =
+    Boolean(renameTarget) &&
+    trimmedRename.length >= 2 &&
+    trimmedRename !== (renameTarget?.name ?? '');
 
   const closeDsnModal = () => {
     setDsnSuccess(null);
@@ -198,10 +225,61 @@ export function ProjectsPage() {
                 setArchiveError(null);
                 setArchiveTarget(target);
               }}
+              onRename={(target) => {
+                setRenameError(null);
+                setRenameValue(target.name);
+                setRenameTarget(target);
+              }}
             />
           ))}
         </SimpleGrid>
       )}
+
+      <Modal
+        opened={renameTarget !== null}
+        onClose={() => {
+          if (!renameMutation.isPending) {
+            setRenameTarget(null);
+            setRenameValue('');
+            setRenameError(null);
+          }
+        }}
+        title={t('projects.renameTitle', { name: renameTarget?.name ?? '' })}
+        size="md"
+      >
+        <Stack>
+          <TextInput
+            label={t('projects.renameLabel')}
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.currentTarget.value)}
+            disabled={renameMutation.isPending}
+            data-autofocus
+            data-testid="project-rename-input"
+          />
+          {renameError ? (
+            <Alert color="red" variant="light">
+              {renameError}
+            </Alert>
+          ) : null}
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={() => setRenameTarget(null)}
+              disabled={renameMutation.isPending}
+            >
+              {t('projects.renameCancel')}
+            </Button>
+            <Button
+              loading={renameMutation.isPending}
+              disabled={!canRename}
+              onClick={() => renameMutation.mutate()}
+              data-testid="project-rename-submit"
+            >
+              {t('projects.renameConfirm')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={archiveTarget !== null}
@@ -308,9 +386,10 @@ interface ProjectCardProps {
   project: Project;
   orgSlug: string;
   onArchive: (project: Project) => void;
+  onRename: (project: Project) => void;
 }
 
-function ProjectCard({ project, orgSlug, onArchive }: ProjectCardProps) {
+function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps) {
   const { t, i18n } = useTranslation();
   const visuals = platformVisuals(project.platform);
   const PlatformIcon = visuals.Icon;
@@ -379,6 +458,14 @@ function ProjectCard({ project, orgSlug, onArchive }: ProjectCardProps) {
             <Menu.Dropdown>
               <Menu.Item component={Link} to={issuesUrl} leftSection={<IconArrowRight size={14} />}>
                 {t('projects.viewIssues')}
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconPencil size={14} />}
+                onClick={() => onRename(project)}
+                aria-label={t('projects.renameAria', { name: project.name })}
+                data-testid={`project-rename-${project.slug}`}
+              >
+                {t('projects.renameAction')}
               </Menu.Item>
               <Menu.Divider />
               <Menu.Item

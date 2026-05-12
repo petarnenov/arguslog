@@ -123,4 +123,50 @@ class ProjectServiceTest {
     assertThat(service.archive(actor, 1L, 7L)).isTrue();
     verify(projects).archive(1L, 7L);
   }
+
+  @Test
+  void renameAllowsOwnersAndAdmins() {
+    UUID actor = UUID.fromString("44444444-4444-4444-4444-444444444444");
+    Project renamed =
+        new Project(7L, 1L, "my-app", "Renamed", "javascript", Instant.parse("2026-05-13T00:00:00Z"));
+    when(memberships.userRoleInOrg(actor, 1L)).thenReturn(Optional.of("admin"));
+    when(projects.rename(1L, 7L, "Renamed")).thenReturn(Optional.of(renamed));
+
+    assertThat(service.rename(actor, 1L, 7L, "  Renamed  ")).contains(renamed);
+    verify(projects).rename(1L, 7L, "Renamed");
+  }
+
+  @Test
+  void renameRejectsPlainMembers() {
+    UUID actor = UUID.fromString("55555555-5555-5555-5555-555555555555");
+    when(memberships.userRoleInOrg(actor, 1L)).thenReturn(Optional.of("member"));
+
+    assertThatThrownBy(() -> service.rename(actor, 1L, 7L, "Renamed"))
+        .isInstanceOf(ProjectAccessDeniedException.class)
+        .hasMessageContaining("owners and admins");
+    verify(projects, never()).rename(anyLong(), anyLong(), anyString());
+  }
+
+  @Test
+  void renameRejectsNonMembers() {
+    UUID actor = UUID.fromString("66666666-6666-6666-6666-666666666666");
+    when(memberships.userRoleInOrg(actor, 1L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.rename(actor, 1L, 7L, "Renamed"))
+        .isInstanceOf(ProjectAccessDeniedException.class)
+        .hasMessageContaining("not a member");
+    verify(projects, never()).rename(anyLong(), anyLong(), anyString());
+  }
+
+  @Test
+  void renameRejectsBlankOrShortName() {
+    UUID actor = UUID.fromString("77777777-7777-7777-7777-777777777777");
+    assertThatThrownBy(() -> service.rename(actor, 1L, 7L, "x"))
+        .isInstanceOf(InvalidProjectException.class)
+        .hasMessageContaining("at least");
+    assertThatThrownBy(() -> service.rename(actor, 1L, 7L, null))
+        .isInstanceOf(InvalidProjectException.class)
+        .hasMessageContaining("required");
+    verify(projects, never()).rename(anyLong(), anyLong(), anyString());
+  }
 }

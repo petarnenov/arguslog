@@ -22,6 +22,9 @@ public class ProjectService implements ProjectUseCase {
   /** Roles that may archive a project (owner can also delete the org wholesale). */
   private static final Set<String> ARCHIVE_ROLES = Set.of("owner", "admin");
 
+  /** Same set governs rename — admins can already archive, so they can rename too. */
+  private static final Set<String> RENAME_ROLES = Set.of("owner", "admin");
+
   private final ProjectWriteRepository projects;
   private final MembershipRepository memberships;
   private final PlatformRepository platforms;
@@ -74,6 +77,22 @@ public class ProjectService implements ProjectUseCase {
   @Transactional(readOnly = true)
   public Optional<Project> get(long orgId, long projectId) {
     return projects.find(orgId, projectId);
+  }
+
+  @Override
+  @Transactional
+  public Optional<Project> rename(UUID actorId, long orgId, long projectId, String name) {
+    requireName(name);
+    String role =
+        memberships
+            .userRoleInOrg(actorId, orgId)
+            .orElseThrow(
+                () ->
+                    new ProjectAccessDeniedException("You are not a member of this organization."));
+    if (!RENAME_ROLES.contains(role)) {
+      throw new ProjectAccessDeniedException("Only org owners and admins can rename projects.");
+    }
+    return projects.rename(orgId, projectId, name.trim());
   }
 
   @Override

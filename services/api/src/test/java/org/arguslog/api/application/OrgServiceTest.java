@@ -192,4 +192,55 @@ class OrgServiceTest {
     assertThat(service.delete(ACTOR, 1L)).isTrue();
     verify(orgs).delete(1L);
   }
+
+  @Test
+  void renameAllowsOwners() {
+    Org renamed =
+        new Org(1L, "acme", "Acme Renamed", "regular", Instant.parse("2026-05-13T00:00:00Z"));
+    when(memberships.userRoleInOrg(ACTOR, 1L)).thenReturn(Optional.of("owner"));
+    when(orgs.rename(1L, "Acme Renamed")).thenReturn(Optional.of(renamed));
+
+    Optional<Org> out = service.rename(ACTOR, 1L, "  Acme Renamed  ");
+
+    assertThat(out).contains(renamed);
+    verify(orgs).rename(1L, "Acme Renamed");
+  }
+
+  @Test
+  void renameRejectsAdmins() {
+    when(memberships.userRoleInOrg(ACTOR, 1L)).thenReturn(Optional.of("admin"));
+    assertThatThrownBy(() -> service.rename(ACTOR, 1L, "New Name"))
+        .isInstanceOf(OrgAccessDeniedException.class)
+        .hasMessageContaining("owners");
+    verify(orgs, never()).rename(anyLong(), anyString());
+  }
+
+  @Test
+  void renameRejectsNonMembers() {
+    when(memberships.userRoleInOrg(ACTOR, 1L)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service.rename(ACTOR, 1L, "New Name"))
+        .isInstanceOf(OrgAccessDeniedException.class)
+        .hasMessageContaining("not a member");
+    verify(orgs, never()).rename(anyLong(), anyString());
+  }
+
+  @Test
+  void renameRejectsShortOrBlankName() {
+    assertThatThrownBy(() -> service.rename(ACTOR, 1L, "x"))
+        .isInstanceOf(InvalidOrgException.class)
+        .hasMessageContaining("at least");
+    assertThatThrownBy(() -> service.rename(ACTOR, 1L, null))
+        .isInstanceOf(InvalidOrgException.class)
+        .hasMessageContaining("required");
+    verify(memberships, never()).userRoleInOrg(any(), anyLong());
+    verify(orgs, never()).rename(anyLong(), anyString());
+  }
+
+  @Test
+  void renameReturnsEmptyWhenOrgMissingAfterRoleCheck() {
+    when(memberships.userRoleInOrg(ACTOR, 1L)).thenReturn(Optional.of("owner"));
+    when(orgs.rename(1L, "New Name")).thenReturn(Optional.empty());
+
+    assertThat(service.rename(ACTOR, 1L, "New Name")).isEmpty();
+  }
 }

@@ -36,6 +36,12 @@ public interface OrgWriteRepository {
   Optional<Org> findById(long orgId);
 
   /**
+   * Updates the display name of an org. Slug is preserved. Returns the refreshed org (re-resolved
+   * through the same owner-tier JOIN as {@link #findById}) or empty if the org does not exist.
+   */
+  Optional<Org> rename(long orgId, String name);
+
+  /**
    * Hard-deletes an org. {@code ON DELETE CASCADE} on every dependent FK propagates the removal to
    * memberships, projects (and their issues/events/keys/etc), alert rules and destinations,
    * releases, and source-map artifacts. Returns {@code false} if the org did not exist.
