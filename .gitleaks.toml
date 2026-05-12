@@ -14,11 +14,16 @@ title = "Arguslog gitleaks config"
 useDefault = true
 
 [allowlist]
-description = "SDK test fixtures: synthetic JWT/API-key shapes for scrubber regex coverage"
+description = "SDK test fixtures + django-todo demo placeholder Stripe key"
 paths = [
   '''python-sdk/tests/.*\.py''',
+  '''python-sdk/examples/django-todo/todos/views\.py''',
   '''packages/sdk-core/src/__tests__/.*''',
   '''packages/sdk-browser/src/__tests__/.*''',
   '''packages/sdk-node/src/__tests__/.*''',
   '''java-sdk/src/test/.*''',
 ]
+# The django-todo demo hardcodes a Stripe key shaped like a real one
+# (sk_live_ABCDEFGHIJKLMNOP — literally A through P) to show how the
+# scrubber would treat it. Allowlisted to keep the scan clean; real
+# operators replace it with their own key from env at deploy time.
