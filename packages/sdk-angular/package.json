@@ -44,7 +44,7 @@
     "rxjs": "^7.8.1",
     "typescript": "^5.7.0",
     "vitest": "^3.2.4",
-    "zone.js": "^0.15.0"
+    "zone.js": "^0.16.2"
   },
   "repository": {
     "type": "git",
