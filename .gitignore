@@ -70,3 +70,7 @@ test-results/
 # Misc
 *.tmp
 *.bak
+
+# Claude Code local settings — contains operator-specific tokens, never commit
+.claude/settings.local.json
+.claude/settings.local.*.json
