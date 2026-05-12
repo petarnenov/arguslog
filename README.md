@@ -1,12 +1,40 @@
 # Arguslog
 
-Multi-tenant error tracking platform. Sentry-like, hosted on Railway.
+Open-source, self-hostable, multi-tenant error tracking platform — Sentry-like, but
+yours. Run it on your own infrastructure, or use the hosted instance at
+[arguslog.org](https://arguslog.org) for free.
+
+## What it does
+
+- Captures uncaught exceptions, log records, and breadcrumbs from JS, JVM, and
+  Python codebases via first-class SDKs.
+- Fingerprints + groups events into issues, persists them in
+  Postgres+TimescaleDB, and exposes a React dashboard for triage.
+- Sends real-time alerts to Slack, Telegram, generic webhooks, or email via
+  configurable rules with throttling.
+- Resolves minified JS stack traces back to original source via uploaded
+  source maps (CLI `argus releases upload-sourcemaps`).
+- Multi-tenant — orgs / projects / members / roles — so a single instance can
+  serve a team or a whole company.
+
+## Tiers
+
+The runtime supports four configurable tiers — `regular`, `silver`, `gold`,
+`platinum` — that gate per-month event counts, project count, member count,
+and retention window. On the hosted arguslog.org instance every new user
+starts on `regular`; admins (env-allowlist `ARGUSLOG_PLATFORM_ADMINS`) hand
+out elevated tiers as needed. On a self-hosted instance you set
+`ARGUSLOG_DEFAULT_TIER=platinum` and everyone is uncapped by default; the
+admin grant flow is still available if you ever want to differentiate.
+
+There is no payment surface in the code — no Stripe, no checkout, no
+subscriptions. Tier elevation is admin-grant only.
 
 ## Stack
 
 - **Frontend** — Vite + React 19 + React Router v7 + TanStack Query v5 + Mantine v7 + Vitest
 - **Backend** — Java 21 + Spring Boot 3.4 (microservices: `ingest`, `worker`, `api`)
-- **Storage** — Postgres + TimescaleDB + Redis Streams + Cloudflare R2
+- **Storage** — Postgres + TimescaleDB + Redis Streams + S3-compatible object store (R2 / MinIO)
 - **Auth** — Keycloak 25 (OIDC + PKCE)
 - **Monorepo** — Turborepo + pnpm workspaces + Gradle composite build
 
@@ -15,10 +43,10 @@ Multi-tenant error tracking platform. Sentry-like, hosted on Railway.
 ```
 apps/web/                      # React/Vite dashboard
 apps/landing/                  # Vite + Mantine marketing site (live SDK catalog)
-services/api/                  # public REST + admin
+services/api/                  # public REST + admin endpoints
 services/ingest/               # public event endpoint
-services/worker/               # Redis Streams consumer
-services/keycloak/realm/       # Keycloak realm export
+services/worker/               # Redis Streams consumer + cron jobs
+services/keycloak/realm/       # Keycloak realm template
 packages/sdk-core/             # @arguslog/sdk-core — shared transport, scope, scrubber
 packages/sdk-browser/          # @arguslog/sdk-browser — vanilla JS/TS browser SDK
 packages/sdk-node/             # @arguslog/sdk-node — Node.js SDK + Express adapter
@@ -27,11 +55,10 @@ packages/sdk-react-native/     # @arguslog/sdk-react-native — RN-aware integra
 packages/sdk-nextjs/           # @arguslog/sdk-nextjs — App/Pages Router + instrumentation hook
 packages/sdk-angular/          # @arguslog/sdk-angular — ErrorHandler + provideArguslog
 packages/sdk-vue/              # @arguslog/sdk-vue — Vue 3 plugin + composable + ErrorBoundary
-packages/sdk-web3/             # @arguslog/sdk-web3 — viem/ethers/Solana/Anchor/wagmi error decoding + auto-breadcrumbs
-packages/eslint-config/        # shared ESLint config
-packages/tsconfig/              # shared tsconfig presets
+packages/sdk-web3/             # @arguslog/sdk-web3 — viem/ethers/Solana/Anchor/wagmi error decoding
+packages/mcp-server/           # @arguslog/mcp-server — Model Context Protocol surface for Claude / agents
 java-sdk/                      # org.arguslog:arguslog-java-sdk (Spring Boot autoconfig)
-python-sdk/                    # arguslog (PyPI) — Python 3.9+ SDK with stdlib transport
+python-sdk/                    # arguslog (PyPI) — Python 3.9+ SDK
 cli/                           # @arguslog/cli — releases + sourcemap upload
 e2e/                           # Playwright suites
 infra/docker/                  # docker-compose for local dev
@@ -44,9 +71,15 @@ Flyway migrations are owned by `services/api` and live in
 ### Naming
 
 Java packages and Maven `groupId` use `org.arguslog.*` — reverse-DNS of
-the project domain `arguslog.org`. The product name is still **Arguslog**;
-`arguslog` only appears in coordinates and the public domain (the short
-domain `arguslog.org` was unavailable at registration time).
+the project domain `arguslog.org`. The product name is **Arguslog**;
+`arguslog` is the short slug used in coordinates and the public domain.
+
+## Self-hosting
+
+A working docker-compose stack — postgres+timescale, redis, keycloak, minio,
+mailhog — lives in `infra/docker/docker-compose.yml`. See
+[SELF_HOSTING.md](SELF_HOSTING.md) for the step-by-step runbook
+(images, env vars, Keycloak first-boot admin, TLS, backups).
 
 ## Local dev
 
@@ -65,10 +98,6 @@ healthy Postgres / Redis / Keycloak / MinIO from boot, then opens an mprocs
 TUI with one panel per process: `ingest` (`:8080`), `api` (`:8081`),
 `worker` (`:8082`), `web` (`:5173`), plus a manual `infra-logs` panel.
 
-In mprocs: `Tab` switches panels, `r` restarts the focused process, `s`
-starts a manual one, `q` quits and gracefully stops everything. Infra keeps
-running across mprocs sessions; tear it down with `make down`.
-
 ### Make targets
 
 |                                            |                                                                 |
@@ -86,14 +115,6 @@ running across mprocs sessions; tear it down with `make down`.
 | `make doctor`                              | check prerequisites                                             |
 | `make help`                                | list all targets                                                |
 
-### Manual route (without `make` / `mprocs`)
-
-```bash
-docker compose -f infra/docker/docker-compose.yml up -d
-pnpm dev                                                       # web + SDK watch
-./gradlew :services:api:bootRun :services:ingest:bootRun :services:worker:bootRun
-```
-
 ## Tests
 
 ```bash
@@ -105,11 +126,6 @@ make python-test            # pytest under python-sdk/ (uv-managed venv)
 ```
 
 ## SDKs
-
-The platform ships first-class SDKs across the JS, JVM, and Python
-ecosystems. The dashboard's project-create dropdown and the marketing
-landing page are both fed live from `/api/v1/platforms` so the catalog
-stays in lockstep with what's actually shipped.
 
 | Runtime             | Package                          | Source                       |
 | ------------------- | -------------------------------- | ---------------------------- |
@@ -123,6 +139,7 @@ stays in lockstep with what's actually shipped.
 | Java / Spring       | `org.arguslog:arguslog-java-sdk` | `java-sdk/`                  |
 | Python 3.9+         | `arguslog` (PyPI)                | `python-sdk/`                |
 | Web3 (EVM + Solana) | `@arguslog/sdk-web3`             | `packages/sdk-web3/`         |
+| MCP server          | `@arguslog/mcp-server`           | `packages/mcp-server/`       |
 
 A standalone install + quickstart index for every SDK lives in
 [`docs/sdks.md`](docs/sdks.md). The Web3 add-on layers on top of any
@@ -130,6 +147,15 @@ JS-runtime SDK and decodes wallet / chain / contract / Anchor errors
 from viem, ethers v6, `@solana/web3.js`, Anchor, wagmi, and
 WalletConnect into searchable Arguslog issues.
 
+## Contributing
+
+PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, coding
+conventions, and the test gates that have to pass on every PR.
+
+Security vulnerability? See [SECURITY.md](SECURITY.md) — please do not file
+public GitHub issues for exploitable bugs.
+
 ## License
 
-MIT (see LICENSE). Java SDK is Apache-2.0.
+MIT — see [LICENSE](LICENSE). Java SDK ships as Apache-2.0 under the same
+copyright.
