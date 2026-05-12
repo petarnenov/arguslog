@@ -83,19 +83,18 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
       Org org =
           jdbc.queryForObject(
               """
-              SELECT o.id, o.slug, o.name, COALESCE(ou.plan::text, 'free') AS plan, o.created_at
+              SELECT o.id, o.slug, o.name, COALESCE(ou.tier::text, 'regular') AS plan, o.created_at
                 FROM organizations o
                 LEFT JOIN LATERAL (
                   SELECT m.user_id
                     FROM org_members m
                     JOIN users u ON u.id = m.user_id
                    WHERE m.org_id = o.id AND m.role = 'owner'::org_role
-                   ORDER BY CASE u.plan
-                              WHEN 'enterprise' THEN 5
-                              WHEN 'business'   THEN 4
-                              WHEN 'pro'        THEN 3
-                              WHEN 'starter'    THEN 2
-                              WHEN 'free'       THEN 1
+                   ORDER BY CASE u.tier
+                              WHEN 'platinum' THEN 4
+                              WHEN 'gold'     THEN 3
+                              WHEN 'silver'   THEN 2
+                              WHEN 'regular'  THEN 1
                               ELSE 0
                             END DESC,
                             m.added_at ASC
@@ -139,7 +138,7 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
     // every Org dropdown shows the effective tier regardless of which org was last billed.
     return jdbc.query(
         """
-        SELECT o.id, o.slug, o.name, COALESCE(ou.plan::text, 'free') AS plan, o.created_at
+        SELECT o.id, o.slug, o.name, COALESCE(ou.tier::text, 'regular') AS plan, o.created_at
           FROM organizations o
           JOIN org_members m ON m.org_id = o.id
           LEFT JOIN LATERAL (
@@ -147,12 +146,11 @@ public class JdbcOrgWriteRepository implements OrgWriteRepository {
               FROM org_members mm
               JOIN users u ON u.id = mm.user_id
              WHERE mm.org_id = o.id AND mm.role = 'owner'::org_role
-             ORDER BY CASE u.plan
-                        WHEN 'enterprise' THEN 5
-                        WHEN 'business'   THEN 4
-                        WHEN 'pro'        THEN 3
-                        WHEN 'starter'    THEN 2
-                        WHEN 'free'       THEN 1
+             ORDER BY CASE u.tier
+                        WHEN 'platinum' THEN 4
+                        WHEN 'gold'     THEN 3
+                        WHEN 'silver'   THEN 2
+                        WHEN 'regular'  THEN 1
                         ELSE 0
                       END DESC,
                       mm.added_at ASC

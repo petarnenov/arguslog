@@ -86,12 +86,11 @@ public class JdbcMembershipRepository implements MembershipRepository, Membershi
                 FROM org_members m
                 JOIN users u ON u.id = m.user_id
                WHERE m.org_id = ? AND m.role = 'owner'::org_role
-               ORDER BY CASE u.plan
-                          WHEN 'enterprise' THEN 5
-                          WHEN 'business'   THEN 4
-                          WHEN 'pro'        THEN 3
-                          WHEN 'starter'    THEN 2
-                          WHEN 'free'       THEN 1
+               ORDER BY CASE u.tier
+                          WHEN 'platinum' THEN 4
+                          WHEN 'gold'     THEN 3
+                          WHEN 'silver'   THEN 2
+                          WHEN 'regular'  THEN 1
                           ELSE 0
                         END DESC,
                         m.added_at ASC
@@ -107,26 +106,17 @@ public class JdbcMembershipRepository implements MembershipRepository, Membershi
 
   @Override
   public java.util.Optional<Long> findPrimaryOwnedOrg(UUID userId) {
-    // Same picker rule as JdbcOrgPlanRepository / JdbcBillingCustomerRepository — highest plan
-    // tier first, earliest membership tiebreak. Keeps the per-user billing endpoints pointing at
-    // the same "billing org" that webhook dual-writes already update.
+    // OSS conversion (V30+): tier lives on users, not organizations — and a user's orgs all
+    // inherit the same user-level tier. The legacy "highest org-plan first" tiebreak collapses
+    // to a single dimension, so just pick the earliest-owned org.
     try {
       Long id =
           jdbc.queryForObject(
               """
               SELECT m.org_id
                 FROM org_members m
-                JOIN organizations o ON o.id = m.org_id
                WHERE m.user_id = ? AND m.role = 'owner'::org_role
-               ORDER BY CASE o.plan
-                          WHEN 'enterprise' THEN 5
-                          WHEN 'business'   THEN 4
-                          WHEN 'pro'        THEN 3
-                          WHEN 'starter'    THEN 2
-                          WHEN 'free'       THEN 1
-                          ELSE 0
-                        END DESC,
-                        m.added_at ASC
+               ORDER BY m.added_at ASC
                LIMIT 1
               """,
               Long.class,
