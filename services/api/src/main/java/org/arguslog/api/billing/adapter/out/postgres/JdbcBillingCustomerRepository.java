@@ -12,12 +12,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * Per-user billing repository (V27+). All writes target {@code users} rows directly — the
- * legacy {@code organizations.stripe_customer_id / plan / plan_renews_at / billing_interval /
+ * Per-user billing repository (V27+). All writes target {@code users} rows directly — the legacy
+ * {@code organizations.stripe_customer_id / plan / plan_renews_at / billing_interval /
  * payment_grace_until} columns were dropped in V27. Org-keyed read methods are kept for callers
  * that still hand us an {@code orgId} (Stripe checkout for example knows about the org from
- * client_reference_id); under the hood they resolve the org's primary owner and read the user
- * row, matching the picker rule the rest of the codebase uses.
+ * client_reference_id); under the hood they resolve the org's primary owner and read the user row,
+ * matching the picker rule the rest of the codebase uses.
  */
 @Component
 public class JdbcBillingCustomerRepository implements BillingCustomerRepository {
@@ -104,9 +104,7 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
     jdbc.update(
         "UPDATE users SET plan = ?::org_plan, plan_renews_at = ? WHERE id = "
             + primaryOwnerSubquery(),
-        new Object[] {
-          planDbValue, renewsAt == null ? null : Timestamp.from(renewsAt), orgId
-        },
+        new Object[] {planDbValue, renewsAt == null ? null : Timestamp.from(renewsAt), orgId},
         new int[] {Types.OTHER, Types.TIMESTAMP, Types.BIGINT});
   }
 
@@ -153,8 +151,8 @@ public class JdbcBillingCustomerRepository implements BillingCustomerRepository 
   /**
    * SQL fragment that resolves to the "primary owner" user_id of {@code ?} (the org id). The
    * tiebreak rule matches {@link JdbcOrgPlanRepository}: highest current plan tier wins, ties
-   * broken by earliest membership. Inlined as a subquery so each write stays a single statement
-   * — the alternative was two round-trips per Stripe event, which add up under load.
+   * broken by earliest membership. Inlined as a subquery so each write stays a single statement —
+   * the alternative was two round-trips per Stripe event, which add up under load.
    */
   private static String primaryOwnerSubquery() {
     return """

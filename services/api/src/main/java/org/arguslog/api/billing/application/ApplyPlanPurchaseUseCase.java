@@ -6,10 +6,10 @@ import org.arguslog.api.billing.domain.PlanPurchase;
 import org.arguslog.billing.PlanTier;
 
 /**
- * Applies a successful plan purchase from any provider. Records the purchase row, extends the
- * org's {@code plan_renews_at} from the later of (now, current renewal) by the purchased months,
- * and sets {@code billing_interval} to match the duration. Idempotent — re-delivering the same
- * provider event returns the previously recorded purchase without double-applying.
+ * Applies a successful plan purchase from any provider. Records the purchase row, extends the org's
+ * {@code plan_renews_at} from the later of (now, current renewal) by the purchased months, and sets
+ * {@code billing_interval} to match the duration. Idempotent — re-delivering the same provider
+ * event returns the previously recorded purchase without double-applying.
  */
 public interface ApplyPlanPurchaseUseCase {
 

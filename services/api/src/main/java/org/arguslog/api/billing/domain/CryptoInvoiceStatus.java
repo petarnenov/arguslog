@@ -7,8 +7,8 @@ import java.util.Locale;
  * enum and the {@code payment_status} field in NOWPayments IPN payloads — except {@link #PENDING}
  * which is our own pre-IPN state (invoice row inserted, NOWPayments not yet contacted).
  *
- * <p>Terminal states: {@link #FINISHED}, {@link #FAILED}, {@link #REFUNDED}, {@link #EXPIRED}.
- * Plan upgrade fires only on {@link #FINISHED}.
+ * <p>Terminal states: {@link #FINISHED}, {@link #FAILED}, {@link #REFUNDED}, {@link #EXPIRED}. Plan
+ * upgrade fires only on {@link #FINISHED}.
  */
 public enum CryptoInvoiceStatus {
   PENDING,

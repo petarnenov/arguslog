@@ -32,8 +32,8 @@ public interface UsageUseCase {
       Bonus bonus) {}
 
   /**
-   * Active bonus grant if any. {@code null} on the snapshot means "no active grant"; the
-   * dashboard simply skips the bonus banner.
+   * Active bonus grant if any. {@code null} on the snapshot means "no active grant"; the dashboard
+   * simply skips the bonus banner.
    */
   record Bonus(Instant until, String reason, String grantedByEmail) {}
 }

@@ -20,9 +20,9 @@ import org.springframework.web.client.RestClientException;
  *   <li>{@code GET /v1/payment/{payment_id}} — read-back used by reconciliation jobs
  * </ul>
  *
- * <p>Connection + read timeouts are short (~10s). NOWPayments is occasionally slow during peak
- * but we'd rather fail fast and let the user retry the checkout button than block a request
- * thread for a minute.
+ * <p>Connection + read timeouts are short (~10s). NOWPayments is occasionally slow during peak but
+ * we'd rather fail fast and let the user retry the checkout button than block a request thread for
+ * a minute.
  */
 @Component
 public class NowPaymentsClient {
@@ -54,11 +54,13 @@ public class NowPaymentsClient {
               .uri("/invoice")
               .body(request)
               .retrieve()
-              .onStatus(HttpStatusCode::isError, (req, res) -> {
-                String body = new String(res.getBody().readAllBytes());
-                throw new NowPaymentsException(
-                    "NOWPayments createInvoice failed: " + res.getStatusCode() + " " + body);
-              })
+              .onStatus(
+                  HttpStatusCode::isError,
+                  (req, res) -> {
+                    String body = new String(res.getBody().readAllBytes());
+                    throw new NowPaymentsException(
+                        "NOWPayments createInvoice failed: " + res.getStatusCode() + " " + body);
+                  })
               .body(CreateInvoiceResponse.class);
       if (response == null || response.invoiceUrl() == null) {
         throw new NowPaymentsException("NOWPayments returned an empty invoice response");

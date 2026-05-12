@@ -7,12 +7,12 @@ import org.arguslog.billing.PlanTier;
 
 /**
  * Server-driven pricing config consumed by the public billing page. Frontend reads this once on
- * page load and renders the tier cards from {@code tiers[]}; pricing changes therefore require
- * no frontend deploy.
+ * page load and renders the tier cards from {@code tiers[]}; pricing changes therefore require no
+ * frontend deploy.
  *
- * <p>The response includes Free as a non-purchasable info row (durations is empty, prices are 0)
- * so the UI can render its caps next to the paid tiers — reads as a comparison column rather
- * than a CTA.
+ * <p>The response includes Free as a non-purchasable info row (durations is empty, prices are 0) so
+ * the UI can render its caps next to the paid tiers — reads as a comparison column rather than a
+ * CTA.
  */
 public record BillingPlansResponse(
     @JsonProperty("currency") String currency, @JsonProperty("tiers") List<TierInfo> tiers) {
@@ -39,7 +39,8 @@ public record BillingPlansResponse(
 
   public static BillingPlansResponse defaults() {
     List<TierInfo> tiers = new ArrayList<>();
-    for (PlanTier tier : List.of(PlanTier.FREE, PlanTier.STARTER, PlanTier.PRO, PlanTier.BUSINESS)) {
+    for (PlanTier tier :
+        List.of(PlanTier.FREE, PlanTier.STARTER, PlanTier.PRO, PlanTier.BUSINESS)) {
       tiers.add(toTierInfo(tier));
     }
     return new BillingPlansResponse("USD", tiers);

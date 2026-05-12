@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory;
  * annotations) so this lib stays Spring-free — each service has its own @Configuration that
  * constructs the bean from its env-loaded master key.
  *
- * <p>Reads a base64-encoded 32-byte AES-256 master key. An empty value falls back to a built-in
- * dev key with a loud WARN at boot — DO NOT run prod that way.
+ * <p>Reads a base64-encoded 32-byte AES-256 master key. An empty value falls back to a built-in dev
+ * key with a loud WARN at boot — DO NOT run prod that way.
  */
 public final class AesGcmSecretCipher implements SecretCipher {
 

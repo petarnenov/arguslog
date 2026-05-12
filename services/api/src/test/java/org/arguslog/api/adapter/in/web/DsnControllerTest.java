@@ -71,9 +71,7 @@ class DsnControllerTest extends AbstractControllerTest {
 
   @Test
   void revokeReturns404ProblemWhenKeyMissing() throws Exception {
-    doThrow(new DsnNotFoundException(PROJECT_ID, 999L))
-        .when(dsnUseCase)
-        .revoke(PROJECT_ID, 999L);
+    doThrow(new DsnNotFoundException(PROJECT_ID, 999L)).when(dsnUseCase).revoke(PROJECT_ID, 999L);
 
     mvc.perform(delete("/api/v1/projects/{projectId}/keys/{keyId}", PROJECT_ID, 999L))
         .andExpect(status().isNotFound())

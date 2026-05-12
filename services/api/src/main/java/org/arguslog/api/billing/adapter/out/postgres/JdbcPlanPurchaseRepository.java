@@ -67,7 +67,9 @@ public class JdbcPlanPurchaseRepository implements PlanPurchaseRepository {
         });
 
     return jdbc.queryForObject(
-        "SELECT " + SELECT_COLUMNS + " FROM plan_purchases"
+        "SELECT "
+            + SELECT_COLUMNS
+            + " FROM plan_purchases"
             + " WHERE provider = ?::billing_provider_t AND provider_reference = ?",
         rowMapper(),
         provider.dbValue(),
@@ -79,7 +81,9 @@ public class JdbcPlanPurchaseRepository implements PlanPurchaseRepository {
     try {
       PlanPurchase row =
           jdbc.queryForObject(
-              "SELECT " + SELECT_COLUMNS + " FROM plan_purchases"
+              "SELECT "
+                  + SELECT_COLUMNS
+                  + " FROM plan_purchases"
                   + " WHERE org_id = ? ORDER BY applied_at DESC LIMIT 1",
               rowMapper(),
               orgId);
@@ -92,7 +96,9 @@ public class JdbcPlanPurchaseRepository implements PlanPurchaseRepository {
   @Override
   public List<PlanPurchase> listForOrg(long orgId) {
     return jdbc.query(
-        "SELECT " + SELECT_COLUMNS + " FROM plan_purchases"
+        "SELECT "
+            + SELECT_COLUMNS
+            + " FROM plan_purchases"
             + " WHERE org_id = ? ORDER BY applied_at DESC",
         rowMapper(),
         orgId);
@@ -101,7 +107,9 @@ public class JdbcPlanPurchaseRepository implements PlanPurchaseRepository {
   @Override
   public List<PlanPurchase> findExpiringBetween(Instant from, Instant to) {
     return jdbc.query(
-        "SELECT " + SELECT_COLUMNS + " FROM plan_purchases"
+        "SELECT "
+            + SELECT_COLUMNS
+            + " FROM plan_purchases"
             + " WHERE expires_at >= ? AND expires_at < ? ORDER BY expires_at ASC",
         rowMapper(),
         Timestamp.from(from),

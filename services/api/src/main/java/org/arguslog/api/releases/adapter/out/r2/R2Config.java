@@ -1,8 +1,7 @@
 package org.arguslog.api.releases.adapter.out.r2;
 
-import org.arguslog.storage.R2Properties;
-
 import java.net.URI;
+import org.arguslog.storage.R2Properties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -109,10 +109,7 @@ public class MemberController {
   @ExceptionHandler(MemberCapExceededException.class)
   ResponseEntity<ProblemDetail> handleCapExceeded(MemberCapExceededException e) {
     return problem(
-        HttpStatus.PAYMENT_REQUIRED,
-        "Member cap exceeded",
-        "member-cap-exceeded",
-        e.getMessage());
+        HttpStatus.PAYMENT_REQUIRED, "Member cap exceeded", "member-cap-exceeded", e.getMessage());
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────

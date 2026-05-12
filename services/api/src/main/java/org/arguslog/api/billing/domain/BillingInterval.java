@@ -7,13 +7,13 @@ import java.util.Locale;
  * organizations.billing_interval}):
  *
  * <ul>
- *   <li>Stripe legacy (recurring): {@link #MONTHLY}, {@link #ANNUAL} — set by Stripe webhooks
- *       when an active subscription is observed. Compiled in but only runs when
- *       {@code BILLING_PROVIDER=stripe}.
- *   <li>One-time prepaid (NOWPayments + Lemon Squeezy): {@link #ONE_MONTH}, {@link
- *       #THREE_MONTHS}, {@link #SIX_MONTHS}, {@link #TWELVE_MONTHS} — set by crypto/MoR webhooks
- *       on a successful purchase. The org's plan expires at {@code applied_at + duration} unless
- *       another purchase extends it.
+ *   <li>Stripe legacy (recurring): {@link #MONTHLY}, {@link #ANNUAL} — set by Stripe webhooks when
+ *       an active subscription is observed. Compiled in but only runs when {@code
+ *       BILLING_PROVIDER=stripe}.
+ *   <li>One-time prepaid (NOWPayments + Lemon Squeezy): {@link #ONE_MONTH}, {@link #THREE_MONTHS},
+ *       {@link #SIX_MONTHS}, {@link #TWELVE_MONTHS} — set by crypto/MoR webhooks on a successful
+ *       purchase. The org's plan expires at {@code applied_at + duration} unless another purchase
+ *       extends it.
  * </ul>
  */
 public enum BillingInterval {
@@ -55,8 +55,9 @@ public enum BillingInterval {
       case 3 -> THREE_MONTHS;
       case 6 -> SIX_MONTHS;
       case 12 -> TWELVE_MONTHS;
-      default -> throw new IllegalArgumentException(
-          "Unsupported one-time duration: " + months + " months. Allowed: 1, 3, 6, 12.");
+      default ->
+          throw new IllegalArgumentException(
+              "Unsupported one-time duration: " + months + " months. Allowed: 1, 3, 6, 12.");
     };
   }
 }

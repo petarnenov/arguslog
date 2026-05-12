@@ -26,8 +26,7 @@ public class JdbcUserBillingRepository implements UserBillingRepository {
   public Optional<PlanTier> findPlan(UUID userId) {
     try {
       String raw =
-          jdbc.queryForObject(
-              "SELECT plan::text FROM users WHERE id = ?", String.class, userId);
+          jdbc.queryForObject("SELECT plan::text FROM users WHERE id = ?", String.class, userId);
       return Optional.of(PlanTier.fromDbValue(raw));
     } catch (EmptyResultDataAccessException e) {
       return Optional.empty();

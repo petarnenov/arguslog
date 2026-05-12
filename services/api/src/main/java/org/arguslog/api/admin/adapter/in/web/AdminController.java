@@ -30,8 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Platform-administrator endpoints. Every method runs {@link PlatformAdminGuard#requireAdmin()}
  * first; only an interactive (JWT) login from an email in {@code arguslog.platform-admins} gets
- * past. State-changing methods (POST grant, DELETE revoke) write an entry to
- * {@code admin_audit_log} via {@link AdminGrantService}.
+ * past. State-changing methods (POST grant, DELETE revoke) write an entry to {@code
+ * admin_audit_log} via {@link AdminGrantService}.
  */
 @RestController
 @RequestMapping(value = "/api/v1/admin", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -89,8 +89,7 @@ public class AdminController {
   @GetMapping("/orgs/{orgId}")
   public AdminOrgResponse org(@PathVariable long orgId) {
     guard.requireAdmin();
-    return port
-        .getOrg(orgId)
+    return port.getOrg(orgId)
         .map(AdminOrgResponse::from)
         .orElseThrow(() -> new OrgNotFoundException("Organization " + orgId + " not found."));
   }

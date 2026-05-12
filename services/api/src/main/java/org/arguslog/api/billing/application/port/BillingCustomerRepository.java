@@ -15,8 +15,8 @@ public interface BillingCustomerRepository {
 
   /**
    * Per-user lookup (V26+). The user is the source of truth for billing identity; checkout reuses
-   * this customer instead of spinning up a new Stripe customer for every owned org. Empty for
-   * users who have never reached checkout.
+   * this customer instead of spinning up a new Stripe customer for every owned org. Empty for users
+   * who have never reached checkout.
    */
   Optional<String> findCustomerIdForUser(UUID userId);
 

@@ -62,7 +62,8 @@ class StripeCheckoutServiceTest {
   @Test
   void unconfiguredKeyOrPriceRaises503Exception() {
     StripeProperties bad = new StripeProperties("", "", "", "", "https://app.example");
-    StripeCheckoutService unconfigured = new StripeCheckoutService(stripe, bad, customers, orgs, memberships);
+    StripeCheckoutService unconfigured =
+        new StripeCheckoutService(stripe, bad, customers, orgs, memberships);
     assertThatThrownBy(
             () -> unconfigured.createCheckoutUrl(1L, "user@example.com", BillingInterval.MONTHLY))
         .isInstanceOf(StripeNotConfiguredException.class);

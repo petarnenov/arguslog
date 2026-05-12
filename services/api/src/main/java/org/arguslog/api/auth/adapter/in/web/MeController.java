@@ -6,8 +6,8 @@ import java.util.UUID;
 import org.arguslog.api.admin.PlatformAdminGuard;
 import org.arguslog.api.billing.application.port.OrgPlanRepository.BonusSnapshot;
 import org.arguslog.api.billing.application.port.UserBillingRepository;
-import org.arguslog.billing.PlanTier;
 import org.arguslog.api.security.AuthActor;
+import org.arguslog.billing.PlanTier;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * {@code GET /api/v1/me} — "who am I" payload the dashboard fetches once on load. Carries the
  * platform-admin flag (so the frontend can show the Admin nav without first hammering admin
- * endpoints) and the user's billing identity (plan, renew, bonus, grace) — per-user since V26,
- * so this is the right surface to expose them.
+ * endpoints) and the user's billing identity (plan, renew, bonus, grace) — per-user since V26, so
+ * this is the right surface to expose them.
  */
 @RestController
 @RequestMapping(value = "/api/v1/me", produces = MediaType.APPLICATION_JSON_VALUE)

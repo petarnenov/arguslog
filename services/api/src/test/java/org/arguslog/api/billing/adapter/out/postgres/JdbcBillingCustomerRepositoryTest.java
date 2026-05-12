@@ -24,9 +24,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * Per-user billing (V27+): JdbcBillingCustomerRepository writes target the org's primary-owner
- * user row directly. Test seeds an org + owner user so the primary-owner subquery resolves, and
- * asserts each operation lands on users.* instead of the (now-dropped) organizations.* columns.
+ * Per-user billing (V27+): JdbcBillingCustomerRepository writes target the org's primary-owner user
+ * row directly. Test seeds an org + owner user so the primary-owner subquery resolves, and asserts
+ * each operation lands on users.* instead of the (now-dropped) organizations.* columns.
  */
 @Testcontainers
 class JdbcBillingCustomerRepositoryTest {
@@ -69,8 +69,7 @@ class JdbcBillingCustomerRepositoryTest {
         .execute("DELETE FROM users WHERE email LIKE 'billing-test-%'");
     try (Connection conn = dataSource.getConnection()) {
       try (PreparedStatement stmt =
-          conn.prepareStatement(
-              "INSERT INTO users (id, email, display_name) VALUES (?, ?, ?)")) {
+          conn.prepareStatement("INSERT INTO users (id, email, display_name) VALUES (?, ?, ?)")) {
         stmt.setObject(1, OWNER);
         stmt.setString(2, "billing-test-owner@example.com");
         stmt.setString(3, "Billing Test Owner");
@@ -183,8 +182,7 @@ class JdbcBillingCustomerRepositoryTest {
     boolean written = repo.openPaymentGrace(1L, fresh);
 
     assertThat(written).isTrue();
-    assertThat(readGrace(OWNER))
-        .isCloseTo(fresh, within(1, java.time.temporal.ChronoUnit.SECONDS));
+    assertThat(readGrace(OWNER)).isCloseTo(fresh, within(1, java.time.temporal.ChronoUnit.SECONDS));
   }
 
   @Test

@@ -16,8 +16,8 @@ public interface PlanPurchaseRepository {
 
   /**
    * Insert a new purchase if {@code (provider, providerReference)} hasn't been seen. Returns the
-   * stored row (newly inserted or pre-existing) so the caller can read back the assigned id and
-   * the canonical {@code applied_at}.
+   * stored row (newly inserted or pre-existing) so the caller can read back the assigned id and the
+   * canonical {@code applied_at}.
    */
   PlanPurchase recordIfNew(
       long orgId,
@@ -37,8 +37,8 @@ public interface PlanPurchaseRepository {
   List<PlanPurchase> listForOrg(long orgId);
 
   /**
-   * Purchases that expire between {@code from} (inclusive) and {@code to} (exclusive). Used by
-   * the renewal reminder job.
+   * Purchases that expire between {@code from} (inclusive) and {@code to} (exclusive). Used by the
+   * renewal reminder job.
    */
   List<PlanPurchase> findExpiringBetween(Instant from, Instant to);
 }

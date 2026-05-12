@@ -1,9 +1,8 @@
 package org.arguslog.api.billing.domain;
 
-import org.arguslog.billing.PlanTier;
-
 import java.time.Instant;
 import java.util.Optional;
+import org.arguslog.billing.PlanTier;
 
 /**
  * A successful plan purchase event from any provider. Source of truth for "when does this org's

@@ -52,8 +52,7 @@ public class JdbcOrgPlanRepository implements OrgPlanRepository {
     // the user's tier IS the source of truth, not derived from orgs.
     try {
       String raw =
-          jdbc.queryForObject(
-              "SELECT plan::text FROM users WHERE id = ?", String.class, userId);
+          jdbc.queryForObject("SELECT plan::text FROM users WHERE id = ?", String.class, userId);
       return Optional.of(PlanTier.fromDbValue(raw));
     } catch (EmptyResultDataAccessException e) {
       return Optional.empty();

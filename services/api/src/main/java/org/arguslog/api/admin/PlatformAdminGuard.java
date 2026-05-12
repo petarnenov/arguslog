@@ -13,11 +13,11 @@ import org.springframework.stereotype.Component;
  * Gate for {@code /api/v1/admin/**}. Reads the JWT email claim, lowercases it, and checks against
  * {@link PlatformAdminProperties#normalizedEmails()}. PAT-driven calls are NOT eligible — admin
  * actions (grant_bonus, delete org, audit read) require a fresh interactive (browser-session)
- * login. This is a step-up-auth / blast-radius choice, not an identity one: PATs do carry a
- * userId, but they live in lower-trust places (CI secrets, .env files, MCP configs, dev
- * laptops) and outlive any single session, so a leaked PAT must not grant platform-admin
- * reach. Browser sessions die with the cookie and force a fresh Keycloak login. Throws
- * {@link AdminAccessDeniedException} on miss; the controller maps it to a 403 problem.
+ * login. This is a step-up-auth / blast-radius choice, not an identity one: PATs do carry a userId,
+ * but they live in lower-trust places (CI secrets, .env files, MCP configs, dev laptops) and
+ * outlive any single session, so a leaked PAT must not grant platform-admin reach. Browser sessions
+ * die with the cookie and force a fresh Keycloak login. Throws {@link AdminAccessDeniedException}
+ * on miss; the controller maps it to a 403 problem.
  */
 @Component
 public class PlatformAdminGuard {
@@ -30,8 +30,12 @@ public class PlatformAdminGuard {
 
   /** Throws if the current request is not from a platform admin. Returns the admin email. */
   public String requireAdmin() {
-    String email = currentEmail().orElseThrow(() -> new AdminAccessDeniedException(
-        "Admin endpoints require an interactive login (JWT) — PAT auth not supported here."));
+    String email =
+        currentEmail()
+            .orElseThrow(
+                () ->
+                    new AdminAccessDeniedException(
+                        "Admin endpoints require an interactive login (JWT) — PAT auth not supported here."));
     if (!props.normalizedEmails().contains(email)) {
       throw new AdminAccessDeniedException("Not a platform administrator.");
     }

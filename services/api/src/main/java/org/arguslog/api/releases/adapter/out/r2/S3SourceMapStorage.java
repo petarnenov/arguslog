@@ -1,10 +1,9 @@
 package org.arguslog.api.releases.adapter.out.r2;
 
-import org.arguslog.storage.R2Properties;
-
 import java.net.URI;
 import java.time.Duration;
 import org.arguslog.api.releases.application.port.SourceMapStorage;
+import org.arguslog.storage.R2Properties;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;

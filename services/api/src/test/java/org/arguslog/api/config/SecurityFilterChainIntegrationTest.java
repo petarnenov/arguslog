@@ -73,16 +73,16 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Exercises the production security filter chain (the {@code @Profile("!test")} bean in
- * {@link SecurityConfig}). Unlike {@code AbstractControllerTest}, this test does NOT activate
- * the {@code test} profile and therefore picks up the real PAT-then-JWT chain.
+ * Exercises the production security filter chain (the {@code @Profile("!test")} bean in {@link
+ * SecurityConfig}). Unlike {@code AbstractControllerTest}, this test does NOT activate the {@code
+ * test} profile and therefore picks up the real PAT-then-JWT chain.
  *
- * <p>The bug this guards against: without the PAT-aware {@code BearerTokenResolver},
- * {@code BearerTokenAuthenticationFilter} will resolve the {@code arglog_pat_*} bearer header,
- * hand it to the JWT decoder, fail with "Malformed token", and return 401 — even after
- * {@code PatAuthenticationFilter} has already authenticated the request. Asserting that
- * {@link JwtDecoder} is NEVER called for a PAT-prefixed bearer is the cheapest way to pin the
- * fix in place; the assertion would have caught the original misconfiguration on day one.
+ * <p>The bug this guards against: without the PAT-aware {@code BearerTokenResolver}, {@code
+ * BearerTokenAuthenticationFilter} will resolve the {@code arglog_pat_*} bearer header, hand it to
+ * the JWT decoder, fail with "Malformed token", and return 401 — even after {@code
+ * PatAuthenticationFilter} has already authenticated the request. Asserting that {@link JwtDecoder}
+ * is NEVER called for a PAT-prefixed bearer is the cheapest way to pin the fix in place; the
+ * assertion would have caught the original misconfiguration on day one.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -151,7 +151,10 @@ class SecurityFilterChainIntegrationTest {
 
   @MockitoBean private BillingCustomerRepository billingCustomerRepository;
   @MockitoBean private OrgPlanRepository orgPlanRepository;
-  @MockitoBean private org.arguslog.api.billing.application.port.UserBillingRepository userBillingRepository;
+
+  @MockitoBean
+  private org.arguslog.api.billing.application.port.UserBillingRepository userBillingRepository;
+
   @MockitoBean private org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
   @MockitoBean private UsageRepository usageRepository;
   @MockitoBean private StripeEventLog stripeEventLog;

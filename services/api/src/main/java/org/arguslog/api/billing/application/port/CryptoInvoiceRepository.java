@@ -10,8 +10,8 @@ import org.arguslog.billing.PlanTier;
 
 /**
  * State for one NOWPayments hosted checkout we minted. The invoice row is created BEFORE we hit
- * NOWPayments — its {@code internal_reference} (UUID) is what we send as the provider's
- * {@code order_id}, so when the IPN arrives we can resolve back to the org regardless of whether
+ * NOWPayments — its {@code internal_reference} (UUID) is what we send as the provider's {@code
+ * order_id}, so when the IPN arrives we can resolve back to the org regardless of whether
  * NOWPayments returned the invoice id to us in time.
  */
 public interface CryptoInvoiceRepository {

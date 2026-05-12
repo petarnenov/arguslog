@@ -12,7 +12,6 @@ import org.arguslog.api.billing.application.port.CryptoInvoiceRepository;
 import org.arguslog.api.billing.domain.BillingProvider;
 import org.arguslog.api.billing.domain.CryptoInvoice;
 import org.arguslog.api.billing.domain.CryptoInvoiceStatus;
-import org.arguslog.billing.PlanTier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -21,21 +20,20 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Routes verified NOWPayments IPN payloads to plan-state mutations.
  *
- * <p>NOWPayments sends an IPN at every status transition: {@code waiting → confirming →
- * confirmed → sending → finished} (or one of the failure terminals). We update {@code
- * crypto_invoices.status} on every IPN, but only {@code finished} fires the plan upgrade through
- * {@link ApplyPlanPurchaseUseCase}. {@code partially_paid} is logged but not upgraded — the user
- * sent less than billed; the dashboard will show "incomplete" and they can either top up or
- * abandon.
+ * <p>NOWPayments sends an IPN at every status transition: {@code waiting → confirming → confirmed →
+ * sending → finished} (or one of the failure terminals). We update {@code crypto_invoices.status}
+ * on every IPN, but only {@code finished} fires the plan upgrade through {@link
+ * ApplyPlanPurchaseUseCase}. {@code partially_paid} is logged but not upgraded — the user sent less
+ * than billed; the dashboard will show "incomplete" and they can either top up or abandon.
  *
- * <p>Idempotency: dedup on the {@code (payment_id, payment_status)} tuple in {@code
- * crypto_events} via {@link CryptoEventLog#recordIfNew}. The plan upgrade itself is also
- * idempotent (cross-provider {@code plan_purchases} unique constraint), so even a logic bug here
- * won't double-extend the plan.
+ * <p>Idempotency: dedup on the {@code (payment_id, payment_status)} tuple in {@code crypto_events}
+ * via {@link CryptoEventLog#recordIfNew}. The plan upgrade itself is also idempotent
+ * (cross-provider {@code plan_purchases} unique constraint), so even a logic bug here won't
+ * double-extend the plan.
  *
  * <p>Invoice correlation: NOWPayments echoes our {@code order_id} (the invoice's internal UUID
- * reference) on every IPN; that's our preferred lookup. {@code np_invoice_id} is also stored on
- * the row by the checkout creation path, but only {@code order_id} is guaranteed present on
+ * reference) on every IPN; that's our preferred lookup. {@code np_invoice_id} is also stored on the
+ * row by the checkout creation path, but only {@code order_id} is guaranteed present on
  * partial-payment IPNs in our experience.
  */
 @Service
@@ -81,8 +79,7 @@ public class NowPaymentsWebhookService implements NowPaymentsWebhookUseCase {
     }
 
     if (!eventLog.recordIfNew(paymentId, paymentStatus)) {
-      log.debug(
-          "nowpayments IPN already seen: payment_id={} status={}", paymentId, paymentStatus);
+      log.debug("nowpayments IPN already seen: payment_id={} status={}", paymentId, paymentStatus);
       return Outcome.ALREADY_SEEN;
     }
 

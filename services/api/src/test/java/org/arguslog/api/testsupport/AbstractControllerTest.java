@@ -141,7 +141,10 @@ public abstract class AbstractControllerTest {
 
   @MockitoBean protected BillingCustomerRepository billingCustomerRepository;
   @MockitoBean protected OrgPlanRepository orgPlanRepository;
-  @MockitoBean protected org.arguslog.api.billing.application.port.UserBillingRepository userBillingRepository;
+
+  @MockitoBean
+  protected org.arguslog.api.billing.application.port.UserBillingRepository userBillingRepository;
+
   @MockitoBean protected org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
   @MockitoBean protected UsageRepository usageRepository;
   @MockitoBean protected StripeEventLog stripeEventLog;

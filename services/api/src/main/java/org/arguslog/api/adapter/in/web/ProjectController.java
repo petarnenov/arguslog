@@ -56,14 +56,13 @@ public class ProjectController {
   }
 
   /**
-   * Creates the project AND mints its first DSN in one round-trip. Returning the DSN inline
-   * (GH #26) means the web onboarding flow can pop the "copy your key" modal immediately
-   * without a chained POST that used to race with the browser tab closing mid-flow — leaving
-   * an orphan project that ingested nothing.
+   * Creates the project AND mints its first DSN in one round-trip. Returning the DSN inline (GH
+   * #26) means the web onboarding flow can pop the "copy your key" modal immediately without a
+   * chained POST that used to race with the browser tab closing mid-flow — leaving an orphan
+   * project that ingested nothing.
    *
-   * <p>The full DSN string is visible exactly once here (GitHub PAT pattern); follow-up
-   * listings return {@link org.arguslog.api.adapter.in.web.dto.DsnSummaryResponse} which omits
-   * it.
+   * <p>The full DSN string is visible exactly once here (GitHub PAT pattern); follow-up listings
+   * return {@link org.arguslog.api.adapter.in.web.dto.DsnSummaryResponse} which omits it.
    */
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ProjectCreateResponse> create(

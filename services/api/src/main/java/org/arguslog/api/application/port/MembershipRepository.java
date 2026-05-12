@@ -25,18 +25,18 @@ public interface MembershipRepository {
 
   /**
    * The user's "primary owned org" — same picker rule that resolves billing-relevant joins
-   * everywhere else: highest current tier wins, ties broken by earliest membership. Returns
-   * empty for users who own no org yet (first-time signup or member-only access). Per-user
-   * billing endpoints use this to delegate to the org-scoped Stripe/NOWPayments flow without
-   * the frontend having to pick an org for the user.
+   * everywhere else: highest current tier wins, ties broken by earliest membership. Returns empty
+   * for users who own no org yet (first-time signup or member-only access). Per-user billing
+   * endpoints use this to delegate to the org-scoped Stripe/NOWPayments flow without the frontend
+   * having to pick an org for the user.
    */
   Optional<Long> findPrimaryOwnedOrg(UUID userId);
 
   /**
    * Reverse of {@link #findPrimaryOwnedOrg(UUID)} — given an org, returns the user that owns it
-   * under the same "highest tier, earliest membership tiebreak" rule. Used by the checkout flow
-   * to look up the org-owner's user-level Stripe customer for reuse instead of spinning up a
-   * duplicate Stripe customer per org.
+   * under the same "highest tier, earliest membership tiebreak" rule. Used by the checkout flow to
+   * look up the org-owner's user-level Stripe customer for reuse instead of spinning up a duplicate
+   * Stripe customer per org.
    */
   Optional<UUID> findPrimaryOwnerOfOrg(long orgId);
 }

@@ -44,8 +44,8 @@ public interface OrgPlanRepository {
   Optional<Instant> findRenewsAt(long orgId);
 
   /**
-   * Active bonus snapshot for {@code orgId} when an admin has comp'd the plan. Empty when no
-   * active grant exists. The plan column itself is the source of truth for caps; this read is
+   * Active bonus snapshot for {@code orgId} when an admin has comp'd the plan. Empty when no active
+   * grant exists. The plan column itself is the source of truth for caps; this read is
    * dashboard-banner metadata only.
    */
   Optional<BonusSnapshot> findActiveBonus(long orgId);

@@ -11,8 +11,8 @@ import org.arguslog.api.billing.application.CryptoCheckoutUseCase.CheckoutResult
 import org.arguslog.api.billing.application.PortalUseCase;
 import org.arguslog.api.billing.application.PortalUseCase.NoCustomerException;
 import org.arguslog.api.billing.domain.BillingInterval;
-import org.arguslog.billing.PlanTier;
 import org.arguslog.api.security.AuthActor;
+import org.arguslog.billing.PlanTier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -32,13 +32,13 @@ import org.springframework.web.bind.annotation.RestController;
  * doesn't have to know which of the user's orgs to point Stripe / NOWPayments at.
  *
  * <p>Under the hood each call resolves the user's "primary owned org" (highest tier, earliest
- * membership tiebreak) and delegates to the existing org-scoped checkout / portal services.
- * After per-user dual-write (Phase 1+2) all webhook mutations land on both org and user rows,
- * so the indirection through one org is invisible to the caller.
+ * membership tiebreak) and delegates to the existing org-scoped checkout / portal services. After
+ * per-user dual-write (Phase 1+2) all webhook mutations land on both org and user rows, so the
+ * indirection through one org is invisible to the caller.
  *
- * <p>Users without an owned org get a 409 — Stripe needs SOMETHING to bill against, and the
- * "no orgs yet" state means the user hasn't even completed onboarding. The frontend should send
- * them through {@code /onboarding} before exposing the billing form.
+ * <p>Users without an owned org get a 409 — Stripe needs SOMETHING to bill against, and the "no
+ * orgs yet" state means the user hasn't even completed onboarding. The frontend should send them
+ * through {@code /onboarding} before exposing the billing form.
  */
 @RestController
 @RequestMapping(value = "/api/v1/me/billing", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -90,7 +90,9 @@ public class MeBillingController {
     PlanTier tier = parseTier(tierRaw);
     if (!tier.isPaid()) {
       throw new InvalidIntervalException(
-          "Tier " + tier.dbValue() + " is not sold via self-serve. Allowed: starter, pro, business.");
+          "Tier "
+              + tier.dbValue()
+              + " is not sold via self-serve. Allowed: starter, pro, business.");
     }
     CheckoutResult result = crypto.start(orgId, tier, durationMonths);
     return new CryptoCheckoutResponse(result.checkoutUrl(), result.invoiceReference());

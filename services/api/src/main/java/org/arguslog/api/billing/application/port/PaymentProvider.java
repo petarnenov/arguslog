@@ -14,8 +14,8 @@ public interface PaymentProvider {
 
   /**
    * Create a hosted checkout session for {@code orgId} buying {@code durationMonths} of PRO. The
-   * returned URL is opened in the user's browser; on completion the provider will hit the
-   * service's webhook endpoint to confirm payment.
+   * returned URL is opened in the user's browser; on completion the provider will hit the service's
+   * webhook endpoint to confirm payment.
    */
   CheckoutSession createCheckout(long orgId, int durationMonths);
 

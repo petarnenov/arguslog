@@ -40,9 +40,9 @@ public class DsnController {
   }
 
   /**
-   * Listing returns DSN metadata only — never the full {@code dsn} string. Mirrors the GitHub
-   * PAT model where the secret-shaped value is shown exactly once at creation time. Use the
-   * {@code POST} endpoint to mint a new key + see its DSN, or {@code DELETE} to revoke.
+   * Listing returns DSN metadata only — never the full {@code dsn} string. Mirrors the GitHub PAT
+   * model where the secret-shaped value is shown exactly once at creation time. Use the {@code
+   * POST} endpoint to mint a new key + see its DSN, or {@code DELETE} to revoke.
    */
   @GetMapping
   public List<DsnSummaryResponse> list(@PathVariable long projectId) {

@@ -45,7 +45,9 @@ class JwtUserSyncInterceptorTest {
   void upsertsFromJwtClaimsOnEveryRequest() {
     authenticateJwt(sub, Map.of("email", "alice@example.com", "name", "Alice"));
 
-    boolean ok = interceptor.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
+    boolean ok =
+        interceptor.preHandle(
+            new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
 
     org.assertj.core.api.Assertions.assertThat(ok).isTrue();
     verify(users).upsertFromJwt(sub, "alice@example.com", "Alice");
@@ -55,7 +57,8 @@ class JwtUserSyncInterceptorTest {
   void fallsBackToPreferredUsernameWhenNameIsBlank() {
     authenticateJwt(sub, Map.of("email", "bob@example.com", "preferred_username", "bob"));
 
-    interceptor.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
+    interceptor.preHandle(
+        new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
 
     verify(users).upsertFromJwt(sub, "bob@example.com", "bob");
   }
@@ -69,7 +72,8 @@ class JwtUserSyncInterceptorTest {
     // on pending even after they had successfully signed in.
     authenticateJwt(sub, Map.of("email", "petar_nenov@abv.bg"));
 
-    interceptor.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
+    interceptor.preHandle(
+        new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
 
     verify(users).upsertFromJwt(sub, "petar_nenov@abv.bg", "petar_nenov");
   }
@@ -80,7 +84,8 @@ class JwtUserSyncInterceptorTest {
     // to the whole string rather than NPE-ing on substring(0, 0).
     authenticateJwt(sub, Map.of("email", "@weird.example"));
 
-    interceptor.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
+    interceptor.preHandle(
+        new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
 
     verify(users).upsertFromJwt(sub, "@weird.example", "@weird.example");
   }
@@ -91,14 +96,16 @@ class JwtUserSyncInterceptorTest {
         .setAuthentication(
             new UsernamePasswordAuthenticationToken(sub.toString(), "n/a", java.util.List.of()));
 
-    interceptor.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
+    interceptor.preHandle(
+        new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
 
     verifyNoInteractions(users);
   }
 
   @Test
   void skipsWhenNoAuthIsPresent() {
-    interceptor.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
+    interceptor.preHandle(
+        new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
 
     verifyNoInteractions(users);
   }
@@ -107,7 +114,8 @@ class JwtUserSyncInterceptorTest {
   void skipsWhenEmailClaimIsMissing() {
     authenticateJwt(sub, Map.of("name", "Carol"));
 
-    interceptor.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
+    interceptor.preHandle(
+        new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
 
     verify(users, never()).upsertFromJwt(Mockito.any(), Mockito.any(), Mockito.any());
   }
@@ -119,7 +127,9 @@ class JwtUserSyncInterceptorTest {
         .when(users)
         .upsertFromJwt(sub, "dave@example.com", "Dave");
 
-    boolean ok = interceptor.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
+    boolean ok =
+        interceptor.preHandle(
+            new MockHttpServletRequest(), new MockHttpServletResponse(), new Object());
 
     org.assertj.core.api.Assertions.assertThat(ok).isTrue();
   }

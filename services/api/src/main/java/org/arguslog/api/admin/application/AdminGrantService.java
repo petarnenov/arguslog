@@ -13,8 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Admin-only operation: comp a paid plan to an org for a fixed window. Updates
- * {@code organizations.plan} so all existing cap / quota enforcement (events, projects, members,
+ * Admin-only operation: comp a paid plan to an org for a fixed window. Updates {@code
+ * organizations.plan} so all existing cap / quota enforcement (events, projects, members,
  * retention) automatically respects the bonus tier; the {@code bonus_*} columns are pure metadata
  * for the dashboard banner. Always writes an entry into {@code admin_audit_log} so the action is
  * forensically traceable.
@@ -35,12 +35,7 @@ public class AdminGrantService {
 
   @Transactional
   public void grant(
-      long orgId,
-      String tierRaw,
-      int months,
-      String reason,
-      UUID adminUser,
-      String adminEmail) {
+      long orgId, String tierRaw, int months, String reason, UUID adminUser, String adminEmail) {
     PlanTier tier = parseTier(tierRaw);
     if (!tier.isPaid()) {
       throw new IllegalArgumentException(
@@ -56,10 +51,14 @@ public class AdminGrantService {
         "org",
         String.valueOf(orgId),
         Map.of(
-            "tier", tier.dbValue(),
-            "months", months,
-            "until", until.toString(),
-            "reason", reason == null ? "" : reason));
+            "tier",
+            tier.dbValue(),
+            "months",
+            months,
+            "until",
+            until.toString(),
+            "reason",
+            reason == null ? "" : reason));
   }
 
   @Transactional
@@ -69,9 +68,9 @@ public class AdminGrantService {
   }
 
   /**
-   * Per-user grant — the V26+ direct path. Granting at the user level avoids the legacy "which
-   * org gets the bonus" ambiguity for users with multiple owned orgs; the bonus tier now covers
-   * every org the user owns automatically (per-user billing model).
+   * Per-user grant — the V26+ direct path. Granting at the user level avoids the legacy "which org
+   * gets the bonus" ambiguity for users with multiple owned orgs; the bonus tier now covers every
+   * org the user owns automatically (per-user billing model).
    */
   @Transactional
   public void grantToUser(
@@ -96,17 +95,20 @@ public class AdminGrantService {
         "user",
         targetUserId.toString(),
         Map.of(
-            "tier", tier.dbValue(),
-            "months", months,
-            "until", until.toString(),
-            "reason", reason == null ? "" : reason));
+            "tier",
+            tier.dbValue(),
+            "months",
+            months,
+            "until",
+            until.toString(),
+            "reason",
+            reason == null ? "" : reason));
   }
 
   @Transactional
   public void revokeUser(UUID targetUserId, UUID adminUser, String adminEmail) {
     port.revokeUserGrant(targetUserId);
-    audit(
-        adminUser, adminEmail, "revoke_grant", "user", targetUserId.toString(), Map.of());
+    audit(adminUser, adminEmail, "revoke_grant", "user", targetUserId.toString(), Map.of());
   }
 
   private void audit(

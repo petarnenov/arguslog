@@ -5,8 +5,8 @@ import java.util.UUID;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
 import org.arguslog.api.billing.application.port.OrgPlanRepository;
-import org.arguslog.billing.PlanTier;
 import org.arguslog.api.domain.Org;
+import org.arguslog.billing.PlanTier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

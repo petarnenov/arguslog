@@ -16,8 +16,8 @@ import org.testcontainers.utility.DockerImageName;
 
 /**
  * Locks in V26's per-user billing backfill semantics. Migrates to V25 first, seeds three
- * representative shapes (multi-org owner mixing tiers, single-org owner, ownerless user), then
- * runs V26 and asserts the user-level rows have the expected billing identity:
+ * representative shapes (multi-org owner mixing tiers, single-org owner, ownerless user), then runs
+ * V26 and asserts the user-level rows have the expected billing identity:
  *
  * <ul>
  *   <li>An owner of (FREE + PRO) gets PRO + the PRO org's renew/billing_interval/stripe.
@@ -25,8 +25,8 @@ import org.testcontainers.utility.DockerImageName;
  *   <li>A user who owns nothing stays on the column defaults (free / monthly / nulls).
  * </ul>
  *
- * Drift here means the backfill silently misassigns paid tiers — paying customers would either
- * lose their plan on migrate or non-paying ones would get a free upgrade. Worth catching in CI.
+ * Drift here means the backfill silently misassigns paid tiers — paying customers would either lose
+ * their plan on migrate or non-paying ones would get a free upgrade. Worth catching in CI.
  */
 @Testcontainers
 class V26UserBillingBackfillTest {
@@ -67,17 +67,10 @@ class V26UserBillingBackfillTest {
 
       // userMulti owns one FREE and one PRO org. The PRO org has the latest renew + stripe id
       // and is the row whose billing identity should win the backfill.
-      long freeOrg =
-          insertOrg(conn, "free-org", "Free Org", "free", null, "monthly", null);
+      long freeOrg = insertOrg(conn, "free-org", "Free Org", "free", null, "monthly", null);
       long proOrg =
           insertOrg(
-              conn,
-              "pro-org",
-              "Pro Org",
-              "pro",
-              "2026-06-30 12:00:00+00",
-              "annual",
-              "cus_pro_abc");
+              conn, "pro-org", "Pro Org", "pro", "2026-06-30 12:00:00+00", "annual", "cus_pro_abc");
       insertMembership(conn, freeOrg, userMulti, "owner");
       insertMembership(conn, proOrg, userMulti, "owner");
 

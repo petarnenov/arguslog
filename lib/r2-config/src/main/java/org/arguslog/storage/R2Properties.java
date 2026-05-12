@@ -7,8 +7,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Cloudflare R2 in prod (also path-style — R2 uses a per-account endpoint, no virtual-host).
  *
  * <p>Shared between api (presigns uploads) and worker (fetches sourcemaps) so the env namespace
- * {@code arguslog.r2.*} resolves to the same bucket on both sides. Drift here would silently
- * break "sourcemap not found" with no clear error message.
+ * {@code arguslog.r2.*} resolves to the same bucket on both sides. Drift here would silently break
+ * "sourcemap not found" with no clear error message.
  */
 @ConfigurationProperties(prefix = "arguslog.r2")
 public record R2Properties(String endpoint, String bucket, String accessKey, String secretKey) {

@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
  * Verifies the {@code x-nowpayments-sig} HMAC-SHA512 signature NOWPayments stamps on every IPN.
  *
  * <p>The signing payload is the IPN body re-serialized with keys sorted alphabetically (recursively
- * — nested objects too). Jackson's {@code ORDER_MAP_ENTRIES_BY_KEYS} feature does this in one
- * pass; we then HMAC-SHA512 the resulting bytes with the IPN secret and hex-encode.
+ * — nested objects too). Jackson's {@code ORDER_MAP_ENTRIES_BY_KEYS} feature does this in one pass;
+ * we then HMAC-SHA512 the resulting bytes with the IPN secret and hex-encode.
  *
  * <p>The compare uses constant-time {@link MessageDigest#isEqual} to keep the verification
  * timing-safe — important because the IPN endpoint is publicly reachable.

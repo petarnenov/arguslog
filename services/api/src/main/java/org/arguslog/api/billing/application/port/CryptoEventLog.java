@@ -8,6 +8,9 @@ package org.arguslog.api.billing.application.port;
  */
 public interface CryptoEventLog {
 
-  /** {@code true} if this {@code (paymentId, status)} pair was newly recorded, {@code false} if seen. */
+  /**
+   * {@code true} if this {@code (paymentId, status)} pair was newly recorded, {@code false} if
+   * seen.
+   */
   boolean recordIfNew(String paymentId, String status);
 }

@@ -9,8 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.Optional;
 import org.arguslog.api.billing.application.UsageUseCase.UsageSnapshot;
 import org.arguslog.api.billing.domain.BillingInterval;
-import org.arguslog.billing.PlanTier;
 import org.arguslog.api.testsupport.AbstractControllerTest;
+import org.arguslog.billing.PlanTier;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 

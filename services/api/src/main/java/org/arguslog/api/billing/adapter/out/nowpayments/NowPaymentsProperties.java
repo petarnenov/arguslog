@@ -7,11 +7,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * 503 from the checkout endpoint instead of failing boot, so a dev or pre-launch environment
  * without NOWPayments credentials still runs the rest of the api.
  *
- * <p>{@code apiKey} signs server-to-server REST calls (header {@code x-api-key}). {@code
- * ipnSecret} is the HMAC-SHA512 key NOWPayments uses to sign every IPN webhook payload — see
- * {@link NowPaymentsIpnVerifier}. {@code dashboardBaseUrl} is shared with Stripe's redirects;
- * kept as its own property so the two providers can target different domains during a future
- * staging-vs-prod split.
+ * <p>{@code apiKey} signs server-to-server REST calls (header {@code x-api-key}). {@code ipnSecret}
+ * is the HMAC-SHA512 key NOWPayments uses to sign every IPN webhook payload — see {@link
+ * NowPaymentsIpnVerifier}. {@code dashboardBaseUrl} is shared with Stripe's redirects; kept as its
+ * own property so the two providers can target different domains during a future staging-vs-prod
+ * split.
  */
 @ConfigurationProperties(prefix = "arguslog.nowpayments")
 public record NowPaymentsProperties(

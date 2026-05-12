@@ -19,9 +19,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * NOWPayments IPN receiver. Mounted at {@code /api/v1/webhooks/nowpayments}; {@code
- * SecurityConfig} marks it {@code permitAll} — NOWPayments POSTs anonymously and authenticates via
- * {@code x-nowpayments-sig} (HMAC-SHA512 over the alphabetically-sorted JSON body).
+ * NOWPayments IPN receiver. Mounted at {@code /api/v1/webhooks/nowpayments}; {@code SecurityConfig}
+ * marks it {@code permitAll} — NOWPayments POSTs anonymously and authenticates via {@code
+ * x-nowpayments-sig} (HMAC-SHA512 over the alphabetically-sorted JSON body).
  *
  * <p>Body is bound as raw {@code String} because the signature is computed over the canonical JSON
  * we re-serialize from those bytes; if Spring re-parsed/re-serialized the request body for us the

@@ -13,8 +13,8 @@ public interface DsnUseCase {
 
   /**
    * Marks the key as revoked (sets {@code active=false}). Idempotency is intentionally NOT
-   * provided: re-revoking a revoked key throws {@link DsnAlreadyRevokedException} so a UI
-   * showing a stale list surfaces an explicit error rather than silently doing nothing.
+   * provided: re-revoking a revoked key throws {@link DsnAlreadyRevokedException} so a UI showing a
+   * stale list surfaces an explicit error rather than silently doing nothing.
    *
    * @throws DsnNotFoundException if no key with that id exists under the given project
    * @throws DsnAlreadyRevokedException if the key is already revoked

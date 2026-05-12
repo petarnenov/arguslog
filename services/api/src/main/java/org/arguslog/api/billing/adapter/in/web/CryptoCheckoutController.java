@@ -24,10 +24,10 @@ import org.springframework.web.bind.annotation.RestController;
  * months of PRO and returns the checkout URL the dashboard opens in a new tab. Membership in the
  * org is enforced upstream by {@code OrgAccessGuard} via the path prefix.
  *
- * <p>The flow is fire-and-forget from the dashboard's POV: the user pays at the NOWPayments
- * page, NOWPayments hits {@code /api/v1/webhooks/nowpayments} server-to-server, and the org's
- * plan flips to Pro on a successful IPN. The dashboard polls {@code /usage} after the redirect
- * to detect the upgrade.
+ * <p>The flow is fire-and-forget from the dashboard's POV: the user pays at the NOWPayments page,
+ * NOWPayments hits {@code /api/v1/webhooks/nowpayments} server-to-server, and the org's plan flips
+ * to Pro on a successful IPN. The dashboard polls {@code /usage} after the redirect to detect the
+ * upgrade.
  */
 @RestController
 @RequestMapping(
@@ -65,8 +65,7 @@ public class CryptoCheckoutController {
     try {
       tier = PlanTier.valueOf(raw.toUpperCase(Locale.ROOT));
     } catch (IllegalArgumentException e) {
-      throw new InvalidTierException(
-          "Unknown tier: " + raw + ". Allowed: starter, pro, business.");
+      throw new InvalidTierException("Unknown tier: " + raw + ". Allowed: starter, pro, business.");
     }
     if (!tier.isPaid()) {
       throw new InvalidTierException(
