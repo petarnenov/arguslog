@@ -260,7 +260,6 @@ function OrgsPanel() {
   const orgs = useAdminOrgs(q, offset, PAGE_SIZE);
   const total = orgs.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const [grantTarget, setGrantTarget] = useState<AdminUser | null>(null);
 
   return (
     <Stack>
@@ -293,7 +292,6 @@ function OrgsPanel() {
                 <Table.Th>{t('admin.colMembers')}</Table.Th>
                 <Table.Th>{t('admin.colEvents30d')}</Table.Th>
                 <Table.Th>{t('admin.colBonus')}</Table.Th>
-                <Table.Th>{t('admin.colActions')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -333,32 +331,6 @@ function OrgsPanel() {
                       </Text>
                     )}
                   </Table.Td>
-                  <Table.Td>
-                    {o.ownerId && o.ownerEmail ? (
-                      <Button
-                        size="xs"
-                        variant="light"
-                        leftSection={<IconGift size={12} />}
-                        onClick={() =>
-                          setGrantTarget({
-                            userId: o.ownerId!,
-                            email: o.ownerEmail,
-                            displayName: null,
-                            createdAt: '',
-                            ownedOrgs: 0,
-                            memberOrgs: 0,
-                            highestPlan: o.tier,
-                          })
-                        }
-                      >
-                        {t('admin.grantAction')}
-                      </Button>
-                    ) : (
-                      <Text c="dimmed" size="xs">
-                        —
-                      </Text>
-                    )}
-                  </Table.Td>
                 </Table.Tr>
               ))}
             </Table.Tbody>
@@ -370,8 +342,6 @@ function OrgsPanel() {
           <Pagination total={totalPages} value={page} onChange={setPage} />
         </Group>
       )}
-
-      <UserGrantModal user={grantTarget} onClose={() => setGrantTarget(null)} />
     </Stack>
   );
 }
