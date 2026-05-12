@@ -18,7 +18,7 @@ tasks.withType<JavaCompile> {
 
 dependencies {
     // slf4j-api only — concrete logger is bound by the consuming service (api/worker → logback).
-    api("org.slf4j:slf4j-api:2.0.16")
+    api("org.slf4j:slf4j-api:2.0.18")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.3")
     testImplementation("org.assertj:assertj-core:3.27.0")
