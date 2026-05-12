@@ -105,4 +105,18 @@ class PlanTierTest {
     assertThat(PlanTier.fromDbValue("legendary")).isEqualTo(PlanTier.FREE);
     assertThat(PlanTier.fromDbValue(null)).isEqualTo(PlanTier.FREE);
   }
+
+  @Test
+  void fromDbValueAcceptsPhase1TierAliases() {
+    // OSS conversion Phase 1: rows backfilled to the new color-themed names must read back as
+    // the same tier the legacy plan name resolved to, otherwise quota distribution flips at
+    // the moment of migration.
+    assertThat(PlanTier.fromDbValue("regular")).isEqualTo(PlanTier.FREE);
+    assertThat(PlanTier.fromDbValue("silver")).isEqualTo(PlanTier.STARTER);
+    assertThat(PlanTier.fromDbValue("gold")).isEqualTo(PlanTier.PRO);
+    assertThat(PlanTier.fromDbValue("platinum")).isEqualTo(PlanTier.BUSINESS);
+    // Case insensitivity carries over.
+    assertThat(PlanTier.fromDbValue("PLATINUM")).isEqualTo(PlanTier.BUSINESS);
+    assertThat(PlanTier.fromDbValue("Gold")).isEqualTo(PlanTier.PRO);
+  }
 }

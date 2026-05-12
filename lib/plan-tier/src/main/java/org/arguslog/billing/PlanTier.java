@@ -5,19 +5,19 @@ import java.util.Locale;
 
 /**
  * Single source of truth for per-plan limits and pricing. The DB column {@code users.plan}
- * (post-V27; previously {@code organizations.plan}) stores the wire string ({@code "free"},
- * {@code "starter"}, {@code "pro"}, {@code "business"}, {@code "enterprise"}); this enum mirrors
- * it with the actual numeric caps the rest of the platform reads.
+ * (post-V27; previously {@code organizations.plan}) stores the wire string ({@code "free"}, {@code
+ * "starter"}, {@code "pro"}, {@code "business"}, {@code "enterprise"}); this enum mirrors it with
+ * the actual numeric caps the rest of the platform reads.
  *
- * <p>Lives in {@code :lib:plan-tier} so api / ingest / worker all import the same definition —
- * caps cannot drift between services. Each paid tier is sold as one-time prepaid bundles for 1,
- * 3, 6, or 12 months with an aggressive 0% / 17% / 25% / 33% discount ladder against the monthly
- * base. {@link #priceCentsForDuration(int)} is the canonical price source for new checkout flows;
- * {@link #monthlyPriceCents()} is kept as the per-tier "headline" rate the dashboard renders.
+ * <p>Lives in {@code :lib:plan-tier} so api / ingest / worker all import the same definition — caps
+ * cannot drift between services. Each paid tier is sold as one-time prepaid bundles for 1, 3, 6, or
+ * 12 months with an aggressive 0% / 17% / 25% / 33% discount ladder against the monthly base.
+ * {@link #priceCentsForDuration(int)} is the canonical price source for new checkout flows; {@link
+ * #monthlyPriceCents()} is kept as the per-tier "headline" rate the dashboard renders.
  *
  * <p>Anything that needs a numeric limit — quota enforcer, dashboard banner, project create
- * endpoint, billing page — comes here, NOT to the DB column. Bumping a tier's allowance is one
- * edit + a deploy, not a migration.
+ * endpoint, billing page — comes here, NOT to the DB column. Bumping a tier's allowance is one edit
+ * + a deploy, not a migration.
  */
 public enum PlanTier {
   FREE(0, 5_000L, 1, 1, 1, Duration.ofDays(30)),
@@ -101,34 +101,36 @@ public enum PlanTier {
 
   /**
    * Total price in cents for a one-time purchase covering {@code months}. Each paid tier follows
-   * the same 0% / 17% / 25% / 33% ladder relative to its monthly base ($11.99 / $29.99 /
-   * $79.99). {@link #FREE} and {@link #ENTERPRISE} are not sold via the self-serve flow and
-   * return 0.
+   * the same 0% / 17% / 25% / 33% ladder relative to its monthly base ($11.99 / $29.99 / $79.99).
+   * {@link #FREE} and {@link #ENTERPRISE} are not sold via the self-serve flow and return 0.
    */
   public int priceCentsForDuration(int months) {
     if (!isPaid()) return 0;
     return switch (this) {
-      case STARTER -> switch (months) {
-        case 1 -> 1199;
-        case 3 -> 2999;
-        case 6 -> 5399;
-        case 12 -> 9599;
-        default -> throw unsupportedMonths(months);
-      };
-      case PRO -> switch (months) {
-        case 1 -> 2999;
-        case 3 -> 7499;
-        case 6 -> 13499;
-        case 12 -> 23999;
-        default -> throw unsupportedMonths(months);
-      };
-      case BUSINESS -> switch (months) {
-        case 1 -> 7999;
-        case 3 -> 19999;
-        case 6 -> 35999;
-        case 12 -> 63999;
-        default -> throw unsupportedMonths(months);
-      };
+      case STARTER ->
+          switch (months) {
+            case 1 -> 1199;
+            case 3 -> 2999;
+            case 6 -> 5399;
+            case 12 -> 9599;
+            default -> throw unsupportedMonths(months);
+          };
+      case PRO ->
+          switch (months) {
+            case 1 -> 2999;
+            case 3 -> 7499;
+            case 6 -> 13499;
+            case 12 -> 23999;
+            default -> throw unsupportedMonths(months);
+          };
+      case BUSINESS ->
+          switch (months) {
+            case 1 -> 7999;
+            case 3 -> 19999;
+            case 6 -> 35999;
+            case 12 -> 63999;
+            default -> throw unsupportedMonths(months);
+          };
       default -> 0;
     };
   }
@@ -139,16 +141,35 @@ public enum PlanTier {
   }
 
   /**
-   * Maps the wire/DB string to a tier. Unknown / null values fall back to {@link #FREE} so a
-   * stray row never opens the floodgates (ingest) or keeps data forever (worker retention) —
-   * most restrictive default is the safer pick.
+   * Maps the wire/DB string to a tier. Unknown / null values fall back to {@link #FREE} so a stray
+   * row never opens the floodgates (ingest) or keeps data forever (worker retention) — most
+   * restrictive default is the safer pick.
+   *
+   * <p>OSS conversion Phase 1 shim: also accepts the new color-themed tier names
+   * (regular/silver/gold/platinum) introduced by V28. Mapping mirrors the cap structure —
+   * regular↔FREE, silver↔STARTER, gold↔PRO, platinum↔BUSINESS — so a row backfilled to the new
+   * spelling reads back as the same Java enum constant during the transition window. Phase 2
+   * renames the enum constants themselves and removes this shim.
    */
   public static PlanTier fromDbValue(String raw) {
     if (raw == null) return FREE;
+    String normalized = raw.toLowerCase(Locale.ROOT);
+    PlanTier aliased = aliasOrNull(normalized);
+    if (aliased != null) return aliased;
     try {
-      return PlanTier.valueOf(raw.toUpperCase(Locale.ROOT));
+      return PlanTier.valueOf(normalized.toUpperCase(Locale.ROOT));
     } catch (IllegalArgumentException e) {
       return FREE;
     }
+  }
+
+  private static PlanTier aliasOrNull(String normalized) {
+    return switch (normalized) {
+      case "regular" -> FREE;
+      case "silver" -> STARTER;
+      case "gold" -> PRO;
+      case "platinum" -> BUSINESS;
+      default -> null;
+    };
   }
 }
