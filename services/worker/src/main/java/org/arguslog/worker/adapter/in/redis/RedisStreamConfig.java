@@ -15,6 +15,7 @@ import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
+import org.springframework.data.redis.stream.StreamMessageListenerContainer.ConsumerStreamReadRequest;
 
 @Configuration
 @EnableConfigurationProperties(RedisStreamProperties.class)
@@ -84,10 +85,29 @@ public class RedisStreamConfig {
     StreamMessageListenerContainer<String, MapRecord<String, String, String>> container =
         StreamMessageListenerContainer.create(cf, options);
 
-    container.receive(
-        Consumer.from(props.consumerGroup(), props.consumerName()),
-        StreamOffset.create(props.streamKey(), ReadOffset.lastConsumed()),
-        listener);
+    // cancelOnError(t -> false): Lettuce's `Connection closed` during a blocking XREADGROUP is a
+    // routine TCP-lifecycle event (Railway network recycling, Redis idle timeout, deploy-time
+    // socket teardown). The default predicate cancels the poller on first such error, which
+    // silently stops event consumption until the whole worker is restarted. We keep the poller
+    // alive and let Lettuce auto-reconnect (its own default) on the next iteration.
+    //
+    // errorHandler at WARN: drops the noise out of the ERROR pipeline so Arguslog no longer
+    // ingests these as bugs. Real Redis errors (auth, OOM, command rejections) still surface —
+    // Lettuce throws those with distinct exception types that downstream consumers can route on.
+    ConsumerStreamReadRequest<String> readRequest =
+        StreamMessageListenerContainer.StreamReadRequest.builder(
+                StreamOffset.create(props.streamKey(), ReadOffset.lastConsumed()))
+            .consumer(Consumer.from(props.consumerGroup(), props.consumerName()))
+            .cancelOnError(t -> false)
+            .errorHandler(
+                t ->
+                    log.warn(
+                        "redis stream poll error on {}, will retry on next iteration",
+                        props.streamKey(),
+                        t))
+            .build();
+
+    container.register(readRequest, listener);
 
     return container;
   }

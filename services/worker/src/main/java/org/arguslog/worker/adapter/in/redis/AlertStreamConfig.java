@@ -15,6 +15,7 @@ import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
+import org.springframework.data.redis.stream.StreamMessageListenerContainer.ConsumerStreamReadRequest;
 
 /**
  * Boots the rule-evaluator listener on its own consumer group. Mirrors {@link RedisStreamConfig}.
@@ -81,10 +82,21 @@ public class AlertStreamConfig {
     StreamMessageListenerContainer<String, MapRecord<String, String, String>> container =
         StreamMessageListenerContainer.create(cf, options);
 
-    container.receive(
-        Consumer.from(props.consumerGroup(), props.consumerName()),
-        StreamOffset.create(props.streamKey(), ReadOffset.lastConsumed()),
-        listener);
+    // See RedisStreamConfig for the rationale on cancelOnError(false) + WARN errorHandler.
+    ConsumerStreamReadRequest<String> readRequest =
+        StreamMessageListenerContainer.StreamReadRequest.builder(
+                StreamOffset.create(props.streamKey(), ReadOffset.lastConsumed()))
+            .consumer(Consumer.from(props.consumerGroup(), props.consumerName()))
+            .cancelOnError(t -> false)
+            .errorHandler(
+                t ->
+                    log.warn(
+                        "alert stream poll error on {}, will retry on next iteration",
+                        props.streamKey(),
+                        t))
+            .build();
+
+    container.register(readRequest, listener);
 
     return container;
   }
