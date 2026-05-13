@@ -449,6 +449,9 @@ function FooterSection({ dashboardUrl }: { dashboardUrl: string }) {
             <Anchor href={dashboardUrl} size="sm" c="dimmed">
               {t('footer.links.app')}
             </Anchor>
+            <Anchor href="/status" size="sm" c="dimmed" data-testid="footer-status-link">
+              {t('footer.links.status')}
+            </Anchor>
             <Anchor
               href={GITHUB_URL}
               target="_blank"

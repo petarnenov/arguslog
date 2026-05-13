@@ -156,5 +156,39 @@
       "docs": "Docs"
     },
     "copyright": "© 2026 Arguslog"
+  },
+  "status": {
+    "title": "System status",
+    "subtitle": "Real-time health of every public Arguslog service. Each tile probes the matching production endpoint from your browser on a 30-second loop — so what you see is exactly what your end users would see.",
+    "checking": "Checking…",
+    "lastChecked": "Last checked {{when}}",
+    "servicesTitle": "Services",
+    "workerNote": "The async worker (event fingerprinter / alert dispatcher) has no public port — it's monitored by Railway healthchecks against its internal /actuator/health. Outages there surface here indirectly: ingest still accepts events but issues won't update, so the API tile will report stale data instead.",
+    "incidentsTitle": "Recent incidents",
+    "incidentsEmpty": "No incidents recorded. The log is kept in apps/landing/src/data/incidents.md; commits to main update this page.",
+    "overall": {
+      "operational": "All systems operational",
+      "degraded": "Degraded performance",
+      "outage": "Major outage",
+      "unknown": "Checking systems…"
+    },
+    "serviceStatus": {
+      "up": "Operational",
+      "down": "Down",
+      "unknown": "Unknown"
+    },
+    "severity": {
+      "minor": "Minor",
+      "major": "Major",
+      "critical": "Critical",
+      "unknown": "Incident"
+    },
+    "incidentStatus": {
+      "investigating": "Investigating",
+      "identified": "Identified",
+      "monitoring": "Monitoring",
+      "resolved": "Resolved",
+      "unknown": "Unknown"
+    }
   }
 }

@@ -250,7 +250,12 @@ export function createApp(): Application {
   // Healthz first, before any auth-ish middleware — Railway's healthcheck doesn't traverse
   // Cloudflare and can't send the origin token. Keeping it out of rate-limiting prevents a
   // dependency between a misconfigured limiter and uptime reporting.
+  //
+  // Access-Control-Allow-Origin is wide-open by design: the response body is identical for
+  // every caller (uptime + version), there's no auth state, and the public status page on
+  // arguslog.org needs to read it cross-origin from the browser to surface health.
   app.get('/healthz', (_req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json({ ok: true, service: PACKAGE_NAME, version: PACKAGE_VERSION });
   });
 

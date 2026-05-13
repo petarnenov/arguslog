@@ -25,5 +25,16 @@ public class WebConfig implements WebMvcConfigurer {
         .allowedHeaders("Content-Type", "X-Arguslog-Auth")
         .allowCredentials(false)
         .maxAge(3600);
+
+    // Public status page on arguslog.org polls these health endpoints from the browser to render
+    // a real-time uptime indicator. The data is identical to what curl already returns from
+    // anywhere — no auth, no credentials — so allowing any origin matches the existing public
+    // exposure of /actuator/health.
+    registry
+        .addMapping("/actuator/health/**")
+        .allowedOriginPatterns("*")
+        .allowedMethods("GET", "OPTIONS")
+        .allowCredentials(false)
+        .maxAge(3600);
   }
 }
