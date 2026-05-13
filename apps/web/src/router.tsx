@@ -13,6 +13,7 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { OrgSettingsPage } from './pages/OrgSettingsPage';
 import { OrgsLandingPage } from './pages/OrgsLandingPage';
 import { PersonalAccessTokensPage } from './pages/PersonalAccessTokensPage';
+import { ConnectProjectPage } from './pages/ConnectProjectPage';
 import { ProjectKeysPage } from './pages/ProjectKeysPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ReleasesPage } from './pages/ReleasesPage';
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
         element: <IssueDetailPage />,
       },
       { path: '/orgs/:orgSlug/projects/:projectId/settings/keys', element: <ProjectKeysPage /> },
+      { path: '/orgs/:orgSlug/projects/:projectId/connect', element: <ConnectProjectPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/alert-rules', element: <AlertRulesPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/releases', element: <ReleasesPage /> },
       { path: '/orgs/:orgSlug/settings', element: <OrgSettingsPage /> },

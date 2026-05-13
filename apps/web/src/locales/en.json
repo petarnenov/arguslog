@@ -9,6 +9,7 @@
     "alerts": "Alerts",
     "alertRules": "Alert rules",
     "destinations": "Destinations",
+    "connect": "Connect",
     "members": "Members",
     "releases": "Releases",
     "billing": "Billing",
@@ -143,7 +144,39 @@
     "dsnHint": "Copy this DSN into your app's config — it's the only way the SDK can authenticate to ingest.",
     "copyDsn": "Copy DSN",
     "copied": "Copied!",
-    "continue": "Open project"
+    "continue": "Open project",
+    "connect": "Connect / show snippets"
+  },
+  "connect": {
+    "title": "Connect",
+    "subtitle": "Paste-ready config for every supported client. Copy the DSN into SDKs, the PAT into MCP servers and CLI — same project, two credentials, ten snippets.",
+    "notFound": "Project not found in this organization.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "dsn": {
+      "title": "DSN",
+      "badge": "SDK ingest",
+      "hint": "Public credential safe to ship in client code. Authenticates ingest for THIS project only — cannot read issues, manage projects, or call admin APIs.",
+      "empty": "This project has no active DSN yet — generate one to start receiving events.",
+      "generate": "Generate DSN"
+    },
+    "pat": {
+      "title": "Personal access token",
+      "badge": "Server-to-server",
+      "hint": "Private credential carrying your full membership scope. Required for MCP servers, the CLI, and any script that reads or writes through the API. Mint a fresh one below — the plaintext is shown exactly once.",
+      "generate": "Generate a PAT for this flow",
+      "manage": "Manage existing tokens",
+      "oneTimeWarning": "Copy this now — it will never be shown again. Anyone with this token can act as you within the scopes you selected."
+    },
+    "snippets": {
+      "title": "Paste-ready snippets",
+      "hint": "Pick your stack and click Copy. Snippets fill in your DSN / PAT automatically; missing credentials show a placeholder so you can still copy the structure.",
+      "group": {
+        "sdk": "SDKs",
+        "mcp": "MCP clients",
+        "cli": "CLI"
+      }
+    }
   },
   "projectKeys": {
     "title": "DSN keys",

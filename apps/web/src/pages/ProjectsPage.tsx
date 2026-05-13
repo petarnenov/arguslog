@@ -22,7 +22,13 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconArchive, IconArrowRight, IconDotsVertical, IconPencil } from '@tabler/icons-react';
+import {
+  IconArchive,
+  IconArrowRight,
+  IconDotsVertical,
+  IconPencil,
+  IconPlugConnected,
+} from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -371,6 +377,16 @@ export function ProjectsPage() {
                   </Button>
                 )}
               </CopyButton>
+              <Button
+                component={Link}
+                to={`/orgs/${org.slug}/projects/${dsnSuccess.project.id}/connect`}
+                onClick={() => setDsnSuccess(null)}
+                variant="light"
+                leftSection={<IconPlugConnected size={14} />}
+                data-testid="dsn-modal-connect-cta"
+              >
+                {t('projects.connect')}
+              </Button>
               <Button onClick={() => openProjectAndClose(dsnSuccess.project)}>
                 {t('projects.continue')}
               </Button>
@@ -458,6 +474,14 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
             <Menu.Dropdown>
               <Menu.Item component={Link} to={issuesUrl} leftSection={<IconArrowRight size={14} />}>
                 {t('projects.viewIssues')}
+              </Menu.Item>
+              <Menu.Item
+                component={Link}
+                to={`/orgs/${orgSlug}/projects/${project.id}/connect`}
+                leftSection={<IconPlugConnected size={14} />}
+                data-testid={`project-connect-${project.slug}`}
+              >
+                {t('projects.connect')}
               </Menu.Item>
               <Menu.Item
                 leftSection={<IconPencil size={14} />}

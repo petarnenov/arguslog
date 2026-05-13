@@ -27,6 +27,7 @@ import {
   IconKey,
   IconLogout,
   IconPencil,
+  IconPlugConnected,
   IconPlus,
   IconSend,
   IconShieldLock,
@@ -341,6 +342,13 @@ export function AppShellLayout() {
                 to={`/orgs/${orgSlug}/projects/${projectId}/settings/keys`}
                 label="Keys"
                 leftSection={<IconShieldLock size={16} />}
+              />
+              <NavLink
+                component={Link}
+                to={`/orgs/${orgSlug}/projects/${projectId}/connect`}
+                label={t('nav.connect')}
+                leftSection={<IconPlugConnected size={16} />}
+                data-testid="nav-connect"
               />
             </>
           )}
