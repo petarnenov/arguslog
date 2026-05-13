@@ -7,11 +7,24 @@
 :{$PORT:8080} {
     root * /srv
 
-    # SPA fallback: anything that doesn't match a real file becomes /index.html. Caddy's
-    # try_files honors the route order so /assets/foo.js gets a real 404 if missing.
-    try_files {path} /index.html
+    # Caddy's standard directive order puts `try_files` before `handle` matchers, so a bare
+    # `handle /healthz` outside a `route` block never fires — the request gets rewritten to
+    # /index.html first. `route` forces left-to-right evaluation: /healthz wins exclusively,
+    # everything else falls through to try_files + file_server.
+    route {
+        # Healthcheck endpoint Railway hits without going through the SPA shell. Also probed
+        # cross-origin from arguslog.org/status — the open ACAO is safe because the body is
+        # the fixed two-byte literal "ok" with no auth state.
+        handle /healthz {
+            header Access-Control-Allow-Origin "*"
+            respond "ok" 200
+        }
 
-    file_server
+        # SPA fallback: anything that doesn't match a real file becomes /index.html. Caddy's
+        # try_files honors the route order so /assets/foo.js gets a real 404 if missing.
+        try_files {path} /index.html
+        file_server
+    }
 
     # Long-cache hashed bundle assets, no-cache index.html.
     @hashed path_regexp ^/assets/.+\.[0-9a-f]{8,}\..+$
@@ -26,13 +39,5 @@
         X-Frame-Options "DENY"
         Referrer-Policy "strict-origin-when-cross-origin"
         # Strict-Transport-Security set by Cloudflare in front; not duplicated here.
-    }
-
-    # Healthcheck endpoint Railway can hit without going through index.html. Also probed
-    # cross-origin from arguslog.org/status — the open ACAO is safe here because the body
-    # is a fixed two-byte literal with no auth state.
-    handle /healthz {
-        header Access-Control-Allow-Origin "*"
-        respond "ok" 200
     }
 }
