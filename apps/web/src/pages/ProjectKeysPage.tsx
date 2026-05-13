@@ -85,9 +85,17 @@ export function ProjectKeysPage() {
     <Stack>
       <Group justify="space-between" align="flex-start">
         <Stack gap={4}>
-          <Title order={3}>{t('projectKeys.title')}</Title>
+          <Group gap="sm" align="center">
+            <Title order={3}>{t('projectKeys.title')}</Title>
+            <Badge color="blue" variant="light" data-testid="dsn-credential-badge">
+              {t('projectKeys.badge')}
+            </Badge>
+          </Group>
           <Text c="dimmed" size="sm" maw={680}>
             {t('projectKeys.subtitle')}
+          </Text>
+          <Text c="dimmed" size="xs" maw={680}>
+            {t('projectKeys.useHint')}
           </Text>
         </Stack>
         <Button onClick={() => generateMutation.mutate()} loading={generateMutation.isPending}>

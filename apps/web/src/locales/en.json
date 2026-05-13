@@ -147,7 +147,9 @@
   },
   "projectKeys": {
     "title": "DSN keys",
+    "badge": "SDK ingest (DSN)",
     "subtitle": "Each key authenticates SDK traffic to ingest. Generate a new one to rotate; revoke any key you don't recognize.",
+    "useHint": "Use DSN keys in your client SDK config (browser, mobile, server SDKs) to send events to ingest. They have one job — accepting event traffic for THIS project. They cannot read issues, manage projects, or call admin APIs. For those, generate a Personal Access Token from your account menu.",
     "generate": "Generate new key",
     "empty": "No active keys yet — generate one to start receiving events.",
     "loadFailed": "Could not load keys.",
@@ -433,7 +435,9 @@
   },
   "tokens": {
     "title": "Personal access tokens",
+    "badge": "Server-to-server (PAT)",
     "intro": "Create a token to authenticate the CLI or scripts as you. Tokens carry your full membership scope, so treat them like passwords.",
+    "useHint": "Use PATs for the MCP server, the CLI, and any server-side script that calls the Arguslog API on your behalf. Unlike a DSN key (which can only send events to a single project), a PAT can read issues, manage projects, and call admin endpoints across every org you belong to — subject to the scopes you select below.",
     "nameLabel": "Name",
     "namePlaceholder": "e.g. ci-deploy",
     "create": "Create token",

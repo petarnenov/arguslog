@@ -87,9 +87,17 @@ export function PersonalAccessTokensPage() {
 
   return (
     <Stack maw={900}>
-      <Title order={3}>{t('tokens.title')}</Title>
+      <Group gap="sm" align="center">
+        <Title order={3}>{t('tokens.title')}</Title>
+        <Badge color="violet" variant="light" data-testid="pat-credential-badge">
+          {t('tokens.badge')}
+        </Badge>
+      </Group>
       <Text size="sm" c="dimmed">
         {t('tokens.intro')}
+      </Text>
+      <Text size="xs" c="dimmed">
+        {t('tokens.useHint')}
       </Text>
 
       <form
