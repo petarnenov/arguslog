@@ -1860,6 +1860,18 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         description: 'level (string) — optional.',
       },
       {
+        name: 'q',
+        required: false,
+        type: 'string',
+        description: 'q (string) — optional.',
+      },
+      {
+        name: 'assignee',
+        required: false,
+        type: 'string',
+        description: 'assignee (string) — optional.',
+      },
+      {
         name: 'cursor',
         required: false,
         type: 'string',

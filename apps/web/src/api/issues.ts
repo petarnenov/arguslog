@@ -27,10 +27,23 @@ export interface PageResponse<T> {
   page: PageMeta;
 }
 
+/**
+ * Assignee filter wire form mirrors the backend:
+ *   - omitted / 'all' → no constraint
+ *   - 'me'            → caller's user (server resolves)
+ *   - 'none'          → unassigned only
+ *   - UUID string     → exact user match
+ */
+export type AssigneeFilter = 'all' | 'me' | 'none' | (string & {});
+
 export interface ListIssuesParams {
   projectId: number;
   status?: IssueStatus;
   level?: IssueLevel;
+  /** Free-text substring matched ILIKE across title + culprit. */
+  q?: string;
+  /** Assignee filter — see {@link AssigneeFilter}. */
+  assignee?: AssigneeFilter;
   cursor?: string;
   limit?: number;
 }
@@ -39,10 +52,12 @@ export function listIssues({
   projectId,
   status,
   level,
+  q,
+  assignee,
   cursor,
   limit,
 }: ListIssuesParams): Promise<PageResponse<Issue>> {
-  const qs = buildQuery({ status, level, cursor, limit });
+  const qs = buildQuery({ status, level, q, assignee, cursor, limit });
   return apiFetch<PageResponse<Issue>>(`/api/v1/projects/${projectId}/issues${qs}`);
 }
 

@@ -27,7 +27,13 @@ public class ListIssuesService implements ListIssuesUseCase {
     // N+1 trick: ask for one more than requested; if we got it, there is a next page.
     List<Issue> rows =
         repository.page(
-            query.projectId(), query.status(), query.level(), cursor, query.limit() + 1);
+            query.projectId(),
+            query.status(),
+            query.level(),
+            query.searchText(),
+            query.assignee(),
+            cursor,
+            query.limit() + 1);
 
     boolean hasMore = rows.size() > query.limit();
     List<Issue> page = hasMore ? rows.subList(0, query.limit()) : rows;

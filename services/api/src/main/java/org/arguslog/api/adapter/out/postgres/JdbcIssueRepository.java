@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.arguslog.api.application.CursorCodec;
+import org.arguslog.api.application.ListIssuesUseCase.AssigneeFilter;
 import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.domain.Issue;
 import org.arguslog.api.security.OrgContext;
@@ -21,11 +22,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class JdbcIssueRepository implements IssueRepository {
 
-  // Tuple comparison `(last_seen_at, id) < (?,?)` gives a strict cursor without
-  // ties; the
-  // optional status / level filters are coalesced through CASE so the same
-  // prepared statement
-  // serves all four combinations and PG can plan it once.
+  // Tuple comparison `(last_seen_at, id) < (?,?)` gives a strict cursor without ties; the
+  // optional status / level / search / assignee filters are coalesced through CASE / IS NULL
+  // so the same prepared statement serves every combination and PG can plan it once.
+  //
+  // searchText: NULL → match all; non-null → ILIKE substring on (title, culprit).
+  // assignee_mode:
+  //   NULL  → no assignee filter (match all)
+  //   ''    → unassigned only (assignee_user_id IS NULL)
+  //   <uuid string> → exact match on that user
   private static final String PAGE_SQL =
       """
       SELECT id, project_id, fingerprint, status::text, level::text, title, culprit,
@@ -34,6 +39,10 @@ public class JdbcIssueRepository implements IssueRepository {
        WHERE project_id = ?
          AND (?::issue_status IS NULL OR status = ?::issue_status)
          AND (?::event_level  IS NULL OR level  = ?::event_level)
+         AND (?::text IS NULL OR (title ILIKE ?::text OR COALESCE(culprit,'') ILIKE ?::text))
+         AND (?::text IS NULL
+              OR (?::text = '' AND assignee_user_id IS NULL)
+              OR (?::text <> '' AND assignee_user_id = ?::uuid))
          AND (? IS NULL OR (last_seen_at, id) < (?::timestamptz, ?::bigint))
        ORDER BY last_seen_at DESC, id DESC
        LIMIT ?
@@ -60,11 +69,33 @@ public class JdbcIssueRepository implements IssueRepository {
       long projectId,
       Optional<Issue.Status> status,
       Optional<Issue.Level> level,
+      Optional<String> searchText,
+      Optional<AssigneeFilter> assignee,
       Optional<CursorCodec.LongCursor> cursor,
       int limit) {
 
     String statusValue = status.map(Issue.Status::dbValue).orElse(null);
     String levelValue = level.map(Issue.Level::dbValue).orElse(null);
+    // Wrap the search text with %…% on both sides so ILIKE matches anywhere in the column.
+    // Blank inputs are treated as "no filter" — defensive against the frontend sending an
+    // empty string instead of dropping the param.
+    String searchPattern =
+        searchText
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(s -> "%" + s + "%")
+            .orElse(null);
+    // Encode the assignee filter as a single text mode arg used three times in the SQL:
+    //   null → no filter; "" → unassigned-only; "<uuid>" → match exact user.
+    String assigneeMode =
+        assignee
+            .map(
+                f ->
+                    switch (f) {
+                      case AssigneeFilter.User u -> u.userId().toString();
+                      case AssigneeFilter.Unassigned __ -> "";
+                    })
+            .orElse(null);
     Object cursorTs = cursor.map(c -> java.sql.Timestamp.from(c.instant())).orElse(null);
     Object cursorId = cursor.map(CursorCodec.LongCursor::id).orElse(null);
     Object cursorPresence = cursor.isPresent() ? Boolean.TRUE : null;
@@ -75,6 +106,13 @@ public class JdbcIssueRepository implements IssueRepository {
       statusValue,
       levelValue,
       levelValue,
+      searchPattern,
+      searchPattern,
+      searchPattern,
+      assigneeMode,
+      assigneeMode,
+      assigneeMode,
+      assigneeMode,
       cursorPresence,
       cursorTs,
       cursorId,
@@ -82,6 +120,13 @@ public class JdbcIssueRepository implements IssueRepository {
     };
     int[] types = {
       Types.BIGINT,
+      Types.VARCHAR,
+      Types.VARCHAR,
+      Types.VARCHAR,
+      Types.VARCHAR,
+      Types.VARCHAR,
+      Types.VARCHAR,
+      Types.VARCHAR,
       Types.VARCHAR,
       Types.VARCHAR,
       Types.VARCHAR,

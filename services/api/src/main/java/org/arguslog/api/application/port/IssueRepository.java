@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.arguslog.api.application.CursorCodec;
+import org.arguslog.api.application.ListIssuesUseCase.AssigneeFilter;
 import org.arguslog.api.domain.Issue;
 
 /**
@@ -13,13 +14,18 @@ import org.arguslog.api.domain.Issue;
 public interface IssueRepository {
 
   /**
-   * Returns up to {@code limit} issues for the given project, optionally filtered by status / level
-   * and starting strictly after {@code cursor}. Order is {@code (last_seen_at DESC, id DESC)}.
+   * Returns up to {@code limit} issues for the given project, filtered by every present option,
+   * starting strictly after {@code cursor}. Order is {@code (last_seen_at DESC, id DESC)}.
+   *
+   * <p>{@code searchText} is matched ILIKE-substring across {@code title + culprit}. {@code
+   * assignee} narrows to a specific user, to unassigned rows, or to any state when absent.
    */
   List<Issue> page(
       long projectId,
       Optional<Issue.Status> status,
       Optional<Issue.Level> level,
+      Optional<String> searchText,
+      Optional<AssigneeFilter> assignee,
       Optional<CursorCodec.LongCursor> cursor,
       int limit);
 

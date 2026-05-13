@@ -1304,6 +1304,20 @@
             "type" : "string"
           }
         }, {
+          "name" : "q",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "assignee",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
           "name" : "cursor",
           "in" : "query",
           "required" : false,

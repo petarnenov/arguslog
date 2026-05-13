@@ -15,11 +15,13 @@ import org.arguslog.api.application.IssueTriageUseCase;
 import org.arguslog.api.application.IssueTriageUseCase.InvalidAssigneeException;
 import org.arguslog.api.application.ListIssueEventsUseCase;
 import org.arguslog.api.application.ListIssuesUseCase;
+import org.arguslog.api.application.ListIssuesUseCase.AssigneeFilter;
 import org.arguslog.api.application.ListIssuesUseCase.Query;
 import org.arguslog.api.auth.PatScopeGuard;
 import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.domain.Issue;
 import org.arguslog.api.security.AccessException;
+import org.arguslog.api.security.AuthActor;
 import org.arguslog.api.security.OrgContext;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -60,13 +62,26 @@ public class IssueController {
       @PathVariable long projectId,
       @RequestParam(value = "status", required = false) String statusParam,
       @RequestParam(value = "level", required = false) String levelParam,
+      @RequestParam(value = "q", required = false) String searchParam,
+      @RequestParam(value = "assignee", required = false) String assigneeParam,
       @RequestParam(value = "cursor", required = false) String cursor,
       @RequestParam(value = "limit", required = false, defaultValue = "50") int limit) {
 
     Optional<Issue.Status> status = parseStatus(statusParam);
     Optional<Issue.Level> level = parseLevel(levelParam);
+    Optional<String> searchText =
+        Optional.ofNullable(searchParam).map(String::trim).filter(s -> !s.isEmpty());
+    Optional<AssigneeFilter> assignee = parseAssignee(assigneeParam);
     var page =
-        listIssues.list(new Query(projectId, status, level, Optional.ofNullable(cursor), limit));
+        listIssues.list(
+            new Query(
+                projectId,
+                status,
+                level,
+                searchText,
+                assignee,
+                Optional.ofNullable(cursor),
+                limit));
     List<IssueResponse> data = page.issues().stream().map(IssueResponse::from).toList();
     return PageResponse.of(data, page.nextCursor().orElse(null));
   }
@@ -154,6 +169,30 @@ public class IssueController {
       return Optional.of(Issue.Status.fromString(raw));
     } catch (IllegalArgumentException e) {
       throw new BadFilterException("status", raw, "must be one of: unresolved, resolved, ignored");
+    }
+  }
+
+  /**
+   * Decode the {@code ?assignee=} query param. Accepts three shapes:
+   *   {@code none} → unassigned-only;
+   *   {@code me} → the caller's user id (handy for "my issues");
+   *   {@code <uuid>} → exact match on that user.
+   * Empty/missing → no assignee constraint.
+   */
+  private static Optional<AssigneeFilter> parseAssignee(String raw) {
+    if (raw == null) return Optional.empty();
+    String value = raw.trim();
+    if (value.isEmpty() || "all".equalsIgnoreCase(value)) return Optional.empty();
+    if ("none".equalsIgnoreCase(value) || "unassigned".equalsIgnoreCase(value)) {
+      return Optional.of(AssigneeFilter.UNASSIGNED);
+    }
+    if ("me".equalsIgnoreCase(value)) {
+      return Optional.of(new AssigneeFilter.User(AuthActor.currentUserId()));
+    }
+    try {
+      return Optional.of(new AssigneeFilter.User(UUID.fromString(value)));
+    } catch (IllegalArgumentException e) {
+      throw new BadFilterException("assignee", raw, "must be a user UUID, 'me', 'none', or omitted");
     }
   }
 

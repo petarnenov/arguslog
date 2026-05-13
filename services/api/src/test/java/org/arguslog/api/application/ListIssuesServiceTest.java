@@ -40,18 +40,18 @@ class ListIssuesServiceTest {
 
   @Test
   void emptyResultMeansNoNextCursor() {
-    when(repository.page(eq(101L), any(), any(), any(), anyInt())).thenReturn(List.of());
+    when(repository.page(eq(101L), any(), any(), any(), any(), any(), anyInt())).thenReturn(List.of());
     Page page =
-        service.list(new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), 50));
+        service.list(new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 50));
     assertThat(page.issues()).isEmpty();
     assertThat(page.nextCursor()).isEmpty();
   }
 
   @Test
   void resultsBelowLimitMeanNoNextCursor() {
-    when(repository.page(anyLong(), any(), any(), any(), anyInt())).thenReturn(issues(3));
+    when(repository.page(anyLong(), any(), any(), any(), any(), any(), anyInt())).thenReturn(issues(3));
     Page page =
-        service.list(new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), 50));
+        service.list(new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 50));
     assertThat(page.issues()).hasSize(3);
     assertThat(page.nextCursor()).isEmpty();
   }
@@ -59,9 +59,17 @@ class ListIssuesServiceTest {
   @Test
   void resultsExceedingLimitTrimAndEmitNextCursor() {
     // limit=2 → service requests 3, gets 3 → trim to 2 + emit cursor for the 2nd
-    when(repository.page(anyLong(), any(), any(), any(), anyInt())).thenReturn(issues(3));
+    when(repository.page(anyLong(), any(), any(), any(), any(), any(), anyInt())).thenReturn(issues(3));
     Page page =
-        service.list(new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), 2));
+        service.list(
+        new Query(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            2));
     assertThat(page.issues()).hasSize(2);
     assertThat(page.nextCursor()).isPresent();
     LongCursor decoded = CursorCodec.decodeLong(page.nextCursor().orElseThrow());
@@ -72,13 +80,21 @@ class ListIssuesServiceTest {
   void cursorIsDecodedAndForwardedToRepository() {
     LongCursor cursor = new LongCursor(Instant.parse("2026-05-05T12:00:00Z"), 42L);
     String encoded = CursorCodec.encodeLong(cursor.instant(), cursor.id());
-    when(repository.page(anyLong(), any(), any(), any(), anyInt())).thenReturn(List.of());
+    when(repository.page(anyLong(), any(), any(), any(), any(), any(), anyInt())).thenReturn(List.of());
 
-    service.list(new Query(101L, Optional.empty(), Optional.empty(), Optional.of(encoded), 50));
+    service.list(
+        new Query(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of(encoded),
+            50));
 
     @SuppressWarnings("unchecked")
     ArgumentCaptor<Optional<LongCursor>> captor = ArgumentCaptor.forClass(Optional.class);
-    verify(repository).page(eq(101L), any(), any(), captor.capture(), eq(51));
+    verify(repository).page(eq(101L), any(), any(), any(), any(), captor.capture(), eq(51));
     assertThat(captor.getValue()).contains(cursor);
   }
 
@@ -110,14 +126,38 @@ class ListIssuesServiceTest {
 
   @Test
   void limitIsClampedToMax() {
-    Query q = new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), 9999);
+    Query q =
+        new Query(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            9999);
     assertThat(q.limit()).isEqualTo(Query.MAX_LIMIT);
   }
 
   @Test
   void nonPositiveLimitFallsBackToDefault() {
-    Query a = new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), 0);
-    Query b = new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), -1);
+    Query a =
+        new Query(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            0);
+    Query b =
+        new Query(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            -1);
     assertThat(a.limit()).isEqualTo(Query.DEFAULT_LIMIT);
     assertThat(b.limit()).isEqualTo(Query.DEFAULT_LIMIT);
   }

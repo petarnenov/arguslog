@@ -211,6 +211,14 @@
     "occurrences": "Occurrences",
     "statusFilter": "Status",
     "levelFilter": "Level",
+    "searchPlaceholder": "Search title or culprit…",
+    "searchClear": "Clear search",
+    "assigneeFilter": {
+      "placeholder": "Assignee",
+      "all": "Anyone",
+      "me": "Me",
+      "unassigned": "Unassigned"
+    },
     "invalidProjectId": "Invalid project — pick a project from the sidebar.",
     "status": {
       "unresolved": "Unresolved",

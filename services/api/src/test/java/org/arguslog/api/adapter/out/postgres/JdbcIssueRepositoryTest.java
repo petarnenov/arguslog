@@ -71,9 +71,12 @@ class JdbcIssueRepositoryTest {
               long projectId,
               Optional<Issue.Status> status,
               Optional<Issue.Level> level,
+              Optional<String> searchText,
+              Optional<org.arguslog.api.application.ListIssuesUseCase.AssigneeFilter> assignee,
               Optional<LongCursor> cursor,
               int limit) {
-            return tx.execute(s -> raw.page(projectId, status, level, cursor, limit));
+            return tx.execute(
+                s -> raw.page(projectId, status, level, searchText, assignee, cursor, limit));
           }
 
           @Override
@@ -119,7 +122,7 @@ class JdbcIssueRepositoryTest {
     insertIssue("c", "error", "unresolved", Instant.parse("2026-05-05T11:00:00Z"));
 
     List<Issue> page =
-        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 10);
     assertThat(page).extracting(Issue::fingerprint).containsExactly("b", "c", "a");
   }
 
@@ -129,7 +132,7 @@ class JdbcIssueRepositoryTest {
     insertIssue("other", "error", "unresolved", Instant.now(), 102L);
 
     List<Issue> page =
-        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 10);
+        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 10);
     assertThat(page).extracting(Issue::fingerprint).containsExactly("acme");
   }
 
@@ -141,7 +144,13 @@ class JdbcIssueRepositoryTest {
 
     List<Issue> resolved =
         repository.page(
-            101L, Optional.of(Issue.Status.RESOLVED), Optional.empty(), Optional.empty(), 10);
+            101L,
+            Optional.of(Issue.Status.RESOLVED),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            10);
     assertThat(resolved).extracting(Issue::fingerprint).containsExactly("r");
   }
 
@@ -152,7 +161,13 @@ class JdbcIssueRepositoryTest {
 
     List<Issue> warnings =
         repository.page(
-            101L, Optional.empty(), Optional.of(Issue.Level.WARNING), Optional.empty(), 10);
+            101L,
+            Optional.empty(),
+            Optional.of(Issue.Level.WARNING),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            10);
     assertThat(warnings).extracting(Issue::fingerprint).containsExactly("warn");
   }
 
@@ -164,13 +179,22 @@ class JdbcIssueRepositoryTest {
     insertIssue("c", "error", "unresolved", t);
 
     List<Issue> first =
-        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 2);
+        repository.page(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            2);
     assertThat(first).hasSize(2);
     Issue last = first.get(1);
 
     List<Issue> next =
         repository.page(
             101L,
+            Optional.empty(),
+            Optional.empty(),
             Optional.empty(),
             Optional.empty(),
             Optional.of(new LongCursor(last.lastSeenAt(), last.id())),
@@ -185,8 +209,91 @@ class JdbcIssueRepositoryTest {
       insertIssue("fp-" + i, "error", "unresolved", Instant.now().plusSeconds(i));
     }
     List<Issue> page =
-        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), 3);
+        repository.page(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            3);
     assertThat(page).hasSize(3);
+  }
+
+  @Test
+  void filtersBySearchTextOnTitle() {
+    insertIssue("login-bug", "error", "unresolved", Instant.now(), 101L, "Login failed");
+    insertIssue("checkout-bug", "error", "unresolved", Instant.now(), 101L, "Checkout error");
+
+    List<Issue> match =
+        repository.page(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of("login"),
+            Optional.empty(),
+            Optional.empty(),
+            10);
+    assertThat(match).extracting(Issue::fingerprint).containsExactly("login-bug");
+  }
+
+  @Test
+  void filtersBySearchTextCaseInsensitive() {
+    insertIssue("a", "error", "unresolved", Instant.now(), 101L, "RareWord here");
+
+    List<Issue> match =
+        repository.page(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of("rareWORD"),
+            Optional.empty(),
+            Optional.empty(),
+            10);
+    assertThat(match).hasSize(1);
+  }
+
+  @Test
+  void filtersByAssigneeUuid() {
+    java.util.UUID alice = java.util.UUID.randomUUID();
+    java.util.UUID bob = java.util.UUID.randomUUID();
+    insertUser(alice, "alice@example.com");
+    insertUser(bob, "bob@example.com");
+    insertIssueWithAssignee("a", alice);
+    insertIssueWithAssignee("b", bob);
+    insertIssueWithAssignee("u", null);
+
+    List<Issue> mine =
+        repository.page(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of(
+                new org.arguslog.api.application.ListIssuesUseCase.AssigneeFilter.User(alice)),
+            Optional.empty(),
+            10);
+    assertThat(mine).extracting(Issue::fingerprint).containsExactly("a");
+  }
+
+  @Test
+  void filtersByAssigneeUnassigned() {
+    java.util.UUID alice = java.util.UUID.randomUUID();
+    insertUser(alice, "alice2@example.com");
+    insertIssueWithAssignee("with-owner", alice);
+    insertIssueWithAssignee("ownerless", null);
+
+    List<Issue> unassigned =
+        repository.page(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of(
+                org.arguslog.api.application.ListIssuesUseCase.AssigneeFilter.UNASSIGNED),
+            Optional.empty(),
+            10);
+    assertThat(unassigned).extracting(Issue::fingerprint).containsExactly("ownerless");
   }
 
   // ── helpers ─────────────────────────────────────────────────────────────
@@ -197,6 +304,16 @@ class JdbcIssueRepositoryTest {
 
   private void insertIssue(
       String fingerprint, String level, String status, Instant lastSeen, long projectId) {
+    insertIssue(fingerprint, level, status, lastSeen, projectId, "Title for " + fingerprint);
+  }
+
+  private void insertIssue(
+      String fingerprint,
+      String level,
+      String status,
+      Instant lastSeen,
+      long projectId,
+      String title) {
     String sql =
         """
         INSERT INTO issues (project_id, environment_id, fingerprint, status, level, title,
@@ -209,9 +326,45 @@ class JdbcIssueRepositoryTest {
       stmt.setString(2, fingerprint);
       stmt.setString(3, status);
       stmt.setString(4, level);
-      stmt.setString(5, "Title for " + fingerprint);
+      stmt.setString(5, title);
       stmt.setTimestamp(6, java.sql.Timestamp.from(lastSeen));
       stmt.setTimestamp(7, java.sql.Timestamp.from(lastSeen));
+      stmt.execute();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void insertIssueWithAssignee(String fingerprint, java.util.UUID assignee) {
+    String sql =
+        """
+        INSERT INTO issues (project_id, environment_id, fingerprint, status, level, title,
+                            culprit, first_seen_at, last_seen_at, occurrence_count,
+                            assignee_user_id)
+             VALUES (101, NULL, ?, 'unresolved'::issue_status, 'error'::event_level,
+                     'Title for ' || ?, NULL, NOW(), NOW(), 1, ?)
+        """;
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement stmt = conn.prepareStatement(sql)) {
+      stmt.setString(1, fingerprint);
+      stmt.setString(2, fingerprint);
+      if (assignee == null) {
+        stmt.setNull(3, java.sql.Types.OTHER);
+      } else {
+        stmt.setObject(3, assignee);
+      }
+      stmt.execute();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void insertUser(java.util.UUID id, String email) {
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement stmt =
+            conn.prepareStatement("INSERT INTO users (id, email) VALUES (?, ?)")) {
+      stmt.setObject(1, id);
+      stmt.setString(2, email);
       stmt.execute();
     } catch (Exception e) {
       throw new RuntimeException(e);
