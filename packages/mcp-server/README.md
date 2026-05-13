@@ -107,6 +107,31 @@ Set `ARGUSLOG_API_URL` alongside the PAT:
 }
 ```
 
+#### Keep secrets out of config files (recommended)
+
+Hardcoding the PAT inside your editor's config file means the token follows the file
+through backups, dotfile repos, and screen-shares. Most MCP clients (Claude Code, Cursor,
+Continue) expand `${ENV_VAR}` references at launch time, so you can keep the literal
+token in your shell environment instead:
+
+```json
+{
+  "mcpServers": {
+    "arguslog": {
+      "command": "npx",
+      "args": ["-y", "@arguslog/mcp-server"],
+      "env": {
+        "ARGUSLOG_PAT": "${ARGUSLOG_PAT}"
+      }
+    }
+  }
+}
+```
+
+Export `ARGUSLOG_PAT` in your shell profile (`~/.zshrc`, `~/.bashrc`), or load it from a
+secrets manager (1Password CLI, `direnv`, `pass`). The config file you commit no longer
+contains the token.
+
 ### 3. Talk to your error tracker
 
 ```
