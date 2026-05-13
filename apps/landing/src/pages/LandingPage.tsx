@@ -37,6 +37,29 @@ import { env } from '../env';
 
 const GITHUB_URL = 'https://github.com/petarnenov/arguslog';
 
+/**
+ * Maps a platform slug (as seeded by the api's platforms catalog) to the path within the public
+ * arguslog repo where its README lives. New SDK slugs that aren't in this map fall back to the
+ * repo root, so the card still leads somewhere useful.
+ */
+const PLATFORM_README_PATH: Record<string, string> = {
+  javascript: 'packages/sdk-browser/README.md',
+  react: 'packages/sdk-react/README.md',
+  'react-native': 'packages/sdk-react-native/README.md',
+  node: 'packages/sdk-node/README.md',
+  nextjs: 'packages/sdk-nextjs/README.md',
+  angular: 'packages/sdk-angular/README.md',
+  vue: 'packages/sdk-vue/README.md',
+  web3: 'packages/sdk-web3/README.md',
+  'java-spring': 'java-sdk/README.md',
+  python: 'python-sdk/README.md',
+};
+
+function platformReadmeUrl(slug: string): string {
+  const path = PLATFORM_README_PATH[slug];
+  return path ? `${GITHUB_URL}/blob/main/${path}` : GITHUB_URL;
+}
+
 export function LandingPage() {
   const { t } = useTranslation();
   const platformsQuery = useQuery({ queryKey: ['platforms'], queryFn: listPlatforms });
@@ -202,7 +225,34 @@ function Platforms({
         ) : (
           <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="md">
             {platforms.map((p) => (
-              <Card key={p.slug} withBorder padding="md" radius="md" data-testid="platform-card">
+              <Card
+                key={p.slug}
+                withBorder
+                padding="md"
+                radius="md"
+                data-testid="platform-card"
+                component="a"
+                href={platformReadmeUrl(p.slug)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t('platforms.cardAria', { name: p.name })}
+                style={{
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  transition: 'transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = 'var(--mantine-shadow-md)';
+                  e.currentTarget.style.borderColor = 'var(--mantine-color-blue-5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = '';
+                  e.currentTarget.style.boxShadow = '';
+                  e.currentTarget.style.borderColor = '';
+                }}
+              >
                 <Stack gap={4}>
                   <Title order={5}>{p.name}</Title>
                   {p.sdkPackage ? (
@@ -223,7 +273,26 @@ function Platforms({
           radius="md"
           mt="lg"
           data-testid="web3-addon-card"
-          style={{ borderColor: 'var(--mantine-color-violet-6)' }}
+          component="a"
+          href={platformReadmeUrl('web3')}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t('platforms.web3Card.aria')}
+          style={{
+            borderColor: 'var(--mantine-color-violet-6)',
+            textDecoration: 'none',
+            color: 'inherit',
+            cursor: 'pointer',
+            transition: 'transform 120ms ease, box-shadow 120ms ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = 'var(--mantine-shadow-md)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = '';
+            e.currentTarget.style.boxShadow = '';
+          }}
         >
           <Group gap="sm" align="flex-start" wrap="nowrap">
             <ThemeIcon variant="light" color="violet" size="lg" radius="md">

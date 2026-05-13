@@ -50,10 +50,12 @@
     "loading": "Loading…",
     "fallback": "Visit the GitHub repo for the SDK list.",
     "viewSdk": "View on npm / Maven",
+    "cardAria": "Open the {{name}} SDK README on GitHub (new tab)",
     "web3Card": {
       "title": "Web3 add-on",
       "package": "@arguslog/sdk-web3",
-      "description": "EVM (viem + ethers + wagmi + WalletConnect) and Solana (web3.js + Anchor + wallet adapter) error decoding. Layers on top of @arguslog/sdk-browser."
+      "description": "EVM (viem + ethers + wagmi + WalletConnect) and Solana (web3.js + Anchor + wallet adapter) error decoding. Layers on top of @arguslog/sdk-browser.",
+      "aria": "Open the Web3 SDK README on GitHub (new tab)"
     }
   },
   "mcp": {
