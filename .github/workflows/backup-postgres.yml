@@ -1,0 +1,70 @@
+name: Backup Postgres
+
+# Daily full-database snapshot to R2. The dump is gzip-compressed pg_dump custom format —
+# restorable through scripts/restore-postgres.sh into a fresh Postgres of the same major
+# version. See docs/operations/backup-restore.md for the runbook.
+#
+# Required secrets (configure under Settings → Secrets and variables → Actions):
+#   PROD_DATABASE_URL  libpq URL for production Postgres (postgres://user:pass@host/db)
+#   R2_BACKUP_ENDPOINT https://<account>.r2.cloudflarestorage.com
+#   R2_BACKUP_BUCKET   arguslog-backups (or whatever the operator chose)
+#   R2_BACKUP_KEY_ID   R2 access key with read+write on the bucket
+#   R2_BACKUP_SECRET   R2 secret access key
+#
+# Retention: configure an R2 bucket lifecycle rule to delete objects older than 30 days.
+# The workflow itself does NOT prune — keeping retention in R2 means a misconfigured workflow
+# can't accidentally delete history.
+
+on:
+  schedule:
+    # Daily at 04:00 UTC — well outside peak ingest traffic for both EU and US.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      backup_prefix:
+        description: 'Top-level S3 key segment (default "daily"; use "manual" for ad-hoc).'
+        required: false
+        default: 'manual'
+
+concurrency:
+  # Two parallel backups would race on the timestamp + upload bandwidth without benefit.
+  group: backup-postgres
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: Snapshot + upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install postgresql-client (matches prod major version)
+        run: |
+          sudo apt-get update
+          # pg_dump's wire is forward-compatible within a major version. Prod runs PostgreSQL
+          # 16 (TimescaleDB image); install 16 explicitly so a future Ubuntu image bump that
+          # ships a different default doesn't silently degrade us.
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+
+      - name: Install aws-cli (the runner image ships v2 already; this is a sanity-check)
+        run: aws --version
+
+      - name: Run backup
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          R2_ENDPOINT: ${{ secrets.R2_BACKUP_ENDPOINT }}
+          R2_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_BACKUP_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_BACKUP_SECRET }}
+          # Default region forced to a placeholder — R2 ignores it but aws-cli demands one.
+          AWS_DEFAULT_REGION: auto
+          BACKUP_PREFIX: ${{ github.event.inputs.backup_prefix || 'daily' }}
+        run: bash scripts/backup-postgres.sh
