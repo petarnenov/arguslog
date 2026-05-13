@@ -2,6 +2,7 @@ package org.arguslog.api.adapter.in.web.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
+import java.util.UUID;
 import org.arguslog.api.domain.Issue;
 
 public record IssueResponse(
@@ -14,7 +15,8 @@ public record IssueResponse(
     String culprit,
     @JsonProperty("firstSeenAt") Instant firstSeenAt,
     @JsonProperty("lastSeenAt") Instant lastSeenAt,
-    @JsonProperty("occurrenceCount") long occurrenceCount) {
+    @JsonProperty("occurrenceCount") long occurrenceCount,
+    @JsonProperty("assigneeUserId") UUID assigneeUserId) {
 
   public static IssueResponse from(Issue issue) {
     return new IssueResponse(
@@ -27,6 +29,7 @@ public record IssueResponse(
         issue.culprit(),
         issue.firstSeenAt(),
         issue.lastSeenAt(),
-        issue.occurrenceCount());
+        issue.occurrenceCount(),
+        issue.assigneeUserId());
   }
 }

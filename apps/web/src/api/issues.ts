@@ -14,6 +14,8 @@ export interface Issue {
   firstSeenAt: string;
   lastSeenAt: string;
   occurrenceCount: number;
+  /** UUID of the assigned org member, or null when unassigned. */
+  assigneeUserId: string | null;
 }
 
 export interface PageMeta {
@@ -73,4 +75,28 @@ export function listIssueEvents({
   return apiFetch<PageResponse<IssueEvent>>(
     `/api/v1/projects/${projectId}/issues/${issueId}/events${qs}`,
   );
+}
+
+/** Resolve, ignore, or reopen an issue. Any org member may call. */
+export function updateIssueStatus(
+  projectId: number,
+  issueId: number,
+  status: IssueStatus,
+): Promise<Issue> {
+  return apiFetch<Issue>(`/api/v1/projects/${projectId}/issues/${issueId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+/** Assign an issue to a user, or pass {@code null} to unassign. Assignee must be an org member. */
+export function updateIssueAssignee(
+  projectId: number,
+  issueId: number,
+  userId: string | null,
+): Promise<Issue> {
+  return apiFetch<Issue>(`/api/v1/projects/${projectId}/issues/${issueId}/assignee`, {
+    method: 'PATCH',
+    body: JSON.stringify({ userId }),
+  });
 }

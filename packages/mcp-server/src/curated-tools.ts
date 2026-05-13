@@ -84,6 +84,48 @@ Example: \`{ "projectId": 7, "statuses": "unresolved", "levels": "error,fatal", 
     hasBody: false,
   },
 
+  triage_issue: {
+    name: 'triage_issue',
+    description: `Change an issue's triage status: resolve it (fixed), ignore it (don't bother
+me), or reopen it (unresolved again). When an event arrives on a previously-resolved issue,
+the worker auto-flips it back to unresolved — this is the "regression" signal.
+
+Method: PATCH /api/v1/projects/{projectId}/issues/{issueId}
+
+Required: \`projectId\`, \`issueId\`, \`body.status\` (one of: \`unresolved\`, \`resolved\`,
+\`ignored\`).
+
+Example: \`{ "projectId": 7, "issueId": 123, "body": { "status": "resolved" } }\``,
+    method: 'PATCH',
+    path: '/api/v1/projects/{projectId}/issues/{issueId}',
+    pathParams: [
+      { name: 'projectId', required: true, type: 'integer' },
+      { name: 'issueId', required: true, type: 'integer' },
+    ],
+    queryParams: [],
+    hasBody: true,
+  },
+
+  assign_issue: {
+    name: 'assign_issue',
+    description: `Assign an issue to an org member, or pass \`userId: null\` to unassign. The
+assignee MUST already be a member of the issue's org — otherwise the API rejects with 400.
+
+Method: PATCH /api/v1/projects/{projectId}/issues/{issueId}/assignee
+
+Required: \`projectId\`, \`issueId\`, \`body.userId\` (UUID string, or null to unassign).
+
+Example: \`{ "projectId": 7, "issueId": 123, "body": { "userId": "550e8400-e29b-41d4-a716-446655440000" } }\``,
+    method: 'PATCH',
+    path: '/api/v1/projects/{projectId}/issues/{issueId}/assignee',
+    pathParams: [
+      { name: 'projectId', required: true, type: 'integer' },
+      { name: 'issueId', required: true, type: 'integer' },
+    ],
+    queryParams: [],
+    hasBody: true,
+  },
+
   get_issue: {
     name: 'get_issue',
     description: `Fetch full details of a single issue, including its first / last seen timestamps,

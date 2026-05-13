@@ -136,7 +136,8 @@ class ListIssuesServiceTest {
                     null,
                     Instant.parse("2026-05-05T12:00:00Z").plusSeconds(-i),
                     Instant.parse("2026-05-05T13:00:00Z").plusSeconds(-i),
-                    1L))
+                    1L,
+                    null))
         .toList();
   }
 }

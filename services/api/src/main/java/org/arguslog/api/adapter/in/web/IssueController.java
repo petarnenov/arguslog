@@ -3,22 +3,32 @@ package org.arguslog.api.adapter.in.web;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.arguslog.api.adapter.in.web.dto.EventResponse;
+import org.arguslog.api.adapter.in.web.dto.IssueAssigneeRequest;
 import org.arguslog.api.adapter.in.web.dto.IssueResponse;
+import org.arguslog.api.adapter.in.web.dto.IssueStatusRequest;
 import org.arguslog.api.adapter.in.web.dto.PageResponse;
 import org.arguslog.api.application.CursorCodec.InvalidCursorException;
 import org.arguslog.api.application.GetIssueUseCase;
+import org.arguslog.api.application.IssueTriageUseCase;
+import org.arguslog.api.application.IssueTriageUseCase.InvalidAssigneeException;
 import org.arguslog.api.application.ListIssueEventsUseCase;
 import org.arguslog.api.application.ListIssuesUseCase;
 import org.arguslog.api.application.ListIssuesUseCase.Query;
+import org.arguslog.api.auth.PatScopeGuard;
+import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.domain.Issue;
 import org.arguslog.api.security.AccessException;
+import org.arguslog.api.security.OrgContext;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,12 +42,17 @@ public class IssueController {
   private final ListIssuesUseCase listIssues;
   private final GetIssueUseCase getIssue;
   private final ListIssueEventsUseCase listEvents;
+  private final IssueTriageUseCase triage;
 
   public IssueController(
-      ListIssuesUseCase listIssues, GetIssueUseCase getIssue, ListIssueEventsUseCase listEvents) {
+      ListIssuesUseCase listIssues,
+      GetIssueUseCase getIssue,
+      ListIssueEventsUseCase listEvents,
+      IssueTriageUseCase triage) {
     this.listIssues = listIssues;
     this.getIssue = getIssue;
     this.listEvents = listEvents;
+    this.triage = triage;
   }
 
   @GetMapping
@@ -87,6 +102,52 @@ public class IssueController {
     return PageResponse.of(data, page.nextCursor().orElse(null));
   }
 
+  /**
+   * Status mutation — resolve / ignore / reopen. Any org member can do this; the access guard
+   * upstream already verifies the caller belongs to the project's org. PAT-driven callers need
+   * {@link PatScope#ISSUES_WRITE}.
+   */
+  @PatchMapping(value = "/{issueId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public IssueResponse updateStatus(
+      @PathVariable long projectId,
+      @PathVariable long issueId,
+      @RequestBody IssueStatusRequest body) {
+    PatScopeGuard.require(PatScope.ISSUES_WRITE);
+    Issue.Status status = parseRequiredStatus(body.status());
+    return triage
+        .updateStatus(OrgContext.requireCurrent(), projectId, issueId, status)
+        .map(IssueResponse::from)
+        .orElseThrow(() -> AccessException.notFound(issueId));
+  }
+
+  /**
+   * Assignee mutation. Pass {@code null} userId to unassign. The assignee MUST be a member of the
+   * project's org — otherwise we'd allow outside accounts to be attached to an issue.
+   */
+  @PatchMapping(value = "/{issueId}/assignee", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public IssueResponse updateAssignee(
+      @PathVariable long projectId,
+      @PathVariable long issueId,
+      @RequestBody IssueAssigneeRequest body) {
+    PatScopeGuard.require(PatScope.ISSUES_WRITE);
+    UUID assignee = body == null ? null : body.userId();
+    return triage
+        .updateAssignee(OrgContext.requireCurrent(), projectId, issueId, assignee)
+        .map(IssueResponse::from)
+        .orElseThrow(() -> AccessException.notFound(issueId));
+  }
+
+  private static Issue.Status parseRequiredStatus(String raw) {
+    if (raw == null || raw.isBlank()) {
+      throw new BadFilterException("status", "(empty)", "must be one of: unresolved, resolved, ignored");
+    }
+    try {
+      return Issue.Status.fromString(raw);
+    } catch (IllegalArgumentException e) {
+      throw new BadFilterException("status", raw, "must be one of: unresolved, resolved, ignored");
+    }
+  }
+
   private static Optional<Issue.Status> parseStatus(String raw) {
     if (raw == null || raw.isBlank()) return Optional.empty();
     try {
@@ -114,6 +175,11 @@ public class IssueController {
   @ExceptionHandler(BadFilterException.class)
   ResponseEntity<ProblemDetail> handleBadFilter(BadFilterException e) {
     return problem(400, "Invalid filter", e.getMessage());
+  }
+
+  @ExceptionHandler(InvalidAssigneeException.class)
+  ResponseEntity<ProblemDetail> handleInvalidAssignee(InvalidAssigneeException e) {
+    return problem(400, "Invalid assignee", e.getMessage());
   }
 
   private static ResponseEntity<ProblemDetail> problem(int status, String title, String detail) {

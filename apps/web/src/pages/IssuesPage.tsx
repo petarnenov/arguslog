@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -6,18 +7,27 @@ import {
   Center,
   Group,
   Loader,
+  Menu,
   Select,
   Stack,
   Table,
   Text,
   Title,
 } from '@mantine/core';
-import { IconRefresh } from '@tabler/icons-react';
-import { useMemo } from 'react';
+import {
+  IconCheck,
+  IconDotsVertical,
+  IconEyeOff,
+  IconRefresh,
+  IconRotate,
+} from '@tabler/icons-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams, useSearchParams } from 'react-router';
 
-import type { IssueLevel, IssueStatus } from '../api/issues';
+import { ApiError } from '../api/client';
+import { updateIssueStatus, type IssueLevel, type IssueStatus } from '../api/issues';
 import { useIssues } from '../api/queries';
 import { useReportSoftError } from '../lib/reportSoftError';
 
@@ -40,8 +50,10 @@ const STATUS_COLOR: Record<IssueStatus, string> = {
 
 export function IssuesPage() {
   const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
   const { orgSlug, projectId: rawProjectId } = useParams();
   const [search, setSearch] = useSearchParams();
+  const [triageError, setTriageError] = useState<string | null>(null);
 
   const projectId = Number(rawProjectId);
   const projectIdValid = Number.isFinite(projectId) && projectId > 0;
@@ -78,6 +90,22 @@ export function IssuesPage() {
     next.delete('cursor'); // changing a filter resets pagination
     setSearch(next, { replace: true });
   };
+
+  const triageMutation = useMutation({
+    mutationFn: ({ issueId, status }: { issueId: number; status: IssueStatus }) =>
+      updateIssueStatus(projectId, issueId, status),
+    onSuccess: () => {
+      setTriageError(null);
+      // Invalidate every issues page query for this project — the issue may have moved
+      // between status buckets, so even the current view's totals are stale.
+      void queryClient.invalidateQueries({ queryKey: ['issues'] });
+    },
+    onError: (err) => {
+      setTriageError(
+        err instanceof ApiError ? (err.problem.detail ?? err.problem.title) : String(err),
+      );
+    },
+  });
 
   const goToPage = (cursorValue: string | undefined) => {
     const next = new URLSearchParams(search);
@@ -119,6 +147,12 @@ export function IssuesPage() {
         </Group>
       </Group>
 
+      {triageError && (
+        <Alert color="red" variant="light" withCloseButton onClose={() => setTriageError(null)}>
+          {triageError}
+        </Alert>
+      )}
+
       {query.isError && (
         <Alert
           color="red"
@@ -156,6 +190,7 @@ export function IssuesPage() {
               <Table.Th>{t('issues.levelFilter')}</Table.Th>
               <Table.Th>{t('issues.lastSeen')}</Table.Th>
               <Table.Th>{t('issues.occurrences')}</Table.Th>
+              <Table.Th aria-label={t('issues.actionsColumn')} />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -183,6 +218,56 @@ export function IssuesPage() {
                 </Table.Td>
                 <Table.Td>{formatter.format(new Date(issue.lastSeenAt))}</Table.Td>
                 <Table.Td>{issue.occurrenceCount.toLocaleString(i18n.language || 'en')}</Table.Td>
+                <Table.Td style={{ width: 40 }}>
+                  <Menu shadow="md" width={180} position="bottom-end" withinPortal>
+                    <Menu.Target>
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        aria-label={t('issues.actionsAria', { title: issue.title })}
+                        data-testid={`issue-actions-${issue.id}`}
+                      >
+                        <IconDotsVertical size={16} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      {issue.status !== 'resolved' && (
+                        <Menu.Item
+                          leftSection={<IconCheck size={14} />}
+                          onClick={() =>
+                            triageMutation.mutate({ issueId: issue.id, status: 'resolved' })
+                          }
+                          data-testid={`issue-resolve-${issue.id}`}
+                        >
+                          {t('issues.actions.resolve')}
+                        </Menu.Item>
+                      )}
+                      {issue.status !== 'ignored' && (
+                        <Menu.Item
+                          leftSection={<IconEyeOff size={14} />}
+                          onClick={() =>
+                            triageMutation.mutate({ issueId: issue.id, status: 'ignored' })
+                          }
+                          data-testid={`issue-ignore-${issue.id}`}
+                        >
+                          {t('issues.actions.ignore')}
+                        </Menu.Item>
+                      )}
+                      {issue.status !== 'unresolved' && (
+                        <Menu.Item
+                          leftSection={<IconRotate size={14} />}
+                          onClick={() =>
+                            triageMutation.mutate({ issueId: issue.id, status: 'unresolved' })
+                          }
+                          data-testid={`issue-reopen-${issue.id}`}
+                        >
+                          {t('issues.actions.reopen')}
+                        </Menu.Item>
+                      )}
+                    </Menu.Dropdown>
+                  </Menu>
+                </Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>

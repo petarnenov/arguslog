@@ -6,6 +6,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import javax.sql.DataSource;
 import org.arguslog.api.application.CursorCodec;
 import org.arguslog.api.application.port.IssueRepository;
@@ -28,7 +29,7 @@ public class JdbcIssueRepository implements IssueRepository {
   private static final String PAGE_SQL =
       """
       SELECT id, project_id, fingerprint, status::text, level::text, title, culprit,
-             first_seen_at, last_seen_at, occurrence_count
+             first_seen_at, last_seen_at, occurrence_count, assignee_user_id
         FROM issues
        WHERE project_id = ?
          AND (?::issue_status IS NULL OR status = ?::issue_status)
@@ -41,7 +42,7 @@ public class JdbcIssueRepository implements IssueRepository {
   private static final String FIND_BY_PROJECT_AND_ID_SQL =
       """
       SELECT id, project_id, fingerprint, status::text, level::text, title, culprit,
-             first_seen_at, last_seen_at, occurrence_count
+             first_seen_at, last_seen_at, occurrence_count, assignee_user_id
         FROM issues
        WHERE project_id = ? AND id = ?
       """;
@@ -109,6 +110,34 @@ public class JdbcIssueRepository implements IssueRepository {
     }
   }
 
+  @Override
+  public Optional<Issue> updateStatus(long projectId, long issueId, Issue.Status status) {
+    pinOrgContextForRls();
+    // The cast to issue_status ensures we surface a 400 (rather than silently miss) if the
+    // dbValue() ever drifts from the enum members.
+    int rows =
+        jdbc.update(
+            "UPDATE issues SET status = ?::issue_status WHERE project_id = ? AND id = ?",
+            status.dbValue(),
+            projectId,
+            issueId);
+    if (rows == 0) return Optional.empty();
+    return findByProjectAndId(projectId, issueId);
+  }
+
+  @Override
+  public Optional<Issue> updateAssignee(long projectId, long issueId, UUID assigneeUserId) {
+    pinOrgContextForRls();
+    int rows =
+        jdbc.update(
+            "UPDATE issues SET assignee_user_id = ? WHERE project_id = ? AND id = ?",
+            assigneeUserId,
+            projectId,
+            issueId);
+    if (rows == 0) return Optional.empty();
+    return findByProjectAndId(projectId, issueId);
+  }
+
   /**
    * Sets {@code arguslog.org_id} for the current transaction so RLS policies on issues / projects
    * filter to the request's tenant. The {@code true} third arg makes this {@code SET LOCAL}; the
@@ -123,6 +152,8 @@ public class JdbcIssueRepository implements IssueRepository {
   }
 
   private static Issue mapRow(ResultSet rs, int rowNum) throws SQLException {
+    Object assigneeObj = rs.getObject("assignee_user_id");
+    UUID assignee = assigneeObj instanceof UUID u ? u : null;
     return new Issue(
         rs.getLong("id"),
         rs.getLong("project_id"),
@@ -133,6 +164,7 @@ public class JdbcIssueRepository implements IssueRepository {
         rs.getString("culprit"),
         rs.getTimestamp("first_seen_at").toInstant(),
         rs.getTimestamp("last_seen_at").toInstant(),
-        rs.getLong("occurrence_count"));
+        rs.getLong("occurrence_count"),
+        assignee);
   }
 }

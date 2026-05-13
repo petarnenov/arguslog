@@ -1,6 +1,7 @@
 package org.arguslog.api.domain;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * One row from the issues table — what the dashboard list view renders. Field set is the public
@@ -16,7 +17,8 @@ public record Issue(
     String culprit,
     Instant firstSeenAt,
     Instant lastSeenAt,
-    long occurrenceCount) {
+    long occurrenceCount,
+    UUID assigneeUserId) {
 
   public enum Status {
     UNRESOLVED,

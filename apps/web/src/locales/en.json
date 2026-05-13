@@ -223,6 +223,19 @@
       "warning": "Warning",
       "info": "Info",
       "debug": "Debug"
+    },
+    "actionsColumn": "Actions",
+    "actionsAria": "Triage actions for \"{{title}}\"",
+    "actions": {
+      "resolve": "Resolve",
+      "ignore": "Ignore",
+      "reopen": "Reopen"
+    },
+    "assignee": {
+      "unassigned": "Assign…",
+      "pickLabel": "Assign to",
+      "noMembers": "No org members yet",
+      "unassign": "Unassign"
     }
   },
   "issueDetail": {

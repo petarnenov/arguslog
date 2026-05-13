@@ -30,7 +30,8 @@ class GetIssueServiceTest {
             null,
             Instant.now(),
             Instant.now(),
-            1L);
+            1L,
+            null);
     when(repository.findByProjectAndId(101L, 7L)).thenReturn(Optional.of(sample));
     assertThat(new GetIssueService(repository).get(101L, 7L)).contains(sample);
   }

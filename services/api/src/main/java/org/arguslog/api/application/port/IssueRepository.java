@@ -2,12 +2,13 @@ package org.arguslog.api.application.port;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.arguslog.api.application.CursorCodec;
 import org.arguslog.api.domain.Issue;
 
 /**
- * Read-side persistence port for the issues table. Implementations decide how to enforce tenancy
- * (RLS in production, no-op in unit tests); the use case is unaware.
+ * Persistence port for the issues table. Implementations decide how to enforce tenancy (RLS in
+ * production, no-op in unit tests); the use case is unaware.
  */
 public interface IssueRepository {
 
@@ -27,4 +28,17 @@ public interface IssueRepository {
    * caller never gets to distinguish "doesn't exist" from "wrong project" (Sentry-style 404).
    */
   Optional<Issue> findByProjectAndId(long projectId, long issueId);
+
+  /**
+   * Updates an issue's status. Returns the refreshed row; empty if the (projectId, issueId) pair
+   * does not exist. Caller is responsible for membership / authorization checks beforehand.
+   */
+  Optional<Issue> updateStatus(long projectId, long issueId, Issue.Status status);
+
+  /**
+   * Sets or clears the assignee on an issue. Pass {@code null} to unassign. Returns the refreshed
+   * row; empty if the (projectId, issueId) pair does not exist. Caller validates that the assignee
+   * is a member of the org.
+   */
+  Optional<Issue> updateAssignee(long projectId, long issueId, UUID assigneeUserId);
 }

@@ -1,5 +1,6 @@
 import {
   Alert,
+  Avatar,
   Badge,
   Breadcrumbs,
   Button,
@@ -9,19 +10,34 @@ import {
   Grid,
   Group,
   Loader,
+  Menu,
   SegmentedControl,
   Stack,
   Table,
   Text,
   Title,
 } from '@mantine/core';
-import { IconChevronRight } from '@tabler/icons-react';
+import {
+  IconCheck,
+  IconChevronRight,
+  IconEyeOff,
+  IconRotate,
+  IconUser,
+  IconUserPlus,
+} from '@tabler/icons-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams, useSearchParams } from 'react-router';
 
-import type { IssueLevel, IssueStatus } from '../api/issues';
-import { useIssue, useIssueEvents } from '../api/queries';
+import { ApiError } from '../api/client';
+import {
+  updateIssueAssignee,
+  updateIssueStatus,
+  type IssueLevel,
+  type IssueStatus,
+} from '../api/issues';
+import { useIssue, useIssueEvents, useMyOrgs, useOrgMembers } from '../api/queries';
 import { useReportSoftError } from '../lib/reportSoftError';
 
 import {
@@ -70,6 +86,44 @@ export function IssueDetailPage() {
 
   const issueQ = useIssue(projectId, issueId, { enabled: valid });
   const eventsQ = useIssueEvents({ projectId, issueId, cursor, limit: 25 }, { enabled: valid });
+
+  const queryClient = useQueryClient();
+  const orgsQ = useMyOrgs({ enabled: valid });
+  // Defensive: tests stub the orgs query with non-array shapes; the chip simply won't show org
+  // members until a real list arrives.
+  const orgsList = Array.isArray(orgsQ.data) ? orgsQ.data : [];
+  const currentOrg = orgsList.find((o) => o.slug === orgSlug);
+  const membersQ = useOrgMembers(currentOrg?.id, { enabled: valid && !!currentOrg });
+  const membersList = Array.isArray(membersQ.data) ? membersQ.data : [];
+  const [triageError, setTriageError] = useState<string | null>(null);
+
+  const statusMutation = useMutation({
+    mutationFn: (status: IssueStatus) => updateIssueStatus(projectId, issueId, status),
+    onSuccess: (updated) => {
+      setTriageError(null);
+      queryClient.setQueryData(['issues', projectId, issueId], updated);
+      void queryClient.invalidateQueries({ queryKey: ['issues'] });
+    },
+    onError: (err) => {
+      setTriageError(
+        err instanceof ApiError ? (err.problem.detail ?? err.problem.title) : String(err),
+      );
+    },
+  });
+
+  const assigneeMutation = useMutation({
+    mutationFn: (userId: string | null) => updateIssueAssignee(projectId, issueId, userId),
+    onSuccess: (updated) => {
+      setTriageError(null);
+      queryClient.setQueryData(['issues', projectId, issueId], updated);
+      void queryClient.invalidateQueries({ queryKey: ['issues'] });
+    },
+    onError: (err) => {
+      setTriageError(
+        err instanceof ApiError ? (err.problem.detail ?? err.problem.title) : String(err),
+      );
+    },
+  });
 
   useReportSoftError(
     !valid,
@@ -165,17 +219,71 @@ export function IssueDetailPage() {
       </Breadcrumbs>
 
       <Stack gap="xs">
-        <Group gap="sm">
-          <Badge color={STATUS_COLOR[issue.status]} variant="light">
-            {t(`issues.status.${issue.status}`)}
-          </Badge>
-          <Badge color={LEVEL_COLOR[issue.level]}>{t(`issues.level.${issue.level}`)}</Badge>
+        <Group gap="sm" justify="space-between" align="flex-start">
+          <Group gap="sm">
+            <Badge color={STATUS_COLOR[issue.status]} variant="light" data-testid="issue-status-badge">
+              {t(`issues.status.${issue.status}`)}
+            </Badge>
+            <Badge color={LEVEL_COLOR[issue.level]}>{t(`issues.level.${issue.level}`)}</Badge>
+          </Group>
+          <Group gap="xs">
+            {issue.status !== 'resolved' && (
+              <Button
+                size="xs"
+                color="green"
+                variant="light"
+                leftSection={<IconCheck size={14} />}
+                onClick={() => statusMutation.mutate('resolved')}
+                loading={statusMutation.isPending && statusMutation.variables === 'resolved'}
+                data-testid="issue-detail-resolve"
+              >
+                {t('issues.actions.resolve')}
+              </Button>
+            )}
+            {issue.status !== 'ignored' && (
+              <Button
+                size="xs"
+                color="gray"
+                variant="light"
+                leftSection={<IconEyeOff size={14} />}
+                onClick={() => statusMutation.mutate('ignored')}
+                loading={statusMutation.isPending && statusMutation.variables === 'ignored'}
+                data-testid="issue-detail-ignore"
+              >
+                {t('issues.actions.ignore')}
+              </Button>
+            )}
+            {issue.status !== 'unresolved' && (
+              <Button
+                size="xs"
+                color="red"
+                variant="light"
+                leftSection={<IconRotate size={14} />}
+                onClick={() => statusMutation.mutate('unresolved')}
+                loading={statusMutation.isPending && statusMutation.variables === 'unresolved'}
+                data-testid="issue-detail-reopen"
+              >
+                {t('issues.actions.reopen')}
+              </Button>
+            )}
+            <AssigneeChip
+              assigneeUserId={issue.assigneeUserId}
+              members={membersList}
+              loading={assigneeMutation.isPending}
+              onChange={(userId) => assigneeMutation.mutate(userId)}
+            />
+          </Group>
         </Group>
         <Title order={2}>{issue.title}</Title>
         {issue.culprit && (
           <Text c="dimmed" size="sm">
             {issue.culprit}
           </Text>
+        )}
+        {triageError && (
+          <Alert color="red" variant="light" withCloseButton onClose={() => setTriageError(null)}>
+            {triageError}
+          </Alert>
         )}
       </Stack>
 
@@ -345,4 +453,82 @@ function previewPayload(payload: unknown): string {
   } catch {
     return '<unserializable>';
   }
+}
+
+interface AssigneeChipProps {
+  assigneeUserId: string | null;
+  members: { userId: string; email: string; displayName: string | null }[];
+  loading: boolean;
+  onChange: (userId: string | null) => void;
+}
+
+/**
+ * Chip-shaped trigger that opens a dropdown of org members. Clicking a member assigns the issue;
+ * the "Unassign" item at the bottom clears it. The chip is wide enough to show either an initial
+ * avatar (assigned) or a "+ Assign" hint (unassigned).
+ */
+function AssigneeChip({ assigneeUserId, members, loading, onChange }: AssigneeChipProps) {
+  const { t } = useTranslation();
+  const assignee = members.find((m) => m.userId === assigneeUserId);
+  const display = assignee ? (assignee.displayName ?? assignee.email) : null;
+
+  return (
+    <Menu shadow="md" width={240} position="bottom-end" withinPortal>
+      <Menu.Target>
+        <Button
+          size="xs"
+          variant="light"
+          color={assignee ? 'blue' : 'gray'}
+          loading={loading}
+          leftSection={
+            assignee ? (
+              <Avatar size={16} radius="xl" color="blue">
+                <IconUser size={10} />
+              </Avatar>
+            ) : (
+              <IconUserPlus size={14} />
+            )
+          }
+          data-testid="issue-assignee-chip"
+        >
+          {assignee ? display : t('issues.assignee.unassigned')}
+        </Button>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Label>{t('issues.assignee.pickLabel')}</Menu.Label>
+        {members.length === 0 ? (
+          <Menu.Item disabled>{t('issues.assignee.noMembers')}</Menu.Item>
+        ) : (
+          members.map((m) => (
+            <Menu.Item
+              key={m.userId}
+              onClick={() => onChange(m.userId)}
+              leftSection={
+                m.userId === assigneeUserId ? <IconCheck size={14} /> : (
+                  <span style={{ width: 14, display: 'inline-block' }} />
+                )
+              }
+            >
+              <Stack gap={0}>
+                <Text size="sm">{m.displayName ?? m.email}</Text>
+                {m.displayName && (
+                  <Text size="xs" c="dimmed">
+                    {m.email}
+                  </Text>
+                )}
+              </Stack>
+            </Menu.Item>
+          ))
+        )}
+        {assigneeUserId && (
+          <>
+            <Menu.Divider />
+            <Menu.Item color="red" onClick={() => onChange(null)}>
+              {t('issues.assignee.unassign')}
+            </Menu.Item>
+          </>
+        )}
+      </Menu.Dropdown>
+    </Menu>
+  );
 }

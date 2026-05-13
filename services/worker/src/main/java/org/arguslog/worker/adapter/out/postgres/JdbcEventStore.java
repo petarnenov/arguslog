@@ -17,6 +17,12 @@ public class JdbcEventStore implements EventStore {
    * Atomically upserts the issue row keyed by (project_id, fingerprint) and bumps stats. Uses ON
    * CONFLICT DO UPDATE so concurrent worker replicas can't race; the xmax trick reports whether a
    * row was actually inserted (vs. updated).
+   *
+   * <p>Auto-regression: when an event arrives on an issue that was previously {@code resolved},
+   * we flip status back to {@code unresolved}. This is the "the bug came back" signal — the
+   * triage UI sorts/filters on status, so the issue reappears in the unresolved queue without
+   * losing its history. {@code ignored} is intentionally NOT flipped — ignoring is "I never want
+   * to hear about this again", whereas resolved is "I fixed it and want to know if it returns".
    */
   private static final String UPSERT_ISSUE_SQL =
       """
@@ -25,7 +31,11 @@ public class JdbcEventStore implements EventStore {
            VALUES (?, NULL, ?, 'unresolved', ?::event_level, ?, ?, ?, ?, 1)
       ON CONFLICT (project_id, environment_id, fingerprint)
         DO UPDATE SET last_seen_at     = GREATEST(issues.last_seen_at, EXCLUDED.last_seen_at),
-                      occurrence_count = issues.occurrence_count + 1
+                      occurrence_count = issues.occurrence_count + 1,
+                      status           = CASE
+                                           WHEN issues.status = 'resolved' THEN 'unresolved'::issue_status
+                                           ELSE issues.status
+                                         END
         RETURNING id, (xmax = 0) AS is_insert,
                   level::text AS level_text, first_seen_at, last_seen_at, occurrence_count
       """;

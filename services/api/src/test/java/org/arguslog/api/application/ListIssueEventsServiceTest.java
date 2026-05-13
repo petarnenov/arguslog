@@ -50,7 +50,8 @@ class ListIssueEventsServiceTest {
             null,
             Instant.now(),
             Instant.now(),
-            1L);
+            1L,
+            null);
   }
 
   @Test

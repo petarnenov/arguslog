@@ -156,6 +156,7 @@ class IssueControllerTest extends AbstractControllerTest {
         "render at app.js:42",
         Instant.parse("2026-05-05T10:00:00Z"),
         Instant.parse("2026-05-05T11:00:00Z"),
-        3L);
+        3L,
+        null);
   }
 }

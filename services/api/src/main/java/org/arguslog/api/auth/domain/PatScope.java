@@ -21,6 +21,7 @@ public enum PatScope {
   PROJECTS_READ("projects:read"),
   PROJECTS_WRITE("projects:write"),
   ISSUES_READ("issues:read"),
+  ISSUES_WRITE("issues:write"),
   EVENTS_READ("events:read"),
   RELEASES_READ("releases:read"),
   RELEASES_WRITE("releases:write"),

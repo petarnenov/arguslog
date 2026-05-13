@@ -80,6 +80,17 @@ class JdbcIssueRepositoryTest {
           public Optional<Issue> findByProjectAndId(long projectId, long issueId) {
             return tx.execute(s -> raw.findByProjectAndId(projectId, issueId));
           }
+
+          @Override
+          public Optional<Issue> updateStatus(long projectId, long issueId, Issue.Status status) {
+            return tx.execute(s -> raw.updateStatus(projectId, issueId, status));
+          }
+
+          @Override
+          public Optional<Issue> updateAssignee(
+              long projectId, long issueId, java.util.UUID assigneeUserId) {
+            return tx.execute(s -> raw.updateAssignee(projectId, issueId, assigneeUserId));
+          }
         };
   }
 

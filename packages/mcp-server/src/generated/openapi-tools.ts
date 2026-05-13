@@ -1293,6 +1293,231 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
+    name: 'issue_get_one',
+    title: 'Issue get one',
+    description:
+      'GET /api/v1/projects/{projectId}/issues/{issueId}\n\nMethod: GET /api/v1/projects/{projectId}/issues/{issueId}',
+    method: 'GET',
+    path: '/api/v1/projects/{projectId}/issues/{issueId}',
+    pathParams: [
+      {
+        name: 'projectId',
+        required: true,
+        type: 'integer',
+        description: 'projectId (integer) — required.',
+      },
+      {
+        name: 'issueId',
+        required: true,
+        type: 'integer',
+        description: 'issueId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'integer',
+          format: 'int64',
+        },
+        projectId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        fingerprint: {
+          type: 'string',
+        },
+        status: {
+          type: 'string',
+        },
+        level: {
+          type: 'string',
+        },
+        title: {
+          type: 'string',
+        },
+        culprit: {
+          type: 'string',
+        },
+        firstSeenAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        lastSeenAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        occurrenceCount: {
+          type: 'integer',
+          format: 'int64',
+        },
+        assigneeUserId: {
+          type: 'string',
+          format: 'uuid',
+        },
+      },
+    },
+    annotations: {
+      title: 'GET /api/v1/projects/{projectId}/issues/{issueId}',
+      readOnlyHint: true,
+      idempotentHint: true,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'issue_update_status',
+    title: 'Issue update status',
+    description:
+      'PATCH /api/v1/projects/{projectId}/issues/{issueId}\n\nMethod: PATCH /api/v1/projects/{projectId}/issues/{issueId}',
+    method: 'PATCH',
+    path: '/api/v1/projects/{projectId}/issues/{issueId}',
+    pathParams: [
+      {
+        name: 'projectId',
+        required: true,
+        type: 'integer',
+        description: 'projectId (integer) — required.',
+      },
+      {
+        name: 'issueId',
+        required: true,
+        type: 'integer',
+        description: 'issueId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: true,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'integer',
+          format: 'int64',
+        },
+        projectId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        fingerprint: {
+          type: 'string',
+        },
+        status: {
+          type: 'string',
+        },
+        level: {
+          type: 'string',
+        },
+        title: {
+          type: 'string',
+        },
+        culprit: {
+          type: 'string',
+        },
+        firstSeenAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        lastSeenAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        occurrenceCount: {
+          type: 'integer',
+          format: 'int64',
+        },
+        assigneeUserId: {
+          type: 'string',
+          format: 'uuid',
+        },
+      },
+    },
+    annotations: {
+      title: 'PATCH /api/v1/projects/{projectId}/issues/{issueId}',
+      readOnlyHint: false,
+      idempotentHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'issue_update_assignee',
+    title: 'Issue update assignee',
+    description:
+      'PATCH /api/v1/projects/{projectId}/issues/{issueId}/assignee\n\nMethod: PATCH /api/v1/projects/{projectId}/issues/{issueId}/assignee',
+    method: 'PATCH',
+    path: '/api/v1/projects/{projectId}/issues/{issueId}/assignee',
+    pathParams: [
+      {
+        name: 'projectId',
+        required: true,
+        type: 'integer',
+        description: 'projectId (integer) — required.',
+      },
+      {
+        name: 'issueId',
+        required: true,
+        type: 'integer',
+        description: 'issueId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: true,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'integer',
+          format: 'int64',
+        },
+        projectId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        fingerprint: {
+          type: 'string',
+        },
+        status: {
+          type: 'string',
+        },
+        level: {
+          type: 'string',
+        },
+        title: {
+          type: 'string',
+        },
+        culprit: {
+          type: 'string',
+        },
+        firstSeenAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        lastSeenAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        occurrenceCount: {
+          type: 'integer',
+          format: 'int64',
+        },
+        assigneeUserId: {
+          type: 'string',
+          format: 'uuid',
+        },
+      },
+    },
+    annotations: {
+      title: 'PATCH /api/v1/projects/{projectId}/issues/{issueId}/assignee',
+      readOnlyHint: false,
+      idempotentHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
     name: 'delete_org_3',
     title: 'Delete org 3',
     description: 'DELETE /api/v1/orgs/{orgId}\n\nMethod: DELETE /api/v1/orgs/{orgId}',
@@ -1664,77 +1889,6 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
     annotations: {
       title: 'GET /api/v1/projects/{projectId}/issues',
-      readOnlyHint: true,
-      idempotentHint: true,
-      destructiveHint: false,
-      openWorldHint: true,
-    },
-  },
-  {
-    name: 'issue_get_one',
-    title: 'Issue get one',
-    description:
-      'GET /api/v1/projects/{projectId}/issues/{issueId}\n\nMethod: GET /api/v1/projects/{projectId}/issues/{issueId}',
-    method: 'GET',
-    path: '/api/v1/projects/{projectId}/issues/{issueId}',
-    pathParams: [
-      {
-        name: 'projectId',
-        required: true,
-        type: 'integer',
-        description: 'projectId (integer) — required.',
-      },
-      {
-        name: 'issueId',
-        required: true,
-        type: 'integer',
-        description: 'issueId (integer) — required.',
-      },
-    ],
-    queryParams: [],
-    hasBody: false,
-    outputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'integer',
-          format: 'int64',
-        },
-        projectId: {
-          type: 'integer',
-          format: 'int64',
-        },
-        fingerprint: {
-          type: 'string',
-        },
-        status: {
-          type: 'string',
-        },
-        level: {
-          type: 'string',
-        },
-        title: {
-          type: 'string',
-        },
-        culprit: {
-          type: 'string',
-        },
-        firstSeenAt: {
-          type: 'string',
-          format: 'date-time',
-        },
-        lastSeenAt: {
-          type: 'string',
-          format: 'date-time',
-        },
-        occurrenceCount: {
-          type: 'integer',
-          format: 'int64',
-        },
-      },
-    },
-    annotations: {
-      title: 'GET /api/v1/projects/{projectId}/issues/{issueId}',
       readOnlyHint: true,
       idempotentHint: true,
       destructiveHint: false,
