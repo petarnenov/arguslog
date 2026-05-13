@@ -60,7 +60,10 @@ export const SERVICES: ServiceCheck[] = [
     id: 'web',
     name: 'Dashboard',
     description: 'app.arguslog.org — where you sign in to triage issues',
-    url: 'https://app.arguslog.org/',
+    // Probes the Caddy /healthz route (open CORS) rather than the SPA root — fetching the
+    // index.html document from a different origin is blocked by CORS even though Caddy returns
+    // 200, so the page would render the dashboard as DOWN even when it's actually up.
+    url: 'https://app.arguslog.org/healthz',
   },
   {
     id: 'landing',

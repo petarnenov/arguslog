@@ -28,8 +28,11 @@
         # Strict-Transport-Security set by Cloudflare in front; not duplicated here.
     }
 
-    # Healthcheck endpoint Railway can hit without going through index.html.
+    # Healthcheck endpoint Railway can hit without going through index.html. Also probed
+    # cross-origin from arguslog.org/status — the open ACAO is safe here because the body
+    # is a fixed two-byte literal with no auth state.
     handle /healthz {
+        header Access-Control-Allow-Origin "*"
         respond "ok" 200
     }
 }
