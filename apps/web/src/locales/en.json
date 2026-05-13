@@ -454,6 +454,32 @@
     "errorVersion": "Version is required",
     "empty": "No releases yet — create one to start attributing issues to deploy versions."
   },
+  "releaseDetail": {
+    "notFound": "Release not found.",
+    "backToList": "Back to releases",
+    "releaseBadge": "Release",
+    "createdAt": "Created {{when}}",
+    "sourceMapsTitle": "Source maps",
+    "sourceMapsHint": "Upload .map files emitted by your build (Vite, Webpack, esbuild, …). The worker symbolicates events tagged with this release version by reading these files; without them, stack traces stay minified.",
+    "uploadButton": "Upload source map",
+    "empty": "No source maps uploaded yet. Drop a .map file with the button above, or run the equivalent from CI:\n  arguslog sourcemaps upload dist/assets/bundle.js.map --project <id> --release <id> --path bundle.js",
+    "colPath": "Original path",
+    "colSize": "Size",
+    "colSha": "SHA-256",
+    "colUploaded": "Uploaded",
+    "upload": {
+      "title": "Upload source map",
+      "hint": "The file is hashed locally, the metadata is registered with the API, then the bytes are uploaded directly to private storage. Your dashboard origin is never proxied for the blob itself.",
+      "fileLabel": "Source map file (.map)",
+      "pathLabel": "Original path",
+      "pathHint": "What the SDK reports in stack frames — for a Vite/webpack bundle, this is the served JS path (e.g. \"bundle.js\" or \"/assets/index.D7f2.js\"). The worker matches frames against this string.",
+      "cancel": "Cancel",
+      "submit": "Upload",
+      "hashing": "Computing SHA-256…",
+      "minting": "Registering metadata with the API…",
+      "uploading": "Uploading to storage… {{progress}}%"
+    }
+  },
   "members": {
     "title": "Members",
     "intro": "Owners can invite people to this organization and manage their roles. Invitees get an email with a link to sign in; if they don't have an account yet, the access binds automatically when they create one with this email.",

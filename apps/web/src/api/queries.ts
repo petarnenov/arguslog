@@ -15,7 +15,8 @@ import { listOrgMembers } from './members';
 import { listMyOrgs } from './orgs';
 import { listPlatforms } from './platforms';
 import { listProjects } from './projects';
-import { listReleases } from './releases';
+import { getRelease, listReleases } from './releases';
+import { listSourceMaps } from './sourcemaps';
 import { listMyTokens } from './tokens';
 
 export const queryKeys = {
@@ -30,6 +31,10 @@ export const queryKeys = {
   orgMembers: (orgId: number) => ['org-members', orgId] as const,
   platforms: () => ['platforms'] as const,
   releases: (projectId: number) => ['releases', projectId] as const,
+  release: (projectId: number, releaseId: number) =>
+    ['release', projectId, releaseId] as const,
+  sourceMaps: (projectId: number, releaseId: number) =>
+    ['sourcemaps', projectId, releaseId] as const,
   dsns: (projectId: number) => ['dsns', projectId] as const,
   me: () => ['me'] as const,
   adminStats: () => ['admin', 'stats'] as const,
@@ -142,6 +147,32 @@ export function useReleases(projectId: number | undefined, options: { enabled?: 
     queryKey: queryKeys.releases(projectId ?? -1),
     queryFn: () => listReleases(projectId as number),
     enabled: (options.enabled ?? true) && projectId != null,
+    staleTime: 30_000,
+  });
+}
+
+export function useRelease(
+  projectId: number | undefined,
+  releaseId: number | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.release(projectId ?? -1, releaseId ?? -1),
+    queryFn: () => getRelease(projectId as number, releaseId as number),
+    enabled: (options.enabled ?? true) && projectId != null && releaseId != null,
+    staleTime: 30_000,
+  });
+}
+
+export function useSourceMaps(
+  projectId: number | undefined,
+  releaseId: number | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.sourceMaps(projectId ?? -1, releaseId ?? -1),
+    queryFn: () => listSourceMaps(projectId as number, releaseId as number),
+    enabled: (options.enabled ?? true) && projectId != null && releaseId != null,
     staleTime: 30_000,
   });
 }

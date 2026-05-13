@@ -11,6 +11,10 @@ export function listReleases(projectId: number): Promise<Release[]> {
   return apiFetch<Release[]>(`/api/v1/projects/${projectId}/releases`);
 }
 
+export function getRelease(projectId: number, id: number): Promise<Release> {
+  return apiFetch<Release>(`/api/v1/projects/${projectId}/releases/${id}`);
+}
+
 export function createRelease(projectId: number, version: string): Promise<Release> {
   return apiFetch<Release>(`/api/v1/projects/${projectId}/releases`, {
     method: 'POST',

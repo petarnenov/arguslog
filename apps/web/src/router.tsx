@@ -16,6 +16,7 @@ import { PersonalAccessTokensPage } from './pages/PersonalAccessTokensPage';
 import { ConnectProjectPage } from './pages/ConnectProjectPage';
 import { ProjectKeysPage } from './pages/ProjectKeysPage';
 import { ProjectsPage } from './pages/ProjectsPage';
+import { ReleaseDetailPage } from './pages/ReleaseDetailPage';
 import { ReleasesPage } from './pages/ReleasesPage';
 
 export const router = createBrowserRouter([
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
       { path: '/orgs/:orgSlug/projects/:projectId/connect', element: <ConnectProjectPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/alert-rules', element: <AlertRulesPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/releases', element: <ReleasesPage /> },
+      {
+        path: '/orgs/:orgSlug/projects/:projectId/releases/:releaseId',
+        element: <ReleaseDetailPage />,
+      },
       { path: '/orgs/:orgSlug/settings', element: <OrgSettingsPage /> },
       { path: '/orgs/:orgSlug/settings/destinations', element: <AlertDestinationsPage /> },
       { path: '/me/tokens', element: <PersonalAccessTokensPage /> },

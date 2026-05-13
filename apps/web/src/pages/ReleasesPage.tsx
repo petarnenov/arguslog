@@ -19,7 +19,7 @@ import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useParams } from 'react-router';
+import { Link, Navigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
 import { queryKeys, useMyOrgs, useReleases } from '../api/queries';
@@ -164,9 +164,14 @@ export function ReleasesPage() {
             </Table.Thead>
             <Table.Tbody>
               {releasesQuery.data?.map((r) => (
-                <Table.Tr key={r.id}>
+                <Table.Tr key={r.id} data-testid={`release-row-${r.id}`}>
                   <Table.Td>
-                    <Code>{r.version}</Code>
+                    <Link
+                      to={`/orgs/${orgSlug}/projects/${projectId}/releases/${r.id}`}
+                      style={{ textDecoration: 'none', color: 'inherit' }}
+                    >
+                      <Code style={{ cursor: 'pointer' }}>{r.version}</Code>
+                    </Link>
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed">
