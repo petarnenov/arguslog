@@ -12,7 +12,12 @@
     # Caddy's standard directive order runs `try_files` first and rewrites /healthz to
     # /index.html (Railway healthchecks then receive HTML, not "ok").
     route {
+        # /healthz also serves the cross-origin probe from /status — opening Access-Control-
+        # Allow-Origin keeps the page green regardless of whether the visitor lands on the
+        # apex (arguslog.org) or the canonical www. The body is the fixed two-byte literal
+        # "ok" with no auth state, so * is safe.
         handle /healthz {
+            header Access-Control-Allow-Origin "*"
             respond "ok" 200
         }
 
