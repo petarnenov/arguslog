@@ -56,29 +56,33 @@ Required: \`orgId\` (number). Example: \`{ "orgId": 42 }\`.`,
 
   list_issues: {
     name: 'list_issues',
-    description: `List unresolved issues for a project, most-recent first.
+    description: `List issues for a project, most-recent first.
 
 This is the agent's main lookup tool when the user says "what broke today" or "show me the
-top errors". Use \`statuses=unresolved\` (the default) for the live error wall; pass
-\`statuses=resolved,ignored\` to audit silenced groups. Pagination uses \`afterId\` from the
-last row of the previous page.
+top errors". \`status=unresolved\` (the default) is the live error wall; pass
+\`status=resolved\` or \`status=ignored\` to audit silenced groups. Use \`q\` to search
+across title + culprit, and \`assignee\` to narrow to a user (UUID), the caller themself
+("me"), or the unassigned bucket ("none"). Pagination uses \`cursor\` from the previous
+page's response.
 
 Method: GET /api/v1/projects/{projectId}/issues
 
 Required: \`projectId\` (number).
-Optional: \`statuses\` (csv: \`unresolved,resolved,ignored\`), \`levels\` (csv:
-\`fatal,error,warning,info,debug\`), \`q\` (free-text search), \`afterId\`, \`limit\` (default
-50, max 200).
+Optional: \`status\` (\`unresolved\`, \`resolved\`, \`ignored\`), \`level\`
+(\`fatal\`, \`error\`, \`warning\`, \`info\`, \`debug\`), \`q\` (free-text substring on
+title + culprit), \`assignee\` (UUID, \`me\`, \`none\`, or omitted), \`cursor\`, \`limit\`
+(default 50, max 200).
 
-Example: \`{ "projectId": 7, "statuses": "unresolved", "levels": "error,fatal", "limit": 25 }\``,
+Example: \`{ "projectId": 7, "status": "unresolved", "level": "error", "assignee": "me", "limit": 25 }\``,
     method: 'GET',
     path: '/api/v1/projects/{projectId}/issues',
     pathParams: [{ name: 'projectId', required: true, type: 'integer' }],
     queryParams: [
-      { name: 'statuses', required: false, type: 'string' },
-      { name: 'levels', required: false, type: 'string' },
+      { name: 'status', required: false, type: 'string' },
+      { name: 'level', required: false, type: 'string' },
       { name: 'q', required: false, type: 'string' },
-      { name: 'afterId', required: false, type: 'integer' },
+      { name: 'assignee', required: false, type: 'string' },
+      { name: 'cursor', required: false, type: 'string' },
       { name: 'limit', required: false, type: 'integer' },
     ],
     hasBody: false,

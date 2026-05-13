@@ -60,13 +60,13 @@ describe('tool dispatch', () => {
     const client = ArguslogClient.fromEnv();
     await executeTool(client, 'list_issues', {
       projectId: 7,
-      statuses: 'unresolved',
+      status: 'unresolved',
       limit: 25,
     });
 
     const url = (fetchMock.mock.calls[0]![0] as URL).toString();
     expect(url).toContain('/api/v1/projects/7/issues');
-    expect(url).toContain('statuses=unresolved');
+    expect(url).toContain('status=unresolved');
     expect(url).toContain('limit=25');
   });
 
