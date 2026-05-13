@@ -33,6 +33,13 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
+      # Actuator endpoints run on a separate filter chain from MVC, so the WebMvcConfigurer CORS
+      # mapping doesn't reach them. The public arguslog.org/status page reads /actuator/health
+      # from the browser; without this, OPTIONS preflight 403s. Body is uptime/up-down only —
+      # no auth state — so wide-open Origin matches the existing public exposure of /health.
+      cors:
+        allowed-origins: "*"
+        allowed-methods: GET,OPTIONS
   endpoint:
     health:
       probes:
