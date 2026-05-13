@@ -10,7 +10,8 @@ imperative reporting from inside components.
 Re-exports the entire [`@arguslog/sdk-browser`](https://www.npmjs.com/package/@arguslog/sdk-browser)
 public API, so you don't need both packages in your imports.
 
-Peer dependency: **React ≥ 19**.
+Peer dependency: **React 18 or 19**. The error boundary is a plain class component and the
+hook uses only `useMemo`, so the package works unchanged across both major versions.
 
 ## Install
 
@@ -51,6 +52,51 @@ The boundary catches anything React throws during render / lifecycle / effect-cl
 it to Arguslog with `boundary: 'react'` tag, and renders the `fallback`. Imperative async
 errors (event handlers, fetch callbacks) need explicit `captureException` because React
 boundaries don't see those by design.
+
+### Webpack / Create React App / Next.js Pages Router
+
+`import.meta.env` shown above is a Vite/ESM feature. In Webpack-based toolchains (CRA, plain
+Webpack, Next.js Pages Router) it is `undefined` at runtime. Use `process.env` instead and
+inject the values at build time via `DefinePlugin` (or rely on the framework's built-in
+`process.env.NEXT_PUBLIC_*` / `REACT_APP_*` conventions):
+
+```ts
+// webpack.config.js
+new webpack.DefinePlugin({
+  'process.env.ARGUSLOG_DSN': JSON.stringify(process.env.ARGUSLOG_DSN),
+  'process.env.ARGUSLOG_RELEASE': JSON.stringify(process.env.ARGUSLOG_RELEASE),
+});
+```
+
+```tsx
+init({
+  dsn: process.env.ARGUSLOG_DSN!,
+  environment: process.env.NODE_ENV,
+  release: process.env.ARGUSLOG_RELEASE,
+  integrations: ['globalHandlers', 'autoBreadcrumbs'],
+});
+```
+
+For CRA, prefix env vars with `REACT_APP_` (`REACT_APP_ARGUSLOG_DSN`); for Next.js Pages
+Router, use `NEXT_PUBLIC_ARGUSLOG_DSN`.
+
+### Behavior when `init()` has not been called
+
+`captureException`, `captureMessage`, `addBreadcrumb`, and the scope setters all **no-op
+silently** if no client has been initialised — they never throw. This means you can guard
+SDK setup behind an env check without wrapping every call site:
+
+```ts
+if (process.env.ARGUSLOG_DSN) {
+  init({ dsn: process.env.ARGUSLOG_DSN, … });
+}
+
+// Anywhere later — safe even if init was skipped:
+captureException(err);
+```
+
+If you need to branch on whether the SDK is live (e.g. to render a "reporting enabled" badge
+in dev tooling), call `useArguslog().isInitialized()`.
 
 ## API
 
