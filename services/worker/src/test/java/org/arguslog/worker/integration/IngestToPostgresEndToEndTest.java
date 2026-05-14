@@ -3,6 +3,7 @@ package org.arguslog.worker.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -22,12 +23,18 @@ import org.arguslog.ingest.application.IngestEventService;
 import org.arguslog.ingest.application.IngestEventUseCase;
 import org.arguslog.ingest.application.IngestEventUseCase.Command;
 import org.arguslog.ingest.application.IngestEventUseCase.Result;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import org.arguslog.worker.adapter.in.redis.RedisStreamEventListener;
 import org.arguslog.worker.adapter.in.redis.RedisStreamProperties;
 import org.arguslog.worker.adapter.out.fingerprint.PayloadFingerprinter;
 import org.arguslog.worker.adapter.out.postgres.JdbcEventStore;
+import org.arguslog.worker.adapter.out.postgres.JdbcSymbolicationRepository;
+import org.arguslog.worker.application.CachingSymbolicator;
 import org.arguslog.worker.application.ProcessEventService;
 import org.arguslog.worker.application.ProcessEventUseCase;
+import org.arguslog.worker.application.port.SourceMapStore;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -76,6 +83,17 @@ class IngestToPostgresEndToEndTest {
   static final GenericContainer<?> REDIS =
       new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
 
+  /**
+   * In-memory R2 stand-in keyed by r2_key. Tests seed it before sending the release-tagged event
+   * so the symbolicator can resolve the bytes without a real S3 / MinIO container.
+   */
+  private static final Map<String, String> SOURCE_MAP_BLOBS = new HashMap<>();
+
+  // Minimal v3 sourcemap mapping (genLine=0, genCol=0) → src/render.js line 11 col 4 name="render".
+  // Mirrors the fixture in CachingSymbolicatorTest so the assertions stay consistent.
+  private static final String SAMPLE_MAP =
+      "{\"version\":3,\"sources\":[\"src/render.js\"],\"names\":[\"render\"],\"mappings\":\"AAUIA\"}";
+
   private static HikariDataSource dataSource;
   private static LettuceConnectionFactory redisFactory;
   private static StringRedisTemplate redis;
@@ -106,15 +124,21 @@ class IngestToPostgresEndToEndTest {
     // Worker side --------------------------------------------------------
     JdbcEventStore rawStore = new JdbcEventStore(dataSource);
     TransactionTemplate tx = new TransactionTemplate(new JdbcTransactionManager(dataSource));
-    // Alerts pipeline + symbolicator are exercised in their own tests; here we wire
-    // pass-through no-ops so this test stays focused on the ingest → Redis → worker → Postgres
-    // path.
+    // Alerts pipeline is exercised in its own tests — wired as a no-op here. The symbolicator
+    // is real (CachingSymbolicator + JdbcSymbolicationRepository + an in-memory SourceMapStore),
+    // so the release → sourcemap → frame-rewrite path is end-to-end tested. Events without a
+    // `release` tag short-circuit inside the symbolicator and pass through unchanged — so the
+    // existing pre-symbolicator tests still see identical behaviour.
+    ObjectMapper mapper = new ObjectMapper();
+    SourceMapStore inMemoryStore = r2Key -> Optional.ofNullable(SOURCE_MAP_BLOBS.get(r2Key));
+    CachingSymbolicator symbolicator =
+        new CachingSymbolicator(new JdbcSymbolicationRepository(dataSource), inMemoryStore, mapper);
     ProcessEventService unwrapped =
         new ProcessEventService(
-            new PayloadFingerprinter(new ObjectMapper()),
+            new PayloadFingerprinter(mapper),
             rawStore,
             persisted -> {},
-            (projectId, payload) -> payload);
+            symbolicator);
     ProcessEventUseCase wrapped = event -> tx.execute(status -> unwrapped.process(event));
 
     RedisStreamProperties props =
@@ -156,8 +180,12 @@ class IngestToPostgresEndToEndTest {
   @AfterEach
   void cleanRows() throws Exception {
     try (Connection conn = dataSource.getConnection()) {
-      exec(conn, "TRUNCATE events, issues RESTART IDENTITY CASCADE");
+      // CASCADE picks up source_map_artifacts via the FK on release_id, but releases needs an
+      // explicit reset so the next test starts with no symbolication artifacts on disk OR in
+      // the in-memory R2 stand-in.
+      exec(conn, "TRUNCATE events, issues, releases RESTART IDENTITY CASCADE");
     }
+    SOURCE_MAP_BLOBS.clear();
   }
 
   @Test
@@ -208,6 +236,74 @@ class IngestToPostgresEndToEndTest {
         .untilAsserted(() -> assertThat(countEvents()).isEqualTo(2L));
 
     assertThat(countIssues()).isEqualTo(1L);
+  }
+
+  @Test
+  void releaseTaggedEventGetsSymbolicatedByMatchingSourceMap() throws Exception {
+    // Seed: a release on the test project + a source_map_artifacts row pointing at an r2 key
+    // that the in-memory SourceMapStore knows about. Mirrors what the CLI's
+    // `arguslog releases new` + `arguslog sourcemaps upload` flow lands in production.
+    String releaseVersion = "e2e-1.0.0";
+    String r2Key = "e2e/dist-app.js.map";
+    SOURCE_MAP_BLOBS.put(r2Key, SAMPLE_MAP);
+    try (Connection conn = dataSource.getConnection()) {
+      long releaseId;
+      try (PreparedStatement stmt =
+          conn.prepareStatement(
+              "INSERT INTO releases (project_id, version) VALUES (?, ?) RETURNING id")) {
+        stmt.setLong(1, PROJECT_ID);
+        stmt.setString(2, releaseVersion);
+        try (ResultSet rs = stmt.executeQuery()) {
+          rs.next();
+          releaseId = rs.getLong(1);
+        }
+      }
+      try (PreparedStatement stmt =
+          conn.prepareStatement(
+              "INSERT INTO source_map_artifacts (release_id, r2_key, original_path, sha256, size_bytes)"
+                  + " VALUES (?, ?, ?, ?, ?)")) {
+        stmt.setLong(1, releaseId);
+        stmt.setString(2, r2Key);
+        stmt.setString(3, "dist/app.js");
+        stmt.setString(4, "fake-sha256");
+        stmt.setLong(5, SAMPLE_MAP.length());
+        stmt.execute();
+      }
+    }
+
+    // Frame at gen (line 1, col 0) — the sourcemap maps that to (src/render.js, line 11, col 4,
+    // name="render"). The release tag is what the symbolicator keys off.
+    String payload =
+        "{\"release\":\""
+            + releaseVersion
+            + "\",\"level\":\"error\",\"exception\":{\"values\":["
+            + "{\"type\":\"TypeError\",\"value\":\"boom\","
+            + "\"stacktrace\":{\"frames\":["
+            + "{\"filename\":\"dist/app.js\",\"lineno\":1,\"colno\":0}"
+            + "]}}]}}";
+
+    Result result =
+        ingest.ingest(new Command(PROJECT_ID, DSN_PUBLIC, payload, "127.0.0.1", "junit"));
+    assertThat(result).isInstanceOf(Result.Accepted.class);
+
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofMillis(100))
+        .untilAsserted(() -> assertThat(countEvents()).isEqualTo(1L));
+
+    // Stored payload should now carry the decoded coordinates alongside the originals (the dashboard's
+    // "raw" toggle reads the originals, the default view reads originalFilename/Lineno).
+    EventRow row = lastEventRow();
+    JsonNode persisted = new ObjectMapper().readTree(row.payload);
+    JsonNode frame =
+        persisted.path("exception").path("values").get(0).path("stacktrace").path("frames").get(0);
+    assertThat(frame.path("originalFilename").asText()).isEqualTo("src/render.js");
+    assertThat(frame.path("originalLineno").asInt()).isEqualTo(11);
+    assertThat(frame.path("originalColno").asInt()).isEqualTo(4);
+    assertThat(frame.path("originalFunction").asText()).isEqualTo("render");
+    // Originals preserved for the raw-toggle view.
+    assertThat(frame.path("filename").asText()).isEqualTo("dist/app.js");
+    assertThat(frame.path("lineno").asInt()).isEqualTo(1);
   }
 
   // ── helpers ─────────────────────────────────────────────────────────────
