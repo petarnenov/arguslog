@@ -16,7 +16,9 @@ public record IssueResponse(
     @JsonProperty("firstSeenAt") Instant firstSeenAt,
     @JsonProperty("lastSeenAt") Instant lastSeenAt,
     @JsonProperty("occurrenceCount") long occurrenceCount,
-    @JsonProperty("assigneeUserId") UUID assigneeUserId) {
+    @JsonProperty("assigneeUserId") UUID assigneeUserId,
+    @JsonProperty("firstSeenReleaseId") Long firstSeenReleaseId,
+    @JsonProperty("firstSeenReleaseVersion") String firstSeenReleaseVersion) {
 
   public static IssueResponse from(Issue issue) {
     return new IssueResponse(
@@ -30,6 +32,8 @@ public record IssueResponse(
         issue.firstSeenAt(),
         issue.lastSeenAt(),
         issue.occurrenceCount(),
-        issue.assigneeUserId());
+        issue.assigneeUserId(),
+        issue.firstSeenReleaseId(),
+        issue.firstSeenReleaseVersion());
   }
 }

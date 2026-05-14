@@ -248,6 +248,7 @@
   },
   "issueDetail": {
     "firstSeen": "First seen",
+    "firstSeenInRelease": "first seen in {{version}}",
     "lastSeen": "Last seen",
     "occurrences": "Occurrences",
     "recentEvents": "Recent events",

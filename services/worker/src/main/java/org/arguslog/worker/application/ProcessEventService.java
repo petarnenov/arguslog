@@ -1,5 +1,7 @@
 package org.arguslog.worker.application;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.arguslog.worker.application.port.EventStore;
 import org.arguslog.worker.application.port.Fingerprinter;
 import org.arguslog.worker.application.port.PersistedEventPublisher;
@@ -21,16 +23,19 @@ public class ProcessEventService implements ProcessEventUseCase {
   private final EventStore store;
   private final PersistedEventPublisher persistedEventPublisher;
   private final Symbolicator symbolicator;
+  private final ObjectMapper mapper;
 
   public ProcessEventService(
       Fingerprinter fingerprinter,
       EventStore store,
       PersistedEventPublisher persistedEventPublisher,
-      Symbolicator symbolicator) {
+      Symbolicator symbolicator,
+      ObjectMapper mapper) {
     this.fingerprinter = fingerprinter;
     this.store = store;
     this.persistedEventPublisher = persistedEventPublisher;
     this.symbolicator = symbolicator;
+    this.mapper = mapper;
   }
 
   @Override
@@ -43,8 +48,9 @@ public class ProcessEventService implements ProcessEventUseCase {
         enrichedPayload.equals(event.rawPayload()) ? event : withPayload(event, enrichedPayload);
 
     Fingerprint fingerprint = fingerprinter.compute(enriched.rawPayload());
+    String releaseVersion = extractReleaseVersion(enriched.rawPayload());
     try {
-      EventStore.PersistResult result = store.persist(enriched, fingerprint);
+      EventStore.PersistResult result = store.persist(enriched, fingerprint, releaseVersion);
       publishPersisted(enriched, result);
       if ("unknown".equals(fingerprint.hash())) {
         return new Result.SalvagedAsUnknown(result.issueId());
@@ -54,6 +60,25 @@ public class ProcessEventService implements ProcessEventUseCase {
       // Redis will redeliver after the visibility timeout — surface so the caller skips ACK.
       return new Result.Retryable(
           e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+    }
+  }
+
+  /**
+   * Pulls {@code payload.release} (the SDK convention shared with CachingSymbolicator) as a
+   * plain string. Returns {@code null} on missing field, non-string field, or unparseable JSON
+   * — the persist path tolerates a null release version (column lands NULL).
+   */
+  private String extractReleaseVersion(String payload) {
+    try {
+      JsonNode root = mapper.readTree(payload);
+      JsonNode release = root.path("release");
+      if (release.isTextual()) {
+        String text = release.asText().trim();
+        return text.isEmpty() ? null : text;
+      }
+      return null;
+    } catch (Exception e) {
+      return null;
     }
   }
 

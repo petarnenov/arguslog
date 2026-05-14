@@ -18,7 +18,41 @@ public record Issue(
     Instant firstSeenAt,
     Instant lastSeenAt,
     long occurrenceCount,
-    UUID assigneeUserId) {
+    UUID assigneeUserId,
+    Long firstSeenReleaseId,
+    String firstSeenReleaseVersion) {
+
+  /**
+   * Convenience constructor preserving older test/builder sites that don't set release
+   * attribution. Defaults the two new fields to {@code null}.
+   */
+  public Issue(
+      long id,
+      long projectId,
+      String fingerprint,
+      Status status,
+      Level level,
+      String title,
+      String culprit,
+      Instant firstSeenAt,
+      Instant lastSeenAt,
+      long occurrenceCount,
+      UUID assigneeUserId) {
+    this(
+        id,
+        projectId,
+        fingerprint,
+        status,
+        level,
+        title,
+        culprit,
+        firstSeenAt,
+        lastSeenAt,
+        occurrenceCount,
+        assigneeUserId,
+        null,
+        null);
+  }
 
   public enum Status {
     UNRESOLVED,

@@ -138,7 +138,8 @@ class IngestToPostgresEndToEndTest {
             new PayloadFingerprinter(mapper),
             rawStore,
             persisted -> {},
-            symbolicator);
+            symbolicator,
+            mapper);
     ProcessEventUseCase wrapped = event -> tx.execute(status -> unwrapped.process(event));
 
     RedisStreamProperties props =
@@ -304,6 +305,67 @@ class IngestToPostgresEndToEndTest {
     // Originals preserved for the raw-toggle view.
     assertThat(frame.path("filename").asText()).isEqualTo("dist/app.js");
     assertThat(frame.path("lineno").asInt()).isEqualTo(1);
+
+    // Attribution: the issue's first_seen_release_id should point at the release row we seeded.
+    // The worker resolves it via the in-SQL sub-select inside the INSERT path.
+    assertThat(firstSeenReleaseId(row.issueId)).isNotNull();
+  }
+
+  @Test
+  void firstSeenReleaseIsImmutableOnRepeatedEvents() throws Exception {
+    String firstRelease = "e2e-1.0.0";
+    String secondRelease = "e2e-1.0.1";
+    try (Connection conn = dataSource.getConnection()) {
+      for (String version : new String[] {firstRelease, secondRelease}) {
+        try (PreparedStatement stmt =
+            conn.prepareStatement(
+                "INSERT INTO releases (project_id, version) VALUES (?, ?)")) {
+          stmt.setLong(1, PROJECT_ID);
+          stmt.setString(2, version);
+          stmt.execute();
+        }
+      }
+    }
+
+    java.util.function.Function<String, String> payloadFor =
+        version ->
+            "{\"release\":\""
+                + version
+                + "\",\"level\":\"error\",\"exception\":{\"values\":["
+                + "{\"type\":\"BoomError\",\"value\":\"x\"}]}}";
+
+    ingest.ingest(new Command(PROJECT_ID, DSN_PUBLIC, payloadFor.apply(firstRelease), "127.0.0.1", "junit"));
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofMillis(100))
+        .untilAsserted(() -> assertThat(countEvents()).isEqualTo(1L));
+    Long releaseIdAfterFirst = firstSeenReleaseId(lastEventRow().issueId);
+    assertThat(releaseIdAfterFirst).isNotNull();
+
+    ingest.ingest(new Command(PROJECT_ID, DSN_PUBLIC, payloadFor.apply(secondRelease), "127.0.0.1", "junit"));
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofMillis(100))
+        .untilAsserted(() -> assertThat(countEvents()).isEqualTo(2L));
+
+    // first_seen_release_id must NOT change — the second event hits the existing issue row and
+    // the UPDATE path leaves first_seen_release_id untouched.
+    assertThat(firstSeenReleaseId(lastEventRow().issueId)).isEqualTo(releaseIdAfterFirst);
+  }
+
+  private static Long firstSeenReleaseId(long issueId) {
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement stmt =
+            conn.prepareStatement("SELECT first_seen_release_id FROM issues WHERE id = ?")) {
+      stmt.setLong(1, issueId);
+      try (ResultSet rs = stmt.executeQuery()) {
+        rs.next();
+        long v = rs.getLong(1);
+        return rs.wasNull() ? null : v;
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   // ── helpers ─────────────────────────────────────────────────────────────

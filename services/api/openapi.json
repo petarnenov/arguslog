@@ -2180,6 +2180,13 @@
           "assigneeUserId" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "firstSeenReleaseId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "firstSeenReleaseVersion" : {
+            "type" : "string"
           }
         }
       },

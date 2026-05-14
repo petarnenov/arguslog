@@ -16,6 +16,15 @@ export interface Issue {
   occurrenceCount: number;
   /** UUID of the assigned org member, or null when unassigned. */
   assigneeUserId: string | null;
+  /**
+   * Release this issue's fingerprint was attached to the first time it appeared. Stored once on
+   * insert; immutable across subsequent events for the same issue. Null when the first event
+   * carried no `release` tag, the tagged version didn't match a known release, or the release
+   * row was later deleted (FK SET NULL).
+   */
+  firstSeenReleaseId: number | null;
+  /** Human-readable version string for the release referenced by {@link firstSeenReleaseId}. */
+  firstSeenReleaseVersion: string | null;
 }
 
 export interface PageMeta {

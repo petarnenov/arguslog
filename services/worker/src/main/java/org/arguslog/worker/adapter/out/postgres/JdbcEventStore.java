@@ -24,11 +24,19 @@ public class JdbcEventStore implements EventStore {
    * losing its history. {@code ignored} is intentionally NOT flipped — ignoring is "I never want
    * to hear about this again", whereas resolved is "I fixed it and want to know if it returns".
    */
+  // first_seen_release_id is resolved by an in-SQL sub-select against `releases` so we don't
+  // need a parallel repository port. The sub-select returns NULL when (project_id, version)
+  // doesn't match — desired behaviour (event tagged with an unknown release leaves the column
+  // NULL rather than failing the insert). On UPDATE, the column is intentionally NOT touched:
+  // "first seen" is immutable.
   private static final String UPSERT_ISSUE_SQL =
       """
       INSERT INTO issues (project_id, environment_id, fingerprint, status, level, title, culprit,
-                          first_seen_at, last_seen_at, occurrence_count)
-           VALUES (?, NULL, ?, 'unresolved', ?::event_level, ?, ?, ?, ?, 1)
+                          first_seen_at, last_seen_at, occurrence_count, first_seen_release_id)
+           VALUES (?, NULL, ?, 'unresolved', ?::event_level, ?, ?, ?, ?, 1,
+                   (SELECT id FROM releases
+                     WHERE project_id = ? AND version = ?
+                     LIMIT 1))
       ON CONFLICT (project_id, environment_id, fingerprint)
         DO UPDATE SET last_seen_at     = GREATEST(issues.last_seen_at, EXCLUDED.last_seen_at),
                       occurrence_count = issues.occurrence_count + 1,
@@ -58,13 +66,14 @@ public class JdbcEventStore implements EventStore {
 
   @Override
   @Transactional
-  public PersistResult persist(IncomingEvent event, Fingerprint fingerprint) {
-    PersistResult row = upsertIssue(event, fingerprint);
+  public PersistResult persist(IncomingEvent event, Fingerprint fingerprint, String releaseVersion) {
+    PersistResult row = upsertIssue(event, fingerprint, releaseVersion);
     insertEvent(event, row.issueId());
     return row;
   }
 
-  private PersistResult upsertIssue(IncomingEvent event, Fingerprint fingerprint) {
+  private PersistResult upsertIssue(
+      IncomingEvent event, Fingerprint fingerprint, String releaseVersion) {
     try {
       return jdbc.queryForObject(
           UPSERT_ISSUE_SQL,
@@ -82,7 +91,12 @@ public class JdbcEventStore implements EventStore {
           fingerprint.title(),
           fingerprint.culprit(),
           java.sql.Timestamp.from(event.receivedAt()),
-          java.sql.Timestamp.from(event.receivedAt()));
+          java.sql.Timestamp.from(event.receivedAt()),
+          // Sub-select args (project_id + version). Pass null version when the event didn't
+          // carry a release tag; the SELECT id FROM releases WHERE version = NULL returns no
+          // rows, so the column lands NULL — same result as no match.
+          event.projectId(),
+          releaseVersion);
     } catch (EmptyResultDataAccessException e) {
       throw new IllegalStateException("Issue upsert returned no row — schema drift?", e);
     }

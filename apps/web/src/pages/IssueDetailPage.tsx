@@ -295,6 +295,18 @@ export function IssueDetailPage() {
                 {t('issueDetail.firstSeen')}
               </Text>
               <Text>{formatter.format(new Date(issue.firstSeenAt))}</Text>
+              {issue.firstSeenReleaseVersion && (
+                <Badge
+                  variant="light"
+                  color="grape"
+                  mt={4}
+                  data-testid="first-seen-release-badge"
+                >
+                  {t('issueDetail.firstSeenInRelease', {
+                    version: issue.firstSeenReleaseVersion,
+                  })}
+                </Badge>
+              )}
             </Stack>
           </Card>
         </Grid.Col>

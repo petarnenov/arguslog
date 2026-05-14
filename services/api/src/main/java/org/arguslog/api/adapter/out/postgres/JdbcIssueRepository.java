@@ -31,29 +31,36 @@ public class JdbcIssueRepository implements IssueRepository {
   //   NULL  → no assignee filter (match all)
   //   ''    → unassigned only (assignee_user_id IS NULL)
   //   <uuid string> → exact match on that user
+  // LEFT JOIN on releases brings back the version string for "first seen in vX.Y.Z" rendering
+  // without a separate round-trip. The join is cheap because first_seen_release_id is indexed
+  // (V35) and the typical column is NULL.
   private static final String PAGE_SQL =
       """
-      SELECT id, project_id, fingerprint, status::text, level::text, title, culprit,
-             first_seen_at, last_seen_at, occurrence_count, assignee_user_id
-        FROM issues
-       WHERE project_id = ?
-         AND (?::issue_status IS NULL OR status = ?::issue_status)
-         AND (?::event_level  IS NULL OR level  = ?::event_level)
-         AND (?::text IS NULL OR (title ILIKE ?::text OR COALESCE(culprit,'') ILIKE ?::text))
+      SELECT i.id, i.project_id, i.fingerprint, i.status::text, i.level::text, i.title, i.culprit,
+             i.first_seen_at, i.last_seen_at, i.occurrence_count, i.assignee_user_id,
+             i.first_seen_release_id, r.version AS first_seen_release_version
+        FROM issues i
+        LEFT JOIN releases r ON r.id = i.first_seen_release_id
+       WHERE i.project_id = ?
+         AND (?::issue_status IS NULL OR i.status = ?::issue_status)
+         AND (?::event_level  IS NULL OR i.level  = ?::event_level)
+         AND (?::text IS NULL OR (i.title ILIKE ?::text OR COALESCE(i.culprit,'') ILIKE ?::text))
          AND (?::text IS NULL
-              OR (?::text = '' AND assignee_user_id IS NULL)
-              OR (?::text <> '' AND assignee_user_id = ?::uuid))
-         AND (? IS NULL OR (last_seen_at, id) < (?::timestamptz, ?::bigint))
-       ORDER BY last_seen_at DESC, id DESC
+              OR (?::text = '' AND i.assignee_user_id IS NULL)
+              OR (?::text <> '' AND i.assignee_user_id = ?::uuid))
+         AND (? IS NULL OR (i.last_seen_at, i.id) < (?::timestamptz, ?::bigint))
+       ORDER BY i.last_seen_at DESC, i.id DESC
        LIMIT ?
       """;
 
   private static final String FIND_BY_PROJECT_AND_ID_SQL =
       """
-      SELECT id, project_id, fingerprint, status::text, level::text, title, culprit,
-             first_seen_at, last_seen_at, occurrence_count, assignee_user_id
-        FROM issues
-       WHERE project_id = ? AND id = ?
+      SELECT i.id, i.project_id, i.fingerprint, i.status::text, i.level::text, i.title, i.culprit,
+             i.first_seen_at, i.last_seen_at, i.occurrence_count, i.assignee_user_id,
+             i.first_seen_release_id, r.version AS first_seen_release_version
+        FROM issues i
+        LEFT JOIN releases r ON r.id = i.first_seen_release_id
+       WHERE i.project_id = ? AND i.id = ?
       """;
 
   private static final RowMapper<Issue> ROW_MAPPER = JdbcIssueRepository::mapRow;
@@ -199,6 +206,8 @@ public class JdbcIssueRepository implements IssueRepository {
   private static Issue mapRow(ResultSet rs, int rowNum) throws SQLException {
     Object assigneeObj = rs.getObject("assignee_user_id");
     UUID assignee = assigneeObj instanceof UUID u ? u : null;
+    long releaseIdRaw = rs.getLong("first_seen_release_id");
+    Long releaseId = rs.wasNull() ? null : releaseIdRaw;
     return new Issue(
         rs.getLong("id"),
         rs.getLong("project_id"),
@@ -210,6 +219,8 @@ public class JdbcIssueRepository implements IssueRepository {
         rs.getTimestamp("first_seen_at").toInstant(),
         rs.getTimestamp("last_seen_at").toInstant(),
         rs.getLong("occurrence_count"),
-        assignee);
+        assignee,
+        releaseId,
+        rs.getString("first_seen_release_version"));
   }
 }

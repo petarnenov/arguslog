@@ -68,7 +68,7 @@ class JdbcEventStoreTest {
     // without
     // bringing the full Spring context up.
     TransactionTemplate template = new TransactionTemplate(txm);
-    store = (event, fingerprint) -> template.execute(status -> raw.persist(event, fingerprint));
+    store = (event, fingerprint, releaseVersion) -> template.execute(status -> raw.persist(event, fingerprint, releaseVersion));
   }
 
   @AfterAll
@@ -90,7 +90,7 @@ class JdbcEventStoreTest {
     IncomingEvent event = sampleEvent();
     Fingerprint fp = fingerprint("hash-1");
 
-    PersistResult result = store.persist(event, fp);
+    PersistResult result = store.persist(event, fp, null);
 
     assertThat(result.newIssue()).isTrue();
     assertThat(result.issueId()).isPositive();
@@ -101,8 +101,8 @@ class JdbcEventStoreTest {
   @Test
   void secondEventBumpsExistingIssueAndInsertsRow() {
     Fingerprint fp = fingerprint("hash-shared");
-    PersistResult first = store.persist(sampleEvent(), fp);
-    PersistResult second = store.persist(sampleEvent(), fp);
+    PersistResult first = store.persist(sampleEvent(), fp, null);
+    PersistResult second = store.persist(sampleEvent(), fp, null);
 
     assertThat(first.newIssue()).isTrue();
     assertThat(second.newIssue()).isFalse();
@@ -118,9 +118,9 @@ class JdbcEventStoreTest {
     Instant t = Instant.parse("2026-05-05T12:00:00Z");
     IncomingEvent event = new IncomingEvent(eventId, 101L, "pk", t, "{}", "ip", "ua");
 
-    PersistResult first = store.persist(event, fp);
+    PersistResult first = store.persist(event, fp, null);
     // Same event id + same time — Redis redelivery scenario.
-    PersistResult second = store.persist(event, fp);
+    PersistResult second = store.persist(event, fp, null);
 
     assertThat(first.issueId()).isEqualTo(second.issueId());
     // events table swallows the duplicate; issues row gets bumped twice though
@@ -133,8 +133,8 @@ class JdbcEventStoreTest {
   void differentFingerprintsCreateDistinctIssues() {
     Fingerprint a = fingerprint("hash-a");
     Fingerprint b = fingerprint("hash-b");
-    PersistResult ra = store.persist(sampleEvent(), a);
-    PersistResult rb = store.persist(sampleEvent(), b);
+    PersistResult ra = store.persist(sampleEvent(), a, null);
+    PersistResult rb = store.persist(sampleEvent(), b, null);
     assertThat(ra.issueId()).isNotEqualTo(rb.issueId());
     assertThat(countEvents()).isEqualTo(2);
   }
@@ -144,7 +144,7 @@ class JdbcEventStoreTest {
     Fingerprint fp =
         new Fingerprint(
             "hash-meta", "TypeError: x", "main at app.js:42", Fingerprint.Level.WARNING);
-    PersistResult result = store.persist(sampleEvent(), fp);
+    PersistResult result = store.persist(sampleEvent(), fp, null);
 
     var meta = issueMeta(result.issueId());
     assertThat(meta.title).isEqualTo("TypeError: x");
