@@ -23,7 +23,7 @@ interface DsnSummary {
 }
 
 /** Server-side projection of a single DSN — exposed at list-time only, mirror of {@link DsnSummary}. */
-interface DsnListResponse extends Array<DsnSummary> {}
+type DsnListResponse = DsnSummary[];
 
 /**
  * Sends one synthetic event through the full ingest pipeline using the project's first active

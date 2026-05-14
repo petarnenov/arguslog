@@ -81,8 +81,8 @@ describe('tool dispatch', () => {
   });
 
   it('send_test_event: fetches DSN via api then posts synthetic event to derived ingest', async () => {
-    const fetchMock = vi.fn(async (input: URL | RequestInfo, _init?: RequestInit) => {
-      const url = typeof input === 'string' ? input : (input as URL).toString();
+    const fetchMock = vi.fn(async (input: URL | string, _init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
       if (url.includes('/api/v1/projects/42/keys')) {
         return new Response(
           JSON.stringify([

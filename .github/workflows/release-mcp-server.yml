@@ -61,6 +61,11 @@ jobs:
             mcp-server \
             packages/mcp-server/package.json
 
+      # sdk-core is a workspace dep (buildSyntheticEvent in the send_test_event handler);
+      # tsc needs the resolved .d.ts files on disk before typecheck/test will pass in a clean CI checkout.
+      - name: Pre-build sdk-core
+        run: pnpm --filter @arguslog/sdk-core build
+
       - name: Lint, typecheck, test
         run: |
           pnpm --filter @arguslog/mcp-server lint

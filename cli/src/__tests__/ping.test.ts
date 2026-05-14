@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { run } from '../cli';
-import { deriveIngestUrl } from '../commands/ping';
+import { run } from '../cli.js';
+import { deriveIngestUrl } from '../commands/ping.js';
 
 const FAKE_CONFIG = {
   token: 'arglog_pat_FAKE',
@@ -48,8 +48,8 @@ describe('arguslog ping', () => {
 
   it('happy path: lists DSNs, posts to ingest, returns success line', async () => {
     const calls: Array<{ url: string; init: RequestInit }> = [];
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = typeof input === 'string' ? input : (input as URL).toString();
+    globalThis.fetch = vi.fn(async (input: string | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
       calls.push({ url, init: init ?? {} });
       if (url.endsWith('/keys')) {
         return new Response(
@@ -98,8 +98,8 @@ describe('arguslog ping', () => {
   });
 
   it('surfaces a friendly error when ingest rejects', async () => {
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-      const url = typeof input === 'string' ? input : (input as URL).toString();
+    globalThis.fetch = vi.fn(async (input: string | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
       if (url.endsWith('/keys')) {
         return new Response(
           JSON.stringify([

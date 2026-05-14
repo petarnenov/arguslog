@@ -62,6 +62,11 @@ jobs:
             cli \
             cli/package.json
 
+      # sdk-core is a workspace dep (buildSyntheticEvent in the `arguslog ping` command);
+      # tsc needs the resolved .d.ts files on disk before typecheck/test will pass in a clean CI checkout.
+      - name: Pre-build sdk-core
+        run: pnpm --filter @arguslog/sdk-core build
+
       - name: Lint, typecheck, test
         run: |
           pnpm --filter @arguslog/cli lint
