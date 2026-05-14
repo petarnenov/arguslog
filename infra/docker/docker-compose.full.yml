@@ -185,8 +185,6 @@ services:
     depends_on:
       api: { condition: service_healthy }
     environment:
-      # PORT overrides the Dockerfile default (8080) to match the healthcheck below (8082).
-      PORT: '8082'
       DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-arguslog}
       DATABASE_USER: ${POSTGRES_USER:-arguslog}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-arguslog}
@@ -200,13 +198,11 @@ services:
       ARGUSLOG_DSN: ${ARGUSLOG_DSN:-}
       ARGUSLOG_ENVIRONMENT: ${ARGUSLOG_ENVIRONMENT:-self-host}
       ARGUSLOG_RELEASE: ${ARGUSLOG_RELEASE:-2.0.0}
-    ports:
-      - '${WORKER_PORT:-8082}:8082'
-    healthcheck:
-      test: ['CMD-SHELL', "wget -q -O- http://localhost:8082/actuator/health | grep -q UP"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
+    # No ports + no healthcheck: worker has only spring-boot-starter-actuator (no -starter-web),
+    # so there's no embedded HTTP server to probe. compose treats a service without a healthcheck
+    # as ready-when-running, which is the right model for a background Redis-Streams consumer.
+    # Liveness in prod is the running process itself; Railway's container-level monitor watches
+    # PID 1.
 
   web:
     build:

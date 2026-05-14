@@ -93,9 +93,11 @@ jobs:
         run: |
           set -euo pipefail
           # name:host_port/path — each one curl'd from the runner via the published host port.
+          # Worker deliberately omitted — no spring-boot-starter-web means no HTTP server to
+          # probe. compose up --wait already verified the process is up, which is the right
+          # liveness model for a background Redis-Streams consumer.
           for svc in 'api:8081/actuator/health/readiness' \
                      'ingest:8080/actuator/health' \
-                     'worker:8082/actuator/health' \
                      'web:5173/healthz' \
                      'landing:5175/healthz' \
                      'mcp:8090/healthz' \
