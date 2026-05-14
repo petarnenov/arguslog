@@ -13,6 +13,8 @@
  * {@link ArguslogClient}. Adding new endpoints to the OpenAPI spec → re-run {@code pnpm generate}
  * → tools become callable, no per-tool runtime wiring.
  */
+import { buildSyntheticEvent } from '@arguslog/sdk-core';
+
 import type { ArguslogClient } from './client.js';
 import { CURATED_TOOLS } from './curated-tools.js';
 import {
@@ -105,6 +107,14 @@ export async function executeTool(
   name: string,
   args: Record<string, unknown>,
 ): Promise<unknown> {
+  // Hand-rolled handler for the test-event probe — needs a two-step flow (api → ingest)
+  // that the standard one-tool-one-HTTP-call dispatcher can't express. Intercepted before
+  // the registry lookup so the curated metadata (description, schema) still surfaces to
+  // the LLM via tools/list without us inventing a fake api endpoint.
+  if (name === 'send_test_event') {
+    return executeSendTestEvent(client, args);
+  }
+
   const tool = TOOL_REGISTRY.get(name);
   if (!tool) throw new Error(`Unknown tool: ${name}`);
 
@@ -199,4 +209,95 @@ function jsonSchemaForParam(p: OpenApiToolParam): Record<string, unknown> {
 function paramDescription(p: OpenApiToolParam): string {
   if (p.description && p.description.trim().length > 0) return p.description;
   return p.required ? `${p.name} — required.` : `${p.name} — optional.`;
+}
+
+// ── send_test_event custom handler ──────────────────────────────────────────
+
+interface DsnSummary {
+  id: number;
+  projectId: number;
+  dsnPublic: string;
+  active: boolean;
+  createdAt: string;
+}
+
+type Level = 'fatal' | 'error' | 'warning' | 'info' | 'debug';
+
+async function executeSendTestEvent(
+  client: ArguslogClient,
+  args: Record<string, unknown>,
+): Promise<unknown> {
+  const projectId = Number(args.projectId);
+  if (!Number.isFinite(projectId) || projectId <= 0) {
+    throw new Error('send_test_event: projectId is required and must be a positive integer');
+  }
+  const bodyArg =
+    typeof args.body === 'object' && args.body !== null
+      ? (args.body as Record<string, unknown>)
+      : {};
+  const level = (bodyArg.level as Level | undefined) ?? 'error';
+  const message =
+    typeof bodyArg.message === 'string' ? bodyArg.message : undefined;
+
+  // Step 1: list the project's keys via the api (PAT, projects:read).
+  const keys = await client.request<DsnSummary[]>({
+    method: 'GET',
+    path: `/api/v1/projects/${projectId}/keys`,
+  });
+  const active = keys.find((k) => k.active);
+  if (!active) {
+    throw new Error(
+      `project ${projectId} has no active DSN — generate one in the dashboard before send_test_event`,
+    );
+  }
+
+  // Step 2: derive ingest URL + POST the synthetic event. ARGUSLOG_INGEST_URL takes priority
+  // for self-hosted; otherwise we swap api.<host> → ingest.<host>, matching the convention
+  // every shipped deployment uses (api.arguslog.org → ingest.arguslog.org, local 8081 → 8080).
+  const apiBaseUrl = process.env.ARGUSLOG_API_URL ?? 'https://api.arguslog.org';
+  const ingestUrl = (process.env.ARGUSLOG_INGEST_URL ?? deriveIngestUrl(apiBaseUrl)).replace(
+    /\/+$/,
+    '',
+  );
+  const payload = buildSyntheticEvent({ level, message, source: 'arguslog/mcp send_test_event' });
+  const resp = await fetch(`${ingestUrl}/api/${projectId}/events`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Arguslog-Auth': `Arguslog DSN ${active.dsnPublic}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(
+      `ingest rejected synthetic event: HTTP ${resp.status}${text ? ` — ${text.slice(0, 200)}` : ''}`,
+    );
+  }
+  return {
+    status: 'accepted',
+    eventId: payload.eventId,
+    dsnPublic: active.dsnPublic,
+    ingestUrl,
+    hint: 'Issue appears on the dashboard within ~1s; search synthetic=true to find it.',
+  };
+}
+
+// Mirror of cli/src/commands/ping.ts deriveIngestUrl — kept duplicated rather than pulling
+// the cli module in as a dependency (we want MCP server to stay self-contained).
+export function deriveIngestUrl(apiBaseUrl: string): string {
+  try {
+    const u = new URL(apiBaseUrl);
+    if (u.hostname.startsWith('api.')) {
+      u.hostname = `ingest.${u.hostname.slice(4)}`;
+      return `${u.protocol}//${u.host}`;
+    }
+    if (u.port === '8081') {
+      u.port = '8080';
+      return `${u.protocol}//${u.host}`;
+    }
+    return apiBaseUrl;
+  } catch {
+    return apiBaseUrl;
+  }
 }

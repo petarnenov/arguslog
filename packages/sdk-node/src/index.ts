@@ -31,7 +31,9 @@ export interface SourceMapsOptions {
   enabled?: boolean;
 }
 
-export interface NodeArguslogOptions extends Omit<ArguslogOptions, 'integrations'> {
+export interface NodeArguslogOptions extends Omit<ArguslogOptions, 'integrations' | 'dsn'> {
+  /** Falls back to {@code process.env.ARGUSLOG_DSN} when omitted. */
+  dsn?: string;
   integrations?: NodeIntegration[];
   processHandlers?: ProcessHandlerOptions;
   sourcemaps?: SourceMapsOptions;
@@ -43,6 +45,20 @@ let uninstallProcessHandlers: (() => void) | undefined;
 let uninstallHttp: (() => void) | undefined;
 
 export function init(options: NodeArguslogOptions): ArguslogClient {
+  // Env-var fallback for the DSN: if the caller didn't pass one explicitly, read
+  // ARGUSLOG_DSN from the environment. ARGUSLOG_DSN is the canonical name across every
+  // server-side SDK (node, python, java) and makes `init({...})` work for the common
+  // case of "DSN comes from CI / k8s / .env". A typo'd custom name (e.g. ARGUSLOG_DNS_KEY)
+  // surfaces as "Missing DSN" here instead of silently constructing a client with undefined.
+  const resolvedDsn = options.dsn ?? process.env.ARGUSLOG_DSN ?? '';
+  if (!resolvedDsn) {
+    throw new Error(
+      'arguslog.init: no DSN provided. Pass options.dsn explicitly OR set the ARGUSLOG_DSN ' +
+        'environment variable.',
+    );
+  }
+  options = { ...options, dsn: resolvedDsn };
+
   // Tear down handlers from a prior init before swapping the client — otherwise process
   // listeners from the previous client linger and capture into a stale instance.
   uninstallProcessHandlers?.();
@@ -50,7 +66,10 @@ export function init(options: NodeArguslogOptions): ArguslogClient {
   uninstallHttp?.();
   uninstallHttp = undefined;
 
-  const { integrations, processHandlers, sourcemaps, ...coreOptions } = options;
+  // After the env-var fallback above, dsn is guaranteed non-empty; narrow the type so the
+  // core client (which requires a string dsn) accepts it.
+  const { integrations, processHandlers, sourcemaps, ...rest } = options;
+  const coreOptions: ArguslogOptions = { ...rest, dsn: resolvedDsn };
   if (sourcemaps?.enabled) enableSourceMaps();
   const scopeStore = new AsyncLocalScopeStore(options.maxBreadcrumbs ?? 50);
   currentScopeStore = scopeStore;

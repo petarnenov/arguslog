@@ -19,6 +19,9 @@
     "dist",
     "icon.svg"
   ],
+  "dependencies": {
+    "@arguslog/sdk-core": "workspace:*"
+  },
   "scripts": {
     "gen-version": "node scripts/gen-version.mjs",
     "prebuild": "node scripts/gen-version.mjs",

@@ -1,3 +1,4 @@
+import { ping } from './commands/ping.js';
 import { releasesNew } from './commands/releases.js';
 import { sourcemapsUpload } from './commands/sourcemaps.js';
 import { type CliConfig, CliConfigError, loadConfig } from './config.js';
@@ -22,6 +23,8 @@ Usage:
   arguslog <command> [options]
 
 Commands:
+  ping --project <id>             Send a synthetic event through ingest to verify
+                                  the project's SDK wire path end-to-end.
   releases new <version> --project <id>
                                   Create a new release tag.
   sourcemaps upload <path> --project <id> --release <id> [--name <originalPath>]
@@ -33,6 +36,8 @@ Auth:
   Token comes from $ARGUSLOG_TOKEN or ~/.arguslog/credentials
     (JSON: { "token": "arglog_pat_...", "apiBaseUrl": "https://..." }).
   $ARGUSLOG_API_URL overrides the api base URL when present.
+  $ARGUSLOG_INGEST_URL overrides the ingest base URL used by 'ping'
+    (default: derived from $ARGUSLOG_API_URL by swapping api.* → ingest.*).
 `;
 
 export function parseArgs(argv: readonly string[]): { command: string; rest: readonly string[] } {
@@ -55,6 +60,8 @@ export async function run(
     case '--version':
     case '-v':
       return { exitCode: 0, stdout: `${VERSION}\n`, stderr: '' };
+    case 'ping':
+      return runPing(rest, options);
     case 'releases':
       return runReleases(rest, options);
     case 'sourcemaps':
@@ -66,6 +73,23 @@ export async function run(
         stderr: `arguslog: unknown command '${command}'. Run 'arguslog help' for usage.\n`,
       };
   }
+}
+
+async function runPing(rest: readonly string[], options: RunOptions): Promise<CommandResult> {
+  const { flags } = parseFlags(rest);
+  const projectId = parseProjectId(flags.project);
+  if (projectId === null) {
+    return usageError("ping: --project <id> is required (numeric).");
+  }
+  const ingestUrlOverride = process.env.ARGUSLOG_INGEST_URL?.trim() || undefined;
+  return withConfig(options, async (config) => {
+    const result = await ping({ projectId, ingestUrlOverride }, config);
+    return ok(
+      `✓ ingest accepted synthetic event ${result.eventId.slice(0, 12)}…\n` +
+        `  via ${result.ingestUrl} (DSN ${result.dsnPublic.slice(0, 8)}…)\n` +
+        `  check the Issues page in ~1s — search 'synthetic=true' to find it.\n`,
+    );
+  });
 }
 
 async function runReleases(rest: readonly string[], options: RunOptions): Promise<CommandResult> {

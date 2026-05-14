@@ -36,6 +36,45 @@ export interface SnippetContext {
   apiUrl: string;
 }
 
+/**
+ * Extract the parts of the DSN the curl recipe needs without pulling in sdk-core's full
+ * parser (which we don't want to bundle into the dashboard). Returns sentinel placeholders
+ * when the DSN is missing so the snippet still renders something the user can mentally
+ * pattern-match against. Wire form: {@code arguslog://<publicKey>@<host[:port]>/api/<projectId>}.
+ */
+function dissectDsn(dsn: string | null): {
+  ingestUrl: string;
+  publicKey: string;
+  projectId: string;
+} {
+  if (!dsn) {
+    return {
+      ingestUrl: '<INGEST_URL>',
+      publicKey: '<PUBLIC_KEY>',
+      projectId: '<PROJECT_ID>',
+    };
+  }
+  // arguslog://<key>@<host>/api/<projectId>
+  const m = dsn.match(/^arguslog:\/\/([^@]+)@([^/]+)\/api\/(\d+)/);
+  if (!m) {
+    return {
+      ingestUrl: '<INGEST_URL>',
+      publicKey: '<PUBLIC_KEY>',
+      projectId: '<PROJECT_ID>',
+    };
+  }
+  const [, publicKey, host, projectId] = m;
+  const protocol =
+    host!.startsWith('localhost') || host!.startsWith('127.') || host!.includes(':')
+      ? 'http'
+      : 'https';
+  return {
+    ingestUrl: `${protocol}://${host}`,
+    publicKey: publicKey!,
+    projectId: projectId!,
+  };
+}
+
 const DSN_PLACEHOLDER = '<GENERATE_DSN_FIRST>';
 const PAT_PLACEHOLDER = '<GENERATE_PAT_FIRST>';
 
@@ -219,9 +258,40 @@ export ARGUSLOG_PAT='${pat}'${isSelfHosted ? `\nexport ARGUSLOG_API_URL='${apiUr
 
 # Verify and use
 arguslog version
+arguslog ping --project ${(() => dissectDsn(ctx.dsn).projectId)()}
 arguslog releases new "v1.4.2" --project <projectId>
 arguslog sourcemaps upload dist/assets/*.js.map \\
   --project <projectId> --release "v1.4.2" --path /assets`,
+    },
+    {
+      id: 'curl-test',
+      group: 'cli',
+      client: 'curl (connectivity test)',
+      language: 'bash',
+      description:
+        'Bare-curl POST to ingest using the project DSN. Useful when you want to verify the wire path without any SDK at all — e.g., from a CI smoke step.',
+      code: (() => {
+        const { ingestUrl, publicKey, projectId } = dissectDsn(ctx.dsn);
+        const eventId = '0123456789abcdef0123456789abcdef';
+        return `curl -i -X POST "${ingestUrl}/api/${projectId}/events" \\
+  -H "X-Arguslog-Auth: Arguslog DSN ${publicKey}" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "eventId":"${eventId}",
+    "timestamp": '"$(date +%s%3N)"',
+    "platform":"javascript",
+    "sdk":{"name":"curl-probe","version":"1"},
+    "level":"error",
+    "exception":{"values":[{
+      "type":"ArguslogConnectivityProbe",
+      "value":"curl smoke from $(hostname)"
+    }]},
+    "tags":{"synthetic":"true","source":"curl"}
+  }'
+
+# Expected: HTTP 202 + JSON { "eventId": "..." }
+# Issue appears on the dashboard within ~1s; search "synthetic=true" to find it.`;
+      })(),
     },
   ];
 }

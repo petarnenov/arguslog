@@ -79,4 +79,64 @@ describe('tool dispatch', () => {
     const client = ArguslogClient.fromEnv();
     await expect(executeTool(client, 'does_not_exist', {})).rejects.toThrow(/Unknown tool/);
   });
+
+  it('send_test_event: fetches DSN via api then posts synthetic event to derived ingest', async () => {
+    const fetchMock = vi.fn(async (input: URL | RequestInfo, _init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : (input as URL).toString();
+      if (url.includes('/api/v1/projects/42/keys')) {
+        return new Response(
+          JSON.stringify([
+            {
+              id: 1,
+              projectId: 42,
+              dsnPublic: 'TESTKEY',
+              active: true,
+              createdAt: '2026-05-14T00:00:00Z',
+            },
+          ]),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (url.includes('/api/42/events')) {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 202,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response('not found', { status: 404 });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    // Override the api base URL so the deriver swaps api.* → ingest.*
+    process.env.ARGUSLOG_API_URL = 'https://api.example.com';
+
+    const client = ArguslogClient.fromEnv();
+    const result = (await executeTool(client, 'send_test_event', {
+      projectId: 42,
+    })) as { status: string; eventId: string; ingestUrl: string; dsnPublic: string };
+
+    expect(result.status).toBe('accepted');
+    expect(result.dsnPublic).toBe('TESTKEY');
+    expect(result.ingestUrl).toBe('https://ingest.example.com');
+    expect(result.eventId).toMatch(/^[0-9a-f]{32}$/);
+
+    // Verify the ingest call carried the right auth header
+    const ingestCall = fetchMock.mock.calls.find((c) =>
+      (typeof c[0] === 'string' ? c[0] : (c[0] as URL).toString()).includes('/api/42/events'),
+    );
+    expect(ingestCall).toBeDefined();
+    const headers = new Headers((ingestCall![1] as RequestInit).headers ?? {});
+    expect(headers.get('X-Arguslog-Auth')).toBe('Arguslog DSN TESTKEY');
+  });
+
+  it('send_test_event: refuses when project has no active DSN', async () => {
+    globalThis.fetch = vi.fn(async () =>
+      new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } }),
+    ) as unknown as typeof globalThis.fetch;
+
+    const client = ArguslogClient.fromEnv();
+    await expect(executeTool(client, 'send_test_event', { projectId: 42 })).rejects.toThrow(
+      /no active DSN/,
+    );
+  });
 });

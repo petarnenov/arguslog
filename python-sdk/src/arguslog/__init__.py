@@ -6,6 +6,7 @@ Public API mirrors the JS/Java SDKs: a module-level facade calling into a single
 
 from __future__ import annotations
 
+import os
 import threading
 from typing import Any, Optional, Union
 
@@ -44,17 +45,32 @@ _lock = threading.Lock()
 
 
 def init(
-    options_or_dsn: Union[ArguslogOptions, str],
+    options_or_dsn: Optional[Union[ArguslogOptions, str]] = None,
     transport: Optional[TransportProtocol] = None,
     **kwargs: Any,
 ) -> ArguslogClient:
     """Initialize the singleton client.
 
-    Convenience: ``init("arguslog://k@host/api/1")`` is equivalent to passing an
-    ``ArguslogOptions(dsn=...)``. Extra kwargs map onto ``ArguslogOptions`` fields.
+    Three call shapes:
+
+    - ``init()`` — reads ``ARGUSLOG_DSN`` from the environment; raises if unset.
+      Canonical env var across every server-side SDK (node, python, java); using a
+      different name (e.g. ``ARGUSLOG_DSN_KEY``) silently produces zero-event-flow.
+    - ``init("arguslog://k@host/api/1")`` — pass the DSN string directly.
+    - ``init(ArguslogOptions(...))`` — full options object for non-trivial setups.
+
+    Extra kwargs (release, environment, sample_rate, ...) map onto ``ArguslogOptions``.
     """
     global _client
-    if isinstance(options_or_dsn, ArguslogOptions):
+    if options_or_dsn is None:
+        env_dsn = os.environ.get("ARGUSLOG_DSN", "").strip()
+        if not env_dsn:
+            raise ValueError(
+                "arguslog.init: no DSN provided. Pass it as an argument OR set the "
+                "ARGUSLOG_DSN environment variable."
+            )
+        options = ArguslogOptions(dsn=env_dsn, **kwargs)
+    elif isinstance(options_or_dsn, ArguslogOptions):
         options = options_or_dsn
     else:
         options = ArguslogOptions(dsn=options_or_dsn, **kwargs)

@@ -231,6 +231,31 @@ Example: \`{ "orgId": 42, "projectId": 7, "body": { "name": "Marketing Web (v2)"
     hasBody: true,
   },
 
+  send_test_event: {
+    name: 'send_test_event',
+    description: `Send a synthetic event through ingest to verify the project's wire path
+end-to-end. The MCP server looks up the project's first active DSN via the api, then POSTs
+a realistic exception payload (type=ArguslogConnectivityProbe, tag synthetic=true) to the
+ingest endpoint exactly as a real SDK would. Returns the event id + dsn public key + ingest
+URL used.
+
+This is the fastest way to confirm "is project X's ingest accepting traffic?" — no SDK
+install needed, no curl recipe to copy.
+
+Method: POST /internal/mcp/send_test_event (handled by the MCP server itself, not the api)
+
+Required: \`projectId\`. Optional: \`body.message\` (custom event value), \`body.level\`
+(\`fatal\`, \`error\`, \`warning\`, \`info\`, \`debug\`; default \`error\`).
+
+Example: \`{ "projectId": 42 }\` — minimal probe.
+Example: \`{ "projectId": 42, "body": { "level": "warning", "message": "agent smoke" } }\``,
+    method: 'POST',
+    path: '/internal/mcp/send_test_event',
+    pathParams: [],
+    queryParams: [{ name: 'projectId', required: true, type: 'integer' }],
+    hasBody: true,
+  },
+
   create_release: {
     name: 'create_release',
     description: `Register a release for a project. Source maps uploaded later via the artifact

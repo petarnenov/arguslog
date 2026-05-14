@@ -13,10 +13,10 @@ describe('buildSnippets', () => {
     const all = buildSnippets(baseCtx);
     const ids = all.map((s) => s.id);
 
-    // SDK: 5, MCP: 4, CLI: 1
+    // SDK: 5, MCP: 4, CLI: 2 (arguslog + curl)
     expect(all.filter((s) => s.group === 'sdk')).toHaveLength(5);
     expect(all.filter((s) => s.group === 'mcp')).toHaveLength(4);
-    expect(all.filter((s) => s.group === 'cli')).toHaveLength(1);
+    expect(all.filter((s) => s.group === 'cli')).toHaveLength(2);
     expect(ids).toEqual([
       'sdk-javascript',
       'sdk-react',
@@ -28,7 +28,22 @@ describe('buildSnippets', () => {
       'mcp-claude-code',
       'mcp-continue',
       'cli',
+      'curl-test',
     ]);
+  });
+
+  it('curl-test snippet uses the DSN public key + ingest URL', () => {
+    const curl = buildSnippets(baseCtx).find((s) => s.id === 'curl-test');
+    expect(curl?.code).toContain('ingest.arguslog.org/api/42/events');
+    expect(curl?.code).toContain('X-Arguslog-Auth: Arguslog DSN abc123');
+    expect(curl?.code).toContain('ArguslogConnectivityProbe');
+  });
+
+  it('curl-test snippet falls back to placeholders without a DSN', () => {
+    const curl = buildSnippets({ ...baseCtx, dsn: null }).find((s) => s.id === 'curl-test');
+    expect(curl?.code).toContain('<INGEST_URL>');
+    expect(curl?.code).toContain('<PUBLIC_KEY>');
+    expect(curl?.code).toContain('<PROJECT_ID>');
   });
 
   it('inlines the DSN into every SDK snippet', () => {
@@ -38,9 +53,11 @@ describe('buildSnippets', () => {
     }
   });
 
-  it('inlines the PAT into every MCP + CLI snippet', () => {
+  it('inlines the PAT into every MCP + CLI snippet (except curl-test which is DSN-auth)', () => {
     const all = buildSnippets(baseCtx);
-    for (const s of all.filter((x) => x.group === 'mcp' || x.group === 'cli')) {
+    for (const s of all.filter(
+      (x) => (x.group === 'mcp' || x.group === 'cli') && x.id !== 'curl-test',
+    )) {
       expect(s.code).toContain(baseCtx.pat);
     }
   });

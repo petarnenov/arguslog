@@ -23,3 +23,5 @@ export { Scrubber } from './scrubber.js';
 export type { ScrubberOptions } from './scrubber.js';
 export { Transport } from './transport.js';
 export type { TransportOptions } from './transport.js';
+export { buildSyntheticEvent } from './synthetic.js';
+export type { BuildSyntheticEventOptions } from './synthetic.js';

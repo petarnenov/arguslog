@@ -23,7 +23,7 @@ export type {
   StackFrame,
   User,
 } from '@arguslog/sdk-core';
-export { ArguslogClient, InvalidDsnError, parseDsn } from '@arguslog/sdk-core';
+export { ArguslogClient, InvalidDsnError, buildSyntheticEvent, parseDsn } from '@arguslog/sdk-core';
 
 let currentClient: ArguslogClient | undefined;
 let installedUninstallers: Array<() => void> = [];

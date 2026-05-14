@@ -12,11 +12,13 @@ import {
   Text,
   Title,
 } from '@mantine/core';
-import { IconCheck, IconCopy, IconKey, IconPlugConnected } from '@tabler/icons-react';
+import { IconBolt, IconCheck, IconCopy, IconKey, IconPlugConnected } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
+
+import { buildSyntheticEvent, parseDsn } from '@arguslog/sdk-react';
 
 import { ApiError } from '../api/client';
 import { createDsn, type Dsn, type DsnSummary } from '../api/keys';
@@ -80,6 +82,42 @@ export function ConnectProjectPage() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.dsns(projectId) });
     },
     onError: (err) => setDsnError(describeApiError(err)),
+  });
+
+  const [pingResult, setPingResult] = useState<{ ok: boolean; detail: string } | null>(null);
+
+  const pingMutation = useMutation({
+    mutationFn: async () => {
+      if (!dsnString) throw new Error('no DSN available');
+      // Reuse the SDK's wire-format builder so the synthetic event matches exactly what a real
+      // SDK would POST — same fingerprintable shape, same headers, same path. If this fails we
+      // know the real production flow would also fail; if it succeeds the user has end-to-end
+      // confirmation that browser → ingest works for this project.
+      const parsed = parseDsn(dsnString);
+      const payload = buildSyntheticEvent({ source: 'connect-wizard' });
+      const resp = await fetch(parsed.ingestUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Arguslog-Auth': `Arguslog DSN ${parsed.publicKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) {
+        const body = await resp.text().catch(() => '');
+        throw new Error(`HTTP ${resp.status}${body ? ` — ${body.slice(0, 200)}` : ''}`);
+      }
+      return payload;
+    },
+    onSuccess: (payload) => {
+      setPingResult({
+        ok: true,
+        detail: `Event ${payload.eventId.slice(0, 8)}… accepted. Check the Issues page in ~1s.`,
+      });
+    },
+    onError: (e: unknown) => {
+      setPingResult({ ok: false, detail: e instanceof Error ? e.message : String(e) });
+    },
   });
 
   const generatePatMutation = useMutation({
@@ -173,23 +211,46 @@ export function ConnectProjectPage() {
         </Text>
 
         {dsnString ? (
-          <Group gap="sm" wrap="nowrap" align="center">
-            <Code block style={{ flex: 1, fontSize: 13 }} data-testid="connect-dsn-value">
-              {dsnString}
-            </Code>
-            <CopyButton value={dsnString}>
-              {({ copied, copy }) => (
-                <Button
-                  variant={copied ? 'filled' : 'light'}
-                  color={copied ? 'teal' : 'blue'}
-                  onClick={copy}
-                  leftSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                >
-                  {copied ? t('connect.copied') : t('connect.copy')}
-                </Button>
-              )}
-            </CopyButton>
-          </Group>
+          <Stack gap="xs">
+            <Group gap="sm" wrap="nowrap" align="center">
+              <Code block style={{ flex: 1, fontSize: 13 }} data-testid="connect-dsn-value">
+                {dsnString}
+              </Code>
+              <CopyButton value={dsnString}>
+                {({ copied, copy }) => (
+                  <Button
+                    variant={copied ? 'filled' : 'light'}
+                    color={copied ? 'teal' : 'blue'}
+                    onClick={copy}
+                    leftSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                  >
+                    {copied ? t('connect.copied') : t('connect.copy')}
+                  </Button>
+                )}
+              </CopyButton>
+              <Button
+                variant="light"
+                color="orange"
+                loading={pingMutation.isPending}
+                onClick={() => pingMutation.mutate()}
+                leftSection={<IconBolt size={14} />}
+                data-testid="connect-test-ping"
+              >
+                {t('connect.dsn.testPing')}
+              </Button>
+            </Group>
+            {pingResult ? (
+              <Alert
+                color={pingResult.ok ? 'teal' : 'red'}
+                variant="light"
+                withCloseButton
+                onClose={() => setPingResult(null)}
+                data-testid="connect-test-ping-result"
+              >
+                {pingResult.detail}
+              </Alert>
+            ) : null}
+          </Stack>
         ) : (
           <Group gap="sm">
             <Text size="sm">{t('connect.dsn.empty')}</Text>

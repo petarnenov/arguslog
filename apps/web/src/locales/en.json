@@ -158,7 +158,8 @@
       "badge": "SDK ingest",
       "hint": "Public credential safe to ship in client code. Authenticates ingest for THIS project only — cannot read issues, manage projects, or call admin APIs.",
       "empty": "This project has no active DSN yet — generate one to start receiving events.",
-      "generate": "Generate DSN"
+      "generate": "Generate DSN",
+      "testPing": "Test ping"
     },
     "pat": {
       "title": "Personal access token",

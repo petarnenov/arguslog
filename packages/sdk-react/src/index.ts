@@ -13,6 +13,7 @@ export {
   getClient,
   ArguslogClient,
   InvalidDsnError,
+  buildSyntheticEvent,
   parseDsn,
   type ArguslogOptions,
   type Breadcrumb,
