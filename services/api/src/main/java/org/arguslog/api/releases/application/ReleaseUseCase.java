@@ -3,21 +3,29 @@ package org.arguslog.api.releases.application;
 import java.util.List;
 import java.util.Optional;
 import org.arguslog.api.releases.domain.Release;
+import org.arguslog.api.releases.domain.ReleaseInput;
 
 public interface ReleaseUseCase {
 
-  Release create(long projectId, String version);
+  /**
+   * Creates a release with full operator metadata ({@code releasedAt}, {@code gitSha},
+   * {@code gitRef}, {@code deployStage}, {@code changelog}). Use {@link ReleaseInput#versionOnly}
+   * for the minimal CLI v1 / MCP flow that doesn't carry metadata.
+   */
+  Release create(long projectId, ReleaseInput input);
 
   List<Release> list(long projectId);
 
   Optional<Release> get(long projectId, long id);
 
   /**
-   * Renames a release to a new version string. Throws {@link InvalidReleaseException} for
-   * empty/long versions, {@link DuplicateReleaseException} if the new version collides, {@link
-   * ReleaseNotFoundException} if {@code id} is not found in {@code projectId}.
+   * Updates the release with new content. Any nullable field on {@link ReleaseInput} that's set
+   * gets persisted; nulls fall back to the existing column value (no PATCH-style ambiguity here —
+   * this is a full PUT). Throws {@link InvalidReleaseException} for empty/long versions, {@link
+   * DuplicateReleaseException} if the new version collides, {@link ReleaseNotFoundException} if
+   * {@code id} is not found in {@code projectId}.
    */
-  Release update(long projectId, long id, String newVersion);
+  Release update(long projectId, long id, ReleaseInput input);
 
   /**
    * Hard-deletes a release. CASCADE on the FK drops every {@code source_map_artifacts} row, but R2

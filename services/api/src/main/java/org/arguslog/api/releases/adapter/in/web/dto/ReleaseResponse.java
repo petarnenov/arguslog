@@ -8,9 +8,23 @@ public record ReleaseResponse(
     long id,
     @JsonProperty("projectId") long projectId,
     String version,
-    @JsonProperty("createdAt") Instant createdAt) {
+    @JsonProperty("createdAt") Instant createdAt,
+    @JsonProperty("releasedAt") Instant releasedAt,
+    @JsonProperty("gitSha") String gitSha,
+    @JsonProperty("gitRef") String gitRef,
+    @JsonProperty("deployStage") String deployStage,
+    String changelog) {
 
   public static ReleaseResponse from(Release r) {
-    return new ReleaseResponse(r.id(), r.projectId(), r.version(), r.createdAt());
+    return new ReleaseResponse(
+        r.id(),
+        r.projectId(),
+        r.version(),
+        r.createdAt(),
+        r.releasedAt(),
+        r.gitSha(),
+        r.gitRef(),
+        r.deployStage(),
+        r.changelog());
   }
 }

@@ -11,6 +11,7 @@ import org.arguslog.api.releases.application.ReleaseUseCase.DuplicateReleaseExce
 import org.arguslog.api.releases.application.ReleaseUseCase.InvalidReleaseException;
 import org.arguslog.api.releases.application.ReleaseUseCase.ReleaseNotFoundException;
 import org.arguslog.api.releases.domain.Release;
+import org.arguslog.api.releases.domain.ReleaseInput;
 import org.arguslog.api.security.AccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -47,7 +48,9 @@ public class ReleaseController {
   public ResponseEntity<ReleaseResponse> create(
       @PathVariable long projectId, @RequestBody ReleaseRequest body) {
     PatScopeGuard.require(PatScope.RELEASES_WRITE);
-    Release created = useCase.create(projectId, body == null ? null : body.version());
+    ReleaseInput input =
+        body == null ? ReleaseInput.versionOnly(null) : body.toInput();
+    Release created = useCase.create(projectId, input);
     return ResponseEntity.created(URI.create(String.valueOf(created.id())))
         .body(ReleaseResponse.from(created));
   }
@@ -64,7 +67,9 @@ public class ReleaseController {
   public ReleaseResponse update(
       @PathVariable long projectId, @PathVariable long id, @RequestBody ReleaseRequest body) {
     PatScopeGuard.require(PatScope.RELEASES_WRITE);
-    Release updated = useCase.update(projectId, id, body == null ? null : body.version());
+    ReleaseInput input =
+        body == null ? ReleaseInput.versionOnly(null) : body.toInput();
+    Release updated = useCase.update(projectId, id, input);
     return ReleaseResponse.from(updated);
   }
 

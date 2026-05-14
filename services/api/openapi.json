@@ -1679,6 +1679,22 @@
         "properties" : {
           "version" : {
             "type" : "string"
+          },
+          "releasedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "gitSha" : {
+            "type" : "string"
+          },
+          "gitRef" : {
+            "type" : "string"
+          },
+          "deployStage" : {
+            "type" : "string"
+          },
+          "changelog" : {
+            "type" : "string"
           }
         }
       },
@@ -1699,6 +1715,22 @@
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
+          },
+          "releasedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "gitSha" : {
+            "type" : "string"
+          },
+          "gitRef" : {
+            "type" : "string"
+          },
+          "deployStage" : {
+            "type" : "string"
+          },
+          "changelog" : {
+            "type" : "string"
           }
         }
       },

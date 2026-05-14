@@ -1,6 +1,8 @@
 package org.arguslog.api.releases.adapter.in.web;
 
 import static org.hamcrest.Matchers.startsWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,6 +28,7 @@ import org.arguslog.api.releases.application.ReleaseUseCase.DuplicateReleaseExce
 import org.arguslog.api.releases.application.ReleaseUseCase.InvalidReleaseException;
 import org.arguslog.api.releases.application.ReleaseUseCase.ReleaseNotFoundException;
 import org.arguslog.api.releases.domain.Release;
+import org.arguslog.api.releases.domain.ReleaseInput;
 import org.arguslog.api.testsupport.AbstractControllerTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -49,7 +52,7 @@ class ReleaseControllerTest extends AbstractControllerTest {
 
   @Test
   void postCreatesAndReturns201() throws Exception {
-    when(releaseUseCase.create(eq(101L), eq("1.2.3")))
+    when(releaseUseCase.create(eq(101L), argThat(i -> "1.2.3".equals(i.version()))))
         .thenReturn(new Release(7L, 101L, "1.2.3", Instant.parse("2026-05-05T12:00:00Z")));
 
     mvc.perform(
@@ -61,12 +64,51 @@ class ReleaseControllerTest extends AbstractControllerTest {
         .andExpect(jsonPath("$.id").value(7))
         .andExpect(jsonPath("$.version").value("1.2.3"));
 
-    verify(releaseUseCase).create(101L, "1.2.3");
+    verify(releaseUseCase).create(eq(101L), argThat(i -> "1.2.3".equals(i.version())));
+  }
+
+  @Test
+  void postWithFullMetadataForwardsAllFields() throws Exception {
+    when(releaseUseCase.create(eq(101L), any(ReleaseInput.class)))
+        .thenReturn(
+            new Release(
+                8L,
+                101L,
+                "1.3.0",
+                Instant.parse("2026-05-14T12:00:00Z"),
+                Instant.parse("2026-05-14T10:00:00Z"),
+                "abc1234",
+                "main",
+                "production",
+                "ship notes"));
+
+    mvc.perform(
+            post("/api/v1/projects/101/releases")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"version\":\"1.3.0\",\"releasedAt\":\"2026-05-14T10:00:00Z\","
+                        + "\"gitSha\":\"abc1234\",\"gitRef\":\"main\","
+                        + "\"deployStage\":\"production\",\"changelog\":\"ship notes\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.gitSha").value("abc1234"))
+        .andExpect(jsonPath("$.deployStage").value("production"))
+        .andExpect(jsonPath("$.changelog").value("ship notes"));
+
+    verify(releaseUseCase)
+        .create(
+            eq(101L),
+            argThat(
+                i ->
+                    "1.3.0".equals(i.version())
+                        && "abc1234".equals(i.gitSha())
+                        && "main".equals(i.gitRef())
+                        && "production".equals(i.deployStage())
+                        && "ship notes".equals(i.changelog())));
   }
 
   @Test
   void blankVersionReturnsProblemBadRequest() throws Exception {
-    when(releaseUseCase.create(eq(101L), eq("  ")))
+    when(releaseUseCase.create(eq(101L), argThat(i -> "  ".equals(i.version()))))
         .thenThrow(new InvalidReleaseException("version is required"));
 
     mvc.perform(
@@ -81,7 +123,7 @@ class ReleaseControllerTest extends AbstractControllerTest {
 
   @Test
   void duplicateVersionReturnsProblemConflict() throws Exception {
-    when(releaseUseCase.create(eq(101L), eq("1.2.3")))
+    when(releaseUseCase.create(eq(101L), argThat(i -> "1.2.3".equals(i.version()))))
         .thenThrow(new DuplicateReleaseException("release version already exists"));
 
     mvc.perform(
@@ -135,7 +177,7 @@ class ReleaseControllerTest extends AbstractControllerTest {
                 null,
                 Instant.parse("2026-05-05T12:00:00Z"),
                 EnumSet.of(PatScope.RELEASES_WRITE)));
-    when(releaseUseCase.create(eq(101L), eq("1.2.3")))
+    when(releaseUseCase.create(eq(101L), argThat(i -> "1.2.3".equals(i.version()))))
         .thenReturn(new Release(7L, 101L, "1.2.3", Instant.parse("2026-05-05T12:00:00Z")));
 
     mvc.perform(
@@ -159,7 +201,8 @@ class ReleaseControllerTest extends AbstractControllerTest {
 
   @Test
   void putUpdatesReleaseVersion() throws Exception {
-    when(releaseUseCase.update(eq(101L), eq(7L), eq("2.0.0")))
+    when(releaseUseCase.update(
+            eq(101L), eq(7L), argThat(i -> "2.0.0".equals(i.version()))))
         .thenReturn(new Release(7L, 101L, "2.0.0", Instant.parse("2026-05-05T12:00:00Z")));
 
     mvc.perform(
@@ -170,12 +213,13 @@ class ReleaseControllerTest extends AbstractControllerTest {
         .andExpect(jsonPath("$.id").value(7))
         .andExpect(jsonPath("$.version").value("2.0.0"));
 
-    verify(releaseUseCase).update(101L, 7L, "2.0.0");
+    verify(releaseUseCase)
+        .update(eq(101L), eq(7L), argThat(i -> "2.0.0".equals(i.version())));
   }
 
   @Test
   void putUnknownReleaseReturns404() throws Exception {
-    when(releaseUseCase.update(eq(101L), eq(9999L), eq("x")))
+    when(releaseUseCase.update(eq(101L), eq(9999L), argThat(i -> "x".equals(i.version()))))
         .thenThrow(new ReleaseNotFoundException("release 9999 does not exist in project 101"));
 
     mvc.perform(

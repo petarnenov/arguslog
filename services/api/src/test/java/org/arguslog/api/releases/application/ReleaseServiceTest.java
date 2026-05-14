@@ -2,6 +2,9 @@ package org.arguslog.api.releases.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -14,6 +17,7 @@ import org.arguslog.api.releases.application.ReleaseUseCase.InvalidReleaseExcept
 import org.arguslog.api.releases.application.ReleaseUseCase.ReleaseNotFoundException;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.domain.Release;
+import org.arguslog.api.releases.domain.ReleaseInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,19 +40,62 @@ class ReleaseServiceTest {
   @Test
   void createTrimsAndPersists() {
     Release stored = new Release(7L, 101L, "1.2.3", Instant.parse("2026-05-05T12:00:00Z"));
-    when(repository.create(101L, "1.2.3")).thenReturn(stored);
+    when(repository.create(eq(101L), argThat(i -> i != null && "1.2.3".equals(i.version()))))
+        .thenReturn(stored);
 
-    Release out = service.create(101L, "  1.2.3  ");
+    Release out = service.create(101L, ReleaseInput.versionOnly("  1.2.3  "));
 
     assertThat(out).isEqualTo(stored);
-    verify(repository).create(101L, "1.2.3");
+    verify(repository)
+        .create(eq(101L), argThat(i -> "1.2.3".equals(i.version()) && i.gitSha() == null));
+  }
+
+  @Test
+  void metadataFieldsAreTrimmedAndForwarded() {
+    Instant released = Instant.parse("2026-05-05T10:00:00Z");
+    Release stored = new Release(7L, 101L, "1.2.3", Instant.parse("2026-05-05T12:00:00Z"));
+    when(repository.create(eq(101L), any(ReleaseInput.class))).thenReturn(stored);
+
+    service.create(
+        101L,
+        new ReleaseInput(
+            "1.2.3", released, "  abc123  ", "  main  ", "  production  ", "ship notes"));
+
+    verify(repository)
+        .create(
+            eq(101L),
+            argThat(
+                i ->
+                    "abc123".equals(i.gitSha())
+                        && "main".equals(i.gitRef())
+                        && "production".equals(i.deployStage())
+                        && "ship notes".equals(i.changelog())
+                        && released.equals(i.releasedAt())));
+  }
+
+  @Test
+  void blankMetadataNormalizesToNull() {
+    Release stored = new Release(7L, 101L, "1.2.3", Instant.parse("2026-05-05T12:00:00Z"));
+    when(repository.create(eq(101L), any(ReleaseInput.class))).thenReturn(stored);
+
+    service.create(101L, new ReleaseInput("1.2.3", null, "  ", "", "   ", null));
+
+    verify(repository)
+        .create(
+            eq(101L),
+            argThat(
+                i ->
+                    i.gitSha() == null
+                        && i.gitRef() == null
+                        && i.deployStage() == null
+                        && i.changelog() == null));
   }
 
   @Test
   void blankOrNullVersionRejectedBeforeRepository() {
-    assertThatThrownBy(() -> service.create(101L, null))
+    assertThatThrownBy(() -> service.create(101L, ReleaseInput.versionOnly(null)))
         .isInstanceOf(InvalidReleaseException.class);
-    assertThatThrownBy(() -> service.create(101L, "   "))
+    assertThatThrownBy(() -> service.create(101L, ReleaseInput.versionOnly("   ")))
         .isInstanceOf(InvalidReleaseException.class);
     verifyNoInteractions(repository);
   }
@@ -56,17 +103,29 @@ class ReleaseServiceTest {
   @Test
   void overlongVersionRejected() {
     String tooLong = "v".repeat(ReleaseService.MAX_VERSION_LENGTH + 1);
-    assertThatThrownBy(() -> service.create(101L, tooLong))
+    assertThatThrownBy(() -> service.create(101L, ReleaseInput.versionOnly(tooLong)))
         .isInstanceOf(InvalidReleaseException.class)
         .hasMessageContaining(String.valueOf(ReleaseService.MAX_VERSION_LENGTH));
     verifyNoInteractions(repository);
   }
 
   @Test
-  void duplicateRowSurfacesAsDuplicateReleaseException() {
-    when(repository.create(101L, "1.2.3")).thenThrow(new DuplicateKeyException("uq violation"));
+  void overlongGitShaRejected() {
+    String tooLong = "a".repeat(ReleaseService.MAX_GIT_SHA_LENGTH + 1);
+    assertThatThrownBy(
+            () ->
+                service.create(101L, new ReleaseInput("1.2.3", null, tooLong, null, null, null)))
+        .isInstanceOf(InvalidReleaseException.class)
+        .hasMessageContaining("gitSha");
+    verifyNoInteractions(repository);
+  }
 
-    assertThatThrownBy(() -> service.create(101L, "1.2.3"))
+  @Test
+  void duplicateRowSurfacesAsDuplicateReleaseException() {
+    when(repository.create(eq(101L), any(ReleaseInput.class)))
+        .thenThrow(new DuplicateKeyException("uq violation"));
+
+    assertThatThrownBy(() -> service.create(101L, ReleaseInput.versionOnly("1.2.3")))
         .isInstanceOf(DuplicateReleaseException.class)
         .hasMessageContaining("1.2.3");
   }
@@ -91,17 +150,20 @@ class ReleaseServiceTest {
   @Test
   void updateTrimsAndPersists() {
     Release after = new Release(7L, 101L, "2.0.0", Instant.parse("2026-05-05T12:00:00Z"));
-    when(repository.updateVersion(101L, 7L, "2.0.0")).thenReturn(Optional.of(after));
+    when(repository.update(
+            eq(101L), eq(7L), argThat(i -> i != null && "2.0.0".equals(i.version()))))
+        .thenReturn(Optional.of(after));
 
-    Release out = service.update(101L, 7L, "  2.0.0  ");
+    Release out = service.update(101L, 7L, ReleaseInput.versionOnly("  2.0.0  "));
 
     assertThat(out).isEqualTo(after);
-    verify(repository).updateVersion(101L, 7L, "2.0.0");
+    verify(repository)
+        .update(eq(101L), eq(7L), argThat(i -> "2.0.0".equals(i.version())));
   }
 
   @Test
   void updateRejectsBlank() {
-    assertThatThrownBy(() -> service.update(101L, 7L, "  "))
+    assertThatThrownBy(() -> service.update(101L, 7L, ReleaseInput.versionOnly("  ")))
         .isInstanceOf(InvalidReleaseException.class);
     verifyNoInteractions(repository);
   }
@@ -109,23 +171,23 @@ class ReleaseServiceTest {
   @Test
   void updateRejectsTooLong() {
     String tooLong = "v".repeat(ReleaseService.MAX_VERSION_LENGTH + 1);
-    assertThatThrownBy(() -> service.update(101L, 7L, tooLong))
+    assertThatThrownBy(() -> service.update(101L, 7L, ReleaseInput.versionOnly(tooLong)))
         .isInstanceOf(InvalidReleaseException.class);
     verifyNoInteractions(repository);
   }
 
   @Test
   void updateThrowsNotFoundWhenRepoMisses() {
-    when(repository.updateVersion(101L, 99L, "x")).thenReturn(Optional.empty());
-    assertThatThrownBy(() -> service.update(101L, 99L, "x"))
+    when(repository.update(eq(101L), eq(99L), any(ReleaseInput.class))).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service.update(101L, 99L, ReleaseInput.versionOnly("x")))
         .isInstanceOf(ReleaseNotFoundException.class);
   }
 
   @Test
   void updateSurfacesDuplicateAsDomainException() {
-    when(repository.updateVersion(101L, 7L, "1.0.0"))
+    when(repository.update(eq(101L), eq(7L), any(ReleaseInput.class)))
         .thenThrow(new DuplicateKeyException("uq violation"));
-    assertThatThrownBy(() -> service.update(101L, 7L, "1.0.0"))
+    assertThatThrownBy(() -> service.update(101L, 7L, ReleaseInput.versionOnly("1.0.0")))
         .isInstanceOf(DuplicateReleaseException.class);
   }
 

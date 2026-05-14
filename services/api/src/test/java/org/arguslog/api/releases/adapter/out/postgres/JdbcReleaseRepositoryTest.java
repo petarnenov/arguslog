@@ -10,8 +10,10 @@ import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
+import java.time.Instant;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.domain.Release;
+import org.arguslog.api.releases.domain.ReleaseInput;
 import org.arguslog.api.security.OrgContext;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
@@ -57,8 +59,8 @@ class JdbcReleaseRepositoryTest {
     repository =
         new ReleaseRepository() {
           @Override
-          public Release create(long projectId, String version) {
-            return tx.execute(s -> raw.create(projectId, version));
+          public Release create(long projectId, ReleaseInput input) {
+            return tx.execute(s -> raw.create(projectId, input));
           }
 
           @Override
@@ -77,8 +79,8 @@ class JdbcReleaseRepositoryTest {
           }
 
           @Override
-          public Optional<Release> updateVersion(long projectId, long id, String newVersion) {
-            return tx.execute(s -> raw.updateVersion(projectId, id, newVersion));
+          public Optional<Release> update(long projectId, long id, ReleaseInput input) {
+            return tx.execute(s -> raw.update(projectId, id, input));
           }
 
           @Override
@@ -108,7 +110,7 @@ class JdbcReleaseRepositoryTest {
 
   @Test
   void createReturnsPersistedRowWithGeneratedFields() {
-    Release out = repository.create(101L, "1.0.0");
+    Release out = repository.create(101L, ReleaseInput.versionOnly("1.0.0"));
     assertThat(out.id()).isPositive();
     assertThat(out.projectId()).isEqualTo(101L);
     assertThat(out.version()).isEqualTo("1.0.0");
@@ -117,24 +119,24 @@ class JdbcReleaseRepositoryTest {
 
   @Test
   void duplicateProjectVersionTriggersDuplicateKey() {
-    repository.create(101L, "1.0.0");
-    assertThatThrownBy(() -> repository.create(101L, "1.0.0"))
+    repository.create(101L, ReleaseInput.versionOnly("1.0.0"));
+    assertThatThrownBy(() -> repository.create(101L, ReleaseInput.versionOnly("1.0.0")))
         .isInstanceOf(DuplicateKeyException.class);
   }
 
   @Test
   void sameVersionAcrossDifferentProjectsIsAllowed() {
-    repository.create(101L, "1.0.0");
+    repository.create(101L, ReleaseInput.versionOnly("1.0.0"));
     OrgContext.set(2L); // org 2 owns project 102
-    Release other = repository.create(102L, "1.0.0");
+    Release other = repository.create(102L, ReleaseInput.versionOnly("1.0.0"));
     assertThat(other.projectId()).isEqualTo(102L);
   }
 
   @Test
   void listOrdersByCreatedDescThenIdDesc() throws Exception {
-    Release first = repository.create(101L, "1.0.0");
+    Release first = repository.create(101L, ReleaseInput.versionOnly("1.0.0"));
     Thread.sleep(5);
-    Release second = repository.create(101L, "1.0.1");
+    Release second = repository.create(101L, ReleaseInput.versionOnly("1.0.1"));
 
     List<Release> page = repository.listForProject(101L);
     assertThat(page).extracting(Release::id).containsExactly(second.id(), first.id());
@@ -142,7 +144,7 @@ class JdbcReleaseRepositoryTest {
 
   @Test
   void findByIdRespectsProjectScope() {
-    Release inProject101 = repository.create(101L, "1.0.0");
+    Release inProject101 = repository.create(101L, ReleaseInput.versionOnly("1.0.0"));
 
     assertThat(repository.find(101L, inProject101.id())).isPresent();
     // Wrong project id (even within the same org) returns empty.
@@ -151,9 +153,70 @@ class JdbcReleaseRepositoryTest {
 
   @Test
   void findByVersionReturnsTheRow() {
-    Release created = repository.create(101L, "v2.0.0-rc1");
+    Release created = repository.create(101L, ReleaseInput.versionOnly("v2.0.0-rc1"));
     assertThat(repository.findByVersion(101L, "v2.0.0-rc1")).contains(created);
     assertThat(repository.findByVersion(101L, "missing")).isEmpty();
+  }
+
+  @Test
+  void metadataFieldsSurviveRoundtrip() {
+    Instant released = Instant.parse("2026-05-14T10:30:00Z");
+    Release created =
+        repository.create(
+            101L,
+            new ReleaseInput(
+                "1.5.0",
+                released,
+                "abc1234567890",
+                "main",
+                "production",
+                "## Notes\n- shipped widget\n"));
+
+    Release fetched = repository.find(101L, created.id()).orElseThrow();
+    assertThat(fetched.releasedAt()).isEqualTo(released);
+    assertThat(fetched.gitSha()).isEqualTo("abc1234567890");
+    assertThat(fetched.gitRef()).isEqualTo("main");
+    assertThat(fetched.deployStage()).isEqualTo("production");
+    assertThat(fetched.changelog()).contains("shipped widget");
+  }
+
+  @Test
+  void updatePersistsNewVersionAndMetadata() {
+    Release created =
+        repository.create(101L, ReleaseInput.versionOnly("upd-1.0.0"));
+    Optional<Release> updated =
+        repository.update(
+            101L,
+            created.id(),
+            new ReleaseInput(
+                "upd-1.0.1",
+                Instant.parse("2026-05-14T11:00:00Z"),
+                "def4567",
+                "release/v1",
+                "staging",
+                null));
+
+    assertThat(updated).isPresent();
+    assertThat(updated.get().version()).isEqualTo("upd-1.0.1");
+    assertThat(updated.get().gitSha()).isEqualTo("def4567");
+    assertThat(updated.get().deployStage()).isEqualTo("staging");
+    assertThat(updated.get().changelog()).isNull();
+  }
+
+  @Test
+  void updateOnMissingReleaseReturnsEmpty() {
+    Optional<Release> missing =
+        repository.update(101L, 9999L, ReleaseInput.versionOnly("nope"));
+    assertThat(missing).isEmpty();
+  }
+
+  @Test
+  void deleteRemovesTheRow() {
+    Release created = repository.create(101L, ReleaseInput.versionOnly("del-1.0.0"));
+    assertThat(repository.delete(101L, created.id())).isTrue();
+    assertThat(repository.find(101L, created.id())).isEmpty();
+    // Second delete is a no-op.
+    assertThat(repository.delete(101L, created.id())).isFalse();
   }
 
   // RLS-isolation cannot be exercised here: Testcontainers logs in as the table owner, who

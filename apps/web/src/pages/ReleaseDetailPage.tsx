@@ -99,11 +99,32 @@ export function ReleaseDetailPage() {
         <Group gap="sm" align="center">
           <Title order={3}>{release.version}</Title>
           <Badge variant="light">{t('releaseDetail.releaseBadge')}</Badge>
+          {release.deployStage && (
+            <Badge variant="filled" color="blue" data-testid="release-deploy-stage">
+              {release.deployStage}
+            </Badge>
+          )}
         </Group>
         <Text c="dimmed" size="sm">
           {t('releaseDetail.createdAt', { when: formatter.format(new Date(release.createdAt)) })}
         </Text>
       </Stack>
+
+      <ReleaseMetadataCard release={release} formatter={formatter} />
+
+      {release.changelog && (
+        <Card withBorder padding="md" data-testid="release-changelog">
+          <Stack gap="sm">
+            <Title order={5}>{t('releaseDetail.changelogTitle')}</Title>
+            <Text
+              size="sm"
+              style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--mantine-font-family-monospace)' }}
+            >
+              {release.changelog}
+            </Text>
+          </Stack>
+        </Card>
+      )}
 
       <Card withBorder padding="md">
         <Stack>
@@ -169,6 +190,68 @@ export function ReleaseDetailPage() {
 }
 
 // ── helpers / inner components ──────────────────────────────────────────────
+
+function ReleaseMetadataCard({
+  release,
+  formatter,
+}: {
+  release: import('../api/releases').Release;
+  formatter: Intl.DateTimeFormat;
+}) {
+  const { t } = useTranslation();
+  const rows: Array<[string, React.ReactNode]> = [];
+  if (release.releasedAt) {
+    rows.push([
+      t('releaseDetail.releasedAt'),
+      formatter.format(new Date(release.releasedAt)),
+    ]);
+  }
+  if (release.gitRef) rows.push([t('releaseDetail.gitRef'), <Code key="ref">{release.gitRef}</Code>]);
+  if (release.gitSha) {
+    const short = release.gitSha.length > 12 ? release.gitSha.slice(0, 12) : release.gitSha;
+    rows.push([
+      t('releaseDetail.gitSha'),
+      <Group gap={4} key="sha">
+        <Code style={{ fontSize: 12 }}>{short}{release.gitSha.length > 12 ? '…' : ''}</Code>
+        <CopyButton value={release.gitSha}>
+          {({ copied, copy }) => (
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              color={copied ? 'teal' : 'gray'}
+              onClick={copy}
+              aria-label="Copy git sha"
+            >
+              {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
+            </Button>
+          )}
+        </CopyButton>
+      </Group>,
+    ]);
+  }
+
+  if (rows.length === 0) return null;
+
+  return (
+    <Card withBorder padding="md" data-testid="release-metadata-card">
+      <Stack gap="xs">
+        <Title order={6}>{t('releaseDetail.metadataTitle')}</Title>
+        <Table withRowBorders={false} verticalSpacing="xs">
+          <Table.Tbody>
+            {rows.map(([label, value]) => (
+              <Table.Tr key={label}>
+                <Table.Td style={{ width: 180, color: 'var(--mantine-color-dimmed)' }}>
+                  {label}
+                </Table.Td>
+                <Table.Td>{value}</Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Stack>
+    </Card>
+  );
+}
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
