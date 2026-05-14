@@ -94,6 +94,11 @@ class JdbcIssueRepositoryTest {
               long projectId, long issueId, java.util.UUID assigneeUserId) {
             return tx.execute(s -> raw.updateAssignee(projectId, issueId, assigneeUserId));
           }
+
+          @Override
+          public List<Issue> listIntroducedInRelease(long projectId, long releaseId, int limit) {
+            return tx.execute(s -> raw.listIntroducedInRelease(projectId, releaseId, limit));
+          }
         };
   }
 
@@ -302,6 +307,79 @@ class JdbcIssueRepositoryTest {
     insertIssue(fingerprint, level, status, lastSeen, 101L);
   }
 
+  @Test
+  void listIntroducedInReleaseReturnsOnlyMatchingRows() {
+    insertIssueWithReleaseId(
+        "in-500-a",
+        "error",
+        "unresolved",
+        Instant.parse("2026-05-05T10:00:00Z"),
+        101L,
+        "A",
+        500L);
+    insertIssueWithReleaseId(
+        "in-500-b",
+        "error",
+        "unresolved",
+        Instant.parse("2026-05-05T12:00:00Z"),
+        101L,
+        "B",
+        500L);
+    insertIssueWithReleaseId(
+        "in-501",
+        "error",
+        "unresolved",
+        Instant.parse("2026-05-05T11:00:00Z"),
+        101L,
+        "C",
+        501L);
+    insertIssueWithReleaseId(
+        "no-release", "error", "unresolved", Instant.parse("2026-05-05T13:00:00Z"), 101L, "D", null);
+
+    List<Issue> in500 = repository.listIntroducedInRelease(101L, 500L, 50);
+    assertThat(in500).extracting(Issue::fingerprint).containsExactly("in-500-b", "in-500-a");
+    assertThat(in500)
+        .allSatisfy(i -> assertThat(i.firstSeenReleaseId()).isEqualTo(500L))
+        .allSatisfy(i -> assertThat(i.firstSeenReleaseVersion()).isEqualTo("v1.0.0"));
+
+    List<Issue> in501 = repository.listIntroducedInRelease(101L, 501L, 50);
+    assertThat(in501).extracting(Issue::fingerprint).containsExactly("in-501");
+
+    List<Issue> empty = repository.listIntroducedInRelease(101L, 9999L, 50);
+    assertThat(empty).isEmpty();
+  }
+
+  @Test
+  void listIntroducedInReleaseScopesByProjectId() {
+    insertIssueWithReleaseId(
+        "in-500-acme",
+        "error",
+        "unresolved",
+        Instant.parse("2026-05-05T10:00:00Z"),
+        101L,
+        "A",
+        500L);
+    // Same release_id (500) but a different project — should NOT come back when querying
+    // through project 102. Defence-in-depth on top of RLS.
+    OrgContext.set(2L);
+    try {
+      insertIssueWithReleaseId(
+          "in-500-other",
+          "error",
+          "unresolved",
+          Instant.parse("2026-05-05T11:00:00Z"),
+          102L,
+          "B",
+          500L);
+    } finally {
+      OrgContext.set(1L);
+    }
+
+    assertThat(repository.listIntroducedInRelease(101L, 500L, 50))
+        .extracting(Issue::fingerprint)
+        .containsExactly("in-500-acme");
+  }
+
   private void insertIssue(
       String fingerprint, String level, String status, Instant lastSeen, long projectId) {
     insertIssue(fingerprint, level, status, lastSeen, projectId, "Title for " + fingerprint);
@@ -314,11 +392,23 @@ class JdbcIssueRepositoryTest {
       Instant lastSeen,
       long projectId,
       String title) {
+    insertIssueWithReleaseId(fingerprint, level, status, lastSeen, projectId, title, null);
+  }
+
+  private void insertIssueWithReleaseId(
+      String fingerprint,
+      String level,
+      String status,
+      Instant lastSeen,
+      long projectId,
+      String title,
+      Long releaseId) {
     String sql =
         """
         INSERT INTO issues (project_id, environment_id, fingerprint, status, level, title,
-                            culprit, first_seen_at, last_seen_at, occurrence_count)
-             VALUES (?, NULL, ?, ?::issue_status, ?::event_level, ?, NULL, ?, ?, 1)
+                            culprit, first_seen_at, last_seen_at, occurrence_count,
+                            first_seen_release_id)
+             VALUES (?, NULL, ?, ?::issue_status, ?::event_level, ?, NULL, ?, ?, 1, ?)
         """;
     try (Connection conn = dataSource.getConnection();
         PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -329,6 +419,11 @@ class JdbcIssueRepositoryTest {
       stmt.setString(5, title);
       stmt.setTimestamp(6, java.sql.Timestamp.from(lastSeen));
       stmt.setTimestamp(7, java.sql.Timestamp.from(lastSeen));
+      if (releaseId == null) {
+        stmt.setNull(8, java.sql.Types.BIGINT);
+      } else {
+        stmt.setLong(8, releaseId);
+      }
       stmt.execute();
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -381,6 +476,13 @@ class JdbcIssueRepositoryTest {
       exec(
           conn,
           "INSERT INTO projects (id, org_id, slug, name, platform) VALUES (102, 2, 'web', 'Web', 'javascript')");
+      // Two releases for the introduced-in-release test below.
+      exec(
+          conn,
+          "INSERT INTO releases (id, project_id, version) VALUES (500, 101, 'v1.0.0')");
+      exec(
+          conn,
+          "INSERT INTO releases (id, project_id, version) VALUES (501, 101, 'v1.0.1')");
     }
   }
 

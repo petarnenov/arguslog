@@ -2,6 +2,8 @@ package org.arguslog.api.releases.adapter.in.web;
 
 import java.net.URI;
 import java.util.List;
+import org.arguslog.api.adapter.in.web.dto.IssueResponse;
+import org.arguslog.api.application.IssuesByReleaseUseCase;
 import org.arguslog.api.auth.PatScopeGuard;
 import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.releases.adapter.in.web.dto.ReleaseRequest;
@@ -34,9 +36,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReleaseController {
 
   private final ReleaseUseCase useCase;
+  private final IssuesByReleaseUseCase issuesByRelease;
 
-  public ReleaseController(ReleaseUseCase useCase) {
+  public ReleaseController(ReleaseUseCase useCase, IssuesByReleaseUseCase issuesByRelease) {
     this.useCase = useCase;
+    this.issuesByRelease = issuesByRelease;
   }
 
   @GetMapping
@@ -80,6 +84,28 @@ public class ReleaseController {
       throw AccessException.notFound(id);
     }
     return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Issues whose `first_seen_release_id` equals this release — the regression-watchlist surface.
+   * Empty list when nothing new shipped under this release. 404 when the release id doesn't
+   * exist under the project.
+   */
+  @GetMapping("/{id}/issues")
+  public List<IssueResponse> issuesIntroducedInRelease(
+      @PathVariable long projectId, @PathVariable long id) {
+    return issuesByRelease.list(projectId, id).stream().map(IssueResponse::from).toList();
+  }
+
+  @ExceptionHandler(IssuesByReleaseUseCase.ReleaseNotFoundException.class)
+  ResponseEntity<ProblemDetail> handleIssuesByReleaseMissing(
+      IssuesByReleaseUseCase.ReleaseNotFoundException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
+    body.setTitle("Release not found");
+    body.setType(URI.create("https://arguslog.org/problems/release-not-found"));
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
   }
 
   @ExceptionHandler(InvalidReleaseException.class)

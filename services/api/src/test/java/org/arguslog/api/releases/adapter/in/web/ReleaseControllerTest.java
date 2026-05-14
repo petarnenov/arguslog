@@ -26,6 +26,8 @@ import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
 import org.arguslog.api.releases.application.ReleaseUseCase.DuplicateReleaseException;
 import org.arguslog.api.releases.application.ReleaseUseCase.InvalidReleaseException;
+import org.arguslog.api.application.IssuesByReleaseUseCase;
+import org.arguslog.api.domain.Issue;
 import org.arguslog.api.releases.application.ReleaseUseCase.ReleaseNotFoundException;
 import org.arguslog.api.releases.domain.Release;
 import org.arguslog.api.releases.domain.ReleaseInput;
@@ -281,5 +283,43 @@ class ReleaseControllerTest extends AbstractControllerTest {
 
     mvc.perform(delete("/api/v1/projects/101/releases/7").with(authentication(patWithoutScope)))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void issuesEndpointReturnsTheUseCaseList() throws Exception {
+    Issue issue =
+        new Issue(
+            42L,
+            101L,
+            "fp",
+            Issue.Status.UNRESOLVED,
+            Issue.Level.ERROR,
+            "boom",
+            null,
+            Instant.parse("2026-05-05T10:00:00Z"),
+            Instant.parse("2026-05-05T12:00:00Z"),
+            3L,
+            null,
+            7L,
+            "v1.0.0");
+    when(issuesByReleaseUseCase.list(101L, 7L)).thenReturn(java.util.List.of(issue));
+
+    mvc.perform(get("/api/v1/projects/101/releases/7/issues"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(42))
+        .andExpect(jsonPath("$[0].firstSeenReleaseVersion").value("v1.0.0"))
+        .andExpect(jsonPath("$[0].occurrenceCount").value(3));
+  }
+
+  @Test
+  void issuesEndpointReturns404WhenReleaseUnknown() throws Exception {
+    when(issuesByReleaseUseCase.list(101L, 9999L))
+        .thenThrow(
+            new IssuesByReleaseUseCase.ReleaseNotFoundException(
+                "release 9999 not found in project 101"));
+
+    mvc.perform(get("/api/v1/projects/101/releases/9999/issues"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.title").value("Release not found"));
   }
 }

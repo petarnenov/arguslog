@@ -20,6 +20,7 @@ import {
   Tooltip,
 } from '@mantine/core';
 import {
+  IconAlertTriangle,
   IconCheck,
   IconChevronRight,
   IconCloudUpload,
@@ -33,7 +34,8 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
-import { queryKeys, useRelease, useSourceMaps } from '../api/queries';
+import { queryKeys, useRelease, useReleaseIssues, useSourceMaps } from '../api/queries';
+import type { Issue } from '../api/issues';
 import {
   createSourceMapUpload,
   deleteSourceMap,
@@ -54,6 +56,7 @@ export function ReleaseDetailPage() {
 
   const releaseQ = useRelease(projectId, releaseId, { enabled: valid });
   const sourceMapsQ = useSourceMaps(projectId, releaseId, { enabled: valid });
+  const releaseIssuesQ = useReleaseIssues(projectId, releaseId, { enabled: valid });
 
   const [uploadOpen, setUploadOpen] = useState(false);
 
@@ -128,6 +131,14 @@ export function ReleaseDetailPage() {
         </Card>
       )}
 
+      <ReleaseIssuesCard
+        orgSlug={orgSlug}
+        projectId={projectId}
+        issues={releaseIssuesQ.data ?? []}
+        loading={releaseIssuesQ.isLoading}
+        formatter={formatter}
+      />
+
       <Card withBorder padding="md">
         <Stack>
           <Group justify="space-between" align="center">
@@ -199,6 +210,106 @@ export function ReleaseDetailPage() {
 }
 
 // ── helpers / inner components ──────────────────────────────────────────────
+
+function ReleaseIssuesCard({
+  orgSlug,
+  projectId,
+  issues,
+  loading,
+  formatter,
+}: {
+  orgSlug: string | undefined;
+  projectId: number;
+  issues: Issue[];
+  loading: boolean;
+  formatter: Intl.DateTimeFormat;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <Card withBorder padding="md" data-testid="release-issues-card">
+      <Stack>
+        <Group gap="sm">
+          <IconAlertTriangle size={18} />
+          <Title order={5}>{t('releaseDetail.issuesTitle')}</Title>
+          <Badge variant="filled" color={issues.length > 0 ? 'red' : 'gray'}>
+            {issues.length}
+          </Badge>
+        </Group>
+        <Text size="xs" c="dimmed" maw={620}>
+          {t('releaseDetail.issuesHint')}
+        </Text>
+        {loading ? (
+          <Center py="md">
+            <Loader size="sm" />
+          </Center>
+        ) : issues.length === 0 ? (
+          <Alert variant="light" color="green">
+            {t('releaseDetail.issuesEmpty')}
+          </Alert>
+        ) : (
+          <Table highlightOnHover striped data-testid="release-issues-table">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>{t('releaseDetail.colTitle')}</Table.Th>
+                <Table.Th style={{ width: 110 }}>{t('releaseDetail.colLevel')}</Table.Th>
+                <Table.Th style={{ width: 90 }}>{t('releaseDetail.colCount')}</Table.Th>
+                <Table.Th style={{ width: 180 }}>{t('releaseDetail.colFirstSeen')}</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {issues.map((iss) => (
+                <Table.Tr key={iss.id} data-testid={`release-issue-row-${iss.id}`}>
+                  <Table.Td>
+                    <Link
+                      to={`/orgs/${orgSlug}/projects/${projectId}/issues/${iss.id}`}
+                      style={{ textDecoration: 'none', color: 'inherit' }}
+                    >
+                      <Text fw={500}>{iss.title}</Text>
+                      {iss.culprit && (
+                        <Text size="xs" c="dimmed">
+                          {iss.culprit}
+                        </Text>
+                      )}
+                    </Link>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge variant="light" color={levelColor(iss.level)}>
+                      {iss.level}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>{iss.occurrenceCount.toLocaleString()}</Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c="dimmed">
+                      {formatter.format(new Date(iss.firstSeenAt))}
+                    </Text>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        )}
+      </Stack>
+    </Card>
+  );
+}
+
+function levelColor(level: Issue['level']): string {
+  switch (level) {
+    case 'fatal':
+      return 'red';
+    case 'error':
+      return 'orange';
+    case 'warning':
+      return 'yellow';
+    case 'info':
+      return 'blue';
+    case 'debug':
+      return 'gray';
+    default:
+      return 'gray';
+  }
+}
 
 function ReleaseMetadataCard({
   release,

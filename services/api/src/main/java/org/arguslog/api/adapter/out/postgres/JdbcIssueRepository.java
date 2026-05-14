@@ -190,6 +190,28 @@ public class JdbcIssueRepository implements IssueRepository {
     return findByProjectAndId(projectId, issueId);
   }
 
+  // V35's partial index `idx_issues_first_seen_release ON issues(first_seen_release_id, project_id)
+  // WHERE first_seen_release_id IS NOT NULL` covers this exactly. Sort is (first_seen_at desc, id
+  // desc) for stable newest-first; project_id is in the WHERE to keep multi-tenant safe (RLS would
+  // catch any leak, but defense-in-depth).
+  private static final String ISSUES_INTRODUCED_IN_RELEASE_SQL =
+      """
+      SELECT i.id, i.project_id, i.fingerprint, i.status::text, i.level::text, i.title, i.culprit,
+             i.first_seen_at, i.last_seen_at, i.occurrence_count, i.assignee_user_id,
+             i.first_seen_release_id, r.version AS first_seen_release_version
+        FROM issues i
+        LEFT JOIN releases r ON r.id = i.first_seen_release_id
+       WHERE i.project_id = ? AND i.first_seen_release_id = ?
+       ORDER BY i.first_seen_at DESC, i.id DESC
+       LIMIT ?
+      """;
+
+  @Override
+  public List<Issue> listIntroducedInRelease(long projectId, long releaseId, int limit) {
+    pinOrgContextForRls();
+    return jdbc.query(ISSUES_INTRODUCED_IN_RELEASE_SQL, ROW_MAPPER, projectId, releaseId, limit);
+  }
+
   /**
    * Sets {@code arguslog.org_id} for the current transaction so RLS policies on issues / projects
    * filter to the request's tenant. The {@code true} third arg makes this {@code SET LOCAL}; the

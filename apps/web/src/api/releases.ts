@@ -62,3 +62,17 @@ export function updateRelease(
 export function deleteRelease(projectId: number, id: number): Promise<void> {
   return apiFetch<void>(`/api/v1/projects/${projectId}/releases/${id}`, { method: 'DELETE' });
 }
+
+/**
+ * Issues whose `first_seen_release_id` equals the given release — the regression-watchlist that
+ * the release detail page renders below the source-maps card. Backend caps the list at 200 rows.
+ * Shape mirrors the issues list endpoint so existing Issue rendering / row links work unchanged.
+ */
+export function listIssuesIntroducedInRelease(
+  projectId: number,
+  releaseId: number,
+): Promise<import('./issues').Issue[]> {
+  return apiFetch<import('./issues').Issue[]>(
+    `/api/v1/projects/${projectId}/releases/${releaseId}/issues`,
+  );
+}

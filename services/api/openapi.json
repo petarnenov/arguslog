@@ -1277,6 +1277,44 @@
         }
       }
     },
+    "/api/v1/projects/{projectId}/releases/{id}/issues" : {
+      "get" : {
+        "tags" : [ "release-controller" ],
+        "operationId" : "issuesIntroducedInRelease",
+        "parameters" : [ {
+          "name" : "projectId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/IssueResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{projectId}/issues" : {
       "get" : {
         "tags" : [ "issue-controller" ],
