@@ -1,0 +1,124 @@
+<!doctype html>
+<!--
+  Source page for the Open Graph / Twitter card image at /og-card.png.
+  Rendered headless at 1200×630, exported as PNG, and committed to
+  apps/landing/public/og-card.png. The HTML stays in /public so future
+  edits stay reproducible — pin Chrome, regenerate, commit.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1200px; height: 630px; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        background:
+          radial-gradient(ellipse at 80% 20%, rgba(43, 138, 62, 0.20), transparent 55%),
+          radial-gradient(ellipse at 20% 95%, rgba(34, 139, 230, 0.16), transparent 50%),
+          linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+        color: #e6edf3;
+        position: relative;
+        overflow: hidden;
+      }
+      .grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+      }
+      .frame {
+        position: relative;
+        padding: 72px 80px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .top { display: flex; align-items: center; gap: 16px; }
+      .mark {
+        width: 56px; height: 56px;
+        border-radius: 12px;
+        background: rgba(43, 138, 62, 0.18);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .brand {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #fff;
+      }
+      .pill {
+        margin-left: auto;
+        padding: 8px 16px;
+        font-size: 14px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: #2b8a3e;
+        background: rgba(43, 138, 62, 0.14);
+        border: 1px solid rgba(43, 138, 62, 0.34);
+        border-radius: 999px;
+      }
+      .body { max-width: 980px; }
+      h1 {
+        font-size: 88px;
+        line-height: 1.04;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: #fff;
+        margin-bottom: 28px;
+      }
+      h1 .accent { color: #51cf66; }
+      .sub {
+        font-size: 30px;
+        line-height: 1.35;
+        color: #adb5bd;
+        max-width: 920px;
+        font-weight: 400;
+      }
+      .bottom {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        color: #6e7681;
+        font-size: 18px;
+      }
+      .url { font-weight: 600; color: #e6edf3; letter-spacing: 0.02em; }
+      .repl {
+        font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+        font-size: 16px;
+        color: #8b949e;
+      }
+      .repl .verb { color: #51cf66; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="grid"></div>
+    <div class="frame">
+      <div class="top">
+        <div class="mark">
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" stroke="#51cf66" stroke-width="3">
+            <circle cx="32" cy="32" r="14" />
+            <circle cx="32" cy="32" r="5" fill="#51cf66" />
+            <path d="M6 32c10-14 42-14 52 0" stroke-linecap="round" />
+            <path d="M6 32c10 14 42 14 52 0" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="brand">Arguslog</div>
+        <div class="pill">MCP-first · Open source</div>
+      </div>
+      <div class="body">
+        <h1>Less Dashboard.<br><span class="accent">More Dialogue.</span></h1>
+        <div class="sub">Error tracking, designed for agents — every issue, event, and breadcrumb one MCP tool-call away.</div>
+      </div>
+      <div class="bottom">
+        <div class="url">arguslog.org</div>
+        <div class="repl"><span class="verb">Read.</span> Eval. Triage. Loop.</div>
+      </div>
+    </div>
+  </body>
+</html>
