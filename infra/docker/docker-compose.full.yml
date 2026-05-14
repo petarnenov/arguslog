@@ -139,10 +139,14 @@ services:
     ports:
       - '${API_PORT:-8081}:8081'
     healthcheck:
+      # Spring Boot + Flyway + JPA cold-start on a fresh container takes ~2-3 min on a slow
+      # runner; the 60-retry window (10 min total) is wide enough for GitHub Actions while
+      # local dev usually goes green inside 1 min anyway.
       test: ['CMD-SHELL', "wget -q -O- http://localhost:8081/actuator/health/readiness | grep -q UP"]
       interval: 10s
       timeout: 5s
-      retries: 30
+      retries: 60
+      start_period: 60s
 
   ingest:
     build:

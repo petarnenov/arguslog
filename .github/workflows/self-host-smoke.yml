@@ -68,9 +68,26 @@ jobs:
             minio-bucket-init
 
       - name: Bring up the JVM + web + landing + mcp services
+        # `--wait-timeout 600` matches the api healthcheck window (60 retries × 10s) so a slow
+        # Spring Boot cold-start on the runner doesn't trip the wait before Flyway / JPA settle.
         run: |
-          docker compose -f infra/docker/docker-compose.full.yml up -d --wait \
+          docker compose -f infra/docker/docker-compose.full.yml up -d --wait --wait-timeout 600 \
             api ingest worker web landing mcp
+
+      - name: Dump api logs if it didn't go healthy
+        # Only runs when the previous step failed — captures a usable diagnostic before tear-down
+        # nukes the container.
+        if: failure()
+        run: |
+          echo "::group::api logs"
+          docker compose -f infra/docker/docker-compose.full.yml logs --tail=200 api || true
+          echo "::endgroup::"
+          echo "::group::worker logs"
+          docker compose -f infra/docker/docker-compose.full.yml logs --tail=100 worker || true
+          echo "::endgroup::"
+          echo "::group::ingest logs"
+          docker compose -f infra/docker/docker-compose.full.yml logs --tail=100 ingest || true
+          echo "::endgroup::"
 
       - name: Verify every health endpoint returns UP
         run: |
