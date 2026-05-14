@@ -17,6 +17,9 @@ RUN corepack enable && corepack prepare pnpm@9.10.0 --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .npmrc* ./
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
+# sdk-core is a runtime dep of mcp-server (buildSyntheticEvent for the send_test_event tool).
+# Manifest first so the install layer stays cacheable across source-only changes.
+COPY packages/sdk-core/package.json ./packages/sdk-core/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
 
 RUN pnpm install --frozen-lockfile --filter @arguslog/mcp-server...
@@ -27,10 +30,14 @@ RUN pnpm install --frozen-lockfile --filter @arguslog/mcp-server...
 # manifest, the actual config files need to be on disk for tsc.
 COPY packages/tsconfig ./packages/tsconfig
 COPY packages/eslint-config ./packages/eslint-config
+COPY packages/sdk-core ./packages/sdk-core
 COPY packages/mcp-server ./packages/mcp-server
 COPY services/api/openapi.json ./services/api/openapi.json
 
-RUN pnpm --filter @arguslog/mcp-server build
+# sdk-core has to compile BEFORE mcp-server so the resolved `@arguslog/sdk-core/dist/...`
+# imports exist on disk when tsc walks mcp-server's source.
+RUN pnpm --filter @arguslog/sdk-core build && \
+    pnpm --filter @arguslog/mcp-server build
 
 # ── Runtime ───────────────────────────────────────────────────────────────
 FROM node:22-alpine AS runtime
@@ -41,6 +48,10 @@ RUN corepack enable && corepack prepare pnpm@9.10.0 --activate
 COPY --from=builder /workspace/package.json /workspace/pnpm-lock.yaml /workspace/pnpm-workspace.yaml ./
 COPY --from=builder /workspace/packages/mcp-server/package.json ./packages/mcp-server/
 COPY --from=builder /workspace/packages/mcp-server/dist ./packages/mcp-server/dist
+# sdk-core is a runtime workspace dep — pnpm symlinks it; the dist needs to be on disk for
+# the symlink to point at real code.
+COPY --from=builder /workspace/packages/sdk-core/package.json ./packages/sdk-core/
+COPY --from=builder /workspace/packages/sdk-core/dist ./packages/sdk-core/dist
 
 # Production deps only — drops express types, vitest, eslint, tsconfig packages.
 RUN pnpm install --prod --frozen-lockfile --filter @arguslog/mcp-server... && \
