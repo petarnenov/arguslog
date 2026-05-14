@@ -67,6 +67,75 @@ describe('releases new', () => {
     });
   });
 
+  it('pre-fills changelog from git log when --changelog-from-git is set and --changelog is not', async () => {
+    // Build a fixture repo with two commits past a tag so gitLogBetween has something to emit.
+    const { mkdtempSync, rmSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { execSync } = await import('node:child_process');
+
+    const repo = mkdtempSync(join(tmpdir(), 'arguslog-cli-changelog-'));
+    const prevCwd = process.cwd();
+    try {
+      execSync('git init -q -b main', { cwd: repo });
+      execSync('git config user.email "ci@arguslog.test"', { cwd: repo });
+      execSync('git config user.name "Arguslog CI"', { cwd: repo });
+      const { writeFileSync } = await import('node:fs');
+      writeFileSync(join(repo, 'a.txt'), 'a\n');
+      execSync('git add a.txt && git commit -q -m "initial"', { cwd: repo });
+      execSync('git tag v1.0.0', { cwd: repo });
+      writeFileSync(join(repo, 'b.txt'), 'b\n');
+      execSync('git add b.txt && git commit -q -m "ship the widget"', { cwd: repo });
+      process.chdir(repo);
+
+      const captured: { init?: RequestInit }[] = [];
+      globalThis.fetch = vi.fn(async (_input, init) => {
+        captured.push({ init });
+        return jsonResponse(fullRelease(), 201);
+      }) as typeof fetch;
+
+      const result = await run(
+        ['releases', 'new', '1.2.3', '--project', '101', '--changelog-from-git', 'v1.0.0'],
+        { loadConfig: () => FAKE_CONFIG },
+      );
+
+      expect(result.exitCode).toBe(0);
+      const body = JSON.parse(captured[0]!.init!.body as string);
+      expect(body.changelog).toContain('ship the widget');
+      expect(body.changelog.startsWith('- ')).toBe(true);
+    } finally {
+      process.chdir(prevCwd);
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it('--changelog wins over --changelog-from-git when both are present', async () => {
+    const captured: { init?: RequestInit }[] = [];
+    globalThis.fetch = vi.fn(async (_input, init) => {
+      captured.push({ init });
+      return jsonResponse(fullRelease(), 201);
+    }) as typeof fetch;
+
+    const result = await run(
+      [
+        'releases',
+        'new',
+        '1.2.3',
+        '--project',
+        '101',
+        '--changelog',
+        'explicit notes',
+        '--changelog-from-git',
+        'v0.0.0', // would-be derive source; explicit flag wins regardless
+      ],
+      { loadConfig: () => FAKE_CONFIG },
+    );
+
+    expect(result.exitCode).toBe(0);
+    const body = JSON.parse(captured[0]!.init!.body as string);
+    expect(body.changelog).toBe('explicit notes');
+  });
+
   it('forwards optional metadata flags into the POST body', async () => {
     const captured: { init?: RequestInit }[] = [];
     globalThis.fetch = vi.fn(async (_input, init) => {

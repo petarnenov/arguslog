@@ -8,7 +8,7 @@ import {
   releasesUpdate,
 } from './commands/releases.js';
 import { sourcemapsUpload } from './commands/sourcemaps.js';
-import { readGitContext } from './lib/git.js';
+import { gitLogBetween, readGitContext } from './lib/git.js';
 import { type CliConfig, CliConfigError, loadConfig } from './config.js';
 import { parseFlags } from './flags.js';
 import { ApiError } from './http.js';
@@ -37,9 +37,13 @@ Commands:
                                   [--released-at <iso>] [--git-sha <sha>]
                                   [--git-ref <ref>] [--deploy-stage <stage>]
                                   [--changelog <text>] [--from-git]
+                                  [--changelog-from-git <prev-ref>]
                                   Create a new release tag with optional metadata.
                                   --from-git auto-fills git-sha + git-ref from
                                   the working tree (explicit flags win).
+                                  --changelog-from-git <ref> runs
+                                  git log <ref>..HEAD and pre-fills
+                                  changelog with one bullet per commit.
   releases list --project <id>    List releases for a project (newest first).
   releases get <releaseId> --project <id>
                                   Fetch full metadata for one release.
@@ -159,6 +163,16 @@ async function runReleasesNew(
     if (gitRef === undefined && ctx.ref !== null) gitRef = ctx.ref;
   }
 
+  // --changelog-from-git <prev-ref> runs `git log prev..HEAD` and uses the bullet list as the
+  // changelog. Explicit --changelog still wins so the operator can override the auto-derive
+  // (e.g. paste a human-written summary even when their CI usually populates from git).
+  let changelog = optional(flags.changelog);
+  const changelogFromRef = optional(flags['changelog-from-git']);
+  if (changelog === undefined && changelogFromRef !== undefined) {
+    const derived = gitLogBetween(changelogFromRef);
+    if (derived !== null) changelog = derived;
+  }
+
   return withConfig(options, async (config) => {
     const release = await releasesNew(
       {
@@ -168,7 +182,7 @@ async function runReleasesNew(
         gitSha,
         gitRef,
         deployStage: optional(flags['deploy-stage']),
-        changelog: optional(flags.changelog),
+        changelog,
       },
       config,
     );
