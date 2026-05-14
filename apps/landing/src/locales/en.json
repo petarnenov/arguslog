@@ -8,15 +8,15 @@
     "github": "GitHub"
   },
   "hero": {
-    "tagline": "Error tracking for modern teams — and crypto-native ones",
-    "title": "Catch errors before your customers do.",
-    "subtitle": "Real-time issue tracking with source-mapped stack traces, deep auto-breadcrumb timelines, and smart alerts. First-class SDKs across the JS, JVM, and Python ecosystems plus a Web3 add-on that decodes wallet, chain, and contract errors from viem, ethers, Solana, and Anchor — same wire format end-to-end so a polyglot stack groups into one issue.",
+    "tagline": "MCP-first · open source · EVM + Solana aware",
+    "title": "Less Dashboard, More Dialogue: Error Tracking, Designed for Agents",
+    "subtitle": "Read. Eval. Triage. Loop. — every issue, event, and breadcrumb is one MCP tool-call away. Arguslog runs as your agent's debugging surface, so triage happens in the same chat where you're already coding — no tab-switching, no filter dropdowns. Self-hostable and multi-tenant, with first-class SDKs across JS, JVM, Python, and a Web3 add-on for viem / ethers / Solana / Anchor.",
     "ctaPrimary": "Get started free",
     "ctaSecondary": "View on GitHub"
   },
   "features": {
     "heading": "Everything you need, nothing you don't.",
-    "subheading": "Built on the same multi-tenant stack we run in production. Same DSN format and SDK shape as Sentry — drop-in for most existing setups.",
+    "subheading": "Built on the same multi-tenant stack we run in production. The wire format, DSN scheme, and SDK shape are all Arguslog-native — no vendor lock-in to inherit, no bridge layer to maintain.",
     "items": {
       "ingest": {
         "title": "Real-time ingest",
@@ -59,8 +59,8 @@
     }
   },
   "mcp": {
-    "heading": "MCP server — Arguslog as tools for any LLM agent",
-    "subheading": "Wire @arguslog/mcp-server into Claude Desktop, Claude Code, Cursor, or Continue and your AI agent gets authenticated, full-fidelity access to issues, projects, alerts, releases, billing, and the platform admin surface — all gated by Personal Access Token scopes.",
+    "heading": "MCP-first by design",
+    "subheading": "\"Designed for agents\" isn't a label — the MCP surface is the product, not a side-channel. Wire @arguslog/mcp-server into Claude Desktop, Claude Code, Cursor, or Continue and your agent gets authenticated, full-fidelity access to issues, projects, alerts, releases, billing, and the platform admin surface, all gated by Personal Access Token scopes.",
     "bullet1Title": "Install in 30 seconds",
     "bullet1Body": "Generate a Personal Access Token from the dashboard, drop a 4-line config into your MCP client, and your agent can ask questions like \"what broke today?\" or \"create a Pro grant for the demo org for 3 months\". Stdio transport — no servers to host.",
     "bullet2Title": "Full API coverage out of the box",
@@ -148,7 +148,7 @@
     "annualNote": "Crypto and card both. Stablecoin checkout settles in seconds via NOWPayments; cards via Lemon Squeezy (Merchant of Record — invoices and EU VAT handled for you). Switch tiers any time from the billing page."
   },
   "footer": {
-    "tagline": "Open-source error tracking, hosted on Railway. EVM + Solana aware.",
+    "tagline": "Less dashboard. More dialogue.",
     "links": {
       "app": "Dashboard",
       "github": "GitHub",

@@ -35,7 +35,7 @@ describe('LandingPage', () => {
     renderLanding();
 
     // Hero copy.
-    expect(screen.getByText(/Catch errors before your customers do/i)).toBeInTheDocument();
+    expect(screen.getByText(/Less Dashboard, More Dialogue/i)).toBeInTheDocument();
     // Primary CTA + secondary GitHub button — both must be linkable.
     const ctaPrimary = screen.getAllByRole('link', { name: /Get started free/i })[0];
     expect(ctaPrimary).toHaveAttribute('href', expect.stringContaining('/onboarding'));

@@ -1,8 +1,16 @@
 # Arguslog
 
-Open-source, self-hostable, multi-tenant error tracking platform — Sentry-like, but
-yours. Run it on your own infrastructure, or use the hosted instance at
+**Less dashboard, more dialogue — error tracking, designed for agents.**
+
+Open-source, self-hostable, multi-tenant error tracking platform with an
+MCP-first surface: triage happens in the same chat where you're already
+coding, not behind three filter dropdowns. Wire format, DSN scheme, and
+SDK shape are all Arguslog-native — no vendor compatibility layer to
+inherit. Run it on your own infrastructure, or use the hosted instance at
 [arguslog.org](https://arguslog.org) for free.
+
+Read. Eval. Triage. Loop. — every issue, event, and breadcrumb is one MCP
+tool-call away through [`@arguslog/mcp-server`](packages/mcp-server).
 
 ## What it does
 
