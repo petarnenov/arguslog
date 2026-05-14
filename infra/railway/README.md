@@ -7,16 +7,20 @@ image built by their per-service Dockerfile.
 
 ## Services
 
-| Railway service     | Source path          | Builder    | Health check                    |
-| ------------------- | -------------------- | ---------- | ------------------------------- |
-| `arguslog-api`      | `services/api/`      | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-ingest`   | `services/ingest/`   | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-worker`   | `services/worker/`   | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-web`      | `apps/web/`          | Dockerfile | `/healthz` (Caddy `respond ok`) |
-| `arguslog-keycloak` | `services/keycloak/` | Dockerfile | `/realms/master` (8080)         |
+| Railway service     | Source path             | Builder    | Health check                    |
+| ------------------- | ----------------------- | ---------- | ------------------------------- |
+| `arguslog-api`      | `services/api/`         | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-ingest`   | `services/ingest/`      | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-worker`   | `services/worker/`      | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-web`      | `apps/web/`             | Dockerfile | `/healthz` (Caddy `respond ok`) |
+| `arguslog-keycloak` | `services/keycloak/`    | Dockerfile | `/realms/master` (8080)         |
+| `arguslog-landing`  | `apps/landing/`         | Dockerfile | `/healthz` (Caddy `respond ok`) |
+| `arguslog-mcp`      | `packages/mcp-server/`  | Dockerfile | `/healthz`                      |
 
 Each service has a `railway.toml` co-located with its source — Railway auto-detects them so
-there's no per-service dashboard config to drift.
+there's no per-service dashboard config to drift. The list above is mirrored by
+`find . -name railway.toml -not -path '*/node_modules/*'`; if you add a new service, drop a
+`railway.toml` next to its source and update this table in the same commit.
 
 ## Managed add-ons
 
@@ -28,9 +32,10 @@ there's no per-service dashboard config to drift.
 
 ## Current state — production live (P5 #7 ✅)
 
-Project id `f24cb7e5-c1fd-4520-a04d-dea1acd0d309`. All four custom domains are answering 200 on
-their respective health endpoints; Keycloak realm import + email verification flow are live;
-Cloudflare R2 wired for attachments + source maps.
+Project id `f24cb7e5-c1fd-4520-a04d-dea1acd0d309`. All public custom domains
+(`app.arguslog.org`, `ingest.arguslog.org`, `arguslog.org`, `mcp.arguslog.org`, plus Keycloak
+behind `auth.arguslog.org`) are answering 200 on their health endpoints; Keycloak realm
+import + email verification flow are live; Cloudflare R2 wired for attachments + source maps.
 
 | Subdomain             | DNS in Cloudflare               | Cloudflare proxy | Health endpoint                                         |
 | --------------------- | ------------------------------- | ---------------- | ------------------------------------------------------- |
