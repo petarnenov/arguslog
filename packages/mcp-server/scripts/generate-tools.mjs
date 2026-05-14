@@ -55,8 +55,14 @@ for (const [path, ops] of Object.entries(spec.paths ?? {})) {
     if (!op || typeof op !== 'object') continue;
 
     const tag = (op.tags?.[0] ?? firstPathSegment(path) ?? 'misc').toLowerCase();
-    const opId =
+    // springdoc-openapi appends a numeric disambiguator (`list_5`, `create_6`, `delete_2`)
+    // whenever multiple controller methods share a Java method name. The suffix is mechanically
+    // generated bookkeeping — for the LLM it's pure noise and actively hurts tool discovery
+    // ("which 'list' tool am I supposed to call?"). Strip it before name-building; the
+    // path-disambiguator below handles real collisions with a semantic hint instead.
+    const rawOpId =
       op.operationId ?? `${method}_${path.replace(/[/{}-]+/g, '_').replace(/^_+|_+$/g, '')}`;
+    const opId = rawOpId.replace(/_\d+$/, '');
     let name = makeName(tag, opId);
 
     // Strip the boilerplate `_controller_` infix Spring Boot bakes into operation ids — it

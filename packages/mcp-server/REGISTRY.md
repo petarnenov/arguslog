@@ -50,9 +50,11 @@ PR adding a row to the README. The PR gets review + merge from the MCP maintaine
 PR template:
 
 ```markdown
-- **[Arguslog](https://arguslog.org)** ([source](packages/mcp-server)) - Sentry-compatible
-  error tracking platform with issues, events, alerts, releases, billing, and platform
-  admin panel as MCP tools. Uses dashboard-issued PATs for auth.
+- **[Arguslog](https://arguslog.org)** ([source](packages/mcp-server)) - error tracking
+  designed for agents — full CRUD over issues, events, alerts, releases, source maps, and
+  the admin surface as MCP tools, plus a built-in synthetic test-event ingest probe
+  (`send_test_event`) so an agent can verify the wire path end-to-end in one tool call.
+  MCP-first, open source, EVM + Solana aware. Dashboard-issued PATs for auth.
 ```
 
 Anthropic also runs a curated registry via https://claude.ai/mcp — submission form opens

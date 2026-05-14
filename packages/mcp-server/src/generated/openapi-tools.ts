@@ -84,6 +84,22 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
           format: 'date-time',
         },
+        releasedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        gitSha: {
+          type: 'string',
+        },
+        gitRef: {
+          type: 'string',
+        },
+        deployStage: {
+          type: 'string',
+        },
+        changelog: {
+          type: 'string',
+        },
       },
     },
     annotations: {
@@ -135,6 +151,22 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
           format: 'date-time',
         },
+        releasedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        gitSha: {
+          type: 'string',
+        },
+        gitRef: {
+          type: 'string',
+        },
+        deployStage: {
+          type: 'string',
+        },
+        changelog: {
+          type: 'string',
+        },
       },
     },
     annotations: {
@@ -182,8 +214,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'get_alert_rule_1',
-    title: 'Get alert rule 1',
+    name: 'get_alert_rule',
+    title: 'Get alert rule',
     description:
       'GET /api/v1/projects/{projectId}/alert-rules/{id}\n\nMethod: GET /api/v1/projects/{projectId}/alert-rules/{id}',
     method: 'GET',
@@ -246,8 +278,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'update_alert_rule_1',
-    title: 'Update alert rule 1',
+    name: 'update_alert_rule',
+    title: 'Update alert rule',
     description:
       'PUT /api/v1/projects/{projectId}/alert-rules/{id}\n\nMethod: PUT /api/v1/projects/{projectId}/alert-rules/{id}',
     method: 'PUT',
@@ -310,8 +342,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'delete_alert_rule_1',
-    title: 'Delete alert rule 1',
+    name: 'delete_alert_rule',
+    title: 'Delete alert rule',
     description:
       'DELETE /api/v1/projects/{projectId}/alert-rules/{id}\n\nMethod: DELETE /api/v1/projects/{projectId}/alert-rules/{id}',
     method: 'DELETE',
@@ -346,8 +378,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'get_alert_destination_2',
-    title: 'Get alert destination 2',
+    name: 'get_alert_destination',
+    title: 'Get alert destination',
     description:
       'GET /api/v1/orgs/{orgId}/alert-destinations/{id}\n\nMethod: GET /api/v1/orgs/{orgId}/alert-destinations/{id}',
     method: 'GET',
@@ -400,8 +432,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'update_alert_destination_2',
-    title: 'Update alert destination 2',
+    name: 'update_alert_destination',
+    title: 'Update alert destination',
     description:
       'PUT /api/v1/orgs/{orgId}/alert-destinations/{id}\n\nMethod: PUT /api/v1/orgs/{orgId}/alert-destinations/{id}',
     method: 'PUT',
@@ -454,8 +486,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'delete_alert_destination_2',
-    title: 'Delete alert destination 2',
+    name: 'delete_alert_destination',
+    title: 'Delete alert destination',
     description:
       'DELETE /api/v1/orgs/{orgId}/alert-destinations/{id}\n\nMethod: DELETE /api/v1/orgs/{orgId}/alert-destinations/{id}',
     method: 'DELETE',
@@ -561,6 +593,22 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
           format: 'date-time',
         },
+        releasedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        gitSha: {
+          type: 'string',
+        },
+        gitRef: {
+          type: 'string',
+        },
+        deployStage: {
+          type: 'string',
+        },
+        changelog: {
+          type: 'string',
+        },
       },
     },
     annotations: {
@@ -572,8 +620,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'list_source_map_artifact_1',
-    title: 'List source map artifact 1',
+    name: 'list_source_map_artifact',
+    title: 'List source map artifact',
     description:
       'GET /api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps\n\nMethod: GET /api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps',
     method: 'GET',
@@ -615,8 +663,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'create_source_map_artifact_1',
-    title: 'Create source map artifact 1',
+    name: 'create_source_map_artifact',
+    title: 'Create source map artifact',
     description:
       'POST /api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps\n\nMethod: POST /api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps',
     method: 'POST',
@@ -662,8 +710,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'list_dsn_2',
-    title: 'List dsn 2',
+    name: 'list_dsn',
+    title: 'List dsn',
     description:
       'GET /api/v1/projects/{projectId}/keys\n\nMethod: GET /api/v1/projects/{projectId}/keys',
     method: 'GET',
@@ -699,8 +747,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'create_dsn_2',
-    title: 'Create dsn 2',
+    name: 'create_dsn',
+    title: 'Create dsn',
     description:
       'POST /api/v1/projects/{projectId}/keys\n\nMethod: POST /api/v1/projects/{projectId}/keys',
     method: 'POST',
@@ -750,8 +798,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'list_alert_rule_3',
-    title: 'List alert rule 3',
+    name: 'list_alert_rule',
+    title: 'List alert rule',
     description:
       'GET /api/v1/projects/{projectId}/alert-rules\n\nMethod: GET /api/v1/projects/{projectId}/alert-rules',
     method: 'GET',
@@ -787,8 +835,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'create_alert_rule_3',
-    title: 'Create alert rule 3',
+    name: 'create_alert_rule',
+    title: 'Create alert rule',
     description:
       'POST /api/v1/projects/{projectId}/alert-rules\n\nMethod: POST /api/v1/projects/{projectId}/alert-rules',
     method: 'POST',
@@ -874,8 +922,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'create_org_4',
-    title: 'Create org 4',
+    name: 'create_org',
+    title: 'Create org',
     description: 'POST /api/v1/orgs\n\nMethod: POST /api/v1/orgs',
     method: 'POST',
     path: '/api/v1/orgs',
@@ -913,8 +961,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'list_project_4',
-    title: 'List project 4',
+    name: 'list_project',
+    title: 'List project',
     description: 'GET /api/v1/orgs/{orgId}/projects\n\nMethod: GET /api/v1/orgs/{orgId}/projects',
     method: 'GET',
     path: '/api/v1/orgs/{orgId}/projects',
@@ -949,8 +997,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'create_project_5',
-    title: 'Create project 5',
+    name: 'create_project',
+    title: 'Create project',
     description: 'POST /api/v1/orgs/{orgId}/projects\n\nMethod: POST /api/v1/orgs/{orgId}/projects',
     method: 'POST',
     path: '/api/v1/orgs/{orgId}/projects',
@@ -984,8 +1032,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'list_member_5',
-    title: 'List member 5',
+    name: 'list_member',
+    title: 'List member',
     description: 'GET /api/v1/orgs/{orgId}/members\n\nMethod: GET /api/v1/orgs/{orgId}/members',
     method: 'GET',
     path: '/api/v1/orgs/{orgId}/members',
@@ -1066,8 +1114,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'list_alert_destination_6',
-    title: 'List alert destination 6',
+    name: 'list_alert_destination',
+    title: 'List alert destination',
     description:
       'GET /api/v1/orgs/{orgId}/alert-destinations\n\nMethod: GET /api/v1/orgs/{orgId}/alert-destinations',
     method: 'GET',
@@ -1103,8 +1151,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'create_alert_destination_6',
-    title: 'Create alert destination 6',
+    name: 'create_alert_destination',
+    title: 'Create alert destination',
     description:
       'POST /api/v1/orgs/{orgId}/alert-destinations\n\nMethod: POST /api/v1/orgs/{orgId}/alert-destinations',
     method: 'POST',
@@ -1151,8 +1199,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'list_me_tokens_7',
-    title: 'List me tokens 7',
+    name: 'list_me_tokens',
+    title: 'List me tokens',
     description: 'GET /api/v1/me/tokens\n\nMethod: GET /api/v1/me/tokens',
     method: 'GET',
     path: '/api/v1/me/tokens',
@@ -1180,8 +1228,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'create_me_tokens_7',
-    title: 'Create me tokens 7',
+    name: 'create_me_tokens',
+    title: 'Create me tokens',
     description: 'POST /api/v1/me/tokens\n\nMethod: POST /api/v1/me/tokens',
     method: 'POST',
     path: '/api/v1/me/tokens',
@@ -1357,6 +1405,13 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
           format: 'uuid',
         },
+        firstSeenReleaseId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        firstSeenReleaseVersion: {
+          type: 'string',
+        },
       },
     },
     annotations: {
@@ -1431,6 +1486,13 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         assigneeUserId: {
           type: 'string',
           format: 'uuid',
+        },
+        firstSeenReleaseId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        firstSeenReleaseVersion: {
+          type: 'string',
         },
       },
     },
@@ -1507,6 +1569,13 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
           format: 'uuid',
         },
+        firstSeenReleaseId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        firstSeenReleaseVersion: {
+          type: 'string',
+        },
       },
     },
     annotations: {
@@ -1518,8 +1587,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'delete_org_3',
-    title: 'Delete org 3',
+    name: 'delete_org',
+    title: 'Delete org',
     description: 'DELETE /api/v1/orgs/{orgId}\n\nMethod: DELETE /api/v1/orgs/{orgId}',
     method: 'DELETE',
     path: '/api/v1/orgs/{orgId}',
@@ -1593,8 +1662,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'get_project_3',
-    title: 'Get project 3',
+    name: 'get_project',
+    title: 'Get project',
     description:
       'GET /api/v1/orgs/{orgId}/projects/{projectId}\n\nMethod: GET /api/v1/orgs/{orgId}/projects/{projectId}',
     method: 'GET',
@@ -1686,8 +1755,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'project_rename_1',
-    title: 'Project rename 1',
+    name: 'project_rename',
+    title: 'Project rename',
     description:
       'PATCH /api/v1/orgs/{orgId}/projects/{projectId}\n\nMethod: PATCH /api/v1/orgs/{orgId}/projects/{projectId}',
     method: 'PATCH',
@@ -1832,8 +1901,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'list_issue_8',
-    title: 'List issue 8',
+    name: 'list_issue',
+    title: 'List issue',
     description:
       'GET /api/v1/projects/{projectId}/issues\n\nMethod: GET /api/v1/projects/{projectId}/issues',
     method: 'GET',
@@ -1966,8 +2035,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'list_platform_9',
-    title: 'List platform 9',
+    name: 'list_platform',
+    title: 'List platform',
     description: 'GET /api/v1/platforms\n\nMethod: GET /api/v1/platforms',
     method: 'GET',
     path: '/api/v1/platforms',
@@ -2365,6 +2434,48 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
+    name: 'delete_source_map_artifact',
+    title: 'Delete source map artifact',
+    description:
+      'DELETE /api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps/{id}\n\nMethod: DELETE /api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps/{id}',
+    method: 'DELETE',
+    path: '/api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps/{id}',
+    pathParams: [
+      {
+        name: 'projectId',
+        required: true,
+        type: 'integer',
+        description: 'projectId (integer) — required.',
+      },
+      {
+        name: 'releaseId',
+        required: true,
+        type: 'integer',
+        description: 'releaseId (integer) — required.',
+      },
+      {
+        name: 'id',
+        required: true,
+        type: 'integer',
+        description: 'id (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      additionalProperties: true,
+      description: 'No response body — successful response is a 204 No Content or similar.',
+    },
+    annotations: {
+      title: 'DELETE /api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps/{id}',
+      readOnlyHint: false,
+      idempotentHint: true,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
+  },
+  {
     name: 'revoke_dsn',
     title: 'Revoke dsn',
     description:
@@ -2401,8 +2512,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'delete_me_tokens_4',
-    title: 'Delete me tokens 4',
+    name: 'delete_me_tokens',
+    title: 'Delete me tokens',
     description: 'DELETE /api/v1/me/tokens/{id}\n\nMethod: DELETE /api/v1/me/tokens/{id}',
     method: 'DELETE',
     path: '/api/v1/me/tokens/{id}',
