@@ -115,7 +115,8 @@ for (const [path, ops] of Object.entries(spec.paths ?? {})) {
       `${summary}\n\nMethod: ${method.toUpperCase()} ${path}` +
       (op.description && op.description !== op.summary ? `\n\n${op.description}` : '');
 
-    const outputSchema = extractOutputSchema(op, spec);
+    const { schema: outputSchema, wrapped: outputResultWrapped } = extractOutputSchema(op, spec);
+    const bodySchema = hasBody ? extractBodySchema(op, spec) : null;
     const annotations = makeAnnotations(method, summary);
 
     tools.push({
@@ -137,7 +138,15 @@ for (const [path, ops] of Object.entries(spec.paths ?? {})) {
         description: paramDescription(p),
       })),
       hasBody,
+      // Inline the OpenAPI request body schema (refs followed once) so the LLM sees the
+      // expected shape — fields, types, required-ness — instead of a generic `body: object`
+      // placeholder. Curated tools that already describe the body in prose still get the
+      // machine-readable form, which is what schema-validating MCP clients actually use.
+      ...(bodySchema ? { bodySchema } : {}),
       outputSchema,
+      // Only emit the flag when actually wrapped — keeps the generated module quiet for the
+      // common case (~80% of endpoints return objects, so wrap is false).
+      ...(outputResultWrapped ? { outputResultWrapped: true } : {}),
       annotations,
     });
   }
@@ -211,9 +220,18 @@ export interface OpenApiTool {
   queryParams: OpenApiToolParam[];
   /** When true the tool also accepts a free-form \`body\` arg dispatched as the JSON request body. */
   hasBody: boolean;
+  /** JSON Schema for the request body inlined from the OpenAPI {@code requestBody.content}.
+   *  Absent on tools without a body, or when the OpenAPI spec doesn't declare a schema —
+   *  callers fall back to {@code \{type: object, additionalProperties: true\}}. */
+  bodySchema?: Record<string, unknown> | null;
   /** JSON Schema for the tool's success response (200/2xx body). Absent for tools where
    *  the OpenAPI spec doesn't declare a schema or for curated tools that don't bother. */
   outputSchema?: Record<string, unknown> | null;
+  /** True when the OpenAPI response is a naked array / primitive and {@code outputSchema}
+   *  was rewrapped as {@code \{result: <orig>\}} to satisfy MCP's top-level-object rule.
+   *  Runtime uses this flag when emitting {@code structuredContent} so the wrapped result
+   *  validates against the wrapped schema. */
+  outputResultWrapped?: boolean;
   /** MCP capability annotations. Absent → MCP clients treat the tool as no-hint default. */
   annotations?: ToolAnnotations;
 }
@@ -329,26 +347,50 @@ function paramDescription(p) {
  *  many of our REST endpoints return naked arrays for list responses (HTTP 200 → JSON
  *  array). For those we wrap as {@code {type: object, properties: {result: <orig>}}} so
  *  Smithery / Glama validators don't reject the tool list.
+ *
+ *  Returns {schema, wrapped} so the caller can record whether result rewrapping is
+ *  needed at runtime (when emitting structuredContent — without the flag we couldn't
+ *  tell apart "API returns object" vs "API returns array that we wrapped").
  */
 function extractOutputSchema(op, spec) {
   const responses = op.responses ?? {};
   const key =
     Object.keys(responses).find((k) => k === '200') ??
     Object.keys(responses).find((k) => /^2\d\d$/.test(k));
-  if (!key) return EMPTY_OUTPUT_SCHEMA;
+  if (!key) return { schema: EMPTY_OUTPUT_SCHEMA, wrapped: false };
   const body = responses[key];
   const schema = body?.content?.['application/json']?.schema;
-  if (!schema) return EMPTY_OUTPUT_SCHEMA;
+  if (!schema) return { schema: EMPTY_OUTPUT_SCHEMA, wrapped: false };
   const resolved = derefShallow(schema, spec);
-  if (!resolved || typeof resolved !== 'object') return EMPTY_OUTPUT_SCHEMA;
+  if (!resolved || typeof resolved !== 'object')
+    return { schema: EMPTY_OUTPUT_SCHEMA, wrapped: false };
   // MCP requires top-level `type: "object"`. When the API returns an array / primitive,
   // wrap it under {result: <orig>} so the schema validates.
-  if (resolved.type === 'object' || resolved.properties) return resolved;
+  if (resolved.type === 'object' || resolved.properties) return { schema: resolved, wrapped: false };
   return {
-    type: 'object',
-    properties: { result: resolved },
-    required: ['result'],
+    schema: {
+      type: 'object',
+      properties: { result: resolved },
+      required: ['result'],
+    },
+    wrapped: true,
   };
+}
+
+/** Pull the JSON request body schema from {@code requestBody.content.application/json},
+ *  resolve a single ref, and return null when nothing usable is declared. Mirrors
+ *  {@link extractOutputSchema} so the emitted shape matches what {@link toJsonSchema} in
+ *  tools.ts expects for {@code properties.body}. */
+function extractBodySchema(op, spec) {
+  const schema = op?.requestBody?.content?.['application/json']?.schema;
+  if (!schema) return null;
+  const resolved = derefShallow(schema, spec);
+  if (!resolved || typeof resolved !== 'object') return null;
+  // The body MUST be a JSON object at the top level — every Arguslog endpoint already is.
+  // If somehow the spec declares a primitive / array body, fall back to the generic placeholder
+  // (caller sees null → uses the open `additionalProperties:true` default).
+  if (resolved.type && resolved.type !== 'object' && !resolved.properties) return null;
+  return resolved;
 }
 
 /** Resolve a top-level {@code $ref} to the actual schema object so MCP clients see the shape. */

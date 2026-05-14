@@ -46,7 +46,7 @@ import helmet from 'helmet';
 
 import { ArguslogApiError, ArguslogClient } from './client.js';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './generated/version.js';
-import { executeTool, listMcpTools } from './tools.js';
+import { buildToolResult, executeTool, listMcpTools } from './tools.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
 const ARGUSLOG_API_URL = process.env.ARGUSLOG_API_URL ?? 'https://api.arguslog.org';
@@ -91,7 +91,8 @@ function patRateKey(pat: string): string {
 function makeServer(client: ArguslogClient | null): Server {
   const server = new Server(
     { name: PACKAGE_NAME, version: PACKAGE_VERSION },
-    { capabilities: { tools: {} } },
+    // See index.ts for rationale — registry is static, so listChanged is explicitly false.
+    { capabilities: { tools: { listChanged: false } } },
   );
 
   // Static tool catalog — no API call, always works regardless of auth. This is what
@@ -116,14 +117,7 @@ function makeServer(client: ArguslogClient | null): Server {
     const { name, arguments: args } = req.params;
     try {
       const result = await executeTool(client, name, (args ?? {}) as Record<string, unknown>);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
-          },
-        ],
-      };
+      return buildToolResult(name, result);
     } catch (err) {
       if (err instanceof ArguslogApiError) {
         return {

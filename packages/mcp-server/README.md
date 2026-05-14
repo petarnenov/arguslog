@@ -178,6 +178,33 @@ PAT scopes are enforced server-side, so a read-only PAT can call read tools but 
 return `403`. The MCP server surfaces those problem responses verbatim so the agent can
 explain to the user what scope is missing.
 
+## Security model — not a token-passthrough proxy
+
+The MCP [security best-practices spec](https://modelcontextprotocol.io/specification/2025-06-18/basic/security_best_practices)
+forbids MCP servers from accepting tokens that weren't issued specifically for them
+("token passthrough"). This server is **not** a passthrough: the `arglog_pat_…` bearer
+token is a first-party credential issued by Arguslog (`api.arguslog.org`) and validated
+by the Arguslog API as its intended audience. The MCP server (`mcp.arguslog.org`) and
+the API live in the same trust boundary — one operator, one user-issued credential, one
+audience.
+
+In practice that means:
+
+- The PAT is **audience-bound** to the Arguslog API — it has no meaning on any third
+  party. There's no downstream service the MCP server impersonates the user against.
+- **Scopes are enforced at the API**, not by the MCP server. The MCP server is a thin
+  fan-out of the REST surface; a `releases:read` PAT calling a write tool gets `403`
+  from the API and the error flows back through the tool result with `isError: true`.
+- The hosted endpoint runs in **stateless mode** (`sessionIdGenerator: undefined`) —
+  no MCP session ids exist, sidestepping session-hijack attack vectors entirely.
+- The Bearer token never traverses any shared in-memory state between requests: each
+  `POST /mcp` builds a one-shot `ArguslogClient` whose lifetime equals the response.
+  Rate-limit keys are `sha256(pat).slice(0,16)`, never the raw PAT.
+
+If you self-host with `ARGUSLOG_API_URL` pointing at a private Arguslog instance, the
+same model applies — the PAT you issue from your dashboard is bound to your API. The
+MCP server is just a tool-shaped view of an API the user can already call directly.
+
 ## Configuration
 
 | Env var                     | Required         | Default                    | Description                                                                                                                                                                                    |

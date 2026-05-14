@@ -81,6 +81,11 @@ export const TOOL_REGISTRY: Map<string, OpenApiTool> = (() => {
       title: curated.title ?? auto.title,
       outputSchema: curated.outputSchema ?? auto.outputSchema,
       annotations: curated.annotations ?? auto.annotations,
+      // Wrap flag follows whichever side actually contributed the outputSchema. Curated tools
+      // today don't carry their own outputSchema so the auto-gen flag survives the merge.
+      outputResultWrapped: curated.outputSchema
+        ? curated.outputResultWrapped
+        : auto.outputResultWrapped,
     };
     m.set(curated.name, merged);
   }
@@ -111,6 +116,134 @@ export function listMcpTools(): McpToolDefinition[] {
   });
 }
 
+/** Shape of the {@code tools/call} success result returned to the MCP transport. Mirrors
+ *  the {@code CallToolResultSchema} from {@code @modelcontextprotocol/sdk} — kept loose so
+ *  this helper can be the single source of truth for both stdio and HTTP entry points.
+ *
+ *  The index signature is intentional: it lets the value flow into the SDK's
+ *  {@code ServerResult} union (which expects {@code \{ [k:string]: unknown \}}) without
+ *  forcing a cast at every call site. */
+export interface ToolCallSuccessResult {
+  content: Array<{ type: 'text'; text: string }>;
+  structuredContent?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+/** Format a tool's raw return value into the MCP-shaped {@code tools/call} result.
+ *
+ *  <p>When the tool declares an {@code outputSchema} and the result is JSON-shaped, ALSO
+ *  emit {@code structuredContent} alongside the text block — MCP spec 2025-11-25 §Tools
+ *  says servers with an outputSchema MUST emit structuredContent conforming to it. The
+ *  text block stays for backward-compat with pre-2025-11-25 clients that only consume
+ *  {@code content}.
+ *
+ *  <p>For naked-array endpoints the codegen rewraps the schema as
+ *  {@code \{type:object, properties:\{result: <orig>\}\}}; runtime mirrors that wrap so
+ *  the emitted structuredContent validates.
+ */
+export function buildToolResult(name: string, result: unknown): ToolCallSuccessResult {
+  const text = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+  const content: ToolCallSuccessResult['content'] = [{ type: 'text', text }];
+
+  const tool = TOOL_REGISTRY.get(name);
+  // No outputSchema or raw text return → text-only result, no structuredContent. Spec only
+  // demands structuredContent when an outputSchema was advertised.
+  if (!tool?.outputSchema || result === null || result === undefined) return { content };
+  if (typeof result !== 'object' && !Array.isArray(result)) return { content };
+
+  // Mirror the schema-time wrap so the emitted object matches the declared shape.
+  const structured = tool.outputResultWrapped ? { result } : (result as Record<string, unknown>);
+  // Defensive: if rewrapping somehow produced a non-object (e.g. tool incorrectly flagged),
+  // fall back to text-only rather than emit a structuredContent the client will reject.
+  if (typeof structured !== 'object' || structured === null || Array.isArray(structured)) {
+    return { content };
+  }
+  return { content, structuredContent: structured };
+}
+
+/** Validate args before dispatching to the api. Returns a list of human-readable problems,
+ *  empty when args are well-formed. We deliberately stay shallow — required-field presence
+ *  and primitive type matching — because:
+ *
+ *  <ul>
+ *    <li>Deeper JSON Schema validation (oneOf, format, etc.) duplicates what the api server
+ *        already does and would drift on every spec change.</li>
+ *    <li>The LLM-correction loop only needs hints precise enough to revise the next call —
+ *        "missing projectId" is much more useful than the api's generic "400 Bad Request".</li>
+ *    <li>The api's RFC 9457 problem+json response still surfaces on truly-invalid bodies
+ *        we don't catch here, via {@link ArguslogApiError}.</li>
+ *  </ul>
+ */
+function validateArgs(tool: OpenApiTool, args: Record<string, unknown>): string[] {
+  const problems: string[] = [];
+
+  const checkParam = (p: OpenApiToolParam, location: 'path' | 'query'): void => {
+    const v = args[p.name];
+    if (v === undefined || v === null) {
+      if (p.required) problems.push(`Missing required ${location} parameter: ${p.name}`);
+      return;
+    }
+    const ok = matchesParamType(v, p.type);
+    if (!ok) {
+      problems.push(`${location} parameter ${p.name} expected ${p.type}, got ${describeJs(v)}`);
+    }
+  };
+  for (const p of tool.pathParams) checkParam(p, 'path');
+  for (const p of tool.queryParams) checkParam(p, 'query');
+
+  if (tool.hasBody) {
+    const body = args.body;
+    const bodySchema = (tool as unknown as { bodySchema?: Record<string, unknown> }).bodySchema;
+    // When the OpenAPI declares required body fields, demand them. Skip deep nested checks —
+    // the api enforces those and returns problem+json that we surface verbatim.
+    const required = Array.isArray(bodySchema?.required) ? (bodySchema!.required as string[]) : [];
+    if (required.length > 0) {
+      if (body === undefined || body === null) {
+        problems.push(`Missing required body — fields: ${required.join(', ')}`);
+      } else if (typeof body !== 'object' || Array.isArray(body)) {
+        problems.push(`body must be a JSON object — got ${describeJs(body)}`);
+      } else {
+        const bodyObj = body as Record<string, unknown>;
+        for (const field of required) {
+          if (bodyObj[field] === undefined || bodyObj[field] === null) {
+            problems.push(`Missing required body field: ${field}`);
+          }
+        }
+      }
+    } else if (body !== undefined && body !== null && typeof body !== 'object') {
+      problems.push(`body must be a JSON object — got ${describeJs(body)}`);
+    }
+  }
+
+  return problems;
+}
+
+function matchesParamType(v: unknown, expected: OpenApiToolParam['type']): boolean {
+  switch (expected) {
+    case 'integer':
+      return typeof v === 'number' && Number.isInteger(v);
+    case 'number':
+      return typeof v === 'number' && Number.isFinite(v);
+    case 'boolean':
+      return typeof v === 'boolean';
+    case 'array':
+      return Array.isArray(v);
+    case 'object':
+      return typeof v === 'object' && v !== null && !Array.isArray(v);
+    case 'string':
+      return typeof v === 'string';
+    case 'unknown':
+    default:
+      return true;
+  }
+}
+
+function describeJs(v: unknown): string {
+  if (v === null) return 'null';
+  if (Array.isArray(v)) return 'array';
+  return typeof v;
+}
+
 /** Execute the tool named {@code name} with {@code args}, dispatching through {@code client}. */
 export async function executeTool(
   client: ArguslogClient,
@@ -122,11 +255,19 @@ export async function executeTool(
   // the registry lookup so the curated metadata (description, schema) still surfaces to
   // the LLM via tools/list without us inventing a fake api endpoint.
   if (name === 'send_test_event') {
+    const sendTool = TOOL_REGISTRY.get('send_test_event');
+    if (sendTool) {
+      const problems = validateArgs(sendTool, args);
+      if (problems.length > 0) throw new Error(`Invalid arguments — ${problems.join('; ')}`);
+    }
     return executeSendTestEvent(client, args);
   }
 
   const tool = TOOL_REGISTRY.get(name);
   if (!tool) throw new Error(`Unknown tool: ${name}`);
+
+  const problems = validateArgs(tool, args);
+  if (problems.length > 0) throw new Error(`Invalid arguments — ${problems.join('; ')}`);
 
   // Substitute path params into the URL template, removing them from the args before they get
   // interpreted as query params or body fields.
@@ -135,7 +276,7 @@ export async function executeTool(
   for (const p of tool.pathParams) {
     const v = remaining[p.name];
     if (v === undefined || v === null) {
-      if (p.required) throw new Error(`Missing required path parameter: ${p.name}`);
+      // Required path params already failed validation above; this is the optional-param leg.
       continue;
     }
     path = path.replace(`{${p.name}}`, encodeURIComponent(String(v)));
@@ -183,11 +324,24 @@ function toJsonSchema(tool: OpenApiTool): Record<string, unknown> {
     if (p.required) required.push(p.name);
   }
   if (tool.hasBody) {
-    properties['body'] = {
-      type: 'object',
-      description: 'Request body — JSON object matching the OpenAPI request schema.',
-      additionalProperties: true,
-    };
+    // Prefer the inlined OpenAPI request body schema — gives the LLM the real field
+    // shape (required keys, types) instead of a generic open object. Fall back to the
+    // permissive placeholder when codegen couldn't extract a schema (curated tools, or
+    // endpoints whose OpenAPI doesn't declare a body schema).
+    const inlined = (tool as unknown as { bodySchema?: Record<string, unknown> }).bodySchema;
+    properties['body'] =
+      inlined && typeof inlined === 'object'
+        ? {
+            ...inlined,
+            description:
+              (inlined.description as string | undefined) ??
+              'Request body — JSON object matching the OpenAPI request schema.',
+          }
+        : {
+            type: 'object',
+            description: 'Request body — JSON object matching the OpenAPI request schema.',
+            additionalProperties: true,
+          };
   }
   return {
     type: 'object',

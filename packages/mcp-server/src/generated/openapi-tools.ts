@@ -35,9 +35,18 @@ export interface OpenApiTool {
   queryParams: OpenApiToolParam[];
   /** When true the tool also accepts a free-form `body` arg dispatched as the JSON request body. */
   hasBody: boolean;
+  /** JSON Schema for the request body inlined from the OpenAPI {@code requestBody.content}.
+   *  Absent on tools without a body, or when the OpenAPI spec doesn't declare a schema —
+   *  callers fall back to {@code {type: object, additionalProperties: true}}. */
+  bodySchema?: Record<string, unknown> | null;
   /** JSON Schema for the tool's success response (200/2xx body). Absent for tools where
    *  the OpenAPI spec doesn't declare a schema or for curated tools that don't bother. */
   outputSchema?: Record<string, unknown> | null;
+  /** True when the OpenAPI response is a naked array / primitive and {@code outputSchema}
+   *  was rewrapped as {@code {result: <orig>}} to satisfy MCP's top-level-object rule.
+   *  Runtime uses this flag when emitting {@code structuredContent} so the wrapped result
+   *  validates against the wrapped schema. */
+  outputResultWrapped?: boolean;
   /** MCP capability annotations. Absent → MCP clients treat the tool as no-hint default. */
   annotations?: ToolAnnotations;
 }
@@ -133,6 +142,30 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        version: {
+          type: 'string',
+        },
+        releasedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        gitSha: {
+          type: 'string',
+        },
+        gitRef: {
+          type: 'string',
+        },
+        deployStage: {
+          type: 'string',
+        },
+        changelog: {
+          type: 'string',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -300,6 +333,27 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+        },
+        conditions: {
+          $ref: '#/components/schemas/JsonNode',
+        },
+        actions: {
+          $ref: '#/components/schemas/JsonNode',
+        },
+        throttleSeconds: {
+          type: 'integer',
+          format: 'int32',
+        },
+        enabled: {
+          type: 'boolean',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -454,6 +508,20 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        kind: {
+          type: 'string',
+        },
+        name: {
+          type: 'string',
+        },
+        config: {
+          $ref: '#/components/schemas/JsonNode',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -550,6 +618,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       },
       required: ['result'],
     },
+    outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/projects/{projectId}/releases',
       readOnlyHint: true,
@@ -575,6 +644,30 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        version: {
+          type: 'string',
+        },
+        releasedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        gitSha: {
+          type: 'string',
+        },
+        gitRef: {
+          type: 'string',
+        },
+        deployStage: {
+          type: 'string',
+        },
+        changelog: {
+          type: 'string',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -654,6 +747,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       },
       required: ['result'],
     },
+    outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps',
       readOnlyHint: true,
@@ -685,6 +779,21 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        originalPath: {
+          type: 'string',
+        },
+        sha256: {
+          type: 'string',
+        },
+        sizeBytes: {
+          type: 'integer',
+          format: 'int64',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -724,7 +833,14 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         description: 'projectId (integer) — required.',
       },
     ],
-    queryParams: [],
+    queryParams: [
+      {
+        name: 'includeRevoked',
+        required: false,
+        type: 'boolean',
+        description: 'includeRevoked (boolean) — optional.',
+      },
+    ],
     hasBody: false,
     outputSchema: {
       type: 'object',
@@ -738,6 +854,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       },
       required: ['result'],
     },
+    outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/projects/{projectId}/keys',
       readOnlyHint: true,
@@ -826,6 +943,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       },
       required: ['result'],
     },
+    outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/projects/{projectId}/alert-rules',
       readOnlyHint: true,
@@ -851,6 +969,27 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+        },
+        conditions: {
+          $ref: '#/components/schemas/JsonNode',
+        },
+        actions: {
+          $ref: '#/components/schemas/JsonNode',
+        },
+        throttleSeconds: {
+          type: 'integer',
+          format: 'int32',
+        },
+        enabled: {
+          type: 'boolean',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -913,6 +1052,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       },
       required: ['result'],
     },
+    outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/orgs',
       readOnlyHint: true,
@@ -930,6 +1070,14 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     pathParams: [],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -988,6 +1136,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       },
       required: ['result'],
     },
+    outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/orgs/{orgId}/projects',
       readOnlyHint: true,
@@ -1012,6 +1161,17 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+        },
+        platform: {
+          type: 'string',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -1059,6 +1219,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       },
       required: ['result'],
     },
+    outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/orgs/{orgId}/members',
       readOnlyHint: true,
@@ -1083,6 +1244,17 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        email: {
+          type: 'string',
+        },
+        role: {
+          type: 'string',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -1142,6 +1314,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       },
       required: ['result'],
     },
+    outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/orgs/{orgId}/alert-destinations',
       readOnlyHint: true,
@@ -1167,6 +1340,20 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        kind: {
+          type: 'string',
+        },
+        name: {
+          type: 'string',
+        },
+        config: {
+          $ref: '#/components/schemas/JsonNode',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -1219,6 +1406,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       },
       required: ['result'],
     },
+    outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/me/tokens',
       readOnlyHint: true,
@@ -1236,6 +1424,24 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     pathParams: [],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+        },
+        expiresAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        scopes: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -1297,6 +1503,21 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        tier: {
+          type: 'string',
+        },
+        months: {
+          type: 'integer',
+          format: 'int32',
+        },
+        reason: {
+          type: 'string',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       additionalProperties: true,
@@ -1445,6 +1666,14 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -1527,6 +1756,15 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        userId: {
+          type: 'string',
+          format: 'uuid',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -1631,6 +1869,14 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -1777,6 +2023,14 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -1870,6 +2124,14 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     ],
     queryParams: [],
     hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        role: {
+          type: 'string',
+        },
+      },
+    },
     outputSchema: {
       type: 'object',
       properties: {
@@ -1896,6 +2158,50 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       title: 'PATCH /api/v1/orgs/{orgId}/members/{userId}',
       readOnlyHint: false,
       idempotentHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'release_issues_introduced_in_release',
+    title: 'Release issues introduced in release',
+    description:
+      'GET /api/v1/projects/{projectId}/releases/{id}/issues\n\nMethod: GET /api/v1/projects/{projectId}/releases/{id}/issues',
+    method: 'GET',
+    path: '/api/v1/projects/{projectId}/releases/{id}/issues',
+    pathParams: [
+      {
+        name: 'projectId',
+        required: true,
+        type: 'integer',
+        description: 'projectId (integer) — required.',
+      },
+      {
+        name: 'id',
+        required: true,
+        type: 'integer',
+        description: 'id (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        result: {
+          type: 'array',
+          items: {
+            $ref: '#/components/schemas/IssueResponse',
+          },
+        },
+      },
+      required: ['result'],
+    },
+    outputResultWrapped: true,
+    annotations: {
+      title: 'GET /api/v1/projects/{projectId}/releases/{id}/issues',
+      readOnlyHint: true,
+      idempotentHint: true,
       destructiveHint: false,
       openWorldHint: true,
     },
@@ -2055,6 +2361,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       },
       required: ['result'],
     },
+    outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/platforms',
       readOnlyHint: true,

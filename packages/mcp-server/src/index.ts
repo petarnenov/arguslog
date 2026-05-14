@@ -21,7 +21,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 
 import { ArguslogApiError, ArguslogClient } from './client.js';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './generated/version.js';
-import { executeTool, listMcpTools } from './tools.js';
+import { buildToolResult, executeTool, listMcpTools } from './tools.js';
 
 async function main(): Promise<void> {
   // Build the client lazily — registry probes (Glama's introspection sandbox, Smithery's
@@ -45,7 +45,12 @@ async function main(): Promise<void> {
 
   const server = new Server(
     { name: PACKAGE_NAME, version: PACKAGE_VERSION },
-    { capabilities: { tools: {} } },
+    // `listChanged: false` makes the static-registry contract explicit — the tool catalog is
+    // built once at startup from `OPENAPI_TOOLS + CURATED_TOOLS`, never mutated at runtime,
+    // so clients shouldn't subscribe to `notifications/tools/list_changed`. MCP spec
+    // 2025-11-25 §Tools allows the empty default but explicit is clearer for capability
+    // negotiation.
+    { capabilities: { tools: { listChanged: false } } },
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -56,14 +61,7 @@ async function main(): Promise<void> {
     const { name, arguments: args } = req.params;
     try {
       const result = await executeTool(getClient(), name, (args ?? {}) as Record<string, unknown>);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
-          },
-        ],
-      };
+      return buildToolResult(name, result);
     } catch (err) {
       if (err instanceof ArguslogApiError) {
         return {
