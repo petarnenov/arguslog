@@ -120,6 +120,10 @@ services:
       keycloak: { condition: service_healthy }
       minio: { condition: service_healthy }
     environment:
+      # PORT overrides the Dockerfile default (8080). server.port in application.yml reads
+      # ${PORT:8081}, so without this override Spring would pick up the Dockerfile's 8080 and
+      # the healthcheck below (which hits 8081) would loop forever.
+      PORT: '8081'
       DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-arguslog}
       DATABASE_USER: ${POSTGRES_USER:-arguslog}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-arguslog}
@@ -181,6 +185,8 @@ services:
     depends_on:
       api: { condition: service_healthy }
     environment:
+      # PORT overrides the Dockerfile default (8080) to match the healthcheck below (8082).
+      PORT: '8082'
       DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-arguslog}
       DATABASE_USER: ${POSTGRES_USER:-arguslog}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-arguslog}
