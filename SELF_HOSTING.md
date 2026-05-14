@@ -51,15 +51,32 @@ have a default that's only safe for local dev:
 | `RESEND_API_KEY`                      | worker     | Optional — alert + invite emails. Falls back to log-and-drop when empty.               |
 | `TELEGRAM_BOT_TOKEN`                  | worker     | Optional — Telegram alert dispatcher. Falls back to log-and-drop when empty.           |
 | `CORS_ORIGINS`                        | api        | Comma-separated allow-list for the dashboard origin. Defaults to `http://localhost:5173`. |
-| `VITE_API_BASE_URL`                   | web        | API URL the dashboard hits. Baked into the web image at build time.                    |
-| `VITE_KEYCLOAK_URL` / `_REALM` / `_CLIENT_ID` | web | OIDC config for the dashboard.                                                         |
+| `ARGUSLOG_WEB_API_BASE_URL`           | web        | API URL the dashboard hits. **Runtime** — entrypoint writes `/srv/runtime-config.js` at boot, no rebuild needed. |
+| `ARGUSLOG_WEB_INGEST_BASE_URL`        | web        | Ingest URL for the Connect wizard's synthetic test-event probe. Runtime.               |
+| `ARGUSLOG_WEB_KEYCLOAK_URL` / `_REALM` / `_CLIENT_ID` | web | OIDC config. Runtime.                                                                  |
+| `ARGUSLOG_WEB_DOGFOOD_DSN`            | web        | Optional — DSN the dashboard's own errors get reported to. Runtime.                    |
+| `ARGUSLOG_WEB_RELEASE`                | web        | Optional release stamp shown in event payloads. Runtime.                               |
+| `VITE_*` (legacy)                     | web        | Build-time fallback, used when an image is baked with hardcoded URLs. The runtime path above supersedes these on every restart. |
 
 Production deployments must override:
 
 1. **Every secret** (`DATABASE_PASSWORD`, `R2_*`, `ARGUSLOG_INITIAL_ADMIN_PASSWORD`).
-2. **Every URL** to point at your domain (`KEYCLOAK_ISSUER`, `VITE_API_BASE_URL`).
+2. **Every URL** to point at your domain — set `ARGUSLOG_WEB_API_BASE_URL`,
+   `ARGUSLOG_WEB_KEYCLOAK_URL`, etc. on the web container; `KEYCLOAK_ISSUER`,
+   `R2_ENDPOINT`, etc. on the api/worker containers.
 3. **`ARGUSLOG_PLATFORM_ADMINS`** — even a single-user instance still needs at
    least one admin to exist before tier grants work.
+
+### Web container env-var precedence
+
+The dashboard reads its config in three stages, first-non-empty wins:
+
+1. `window.__ARGUSLOG_CONFIG__` — injected by `/srv/runtime-config.js` which the
+   container entrypoint regenerates from `ARGUSLOG_WEB_*` env vars on every start.
+   Change a URL, restart the container, done.
+2. `import.meta.env.VITE_*` — baked at build time. Used by the public arguslog.org
+   image; self-hosters can ignore unless rebuilding from source.
+3. Localhost-follows-hostname dev defaults (`make dev` paths).
 
 ## First-boot bootstrap (Keycloak)
 

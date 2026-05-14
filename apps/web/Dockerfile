@@ -52,11 +52,20 @@ RUN pnpm --filter @arguslog/sdk-core build \
  && pnpm --filter @arguslog/web build
 
 # Runtime stage — Caddy serves the static bundle with SPA fallback so deep links like
-# /orgs/acme/billing don't 404 on hard refresh.
+# /orgs/acme/issues don't 404 on hard refresh. The entrypoint regenerates
+# /srv/runtime-config.js from ARGUSLOG_WEB_* env vars at boot, so self-hosters can point
+# at their own api / Keycloak / ingest without rebuilding the image.
 FROM caddy:2.8-alpine AS runtime
 COPY --from=builder /workspace/apps/web/dist /srv
 COPY apps/web/Caddyfile /etc/caddy/Caddyfile
+COPY apps/web/runtime-config.sh /usr/local/bin/arguslog-config.sh
+RUN chmod +x /usr/local/bin/arguslog-config.sh
 
 # Railway sets $PORT; the Caddyfile reads it via {$PORT:8080}.
 ENV PORT=8080
 EXPOSE 8080
+
+# Wrap Caddy in the runtime-config entrypoint. CMD mirrors the upstream caddy:alpine
+# default so `docker run` still gets a working Caddy without overriding here.
+ENTRYPOINT ["/usr/local/bin/arguslog-config.sh"]
+CMD ["run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
