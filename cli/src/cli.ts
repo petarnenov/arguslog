@@ -8,6 +8,7 @@ import {
   releasesUpdate,
 } from './commands/releases.js';
 import { sourcemapsUpload } from './commands/sourcemaps.js';
+import { readGitContext } from './lib/git.js';
 import { type CliConfig, CliConfigError, loadConfig } from './config.js';
 import { parseFlags } from './flags.js';
 import { ApiError } from './http.js';
@@ -35,8 +36,10 @@ Commands:
   releases new <version> --project <id>
                                   [--released-at <iso>] [--git-sha <sha>]
                                   [--git-ref <ref>] [--deploy-stage <stage>]
-                                  [--changelog <text>]
+                                  [--changelog <text>] [--from-git]
                                   Create a new release tag with optional metadata.
+                                  --from-git auto-fills git-sha + git-ref from
+                                  the working tree (explicit flags win).
   releases list --project <id>    List releases for a project (newest first).
   releases get <releaseId> --project <id>
                                   Fetch full metadata for one release.
@@ -145,14 +148,25 @@ async function runReleasesNew(
   const projectId = parseProjectId(flags.project);
   if (projectId === null) return usageError('releases new: --project <id> is required (numeric).');
 
+  // --from-git auto-fills git-sha + git-ref from the working tree. Explicit flags always win —
+  // CI pipelines that already know their SHA shouldn't be overridden by whatever happens to be
+  // checked out on the build agent.
+  let gitSha = optional(flags['git-sha']);
+  let gitRef = optional(flags['git-ref']);
+  if (flags['from-git'] !== undefined) {
+    const ctx = readGitContext();
+    if (gitSha === undefined && ctx.sha !== null) gitSha = ctx.sha;
+    if (gitRef === undefined && ctx.ref !== null) gitRef = ctx.ref;
+  }
+
   return withConfig(options, async (config) => {
     const release = await releasesNew(
       {
         version,
         projectId,
         releasedAt: optional(flags['released-at']),
-        gitSha: optional(flags['git-sha']),
-        gitRef: optional(flags['git-ref']),
+        gitSha,
+        gitRef,
         deployStage: optional(flags['deploy-stage']),
         changelog: optional(flags.changelog),
       },
