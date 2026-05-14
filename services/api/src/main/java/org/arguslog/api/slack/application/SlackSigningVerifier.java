@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.time.Instant;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +35,7 @@ public class SlackSigningVerifier {
   private final byte[] signingSecret;
   private final Clock clock;
 
+  @Autowired
   public SlackSigningVerifier(@Value("${SLACK_SIGNING_SECRET:}") String signingSecret) {
     this(signingSecret, Clock.systemUTC());
   }

@@ -42,6 +42,11 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/api/v1/webhooks/stripe", "/api/v1/webhooks/nowpayments")
                     .permitAll()
+                    // Slack slash-command + OAuth callback — Slack-signed traffic carries no
+                    // bearer; the SlackController verifies HMAC-SHA256 against
+                    // ${SLACK_SIGNING_SECRET}, which is the only authentication for this path.
+                    .requestMatchers("/api/v1/slack/**")
+                    .permitAll()
                     .anyRequest()
                     .authenticated())
         // PAT-aware bearer resolver: when the Authorization header carries an arglog_pat_*

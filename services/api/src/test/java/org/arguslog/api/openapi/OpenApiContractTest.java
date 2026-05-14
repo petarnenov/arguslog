@@ -52,6 +52,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @ActiveProfiles("test")
 @TestPropertySource(
     properties = {
+      // Snapshot should reflect the prod surface, NOT what the test profile happens to enable.
+      // Override application-test.yml so the Slack controller is in the generated spec.
+      "arguslog.slack.enabled=true",
       "spring.autoconfigure.exclude="
           + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
           + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
@@ -103,6 +106,13 @@ class OpenApiContractTest {
   @MockitoBean TokenHasher tokenHasher;
   @MockitoBean TierLookupRepository tierLookupRepository;
   @MockitoBean org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
+  // Slack stack is opted in for this test (arguslog.slack.enabled=true above) so the snapshot
+  // reflects the prod surface; mock the ports so the JDBC adapter doesn't autowire DataSource.
+  @MockitoBean
+  org.arguslog.api.slack.application.port.SlackWorkspaceRepository slackWorkspaceRepository;
+  @MockitoBean
+  org.arguslog.api.slack.application.port.SlackWorkspaceWriteRepository
+      slackWorkspaceWriteRepository;
 
   @Test
   void generatedSpecMatchesTheCommittedSnapshot() throws Exception {

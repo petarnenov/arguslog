@@ -124,4 +124,10 @@ public abstract class AbstractControllerTest {
 
   @MockitoBean protected TierLookupRepository tierLookupRepository;
   @MockitoBean protected org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
+
+  // Slack integration wiring intentionally NOT mocked here — the Slack subsystem is
+  // @ConditionalOnBean(DataSource.class), so in controller @SpringBootTest contexts (which
+  // exclude DataSourceAutoConfiguration) the JDBC repo, dispatcher, and controller all skip
+  // together. SlackControllerTest opts into its own SlackCommandDispatcher + SlackSigningVerifier
+  // mocks to bring the controller back online for that targeted test.
 }

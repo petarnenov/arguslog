@@ -13,12 +13,21 @@ import org.arguslog.api.slack.application.port.SlackWorkspaceRepository;
 import org.arguslog.api.slack.application.port.SlackWorkspaceWriteRepository;
 import org.arguslog.api.slack.domain.SlackWorkspace;
 import org.arguslog.crypto.SecretCipher;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
+/**
+ * {@code @ConditionalOnProperty(arguslog.slack.enabled, matchIfMissing = true)} loads this in
+ * production by default, but lets test contexts opt out by setting the property to false. The
+ * same guard sits on {@link org.arguslog.api.slack.application.SlackCommandDispatcher} and
+ * {@link org.arguslog.api.slack.adapter.in.web.SlackController}, so the three skip together —
+ * no half-loaded graph that wedges Spring's bean factory.
+ */
 @Component
+@ConditionalOnProperty(name = "arguslog.slack.enabled", havingValue = "true", matchIfMissing = true)
 public class JdbcSlackWorkspaceRepository
     implements SlackWorkspaceRepository, SlackWorkspaceWriteRepository {
 

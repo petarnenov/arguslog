@@ -321,6 +321,24 @@
         }
       }
     },
+    "/api/v1/slack/commands" : {
+      "post" : {
+        "tags" : [ "slack-controller" ],
+        "operationId" : "commands",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlackCommandResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{projectId}/releases" : {
       "get" : {
         "tags" : [ "release-controller" ],
@@ -1907,6 +1925,26 @@
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
+          }
+        }
+      },
+      "SlackCommandResponse" : {
+        "type" : "object",
+        "properties" : {
+          "response_type" : {
+            "type" : "string"
+          },
+          "text" : {
+            "type" : "string"
+          },
+          "blocks" : {
+            "type" : "array",
+            "items" : {
+              "type" : "object",
+              "additionalProperties" : {
+                "type" : "object"
+              }
+            }
           }
         }
       },

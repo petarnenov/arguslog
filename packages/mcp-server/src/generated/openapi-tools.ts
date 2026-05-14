@@ -590,6 +590,43 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
+    name: 'slack_commands',
+    title: 'Slack commands',
+    description: 'POST /api/v1/slack/commands\n\nMethod: POST /api/v1/slack/commands',
+    method: 'POST',
+    path: '/api/v1/slack/commands',
+    pathParams: [],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        response_type: {
+          type: 'string',
+        },
+        text: {
+          type: 'string',
+        },
+        blocks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: {
+              type: 'object',
+            },
+          },
+        },
+      },
+    },
+    annotations: {
+      title: 'POST /api/v1/slack/commands',
+      readOnlyHint: false,
+      idempotentHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
     name: 'list_release',
     title: 'List release',
     description:

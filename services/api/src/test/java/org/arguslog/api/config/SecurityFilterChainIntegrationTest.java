@@ -79,7 +79,9 @@ import org.springframework.test.web.servlet.MockMvc;
           + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,"
           + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration",
       // Issuer URI is harmless here because JwtDecoder is mocked — the value just has to parse.
-      "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://localhost.test/issuer"
+      "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://localhost.test/issuer",
+      // Slack subsystem has no DataSource to autowire against here; opt out the whole stack.
+      "arguslog.slack.enabled=false"
     })
 class SecurityFilterChainIntegrationTest {
 

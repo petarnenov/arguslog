@@ -1,0 +1,8 @@
+# Test-only overrides. Activated whenever @ActiveProfiles("test") is set on the test class.
+arguslog:
+  # Slack subsystem skips when this is false — keeps the @ConditionalOnProperty-guarded
+  # SlackController / dispatcher / JDBC repo out of test contexts that have no DataSource.
+  # Tests that DO want Slack wiring (SlackControllerTest) override by setting the property
+  # back to true via @TestPropertySource.
+  slack:
+    enabled: false
