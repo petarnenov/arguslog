@@ -54,10 +54,18 @@ jobs:
           docker compose -f infra/docker/docker-compose.full.yml build --pull \
             api ingest worker web landing mcp
 
-      - name: Bring up infra first + create MinIO buckets
+      - name: Bring up infra first
+        # `up --wait` expects every listed service to reach "healthy" — but the bucket-init
+        # one-shot has no healthcheck and just exits 0, which `--wait` interprets as never-
+        # healthy. Wait for the long-running pieces first, then run init synchronously below.
         run: |
-          docker compose -f infra/docker/docker-compose.full.yml --profile init up -d --wait \
-            postgres redis keycloak minio mailhog minio-bucket-init
+          docker compose -f infra/docker/docker-compose.full.yml up -d --wait \
+            postgres redis keycloak minio mailhog
+
+      - name: Create MinIO buckets (one-shot)
+        run: |
+          docker compose -f infra/docker/docker-compose.full.yml --profile init run --rm \
+            minio-bucket-init
 
       - name: Bring up the JVM + web + landing + mcp services
         run: |
