@@ -1,6 +1,6 @@
 {
   "name": "@arguslog/sdk-react",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Arguslog React SDK (18 + 19) — ErrorBoundary, hooks, RR/RQ adapters",
   "license": "MIT",
   "type": "module",
