@@ -41,6 +41,27 @@ class DsnControllerTest extends AbstractControllerTest {
         // The full DSN string is intentionally absent — only POST returns it.
         .andExpect(jsonPath("$[0].dsn").doesNotExist())
         .andExpect(jsonPath("$[1].dsn").doesNotExist());
+
+    // Default call goes through list(), NOT listAll(); SDK-facing surfaces shouldn't see revoked
+    // rows by accident.
+    verify(dsnUseCase).list(PROJECT_ID);
+  }
+
+  @Test
+  void listWithIncludeRevokedReturnsActiveAndRevokedRows() throws Exception {
+    when(dsnUseCase.listAll(PROJECT_ID))
+        .thenReturn(
+            List.of(
+                new Dsn(101L, PROJECT_ID, "ACTIVE", true, Instant.parse("2026-05-01T00:00:00Z")),
+                new Dsn(100L, PROJECT_ID, "REVOKED", false, Instant.parse("2026-04-01T00:00:00Z"))));
+
+    mvc.perform(get("/api/v1/projects/{projectId}/keys?includeRevoked=true", PROJECT_ID))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(2)))
+        .andExpect(jsonPath("$[0].active").value(true))
+        .andExpect(jsonPath("$[1].active").value(false));
+
+    verify(dsnUseCase).listAll(PROJECT_ID);
   }
 
   @Test

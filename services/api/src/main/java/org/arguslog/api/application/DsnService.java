@@ -42,6 +42,12 @@ public class DsnService implements DsnUseCase {
   }
 
   @Override
+  @Transactional(readOnly = true)
+  public List<Dsn> listAll(long projectId) {
+    return dsns.listAllForProject(projectId);
+  }
+
+  @Override
   @Transactional
   public Dsn revoke(long projectId, long keyId) {
     Dsn current =

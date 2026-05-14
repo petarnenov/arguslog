@@ -72,6 +72,19 @@ public class JdbcDsnRepository implements DsnRepository, DsnWriteRepository {
   }
 
   @Override
+  public List<Dsn> listAllForProject(long projectId) {
+    return jdbc.query(
+        """
+        SELECT id, project_id, dsn_public, active, created_at
+          FROM project_keys
+         WHERE project_id = ?
+         ORDER BY active DESC, created_at DESC, id DESC
+        """,
+        ROW_MAPPER,
+        projectId);
+  }
+
+  @Override
   public Optional<Dsn> findByProjectAndId(long projectId, long keyId) {
     try {
       Dsn row =

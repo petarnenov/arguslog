@@ -37,7 +37,8 @@ export const queryKeys = {
     ['sourcemaps', projectId, releaseId] as const,
   releaseIssues: (projectId: number, releaseId: number) =>
     ['release-issues', projectId, releaseId] as const,
-  dsns: (projectId: number) => ['dsns', projectId] as const,
+  dsns: (projectId: number, includeRevoked = false) =>
+    ['dsns', projectId, includeRevoked] as const,
   me: () => ['me'] as const,
   adminStats: () => ['admin', 'stats'] as const,
   adminUsers: (q: string, offset: number, limit: number) =>
@@ -192,10 +193,14 @@ export function useReleaseIssues(
   });
 }
 
-export function useDsns(projectId: number | undefined, options: { enabled?: boolean } = {}) {
+export function useDsns(
+  projectId: number | undefined,
+  options: { enabled?: boolean; includeRevoked?: boolean } = {},
+) {
+  const includeRevoked = options.includeRevoked ?? false;
   return useQuery({
-    queryKey: queryKeys.dsns(projectId ?? -1),
-    queryFn: () => listDsns(projectId as number),
+    queryKey: queryKeys.dsns(projectId ?? -1, includeRevoked),
+    queryFn: () => listDsns(projectId as number, { includeRevoked }),
     enabled: (options.enabled ?? true) && projectId != null,
     staleTime: 30_000,
   });

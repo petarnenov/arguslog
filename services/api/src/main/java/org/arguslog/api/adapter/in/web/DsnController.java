@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -43,10 +44,19 @@ public class DsnController {
    * Listing returns DSN metadata only — never the full {@code dsn} string. Mirrors the GitHub PAT
    * model where the secret-shaped value is shown exactly once at creation time. Use the {@code
    * POST} endpoint to mint a new key + see its DSN, or {@code DELETE} to revoke.
+   *
+   * <p>{@code includeRevoked=true} extends the list with previously-revoked keys (active rows
+   * first, then revoked). Defaults to active-only so SDK consumers can't accidentally pick up a
+   * stale row.
    */
   @GetMapping
-  public List<DsnSummaryResponse> list(@PathVariable long projectId) {
-    return useCase.list(projectId).stream().map(DsnSummaryResponse::from).toList();
+  public List<DsnSummaryResponse> list(
+      @PathVariable long projectId,
+      @RequestParam(value = "includeRevoked", required = false, defaultValue = "false")
+          boolean includeRevoked) {
+    List<org.arguslog.api.domain.Dsn> rows =
+        includeRevoked ? useCase.listAll(projectId) : useCase.list(projectId);
+    return rows.stream().map(DsnSummaryResponse::from).toList();
   }
 
   /** Mints a new key. The returned {@link DsnResponse} carries the full DSN once. */

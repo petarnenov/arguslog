@@ -12,6 +12,13 @@ public interface DsnUseCase {
   List<Dsn> list(long projectId);
 
   /**
+   * Returns ALL DSNs for the project (active first, then revoked), newest first within each group.
+   * Used by the dashboard's audit / rotation-history view; SDK-facing surfaces always go through
+   * {@link #list(long)} to avoid handing out a revoked public key.
+   */
+  List<Dsn> listAll(long projectId);
+
+  /**
    * Marks the key as revoked (sets {@code active=false}). Idempotency is intentionally NOT
    * provided: re-revoking a revoked key throws {@link DsnAlreadyRevokedException} so a UI showing a
    * stale list surfaces an explicit error rather than silently doing nothing.

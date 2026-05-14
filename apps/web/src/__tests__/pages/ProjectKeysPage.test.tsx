@@ -166,6 +166,85 @@ describe('ProjectKeysPage', () => {
     expect(revokeCalls).toBe(1);
   });
 
+  it('toggles "show revoked" to refetch with includeRevoked=true and renders revoked rows read-only', async () => {
+    const calls: { url: string; method: string }[] = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      const method = init?.method ?? 'GET';
+      calls.push({ url, method });
+      if (url.endsWith('/api/v1/projects/9/keys') && method === 'GET') {
+        return jsonResponse([KEY_A]);
+      }
+      if (url.endsWith('/api/v1/projects/9/keys?includeRevoked=true') && method === 'GET') {
+        return jsonResponse([KEY_A, { ...KEY_B, active: false }]);
+      }
+      throw new Error(`unexpected ${method} ${url}`);
+    });
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    renderAt('/orgs/acme/projects/9/settings/keys');
+    const user = userEvent.setup();
+
+    await screen.findByTestId(`dsn-row-${KEY_A.id}`);
+    expect(screen.queryByTestId(`dsn-row-${KEY_B.id}`)).toBeNull();
+
+    // Flip the toggle — second request goes to the includeRevoked variant.
+    await user.click(screen.getByTestId('show-revoked-toggle'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`dsn-row-${KEY_B.id}`)).toBeInTheDocument();
+    });
+    const includeRevokedCall = calls.find((c) =>
+      c.url.endsWith('?includeRevoked=true'),
+    );
+    expect(includeRevokedCall).toBeDefined();
+
+    // Revoked rows: status badge says "Revoked", rotate + revoke buttons are absent.
+    const revokedRow = screen.getByTestId(`dsn-row-${KEY_B.id}`);
+    expect(within(revokedRow).getByTestId(`dsn-status-${KEY_B.id}`)).toHaveTextContent(/Revoked/i);
+    expect(within(revokedRow).queryByTestId(`dsn-rotate-${KEY_B.id}`)).toBeNull();
+    expect(within(revokedRow).queryByTestId(`dsn-revoke-${KEY_B.id}`)).toBeNull();
+  });
+
+  it('rotate-confirm mints a fresh DSN and surfaces it in the reveal modal without touching the old key', async () => {
+    const calls: { url: string; method: string }[] = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      const method = init?.method ?? 'GET';
+      calls.push({ url, method });
+      if (url.endsWith('/api/v1/projects/9/keys') && method === 'GET') {
+        return jsonResponse([KEY_A]);
+      }
+      if (url.endsWith('/api/v1/projects/9/keys') && method === 'POST') {
+        return jsonResponse(
+          {
+            ...KEY_B,
+            dsn: 'arguslog://NEW@localhost:8080/api/9',
+          },
+          201,
+        );
+      }
+      throw new Error(`unexpected ${method} ${url}`);
+    });
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    renderAt('/orgs/acme/projects/9/settings/keys');
+    const user = userEvent.setup();
+
+    const row = await screen.findByTestId(`dsn-row-${KEY_A.id}`);
+    await user.click(within(row).getByTestId(`dsn-rotate-${KEY_A.id}`));
+
+    // Rotate confirm modal — fires the POST.
+    await user.click(await screen.findByRole('button', { name: /Mint replacement/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('arguslog://NEW@localhost:8080/api/9')).toBeInTheDocument();
+    });
+    // Critical: a rotate must NOT revoke the old key — operator does that manually after
+    // running services pick up the new DSN.
+    expect(calls.some((c) => c.method === 'DELETE')).toBe(false);
+  });
+
   it('surfaces server problem details when revoke fails (already revoked race)', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();

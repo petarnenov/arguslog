@@ -11,11 +11,13 @@ import {
   Loader,
   Modal,
   Stack,
+  Switch,
   Table,
   Text,
   Title,
+  Tooltip,
 } from '@mantine/core';
-import { IconTrash } from '@tabler/icons-react';
+import { IconRefresh, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +25,7 @@ import { useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
 import { createDsn, revokeDsn, type Dsn, type DsnSummary } from '../api/keys';
-import { queryKeys, useDsns } from '../api/queries';
+import { useDsns } from '../api/queries';
 
 function describeApiError(err: unknown): string {
   return err instanceof ApiError ? (err.problem.detail ?? err.problem.title) : String(err);
@@ -35,12 +37,15 @@ export function ProjectKeysPage() {
   const queryClient = useQueryClient();
 
   const projectId = projectIdParam ? Number(projectIdParam) : undefined;
-  const dsnsQuery = useDsns(projectId);
+  const [includeRevoked, setIncludeRevoked] = useState(false);
+  const dsnsQuery = useDsns(projectId, { includeRevoked });
 
   const [revealedKey, setRevealedKey] = useState<Dsn | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<DsnSummary | null>(null);
+  const [rotateTarget, setRotateTarget] = useState<DsnSummary | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [revokeError, setRevokeError] = useState<string | null>(null);
+  const [rotateError, setRotateError] = useState<string | null>(null);
 
   const generateMutation = useMutation({
     mutationFn: () => {
@@ -49,7 +54,7 @@ export function ProjectKeysPage() {
     },
     onSuccess: async (dsn) => {
       if (projectId != null) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.dsns(projectId) });
+        await queryClient.invalidateQueries({ queryKey: ['dsns', projectId] });
       }
       setGenerateError(null);
       setRevealedKey(dsn);
@@ -64,12 +69,37 @@ export function ProjectKeysPage() {
     },
     onSuccess: async () => {
       if (projectId != null) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.dsns(projectId) });
+        // Invalidate both cache shapes — the query-key carries `includeRevoked` so we have to
+        // touch the prefix to refetch whichever toggle the user is currently on.
+        await queryClient.invalidateQueries({ queryKey: ['dsns', projectId] });
       }
       setRevokeTarget(null);
       setRevokeError(null);
     },
     onError: (err) => setRevokeError(describeApiError(err)),
+  });
+
+  // Rotate = mint a new key first, then revoke the old. Order matters: if revoke runs first and
+  // a misconfigured pipeline is still using the old key, every event between the revoke and the
+  // new key landing in their config is rejected. New-then-revoke gives the operator the new DSN
+  // first; revoking the old one is a separate confirm step inside the reveal modal.
+  const rotateMutation = useMutation({
+    mutationFn: async (oldKey: DsnSummary) => {
+      if (projectId == null) throw new Error('projectId missing');
+      const fresh = await createDsn(projectId);
+      return { fresh, oldKey };
+    },
+    onSuccess: async ({ fresh }) => {
+      if (projectId != null) {
+        await queryClient.invalidateQueries({ queryKey: ['dsns', projectId] });
+      }
+      setRotateError(null);
+      setRotateTarget(null);
+      // Hand the new DSN to the existing reveal modal — operator sees the new string once with
+      // a "revoke the old one" prompt next to it.
+      setRevealedKey(fresh);
+    },
+    onError: (err) => setRotateError(describeApiError(err)),
   });
 
   if (projectId == null || Number.isNaN(projectId)) {
@@ -98,14 +128,27 @@ export function ProjectKeysPage() {
             {t('projectKeys.useHint')}
           </Text>
         </Stack>
-        <Button onClick={() => generateMutation.mutate()} loading={generateMutation.isPending}>
-          {t('projectKeys.generate')}
-        </Button>
+        <Group gap="sm" align="center">
+          <Switch
+            checked={includeRevoked}
+            onChange={(e) => setIncludeRevoked(e.currentTarget.checked)}
+            label={t('projectKeys.showRevoked')}
+            data-testid="show-revoked-toggle"
+          />
+          <Button onClick={() => generateMutation.mutate()} loading={generateMutation.isPending}>
+            {t('projectKeys.generate')}
+          </Button>
+        </Group>
       </Group>
 
       {generateError ? (
         <Alert color="red" variant="light">
           {generateError}
+        </Alert>
+      ) : null}
+      {rotateError ? (
+        <Alert color="red" variant="light">
+          {rotateError}
         </Alert>
       ) : null}
 
@@ -134,14 +177,23 @@ export function ProjectKeysPage() {
             </Table.Thead>
             <Table.Tbody>
               {dsnsQuery.data?.map((key) => (
-                <Table.Tr key={key.id} data-testid={`dsn-row-${key.id}`}>
+                <Table.Tr
+                  key={key.id}
+                  data-testid={`dsn-row-${key.id}`}
+                  style={key.active ? undefined : { opacity: 0.55 }}
+                >
                   <Table.Td>
                     <Group gap="xs">
                       <Text size="sm" ff="monospace">
                         {key.id}
                       </Text>
-                      <Badge color="green" variant="light" size="sm">
-                        {t('projectKeys.active')}
+                      <Badge
+                        color={key.active ? 'green' : 'gray'}
+                        variant="light"
+                        size="sm"
+                        data-testid={`dsn-status-${key.id}`}
+                      >
+                        {t(key.active ? 'projectKeys.active' : 'projectKeys.revoked')}
                       </Badge>
                     </Group>
                   </Table.Td>
@@ -156,17 +208,44 @@ export function ProjectKeysPage() {
                     </Text>
                   </Table.Td>
                   <Table.Td>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      aria-label={t('projectKeys.revokeAria', { publicKey: key.dsnPublic })}
-                      onClick={() => {
-                        setRevokeError(null);
-                        setRevokeTarget(key);
-                      }}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
+                    {key.active ? (
+                      <Group gap={4}>
+                        <Tooltip label={t('projectKeys.rotateAria', { publicKey: key.dsnPublic })}>
+                          <ActionIcon
+                            variant="subtle"
+                            color="blue"
+                            aria-label={t('projectKeys.rotateAria', {
+                              publicKey: key.dsnPublic,
+                            })}
+                            data-testid={`dsn-rotate-${key.id}`}
+                            onClick={() => {
+                              setRotateError(null);
+                              setRotateTarget(key);
+                            }}
+                          >
+                            <IconRefresh size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          aria-label={t('projectKeys.revokeAria', { publicKey: key.dsnPublic })}
+                          data-testid={`dsn-revoke-${key.id}`}
+                          onClick={() => {
+                            setRevokeError(null);
+                            setRevokeTarget(key);
+                          }}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
+                    ) : (
+                      // Revoked rows are read-only — no rotate (already inactive), no revoke
+                      // (idempotent endpoint would 409 anyway).
+                      <Text size="xs" c="dimmed">
+                        —
+                      </Text>
+                    )}
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -201,6 +280,46 @@ export function ProjectKeysPage() {
             </Group>
           </Stack>
         ) : null}
+      </Modal>
+
+      <Modal
+        opened={rotateTarget !== null}
+        onClose={() => {
+          if (!rotateMutation.isPending) {
+            setRotateTarget(null);
+            setRotateError(null);
+          }
+        }}
+        title={t('projectKeys.rotateTitle')}
+        size="md"
+      >
+        <Stack>
+          <Text size="sm">{t('projectKeys.rotateBody')}</Text>
+          {rotateTarget ? (
+            <Text size="xs" c="dimmed" ff="monospace">
+              {rotateTarget.dsnPublic}
+            </Text>
+          ) : null}
+          <Alert color="yellow" variant="light">
+            {t('projectKeys.rotateHint')}
+          </Alert>
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={() => setRotateTarget(null)}
+              disabled={rotateMutation.isPending}
+            >
+              {t('projectKeys.rotateCancel')}
+            </Button>
+            <Button
+              color="blue"
+              loading={rotateMutation.isPending}
+              onClick={() => rotateTarget && rotateMutation.mutate(rotateTarget)}
+            >
+              {t('projectKeys.rotateConfirm')}
+            </Button>
+          </Group>
+        </Stack>
       </Modal>
 
       <Modal

@@ -19,8 +19,17 @@ export interface Dsn extends DsnSummary {
   dsn: string;
 }
 
-export function listDsns(projectId: number): Promise<DsnSummary[]> {
-  return apiFetch<DsnSummary[]>(`/api/v1/projects/${projectId}/keys`);
+/**
+ * Active DSNs by default. Pass {@code includeRevoked: true} when the dashboard needs the audit /
+ * rotation-history view — the backend orders active rows first, then revoked, newest within
+ * each group.
+ */
+export function listDsns(
+  projectId: number,
+  options: { includeRevoked?: boolean } = {},
+): Promise<DsnSummary[]> {
+  const qs = options.includeRevoked ? '?includeRevoked=true' : '';
+  return apiFetch<DsnSummary[]>(`/api/v1/projects/${projectId}/keys${qs}`);
 }
 
 export function createDsn(projectId: number): Promise<Dsn> {
