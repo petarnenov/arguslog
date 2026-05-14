@@ -96,12 +96,15 @@ jobs:
           # Worker deliberately omitted — no spring-boot-starter-web means no HTTP server to
           # probe. compose up --wait already verified the process is up, which is the right
           # liveness model for a background Redis-Streams consumer.
+          # Keycloak's /health endpoints live on the management port (9000), not the public
+          # 8180. Compose only maps 8180:8180, so the runner can't reach management. Probe
+          # /realms/master instead — main HTTP port, always 200 once realm imports finish.
           for svc in 'api:8081/actuator/health/readiness' \
                      'ingest:8080/actuator/health' \
                      'web:5173/healthz' \
                      'landing:5175/healthz' \
                      'mcp:8090/healthz' \
-                     'keycloak:8180/health/ready'; do
+                     'keycloak:8180/realms/master'; do
             name="${svc%%:*}"
             path="${svc#*:}"
             echo "→ checking http://localhost:${path}"
