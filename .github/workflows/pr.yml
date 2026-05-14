@@ -103,6 +103,20 @@ jobs:
             echo "Run 'pnpm --filter @arguslog/sdk-browser test:pact' locally and commit the diff."
             exit 1
           fi
+      - name: Regenerate MCP tool catalog from openapi.json
+        # The catalog (src/generated/openapi-tools.ts + version.ts) is checked in so other
+        # tooling can resolve types without running codegen first. This step re-derives it
+        # from services/api/openapi.json + packages/mcp-server/package.json; the diff check
+        # below fails the PR if either the spec or curated-tools.ts changed without the
+        # catalog being re-generated.
+        run: pnpm --filter @arguslog/mcp-server generate
+      - name: Verify committed MCP catalog matches openapi.json
+        run: |
+          if ! git diff --exit-code packages/mcp-server/src/generated/; then
+            echo "::error::packages/mcp-server/src/generated/ drifted — openapi.json or curated-tools.ts changed but the generated catalog is stale."
+            echo "Run 'pnpm --filter @arguslog/mcp-server generate' locally and commit the diff."
+            exit 1
+          fi
       - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v5

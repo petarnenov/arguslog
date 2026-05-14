@@ -54,25 +54,35 @@ export const TOOL_REGISTRY: Map<string, OpenApiTool> = (() => {
   for (const t of OPENAPI_TOOLS) m.set(t.name, t);
 
   // Merge curated entries — they replace the auto-gen entry that targets the same endpoint.
+  // A curated entry with no matching endpoint is a bug (zombie tool that 404s on call); the
+  // build-time guard in scripts/generate-tools.mjs catches it, this throw is the runtime
+  // backstop in case the generated module is stale.
   for (const curated of Object.values(CURATED_TOOLS)) {
     const endpointKey = `${curated.method} ${curated.path}`;
-    const auto = autoByEndpoint.get(endpointKey);
-    if (auto) {
-      // Drop the auto-gen entry; replace with a merged one that prefers curated text.
-      m.delete(auto.name);
-      const merged: OpenApiTool = {
-        ...auto,
-        ...curated,
-        // Pick the richer of the two for these fields when both exist.
-        title: curated.title ?? auto.title,
-        outputSchema: curated.outputSchema ?? auto.outputSchema,
-        annotations: curated.annotations ?? auto.annotations,
-      };
-      m.set(curated.name, merged);
-    } else {
-      // Curated tool with no auto-gen counterpart (rare — only if OpenAPI lacks the endpoint).
+    // send_test_event is handled in-process by executeSendTestEvent — it has no api endpoint.
+    if (curated.path.startsWith('/internal/mcp/')) {
       m.set(curated.name, curated);
+      continue;
     }
+    const auto = autoByEndpoint.get(endpointKey);
+    if (!auto) {
+      throw new Error(
+        `Curated MCP tool "${curated.name}" targets ${endpointKey}, which is not in the ` +
+          `OpenAPI spec. Re-run \`pnpm --filter @arguslog/mcp-server generate\` after ` +
+          `updating services/api/openapi.json, or drop the curated entry.`,
+      );
+    }
+    // Drop the auto-gen entry; replace with a merged one that prefers curated text.
+    m.delete(auto.name);
+    const merged: OpenApiTool = {
+      ...auto,
+      ...curated,
+      // Pick the richer of the two for these fields when both exist.
+      title: curated.title ?? auto.title,
+      outputSchema: curated.outputSchema ?? auto.outputSchema,
+      annotations: curated.annotations ?? auto.annotations,
+    };
+    m.set(curated.name, merged);
   }
   return m;
 })();
@@ -236,8 +246,7 @@ async function executeSendTestEvent(
       ? (args.body as Record<string, unknown>)
       : {};
   const level = (bodyArg.level as Level | undefined) ?? 'error';
-  const message =
-    typeof bodyArg.message === 'string' ? bodyArg.message : undefined;
+  const message = typeof bodyArg.message === 'string' ? bodyArg.message : undefined;
 
   // Step 1: list the project's keys via the api (PAT, projects:read).
   const keys = await client.request<DsnSummary[]>({

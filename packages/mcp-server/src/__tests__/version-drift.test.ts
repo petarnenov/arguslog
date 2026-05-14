@@ -7,9 +7,10 @@ import { describe, expect, it } from 'vitest';
 import { PACKAGE_NAME, PACKAGE_VERSION } from '../generated/version.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PKG = JSON.parse(
-  readFileSync(resolve(__dirname, '../../package.json'), 'utf8'),
-) as { name: string; version: string };
+const PKG = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf8')) as {
+  name: string;
+  version: string;
+};
 
 /**
  * Guards against the exact failure mode that [[feedback_mcp_version_single_source]] documents:

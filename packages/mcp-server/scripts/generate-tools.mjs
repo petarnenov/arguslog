@@ -44,9 +44,29 @@ const EMPTY_OUTPUT_SCHEMA = Object.freeze({
 });
 
 const ACTION_VERBS = new Set([
-  'get', 'list', 'create', 'update', 'delete', 'remove', 'revoke', 'grant',
-  'archive', 'restore', 'invite', 'accept', 'reject', 'cancel', 'send',
-  'upload', 'download', 'search', 'find', 'count', 'info', 'check', 'verify',
+  'get',
+  'list',
+  'create',
+  'update',
+  'delete',
+  'remove',
+  'revoke',
+  'grant',
+  'archive',
+  'restore',
+  'invite',
+  'accept',
+  'reject',
+  'cancel',
+  'send',
+  'upload',
+  'download',
+  'search',
+  'find',
+  'count',
+  'info',
+  'check',
+  'verify',
 ]);
 
 for (const [path, ops] of Object.entries(spec.paths ?? {})) {
@@ -121,6 +141,34 @@ for (const [path, ops] of Object.entries(spec.paths ?? {})) {
       annotations,
     });
   }
+}
+
+// Drift guard — every curated tool must override an existing OpenAPI endpoint. If the API
+// removes an endpoint that curated-tools.ts still points at, the merge in tools.ts would
+// keep shipping a zombie tool that returns 404 on call. Fail the build instead so the dev
+// either drops the curated entry or restores the endpoint.
+const CURATED_FILE = resolve(__dirname, '../src/curated-tools.ts');
+const curatedSource = readFileSync(CURATED_FILE, 'utf8');
+const endpointKeys = new Set(tools.map((t) => `${t.method} ${t.path}`));
+const curatedPairs = [
+  ...curatedSource.matchAll(/method:\s*'(GET|POST|PUT|PATCH|DELETE)',\s*\n\s*path:\s*'([^']+)'/g),
+].map((m) => ({ method: m[1], path: m[2] }));
+const orphans = curatedPairs.filter(({ method, path }) => {
+  // The send_test_event handler lives in MCP itself, not the api — accept it as a known carve-out.
+  if (path.startsWith('/internal/mcp/')) return false;
+  return !endpointKeys.has(`${method} ${path}`);
+});
+if (orphans.length > 0) {
+  console.error(
+    `\n✗ Curated tools point at endpoints that don't exist in services/api/openapi.json:`,
+  );
+  for (const o of orphans) console.error(`    ${o.method} ${o.path}`);
+  console.error(
+    `\n  Either remove these entries from packages/mcp-server/src/curated-tools.ts, or add the\n` +
+      `  corresponding endpoint to the api so /v3/api-docs picks it up. Shipping a curated tool\n` +
+      `  without a matching endpoint produces a zombie tool — listed to MCP clients but 404 on call.`,
+  );
+  process.exit(1);
 }
 
 mkdirSync(OUT_DIR, { recursive: true });
@@ -226,7 +274,9 @@ function makeName(tag, opId) {
   // Strip controller suffix from tag ("ReleaseController" → "release")
   const group = normalize(tag).replace(/_?controller$/, '');
   // Strip "controller" infix from opId, lowercase + snakecase
-  const op = normalize(opId).replace(/_?controller_?/, '_').replace(/_+/g, '_');
+  const op = normalize(opId)
+    .replace(/_?controller_?/, '_')
+    .replace(/_+/g, '_');
   // Combine then flip if the WHOLE combined name ends with an action verb (release_get → get_release).
   const combined = `${group}_${op}`.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
   return flipNounVerb(combined);
@@ -262,7 +312,8 @@ function openApiTypeOf(schema) {
   if (!schema || typeof schema !== 'object') return 'unknown';
   const t = schema.type;
   if (t === 'integer') return 'integer';
-  if (t === 'number' || t === 'string' || t === 'boolean' || t === 'array' || t === 'object') return t;
+  if (t === 'number' || t === 'string' || t === 'boolean' || t === 'array' || t === 'object')
+    return t;
   return 'unknown';
 }
 
@@ -331,9 +382,7 @@ function makeAnnotations(method, summary) {
 
 function humanize(name) {
   // list_my_orgs → "List my orgs"
-  return name
-    .replace(/_/g, ' ')
-    .replace(/^\w/, (c) => c.toUpperCase());
+  return name.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 }
 
 function pathDisambiguator(path) {

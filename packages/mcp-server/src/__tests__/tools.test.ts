@@ -130,8 +130,9 @@ describe('tool dispatch', () => {
   });
 
   it('send_test_event: refuses when project has no active DSN', async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } }),
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } }),
     ) as unknown as typeof globalThis.fetch;
 
     const client = ArguslogClient.fromEnv();
