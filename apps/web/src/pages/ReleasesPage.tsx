@@ -5,12 +5,14 @@ import {
   Card,
   Center,
   Code,
+  Divider,
   Group,
   Loader,
   Modal,
   Stack,
   Table,
   Text,
+  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -28,6 +30,31 @@ import { useReportSoftError } from '../lib/reportSoftError';
 
 interface DraftValues {
   version: string;
+  /** Local datetime string (`yyyy-MM-ddTHH:mm`) — converted to UTC ISO on submit. */
+  releasedAtLocal: string;
+  gitSha: string;
+  gitRef: string;
+  deployStage: string;
+  changelog: string;
+}
+
+/** Converts a stored ISO-8601 UTC string into `<input type="datetime-local">` value space. */
+function isoToLocalInput(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  // datetime-local wants yyyy-MM-ddTHH:mm in *local* tz; ISO offsets are pre-handled by Date.
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Inverse of {@link isoToLocalInput} — empty input → null, otherwise local→ISO UTC. */
+function localInputToIso(local: string): string | null {
+  const trimmed = local.trim();
+  if (!trimmed) return null;
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
 export function ReleasesPage() {
@@ -52,7 +79,14 @@ export function ReleasesPage() {
   const isEditMode = editing && editing !== 'new';
 
   const form = useForm<DraftValues>({
-    initialValues: { version: '' },
+    initialValues: {
+      version: '',
+      releasedAtLocal: '',
+      gitSha: '',
+      gitRef: '',
+      deployStage: '',
+      changelog: '',
+    },
     validate: {
       version: (v) => (v.trim().length < 1 ? t('releases.errorVersion') : null),
     },
@@ -60,13 +94,27 @@ export function ReleasesPage() {
 
   function openCreate() {
     setError(null);
-    form.setValues({ version: '' });
+    form.setValues({
+      version: '',
+      releasedAtLocal: '',
+      gitSha: '',
+      gitRef: '',
+      deployStage: '',
+      changelog: '',
+    });
     setEditing('new');
   }
 
   function openEdit(r: Release) {
     setError(null);
-    form.setValues({ version: r.version });
+    form.setValues({
+      version: r.version,
+      releasedAtLocal: isoToLocalInput(r.releasedAt),
+      gitSha: r.gitSha ?? '',
+      gitRef: r.gitRef ?? '',
+      deployStage: r.deployStage ?? '',
+      changelog: r.changelog ?? '',
+    });
     setEditing(r);
   }
 
@@ -79,10 +127,24 @@ export function ReleasesPage() {
   const saveMutation = useMutation({
     mutationFn: async (values: DraftValues) => {
       if (projectId == null) throw new Error('projectId missing');
+      // Trim every string then normalise blank → null so the API receives "no value" rather than
+      // the empty string for fields the operator left untouched. PUT semantics: blank clears.
+      const blankToNull = (s: string): string | null => {
+        const t = s.trim();
+        return t === '' ? null : t;
+      };
+      const payload = {
+        version: values.version.trim(),
+        releasedAt: localInputToIso(values.releasedAtLocal),
+        gitSha: blankToNull(values.gitSha),
+        gitRef: blankToNull(values.gitRef),
+        deployStage: blankToNull(values.deployStage),
+        changelog: blankToNull(values.changelog),
+      };
       if (isEditMode) {
-        return updateRelease(projectId, editing.id, values.version.trim());
+        return updateRelease(projectId, editing.id, payload);
       }
-      return createRelease(projectId, values.version.trim());
+      return createRelease(projectId, payload);
     },
     onSuccess: async () => {
       if (projectId != null) {
@@ -223,6 +285,52 @@ export function ReleasesPage() {
               {...form.getInputProps('version')}
               disabled={saveMutation.isPending}
             />
+
+            <Divider label={t('releases.metadataDivider')} labelPosition="left" />
+
+            <TextInput
+              label={t('releases.releasedAtLabel')}
+              description={t('releases.releasedAtHint')}
+              type="datetime-local"
+              {...form.getInputProps('releasedAtLocal')}
+              disabled={saveMutation.isPending}
+              data-testid="release-released-at"
+            />
+            <Group grow>
+              <TextInput
+                label={t('releases.gitRefLabel')}
+                placeholder="main"
+                {...form.getInputProps('gitRef')}
+                disabled={saveMutation.isPending}
+                data-testid="release-git-ref"
+              />
+              <TextInput
+                label={t('releases.gitShaLabel')}
+                placeholder="abcdef1"
+                {...form.getInputProps('gitSha')}
+                disabled={saveMutation.isPending}
+                data-testid="release-git-sha"
+              />
+            </Group>
+            <TextInput
+              label={t('releases.deployStageLabel')}
+              description={t('releases.deployStageHint')}
+              placeholder="production"
+              {...form.getInputProps('deployStage')}
+              disabled={saveMutation.isPending}
+              data-testid="release-deploy-stage"
+            />
+            <Textarea
+              label={t('releases.changelogLabel')}
+              description={t('releases.changelogHint')}
+              autosize
+              minRows={3}
+              maxRows={10}
+              {...form.getInputProps('changelog')}
+              disabled={saveMutation.isPending}
+              data-testid="release-changelog"
+            />
+
             {error ? (
               <Alert color="red" variant="light">
                 {error}
