@@ -134,4 +134,97 @@ class CachingSymbolicatorTest {
         "{\"release\":\"1.0.0\",\"exception\":{\"values\":[{\"stacktrace\":{\"frames\":[{\"filename\":\"dist/app.js\",\"lineno\":1,\"colno\":0}]}}]}}";
     assertThat(symbolicator.symbolicate(101L, payload)).isSameAs(payload);
   }
+
+  // ── stripHashSegment / normalizePath ────────────────────────────────────────
+
+  @Test
+  void stripsViteStyleEightHexHash() {
+    assertThat(CachingSymbolicator.stripHashSegment("app.d7f2a8e1.js")).isEqualTo("app.js");
+  }
+
+  @Test
+  void stripsWebpackTwentyHexHash() {
+    assertThat(CachingSymbolicator.stripHashSegment("main.6a1f3b2cdd5e9f1b4d3c.js"))
+        .isEqualTo("main.js");
+  }
+
+  @Test
+  void stripsHashSandwichedBetweenDottedExtensions() {
+    assertThat(CachingSymbolicator.stripHashSegment("bundle.abc12345.min.js"))
+        .isEqualTo("bundle.min.js");
+  }
+
+  @Test
+  void stripsHashInsideNestedPath() {
+    assertThat(CachingSymbolicator.stripHashSegment("chunks/main.6a1f3b2c.js"))
+        .isEqualTo("chunks/main.js");
+  }
+
+  @Test
+  void stripsOnlyTheFirstHashSegmentPerFilename() {
+    // Two consecutive hash-shaped segments is suspicious — almost certainly not a real bundle
+    // output. Only strip the first to avoid mangling unexpected inputs.
+    assertThat(CachingSymbolicator.stripHashSegment("foo.abcdef.deadbe.js"))
+        .isEqualTo("foo.deadbe.js");
+  }
+
+  @Test
+  void leavesNonHashDottedNamesAlone() {
+    // Real words / SemVer / nested module names should never be confused for a hash.
+    assertThat(CachingSymbolicator.stripHashSegment("Component.test.js")).isEqualTo("Component.test.js");
+    assertThat(CachingSymbolicator.stripHashSegment("lodash.debounce.js")).isEqualTo("lodash.debounce.js");
+    assertThat(CachingSymbolicator.stripHashSegment("version.generated.ts"))
+        .isEqualTo("version.generated.ts");
+    // SemVer-like ranges with a dot — not a hash, mixed digits + dot but short and not hex-only.
+    assertThat(CachingSymbolicator.stripHashSegment("pkg.1.js")).isEqualTo("pkg.1.js");
+  }
+
+  @Test
+  void leavesPathsWithoutTrailingExtensionAlone() {
+    // The guard `(?=\\.[A-Za-z])` requires another extension to the right of the hash. A bare
+    // `something.abcdef` (with nothing after) is most likely not a hashed bundle filename.
+    assertThat(CachingSymbolicator.stripHashSegment("something.abcdef")).isEqualTo("something.abcdef");
+  }
+
+  @Test
+  void mixedCaseHashShapesAreLeftAlone() {
+    // Mixed case (uppercase+lowercase letters mixed in the segment) is almost never a hash —
+    // bundlers emit pure-hex which is single-case by definition.
+    assertThat(CachingSymbolicator.stripHashSegment("app.D7f2A8e1.js")).isEqualTo("app.D7f2A8e1.js");
+  }
+
+  @Test
+  void uppercaseHexHashIsStripped() {
+    // Some Rollup configs emit uppercase. Treated symmetrically with lowercase.
+    assertThat(CachingSymbolicator.stripHashSegment("app.D7F2A8E1.js")).isEqualTo("app.js");
+  }
+
+  @Test
+  void normalizePathStripsHostAndHashTogether() {
+    assertThat(CachingSymbolicator.normalizePath("https://cdn.example.com/dist/app.d7f2a8e1.js"))
+        .isEqualTo("dist/app.js");
+  }
+
+  @Test
+  void normalizePathStripsLeadingSlashAndHash() {
+    assertThat(CachingSymbolicator.normalizePath("/assets/main.6a1f3b2c.min.js"))
+        .isEqualTo("assets/main.min.js");
+  }
+
+  @Test
+  void hashStripEnablesLookupForHashedBundleFilename() {
+    // End-to-end: SDK sends a hashed filename, CLI uploaded under the clean name, repository
+    // is asked for the clean name (post-strip) and returns a hit.
+    when(repository.findArtifact(101L, "1.0.0", "dist/app.js"))
+        .thenReturn(Optional.of(new ArtifactRow(7L, "k", "sha")));
+    when(store.fetch("k")).thenReturn(Optional.of(SAMPLE_MAP));
+
+    String payload =
+        "{\"release\":\"1.0.0\",\"exception\":{\"values\":[{\"stacktrace\":{\"frames\":["
+            + "{\"filename\":\"https://cdn.example.com/dist/app.d7f2a8e1.js\",\"lineno\":1,\"colno\":0}"
+            + "]}}]}}";
+
+    String out = symbolicator.symbolicate(101L, payload);
+    assertThat(out).contains("originalFilename");
+  }
 }

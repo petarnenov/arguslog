@@ -139,11 +139,35 @@ public class CachingSymbolicator implements Symbolicator {
   }
 
   /**
-   * Strip everything before the path segment we expect to match what the CLI uploaded. SDKs send
-   * full URLs ({@code https://cdn.example.com/dist/app.abc123.js}); CLI usually uploads with {@code
-   * --name dist/app.js} (no host, no cache-bust hash). For now we only strip the URL host and
-   * leading slash — the {@code --name} flag remains the source of truth for the upload-side
-   * mapping. TODO(P4): smarter normalization (strip hash segments).
+   * Strip the parts of a stack-frame filename the CLI doesn't include in the uploaded
+   * {@code --path} (and therefore wouldn't match against an artifact's stored {@code
+   * original_path}).
+   *
+   * <p>Three transforms in order:
+   *
+   * <ol>
+   *   <li>If the filename is a URL ({@code https://cdn.example.com/dist/app.D7f2a8e1.js}), drop
+   *       the scheme + host so only the path survives.
+   *   <li>Strip a leading {@code /} so relative comparison is consistent.
+   *   <li>Remove a single cache-bust hash segment between the basename and the extension(s) —
+   *       {@code app.D7f2a8e1.js} → {@code app.js}, {@code bundle.abc12345.min.js} → {@code
+   *       bundle.min.js}, {@code chunks/main.6a1f3b2cdd.js} → {@code chunks/main.js}.
+   * </ol>
+   *
+   * <p>The hash strip is the only non-trivial step. Bundler conventions:
+   *
+   * <ul>
+   *   <li>Vite emits 8 lowercase hex chars by default ({@code index-D4f2.js} → wait, Vite
+   *       actually uses {@code -}, not {@code .}, before the hash; we handle dots only)
+   *   <li>Webpack defaults to 20 hex chars when using {@code [contenthash]}, 5-8 for short hash
+   *   <li>Rollup uses 8 lowercase hex by default
+   *   <li>esbuild uses 8 lowercase alphanumeric in lower-case form
+   * </ul>
+   *
+   * <p>So we target a dotted segment of 5-32 hex characters, all-lowercase OR all-uppercase
+   * (mixed case is almost never a hash — it's usually a real word like {@code Component}).
+   * Guard with {@code (?=\.)} so we only strip when there's an extension to the right of the
+   * hash — a bare {@code foo.abc123} (no extension after) probably isn't a hashed asset.
    */
   static String normalizePath(String filename) {
     String f = filename;
@@ -154,6 +178,17 @@ public class CachingSymbolicator implements Symbolicator {
     } else if (f.startsWith("/")) {
       f = f.substring(1);
     }
-    return f;
+    return stripHashSegment(f);
+  }
+
+  // Matches `.<hash>` immediately before another `.` so the captured segment is sandwiched
+  // between two real extension parts. Hash is 5-32 hex chars, single-case (lowercase or
+  // uppercase). One pass — we only strip the *first* hash segment per filename; a path with
+  // multiple `.abcdef.` segments is almost certainly not a real bundle output.
+  private static final java.util.regex.Pattern HASH_SEGMENT =
+      java.util.regex.Pattern.compile("\\.(?:[0-9a-f]{5,32}|[0-9A-F]{5,32})(?=\\.[A-Za-z])");
+
+  static String stripHashSegment(String path) {
+    return HASH_SEGMENT.matcher(path).replaceFirst("");
   }
 }
