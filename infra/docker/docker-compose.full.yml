@@ -213,10 +213,58 @@ services:
     container_name: arguslog-web
     depends_on:
       api: { condition: service_healthy }
+    environment:
+      # Runtime config injection — entrypoint regenerates /srv/runtime-config.js from these.
+      # All optional; empty values fall through to the build-time VITE_* args above.
+      ARGUSLOG_WEB_API_BASE_URL: ${ARGUSLOG_WEB_API_BASE_URL:-}
+      ARGUSLOG_WEB_INGEST_BASE_URL: ${ARGUSLOG_WEB_INGEST_BASE_URL:-}
+      ARGUSLOG_WEB_KEYCLOAK_URL: ${ARGUSLOG_WEB_KEYCLOAK_URL:-}
+      ARGUSLOG_WEB_KEYCLOAK_REALM: ${ARGUSLOG_WEB_KEYCLOAK_REALM:-}
+      ARGUSLOG_WEB_KEYCLOAK_CLIENT_ID: ${ARGUSLOG_WEB_KEYCLOAK_CLIENT_ID:-}
+      ARGUSLOG_WEB_DOGFOOD_DSN: ${ARGUSLOG_WEB_DOGFOOD_DSN:-}
+      ARGUSLOG_WEB_RELEASE: ${ARGUSLOG_WEB_RELEASE:-${ARGUSLOG_RELEASE:-2.0.0}}
     ports:
-      - '${WEB_PORT:-5173}:80'
+      # Container Caddy listens on $PORT (default 8080); fix-was-broken: previous map was 5173:80
+      # which never connected since the upstream caddy:alpine image doesn't expose 80.
+      - '${WEB_PORT:-5173}:8080'
     healthcheck:
-      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost/healthz || exit 1']
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost:8080/healthz || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  landing:
+    build:
+      context: ../..
+      dockerfile: apps/landing/Dockerfile
+    image: arguslog/landing:${ARGUSLOG_RELEASE:-2.0.0}
+    container_name: arguslog-landing
+    ports:
+      - '${LANDING_PORT:-5175}:8080'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost:8080/healthz || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  mcp:
+    build:
+      context: ../..
+      dockerfile: packages/mcp-server/Dockerfile
+    image: arguslog/mcp-server:${ARGUSLOG_RELEASE:-2.0.0}
+    container_name: arguslog-mcp
+    depends_on:
+      api: { condition: service_healthy }
+    environment:
+      # MCP server hits the api over the compose network. Per-request PAT auth means there's no
+      # shared secret to ship here — operator passes Authorization: Bearer arglog_pat_* on each
+      # MCP call from their client.
+      PORT: '8090'
+      ARGUSLOG_API_URL: http://api:8081
+    ports:
+      - '${MCP_PORT:-8090}:8090'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost:8090/healthz || exit 1']
       interval: 10s
       timeout: 5s
       retries: 20

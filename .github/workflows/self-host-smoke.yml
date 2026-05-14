@@ -1,14 +1,34 @@
 name: Self-host smoke test
 
-# Boot the full docker-compose stack on every PR that touches infra / compose / Dockerfile
-# / Keycloak realm template. Asserts each service exposes a healthy probe. Catches the
-# "works in dev but the prod image won't start" class of regressions before merge.
+# Boot the full docker-compose stack on every push to dev (so the workflow actually fires —
+# the previous PR-only trigger never ran because the repo flow is dev→main FF, no PRs) plus
+# on PRs that touch infra / compose / any Dockerfile / Keycloak realm. Catches the "works in
+# dev but the prod image won't start" class of regressions before merge.
 on:
+  push:
+    branches: [dev]
+    paths:
+      - 'infra/docker/docker-compose.full.yml'
+      - 'services/**/Dockerfile'
+      - 'apps/web/Dockerfile'
+      - 'apps/web/Caddyfile'
+      - 'apps/web/runtime-config.sh'
+      - 'apps/landing/Dockerfile'
+      - 'apps/landing/Caddyfile'
+      - 'packages/mcp-server/Dockerfile'
+      - 'services/keycloak/**'
+      - '.env.example'
+      - '.github/workflows/self-host-smoke.yml'
   pull_request:
     paths:
       - 'infra/docker/docker-compose.full.yml'
       - 'services/**/Dockerfile'
       - 'apps/web/Dockerfile'
+      - 'apps/web/Caddyfile'
+      - 'apps/web/runtime-config.sh'
+      - 'apps/landing/Dockerfile'
+      - 'apps/landing/Caddyfile'
+      - 'packages/mcp-server/Dockerfile'
       - 'services/keycloak/**'
       - '.env.example'
       - '.github/workflows/self-host-smoke.yml'
@@ -22,39 +42,44 @@ jobs:
   smoke:
     name: Boot + healthcheck the full stack
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
 
       - name: Seed .env from example
         run: cp .env.example .env
 
-      - name: Build the JVM + web images
+      - name: Build every image in parallel
         run: |
-          docker compose -f infra/docker/docker-compose.full.yml build --pull api ingest worker web
+          docker compose -f infra/docker/docker-compose.full.yml build --pull \
+            api ingest worker web landing mcp
 
       - name: Bring up infra first + create MinIO buckets
         run: |
           docker compose -f infra/docker/docker-compose.full.yml --profile init up -d --wait \
             postgres redis keycloak minio mailhog minio-bucket-init
 
-      - name: Bring up the JVM + web services
+      - name: Bring up the JVM + web + landing + mcp services
         run: |
-          docker compose -f infra/docker/docker-compose.full.yml up -d --wait api ingest worker web
+          docker compose -f infra/docker/docker-compose.full.yml up -d --wait \
+            api ingest worker web landing mcp
 
       - name: Verify every health endpoint returns UP
         run: |
           set -euo pipefail
+          # name:host_port/path — each one curl'd from the runner via the published host port.
           for svc in 'api:8081/actuator/health/readiness' \
                      'ingest:8080/actuator/health' \
                      'worker:8082/actuator/health' \
                      'web:5173/healthz' \
+                     'landing:5175/healthz' \
+                     'mcp:8090/healthz' \
                      'keycloak:8180/health/ready'; do
             name="${svc%%:*}"
             path="${svc#*:}"
             echo "→ checking http://localhost:${path}"
             for i in $(seq 1 30); do
-              if curl -fsS -o /tmp/health-$name.json "http://localhost:${path}"; then
+              if curl -fsS -o "/tmp/health-$name.json" "http://localhost:${path}"; then
                 echo "  ✓ ${name} healthy"
                 break
               fi
@@ -66,6 +91,19 @@ jobs:
               sleep 2
             done
           done
+
+      - name: Verify web runtime-config injection
+        # Sanity-check that the new entrypoint wrote /srv/runtime-config.js from the env vars.
+        # The compose default leaves ARGUSLOG_WEB_* unset so the file should contain empty
+        # strings — proves the entrypoint ran without crashing.
+        run: |
+          set -euo pipefail
+          body=$(curl -fsS http://localhost:5173/runtime-config.js)
+          echo "$body"
+          echo "$body" | grep -q '__ARGUSLOG_CONFIG__' || {
+            echo "✗ runtime-config.js missing the __ARGUSLOG_CONFIG__ assignment"
+            exit 1
+          }
 
       - name: Tear down
         if: always()
