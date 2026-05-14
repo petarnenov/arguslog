@@ -1,5 +1,12 @@
 import { ping } from './commands/ping.js';
-import { releasesNew } from './commands/releases.js';
+import {
+  type Release,
+  releasesDelete,
+  releasesGet,
+  releasesList,
+  releasesNew,
+  releasesUpdate,
+} from './commands/releases.js';
 import { sourcemapsUpload } from './commands/sourcemaps.js';
 import { type CliConfig, CliConfigError, loadConfig } from './config.js';
 import { parseFlags } from './flags.js';
@@ -26,7 +33,23 @@ Commands:
   ping --project <id>             Send a synthetic event through ingest to verify
                                   the project's SDK wire path end-to-end.
   releases new <version> --project <id>
-                                  Create a new release tag.
+                                  [--released-at <iso>] [--git-sha <sha>]
+                                  [--git-ref <ref>] [--deploy-stage <stage>]
+                                  [--changelog <text>]
+                                  Create a new release tag with optional metadata.
+  releases list --project <id>    List releases for a project (newest first).
+  releases get <releaseId> --project <id>
+                                  Fetch full metadata for one release.
+  releases update <releaseId> --project <id>
+                                  [--version <v>] [--released-at <iso>]
+                                  [--git-sha <sha>] [--git-ref <ref>]
+                                  [--deploy-stage <stage>] [--changelog <text>]
+                                  Edit a release. Omit a flag to keep the
+                                  current value; pass an empty string to clear.
+  releases delete <releaseId> --project <id>
+                                  [--yes]
+                                  Delete a release (and all attached source
+                                  maps). Pass --yes to skip the confirmation.
   sourcemaps upload <path> --project <id> --release <id> [--name <originalPath>]
                                   Upload a sourcemap and attach it to a release.
   help                            Show this help.
@@ -94,19 +117,182 @@ async function runPing(rest: readonly string[], options: RunOptions): Promise<Co
 
 async function runReleases(rest: readonly string[], options: RunOptions): Promise<CommandResult> {
   const [sub, ...subRest] = rest;
-  if (sub !== 'new') {
-    return usageError(`releases: unknown subcommand '${sub ?? ''}'. Try 'releases new <version>'.`);
+  switch (sub) {
+    case 'new':
+      return runReleasesNew(subRest, options);
+    case 'list':
+      return runReleasesList(subRest, options);
+    case 'get':
+      return runReleasesGet(subRest, options);
+    case 'update':
+      return runReleasesUpdate(subRest, options);
+    case 'delete':
+      return runReleasesDelete(subRest, options);
+    default:
+      return usageError(
+        `releases: unknown subcommand '${sub ?? ''}'. Try one of: new, list, get, update, delete.`,
+      );
   }
-  const { positional, flags } = parseFlags(subRest);
+}
+
+async function runReleasesNew(
+  rest: readonly string[],
+  options: RunOptions,
+): Promise<CommandResult> {
+  const { positional, flags } = parseFlags(rest);
   const version = positional[0];
   if (!version) return usageError('releases new: missing <version> argument.');
   const projectId = parseProjectId(flags.project);
   if (projectId === null) return usageError('releases new: --project <id> is required (numeric).');
 
   return withConfig(options, async (config) => {
-    const release = await releasesNew({ version, projectId }, config);
+    const release = await releasesNew(
+      {
+        version,
+        projectId,
+        releasedAt: optional(flags['released-at']),
+        gitSha: optional(flags['git-sha']),
+        gitRef: optional(flags['git-ref']),
+        deployStage: optional(flags['deploy-stage']),
+        changelog: optional(flags.changelog),
+      },
+      config,
+    );
     return ok(`release #${release.id} created: ${release.version}\n`);
   });
+}
+
+async function runReleasesList(
+  rest: readonly string[],
+  options: RunOptions,
+): Promise<CommandResult> {
+  const { flags } = parseFlags(rest);
+  const projectId = parseProjectId(flags.project);
+  if (projectId === null) return usageError('releases list: --project <id> is required (numeric).');
+
+  return withConfig(options, async (config) => {
+    const releases = await releasesList(projectId, config);
+    if (releases.length === 0) {
+      return ok('no releases yet.\n');
+    }
+    return ok(releases.map(formatReleaseLine).join('') + `\n${releases.length} release(s).\n`);
+  });
+}
+
+async function runReleasesGet(
+  rest: readonly string[],
+  options: RunOptions,
+): Promise<CommandResult> {
+  const { positional, flags } = parseFlags(rest);
+  const releaseId = parseProjectId(positional[0]);
+  if (releaseId === null) return usageError('releases get: missing <releaseId> argument.');
+  const projectId = parseProjectId(flags.project);
+  if (projectId === null) return usageError('releases get: --project <id> is required (numeric).');
+
+  return withConfig(options, async (config) => {
+    const release = await releasesGet(projectId, releaseId, config);
+    return ok(formatReleaseDetail(release));
+  });
+}
+
+async function runReleasesUpdate(
+  rest: readonly string[],
+  options: RunOptions,
+): Promise<CommandResult> {
+  const { positional, flags } = parseFlags(rest);
+  const releaseId = parseProjectId(positional[0]);
+  if (releaseId === null) return usageError('releases update: missing <releaseId> argument.');
+  const projectId = parseProjectId(flags.project);
+  if (projectId === null) {
+    return usageError('releases update: --project <id> is required (numeric).');
+  }
+  // At least one mutating flag must be present, otherwise the command is a no-op.
+  const editable = [
+    flags.version,
+    flags['released-at'],
+    flags['git-sha'],
+    flags['git-ref'],
+    flags['deploy-stage'],
+    flags.changelog,
+  ];
+  if (editable.every((v) => v === undefined)) {
+    return usageError(
+      'releases update: pass at least one of --version / --released-at / --git-sha / --git-ref / --deploy-stage / --changelog.',
+    );
+  }
+
+  return withConfig(options, async (config) => {
+    const release = await releasesUpdate(
+      {
+        projectId,
+        releaseId,
+        version: optional(flags.version),
+        releasedAt: optional(flags['released-at']),
+        gitSha: optional(flags['git-sha']),
+        gitRef: optional(flags['git-ref']),
+        deployStage: optional(flags['deploy-stage']),
+        changelog: optional(flags.changelog),
+      },
+      config,
+    );
+    return ok(`release #${release.id} updated: ${release.version}\n`);
+  });
+}
+
+async function runReleasesDelete(
+  rest: readonly string[],
+  options: RunOptions,
+): Promise<CommandResult> {
+  const { positional, flags } = parseFlags(rest);
+  const releaseId = parseProjectId(positional[0]);
+  if (releaseId === null) return usageError('releases delete: missing <releaseId> argument.');
+  const projectId = parseProjectId(flags.project);
+  if (projectId === null) {
+    return usageError('releases delete: --project <id> is required (numeric).');
+  }
+  if (flags.yes === undefined && flags.y === undefined) {
+    return usageError(
+      "releases delete: pass --yes to confirm (this drops the release and all attached source maps).",
+    );
+  }
+
+  return withConfig(options, async (config) => {
+    await releasesDelete(projectId, releaseId, config);
+    return ok(`release #${releaseId} deleted.\n`);
+  });
+}
+
+// `parseFlags` returns flags as `string | undefined`; CLI consumers sometimes want to forward an
+// explicitly-empty string (to clear a field on update), so we keep "" intact and only convert
+// trimmed-away whitespace.
+function optional(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  return raw;
+}
+
+function formatReleaseLine(r: Release): string {
+  const stage = r.deployStage ? ` [${r.deployStage}]` : '';
+  const sha = r.gitSha ? ` ${r.gitSha.slice(0, 7)}` : '';
+  return `#${r.id}\t${r.version}${stage}${sha}\t${r.createdAt}\n`;
+}
+
+function formatReleaseDetail(r: Release): string {
+  const lines = [
+    `id:           ${r.id}`,
+    `version:      ${r.version}`,
+    `createdAt:    ${r.createdAt}`,
+    `releasedAt:   ${r.releasedAt ?? '-'}`,
+    `gitRef:       ${r.gitRef ?? '-'}`,
+    `gitSha:       ${r.gitSha ?? '-'}`,
+    `deployStage:  ${r.deployStage ?? '-'}`,
+  ];
+  if (r.changelog) {
+    lines.push('changelog:');
+    for (const line of r.changelog.split('\n')) lines.push(`  ${line}`);
+  } else {
+    lines.push('changelog:    -');
+  }
+  return lines.join('\n') + '\n';
 }
 
 async function runSourcemaps(rest: readonly string[], options: RunOptions): Promise<CommandResult> {
