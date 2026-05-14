@@ -8,6 +8,7 @@ import threading
 import time
 import traceback
 import uuid
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Optional
 
 from ._dsn import parse_dsn
@@ -16,7 +17,22 @@ from ._scrubber import Scrubber
 from ._transport import HttpTransport, TransportProtocol
 
 SDK_NAME = "arguslog.python"
-SDK_VERSION = "1.0.0"
+
+
+def _resolve_sdk_version() -> str:
+    # Single source: pyproject.toml's `version` field, read at import time via the installed
+    # package's distribution metadata. Mirrors the @arguslog/mcp-server pattern (PACKAGE_VERSION
+    # from package.json via generated/version.ts) so dist version → wire `sdk.version` can never
+    # drift again. The fallback only fires when running from an uninstalled src checkout (tests
+    # via PYTHONPATH, editable installs without metadata) — in that case the version reads as
+    # "0.0.0+dev" so a forgotten install surfaces in event payloads instead of a stale hardcode.
+    try:
+        return version("arguslog")
+    except PackageNotFoundError:
+        return "0.0.0+dev"
+
+
+SDK_VERSION = _resolve_sdk_version()
 
 _LEVELS = {"debug", "info", "warning", "error", "fatal"}
 

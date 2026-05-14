@@ -1,6 +1,6 @@
 [project]
 name = "arguslog"
-version = "2.0.1"
+version = "2.0.2"
 description = "Arguslog Python SDK — error tracking for server-side Python apps"
 readme = "README.md"
 license = { text = "MIT" }
