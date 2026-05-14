@@ -2,7 +2,10 @@ package org.arguslog.api.releases.adapter.in.web;
 
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -11,7 +14,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
+import org.arguslog.api.auth.adapter.in.web.PatAuthenticationFilter.PatAuthentication;
+import org.arguslog.api.auth.domain.PatScope;
+import org.arguslog.api.auth.domain.PersonalAccessToken;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase.CreatedUpload;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase.InvalidSourceMapException;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase.ReleaseNotFoundException;
@@ -123,5 +131,42 @@ class SourceMapArtifactControllerTest extends AbstractControllerTest {
 
     mvc.perform(get("/api/v1/projects/101/releases/999/sourcemaps"))
         .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void deleteReturns204() throws Exception {
+    when(sourceMapArtifactUseCase.delete(101L, 7L, 42L)).thenReturn(true);
+
+    mvc.perform(delete("/api/v1/projects/101/releases/7/sourcemaps/42"))
+        .andExpect(status().isNoContent());
+    verify(sourceMapArtifactUseCase).delete(101L, 7L, 42L);
+  }
+
+  @Test
+  void deleteMissingArtifactReturns404() throws Exception {
+    when(sourceMapArtifactUseCase.delete(101L, 7L, 9999L)).thenReturn(false);
+
+    mvc.perform(delete("/api/v1/projects/101/releases/7/sourcemaps/9999"))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void deleteWithPatLackingSourceMapsWriteIs403() throws Exception {
+    PatAuthentication patWithoutScope =
+        new PatAuthentication(
+            new PersonalAccessToken(
+                7L,
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                "ci",
+                "ABCDEFGH",
+                null,
+                null,
+                Instant.parse("2026-05-05T12:00:00Z"),
+                EnumSet.of(PatScope.RELEASES_READ)));
+
+    mvc.perform(
+            delete("/api/v1/projects/101/releases/7/sourcemaps/42")
+                .with(authentication(patWithoutScope)))
+        .andExpect(status().isForbidden());
   }
 }

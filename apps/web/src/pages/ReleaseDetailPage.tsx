@@ -25,6 +25,7 @@ import {
   IconCloudUpload,
   IconCopy,
   IconFileCode,
+  IconTrash,
 } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
@@ -35,6 +36,7 @@ import { ApiError } from '../api/client';
 import { queryKeys, useRelease, useSourceMaps } from '../api/queries';
 import {
   createSourceMapUpload,
+  deleteSourceMap,
   uploadFileToPresignedUrl,
   type SourceMapArtifact,
 } from '../api/sourcemaps';
@@ -162,11 +164,18 @@ export function ReleaseDetailPage() {
                   <Table.Th>{t('releaseDetail.colSize')}</Table.Th>
                   <Table.Th>{t('releaseDetail.colSha')}</Table.Th>
                   <Table.Th>{t('releaseDetail.colUploaded')}</Table.Th>
+                  <Table.Th aria-label={t('releaseDetail.colActions')} />
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
                 {sourceMaps.map((sm) => (
-                  <SourceMapRow key={sm.id} artifact={sm} formatter={formatter} />
+                  <SourceMapRow
+                    key={sm.id}
+                    artifact={sm}
+                    formatter={formatter}
+                    projectId={projectId}
+                    releaseId={releaseId}
+                  />
                 ))}
               </Table.Tbody>
             </Table>
@@ -263,11 +272,35 @@ function formatBytes(n: number): string {
 function SourceMapRow({
   artifact,
   formatter,
+  projectId,
+  releaseId,
 }: {
   artifact: SourceMapArtifact;
   formatter: Intl.DateTimeFormat;
+  projectId: number;
+  releaseId: number;
 }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const shortSha = artifact.sha256.slice(0, 12);
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteSourceMap(projectId, releaseId, artifact.id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.sourceMaps(projectId, releaseId),
+      });
+    },
+  });
+
+  const handleDelete = () => {
+    // Inline window.confirm intentionally — the action is destructive but reversible (just re-upload)
+    // and the rest of the dashboard uses the same pattern (DeleteReleaseButton on ReleasesPage).
+    if (window.confirm(t('releaseDetail.deleteSourceMapConfirm', { path: artifact.originalPath }))) {
+      deleteMutation.mutate();
+    }
+  };
+
   return (
     <Table.Tr>
       <Table.Td>
@@ -295,6 +328,19 @@ function SourceMapRow({
         </Tooltip>
       </Table.Td>
       <Table.Td>{formatter.format(new Date(artifact.createdAt))}</Table.Td>
+      <Table.Td>
+        <Button
+          size="compact-xs"
+          variant="subtle"
+          color="red"
+          loading={deleteMutation.isPending}
+          onClick={handleDelete}
+          aria-label={t('releaseDetail.deleteSourceMap', { path: artifact.originalPath })}
+          data-testid={`delete-sourcemap-${artifact.id}`}
+        >
+          <IconTrash size={14} />
+        </Button>
+      </Table.Td>
     </Table.Tr>
   );
 }

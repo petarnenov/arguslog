@@ -409,6 +409,9 @@
     "colSize": "Size",
     "colSha": "SHA-256",
     "colUploaded": "Uploaded",
+    "colActions": "Actions",
+    "deleteSourceMap": "Delete {{path}}",
+    "deleteSourceMapConfirm": "Delete the source map for {{path}}? This drops the row and the R2 blob — you'll need to re-upload to symbolicate this path again.",
     "upload": {
       "title": "Upload source map",
       "hint": "The file is hashed locally, the metadata is registered with the API, then the bytes are uploaded directly to private storage. Your dashboard origin is never proxied for the blob itself.",

@@ -58,6 +58,12 @@ class JdbcSourceMapArtifactRepositoryTest {
           public List<SourceMapArtifact> listForRelease(long releaseId) {
             return tx.execute(s -> raw.listForRelease(releaseId));
           }
+
+          @Override
+          public java.util.Optional<SourceMapArtifact> findUnderRelease(
+              long releaseId, long artifactId) {
+            return tx.execute(s -> raw.findUnderRelease(releaseId, artifactId));
+          }
         };
     writes =
         new org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository() {
@@ -65,6 +71,11 @@ class JdbcSourceMapArtifactRepositoryTest {
           public SourceMapArtifact upsert(
               long releaseId, String r2Key, String originalPath, String sha256, long sizeBytes) {
             return tx.execute(s -> raw.upsert(releaseId, r2Key, originalPath, sha256, sizeBytes));
+          }
+
+          @Override
+          public boolean delete(long releaseId, long artifactId) {
+            return Boolean.TRUE.equals(tx.execute(s -> raw.delete(releaseId, artifactId)));
           }
         };
   }
@@ -126,6 +137,38 @@ class JdbcSourceMapArtifactRepositoryTest {
     assertThat(rows)
         .extracting(SourceMapArtifact::originalPath)
         .containsExactly("dist/app.js", "dist/vendor.js");
+  }
+
+  @Test
+  void findUnderReleaseReturnsTheArtifact() {
+    SourceMapArtifact created =
+        writes.upsert(777L, "k.map", "dist/app.js", "a".repeat(64), 100L);
+
+    assertThat(repository.findUnderRelease(777L, created.id())).contains(created);
+    assertThat(repository.findUnderRelease(777L, created.id() + 9999)).isEmpty();
+    // Wrong release id returns empty even when the artifact exists in another release.
+    assertThat(repository.findUnderRelease(778L, created.id())).isEmpty();
+  }
+
+  @Test
+  void deleteReturnsTrueWhenRowExists() {
+    SourceMapArtifact created =
+        writes.upsert(777L, "k.map", "dist/app.js", "a".repeat(64), 100L);
+
+    assertThat(writes.delete(777L, created.id())).isTrue();
+    assertThat(repository.findUnderRelease(777L, created.id())).isEmpty();
+    // Second delete is a no-op — surfaces as 404 from the service layer.
+    assertThat(writes.delete(777L, created.id())).isFalse();
+  }
+
+  @Test
+  void deleteIsReleaseScoped() {
+    SourceMapArtifact created =
+        writes.upsert(777L, "k.map", "dist/app.js", "a".repeat(64), 100L);
+
+    // Wrong release id leaves the row in place.
+    assertThat(writes.delete(778L, created.id())).isFalse();
+    assertThat(repository.findUnderRelease(777L, created.id())).isPresent();
   }
 
   // ── helpers ─────────────────────────────────────────────────────────────

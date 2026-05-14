@@ -32,6 +32,18 @@ export function listSourceMaps(
   );
 }
 
+/** Drops the artifact row and (best-effort) the R2 blob. 204 on success, 404 if missing. */
+export function deleteSourceMap(
+  projectId: number,
+  releaseId: number,
+  artifactId: number,
+): Promise<void> {
+  return apiFetch<void>(
+    `/api/v1/projects/${projectId}/releases/${releaseId}/sourcemaps/${artifactId}`,
+    { method: 'DELETE' },
+  );
+}
+
 /**
  * Step 1 of the two-phase upload: mints the artifact row in Postgres and returns a presigned R2
  * URL the caller PUTs the bytes to. See {@link uploadFileToPresignedUrl} for step 2.

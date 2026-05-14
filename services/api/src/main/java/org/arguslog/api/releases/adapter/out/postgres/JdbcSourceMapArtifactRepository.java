@@ -4,11 +4,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
+import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.api.releases.application.port.SourceMapArtifactRepository;
 import org.arguslog.api.releases.application.port.SourceMapArtifactWriteRepository;
 import org.arguslog.api.releases.domain.SourceMapArtifact;
 import org.arguslog.api.security.OrgContext;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
@@ -43,6 +45,36 @@ public class JdbcSourceMapArtifactRepository
         new Object[] {releaseId, r2Key, originalPath, sha256, sizeBytes},
         new int[] {Types.BIGINT, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.BIGINT},
         rowMapper);
+  }
+
+  @Override
+  public Optional<SourceMapArtifact> findUnderRelease(long releaseId, long artifactId) {
+    pinOrgContextForRls();
+    try {
+      SourceMapArtifact row =
+          jdbc.queryForObject(
+              """
+              SELECT id, release_id, r2_key, original_path, sha256, size_bytes, created_at
+                FROM source_map_artifacts
+               WHERE release_id = ? AND id = ?
+              """,
+              rowMapper,
+              releaseId,
+              artifactId);
+      return Optional.ofNullable(row);
+    } catch (EmptyResultDataAccessException e) {
+      return Optional.empty();
+    }
+  }
+
+  @Override
+  public boolean delete(long releaseId, long artifactId) {
+    pinOrgContextForRls();
+    return jdbc.update(
+            "DELETE FROM source_map_artifacts WHERE release_id = ? AND id = ?",
+            releaseId,
+            artifactId)
+        > 0;
   }
 
   @Override

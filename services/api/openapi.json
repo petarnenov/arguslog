@@ -1623,6 +1623,42 @@
         }
       }
     },
+    "/api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps/{id}" : {
+      "delete" : {
+        "tags" : [ "source-map-artifact-controller" ],
+        "operationId" : "delete_4",
+        "parameters" : [ {
+          "name" : "projectId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "releaseId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
     "/api/v1/projects/{projectId}/keys/{keyId}" : {
       "delete" : {
         "tags" : [ "dsn-controller" ],
@@ -1654,7 +1690,7 @@
     "/api/v1/me/tokens/{id}" : {
       "delete" : {
         "tags" : [ "me-tokens-controller" ],
-        "operationId" : "delete_4",
+        "operationId" : "delete_5",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",

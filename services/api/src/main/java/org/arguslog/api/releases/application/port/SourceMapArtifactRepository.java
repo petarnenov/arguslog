@@ -1,6 +1,7 @@
 package org.arguslog.api.releases.application.port;
 
 import java.util.List;
+import java.util.Optional;
 import org.arguslog.api.releases.domain.SourceMapArtifact;
 
 /**
@@ -10,4 +11,11 @@ import org.arguslog.api.releases.domain.SourceMapArtifact;
 public interface SourceMapArtifactRepository {
 
   List<SourceMapArtifact> listForRelease(long releaseId);
+
+  /**
+   * Looks up a single artifact scoped to its parent release. Returns empty if no row matches —
+   * used by the delete path to surface a 404 without leaking which other releases the artifact id
+   * might exist under.
+   */
+  Optional<SourceMapArtifact> findUnderRelease(long releaseId, long artifactId);
 }

@@ -11,4 +11,11 @@ import java.time.Duration;
 public interface SourceMapStorage {
 
   URI presignPut(String r2Key, long expectedSizeBytes, Duration ttl);
+
+  /**
+   * Best-effort blob removal. Implementations should swallow "key already gone" and any transient
+   * S3 errors — the api row is the source of truth, and a stranded blob is cheap. The boolean
+   * return is informational ({@code true} when the SDK call returned without an error).
+   */
+  boolean deleteObject(String r2Key);
 }

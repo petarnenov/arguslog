@@ -11,10 +11,12 @@ import org.arguslog.api.releases.application.SourceMapArtifactUseCase;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase.CreatedUpload;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase.InvalidSourceMapException;
 import org.arguslog.api.releases.application.SourceMapArtifactUseCase.ReleaseNotFoundException;
+import org.arguslog.api.security.AccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,6 +57,16 @@ public class SourceMapArtifactController {
         useCase.create(projectId, releaseId, req.originalPath(), req.sha256(), req.sizeBytes());
     return ResponseEntity.created(URI.create(String.valueOf(created.artifact().id())))
         .body(SourceMapUploadResponse.from(created));
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> delete(
+      @PathVariable long projectId, @PathVariable long releaseId, @PathVariable long id) {
+    PatScopeGuard.require(PatScope.SOURCEMAPS_WRITE);
+    if (!useCase.delete(projectId, releaseId, id)) {
+      throw AccessException.notFound(id);
+    }
+    return ResponseEntity.noContent().build();
   }
 
   @ExceptionHandler(InvalidSourceMapException.class)

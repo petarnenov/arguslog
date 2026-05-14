@@ -13,11 +13,15 @@ import org.arguslog.api.releases.application.port.SourceMapArtifactWriteReposito
 import org.arguslog.api.releases.application.port.SourceMapStorage;
 import org.arguslog.api.releases.domain.Release;
 import org.arguslog.api.releases.domain.SourceMapArtifact;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SourceMapArtifactService implements SourceMapArtifactUseCase {
+
+  private static final Logger log = LoggerFactory.getLogger(SourceMapArtifactService.class);
 
   // 50 MB upper bound. Real-world sourcemaps for monolithic SPAs hover around 5–20 MB; 50 leaves
   // headroom while still capping abuse (a malicious key could otherwise PUT GBs into R2).
@@ -77,6 +81,42 @@ public class SourceMapArtifactService implements SourceMapArtifactUseCase {
     URI uploadUrl = storage.presignPut(r2Key, size, PRESIGN_TTL);
     Instant expiresAt = Instant.now(clock).plus(PRESIGN_TTL);
     return new CreatedUpload(stored, uploadUrl, expiresAt);
+  }
+
+  @Override
+  @Transactional
+  public boolean delete(long projectId, long releaseId, long artifactId) {
+    // Project/release scope check first — keeps a caller from leaking which artifact ids exist in
+    // other projects. Mirrors what {@link #list} does for read scopes.
+    Release release =
+        releases
+            .find(projectId, releaseId)
+            .orElseThrow(
+                () ->
+                    new ReleaseNotFoundException(
+                        "release " + releaseId + " not found in project " + projectId));
+
+    // Pull the row before the DELETE so we have its r2_key for the blob removal. If the artifact
+    // is missing the controller will translate the false return into a 404.
+    SourceMapArtifact existing =
+        artifacts.findUnderRelease(release.id(), artifactId).orElse(null);
+    if (existing == null) return false;
+
+    boolean removedRow = artifactWrites.delete(release.id(), artifactId);
+    if (removedRow) {
+      try {
+        storage.deleteObject(existing.r2Key());
+      } catch (RuntimeException e) {
+        // Stranded blob is cheap; api row is the source of truth. The R2 lifecycle policy GCs
+        // un-referenced keys on its own schedule.
+        log.warn(
+            "sourcemap row {} dropped but r2 delete failed for key {}: {}",
+            artifactId,
+            existing.r2Key(),
+            e.getMessage());
+      }
+    }
+    return removedRow;
   }
 
   @Override

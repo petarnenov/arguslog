@@ -178,4 +178,54 @@ class SourceMapArtifactServiceTest {
     when(releases.find(101L, 999L)).thenReturn(Optional.empty());
     assertThatThrownBy(() -> service.list(101L, 999L)).isInstanceOf(ReleaseNotFoundException.class);
   }
+
+  @Test
+  void deleteDropsRowAndBestEffortBlob() {
+    when(releases.find(101L, 7L))
+        .thenReturn(Optional.of(new Release(7L, 101L, "1.2.3", FIXED_NOW)));
+    SourceMapArtifact existing =
+        new SourceMapArtifact(42L, 7L, "1/101/7/dist/a.js.map", "dist/a.js", VALID_SHA, 10L, FIXED_NOW);
+    when(artifacts.findUnderRelease(7L, 42L)).thenReturn(Optional.of(existing));
+    when(artifactWrites.delete(7L, 42L)).thenReturn(true);
+
+    assertThat(service.delete(101L, 7L, 42L)).isTrue();
+    verify(storage).deleteObject("1/101/7/dist/a.js.map");
+  }
+
+  @Test
+  void deleteOnMissingArtifactReturnsFalseWithoutBlobCall() {
+    when(releases.find(101L, 7L))
+        .thenReturn(Optional.of(new Release(7L, 101L, "1.2.3", FIXED_NOW)));
+    when(artifacts.findUnderRelease(7L, 9999L)).thenReturn(Optional.empty());
+
+    assertThat(service.delete(101L, 7L, 9999L)).isFalse();
+    verify(artifactWrites, never()).delete(anyLong(), anyLong());
+    verify(storage, never()).deleteObject(anyString());
+  }
+
+  @Test
+  void deleteOnUnknownReleaseRaises404() {
+    when(releases.find(101L, 999L)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service.delete(101L, 999L, 1L))
+        .isInstanceOf(ReleaseNotFoundException.class);
+    verifyNoInteractions(artifactWrites);
+    verifyNoInteractions(storage);
+  }
+
+  @Test
+  void deleteSwallowsStorageFailure() {
+    when(releases.find(101L, 7L))
+        .thenReturn(Optional.of(new Release(7L, 101L, "1.2.3", FIXED_NOW)));
+    SourceMapArtifact existing =
+        new SourceMapArtifact(42L, 7L, "k.map", "dist/a.js", VALID_SHA, 10L, FIXED_NOW);
+    when(artifacts.findUnderRelease(7L, 42L)).thenReturn(Optional.of(existing));
+    when(artifactWrites.delete(7L, 42L)).thenReturn(true);
+    org.mockito.Mockito.doThrow(new RuntimeException("r2 down"))
+        .when(storage)
+        .deleteObject("k.map");
+
+    // Row was deleted even though the blob removal threw — service swallows the storage error
+    // and surfaces success because the api row is the source of truth.
+    assertThat(service.delete(101L, 7L, 42L)).isTrue();
+  }
 }

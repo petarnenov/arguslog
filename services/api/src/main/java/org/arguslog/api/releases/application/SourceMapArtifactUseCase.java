@@ -17,6 +17,13 @@ public interface SourceMapArtifactUseCase {
 
   List<SourceMapArtifact> list(long projectId, long releaseId);
 
+  /**
+   * Drops the artifact row and best-effort removes the underlying R2 blob. Returns {@code false}
+   * when the artifact does not exist under the given project + release scope (so the controller
+   * can surface a 404 without leaking whether the artifact existed in a different project).
+   */
+  boolean delete(long projectId, long releaseId, long artifactId);
+
   record CreatedUpload(SourceMapArtifact artifact, URI uploadUrl, Instant expiresAt) {}
 
   /** Thrown when payload metadata fails validation (path/sha/size out of bounds). */

@@ -14,4 +14,12 @@ public interface SourceMapArtifactWriteRepository {
 
   SourceMapArtifact upsert(
       long releaseId, String r2Key, String originalPath, String sha256, long sizeBytes);
+
+  /**
+   * Drops the artifact row scoped to a single release. Returns {@code true} when a row was deleted,
+   * {@code false} when the artifact does not exist under that release. The release-scoping is
+   * defensive — controllers already validate the release exists in the project, but this keeps the
+   * SQL itself project-aware so an out-of-band caller can't drop a row from another release.
+   */
+  boolean delete(long releaseId, long artifactId);
 }
