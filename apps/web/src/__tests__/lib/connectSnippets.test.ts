@@ -204,6 +204,45 @@ describe('buildAgentPrompt', () => {
     expect(md).toMatch(/Do \*\*not\*\* list "replace the PAT"/);
   });
 
+  it('Step 2 carries default integrations + framework wraps for every supported stack', () => {
+    // Step 2 content is agent-agnostic; pick any agent to retrieve the block.
+    const md = buildAgentPrompt(baseCtx, 'claude-code');
+
+    // Browser-family SDKs default to globalHandlers + autoBreadcrumbs.
+    const browserIntegrations = "integrations: ['globalHandlers', 'autoBreadcrumbs']";
+    expect(md.match(new RegExp(browserIntegrations.replace(/[[\]]/g, '\\$&'), 'g'))?.length ?? 0)
+      .toBeGreaterThanOrEqual(5); // javascript, react, angular, vue, nextjs (client), web3
+
+    // Server SDKs use processHandlers + http.
+    expect(md).toContain("integrations: ['processHandlers', 'http']");
+
+    // React Native ships only globalHandlers (no DOM, no breadcrumbs).
+    expect(md).toContain("integrations: ['globalHandlers']");
+
+    // Framework wraps for each UI SDK.
+    expect(md).toContain('<ArguslogErrorBoundary fallback={<p>Something went wrong.</p>}>');
+    expect(md).toContain('<ArguslogErrorBoundary fallback={<CrashScreen />}>'); // RN variant
+    expect(md).toContain('provideArguslog(');                                    // Angular
+    expect(md).toContain('app.use(arguslogPlugin');                              // Vue
+    expect(md).toContain('instrumentation.ts');                                  // Next.js server
+    expect(md).toContain('onRequestError');                                      // Next.js error hook
+
+    // Server-side wiring.
+    expect(md).toContain("process.on('unhandledRejection'");
+    expect(md).toContain('captureException');
+
+    // Python init kwargs.
+    expect(md).toContain('install_excepthook=True');
+    expect(md).toContain('install_logging_handler=30');
+
+    // Java/Spring autoconfig YAML — shows up as a code block headed with `arguslog:` /
+    // `dsn:` keys.
+    expect(md).toMatch(/arguslog:\s*\n\s+dsn: "<DSN>"/);
+
+    // web3 augmentation.
+    expect(md).toContain('initWeb3(');
+  });
+
   it('points each agent at its canonical MCP config file', () => {
     expect(buildAgentPrompt(baseCtx, 'claude-code')).toContain('.mcp.json');
     expect(buildAgentPrompt(baseCtx, 'claude-code')).toContain('claude mcp add arguslog');

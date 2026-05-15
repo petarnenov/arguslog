@@ -42,6 +42,15 @@ export const SDK_CATALOG = [
     installCmd: 'npm install @arguslog/sdk-browser@^2',
     detect: 'package.json without a framework — vanilla HTML/JS or tooling-free bundler',
     entryFile: 'src/main.js or the first script loaded by index.html',
+    lang: 'ts',
+    initSnippet: `import { init } from '@arguslog/sdk-browser';
+
+init({
+  dsn: '<DSN>',
+  environment: 'production',
+  integrations: ['globalHandlers', 'autoBreadcrumbs'],
+});`,
+    wrapSnippet: null,
   },
   {
     slug: 'react',
@@ -50,6 +59,22 @@ export const SDK_CATALOG = [
     installCmd: 'npm install @arguslog/sdk-react@^2',
     detect: 'package.json contains "react"',
     entryFile: 'src/main.tsx (Vite) or src/index.tsx (CRA)',
+    lang: 'tsx',
+    initSnippet: `import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react';
+import { createRoot } from 'react-dom/client';
+
+init({
+  dsn: '<DSN>',
+  environment: process.env.NODE_ENV,
+  integrations: ['globalHandlers', 'autoBreadcrumbs'],
+});
+
+createRoot(document.getElementById('root')!).render(
+  <ArguslogErrorBoundary fallback={<p>Something went wrong.</p>}>
+    <App />
+  </ArguslogErrorBoundary>,
+);`,
+    wrapSnippet: null,
   },
   {
     slug: 'angular',
@@ -58,6 +83,21 @@ export const SDK_CATALOG = [
     installCmd: 'npm install @arguslog/sdk-angular@^2',
     detect: 'package.json contains "@angular/core"',
     entryFile: 'src/app/app.config.ts (provideArguslog())',
+    lang: 'ts',
+    initSnippet: `import { ApplicationConfig } from '@angular/core';
+import { provideArguslog } from '@arguslog/sdk-angular';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideArguslog({
+      dsn: '<DSN>',
+      environment: 'production',
+      integrations: ['globalHandlers', 'autoBreadcrumbs'],
+    }),
+    // ...your other providers
+  ],
+};`,
+    wrapSnippet: null,
   },
   {
     slug: 'vue',
@@ -66,6 +106,28 @@ export const SDK_CATALOG = [
     installCmd: 'npm install @arguslog/sdk-vue@^2',
     detect: 'package.json contains "vue" (>= 3.x)',
     entryFile: 'src/main.ts (app.use(arguslogPlugin))',
+    lang: 'ts',
+    initSnippet: `import { createApp } from 'vue';
+import { arguslogPlugin } from '@arguslog/sdk-vue';
+import App from './App.vue';
+
+const app = createApp(App);
+app.use(arguslogPlugin, {
+  dsn: '<DSN>',
+  environment: 'production',
+  integrations: ['globalHandlers', 'autoBreadcrumbs'],
+});
+app.mount('#app');`,
+    wrapSnippet: `<!-- In your root template (e.g. App.vue), wrap routed content: -->
+<template>
+  <ArguslogErrorBoundary>
+    <RouterView />
+  </ArguslogErrorBoundary>
+</template>
+
+<script setup lang="ts">
+import { ArguslogErrorBoundary } from '@arguslog/sdk-vue';
+</script>`,
   },
   {
     slug: 'nextjs',
@@ -74,14 +136,66 @@ export const SDK_CATALOG = [
     installCmd: 'npm install @arguslog/sdk-nextjs@^2',
     detect: 'package.json contains "next"',
     entryFile: 'instrumentation.ts at repo root (Next 13+ instrumentation hook)',
+    lang: 'ts',
+    initSnippet: `// instrumentation.ts (repo root, or src/instrumentation.ts when using src/)
+export async function register() {
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { init } = await import('@arguslog/sdk-nextjs/server');
+    init({
+      dsn: '<DSN>',
+      environment: process.env.NODE_ENV,
+      integrations: ['processHandlers', 'http'],
+    });
+  }
+}
+
+export { onRequestError } from '@arguslog/sdk-nextjs/server';`,
+    wrapSnippet: `// app/layout.tsx — wrap your root layout with the client boundary AND init the client SDK.
+'use client';
+import { init, ArguslogErrorBoundary } from '@arguslog/sdk-nextjs/client';
+
+init({
+  dsn: '<DSN>',
+  environment: process.env.NODE_ENV,
+  integrations: ['globalHandlers', 'autoBreadcrumbs'],
+});
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        <ArguslogErrorBoundary fallback={<p>Something went wrong.</p>}>
+          {children}
+        </ArguslogErrorBoundary>
+      </body>
+    </html>
+  );
+}`,
   },
   {
     slug: 'web3',
     pkg: '@arguslog/sdk-web3',
     version: '2.0.0',
-    installCmd: 'npm install @arguslog/sdk-web3@^2',
+    installCmd: 'npm install @arguslog/sdk-web3@^2 @arguslog/sdk-browser@^2',
     detect: 'package.json contains "viem", "ethers", or "@solana/web3.js"',
     entryFile: 'wherever you currently init() the wallet client',
+    lang: 'ts',
+    initSnippet: `import { init } from '@arguslog/sdk-browser';
+import { initWeb3 } from '@arguslog/sdk-web3';
+
+// 1. Standard browser SDK init — covers uncaught JS errors + breadcrumbs.
+init({
+  dsn: '<DSN>',
+  environment: 'production',
+  integrations: ['globalHandlers', 'autoBreadcrumbs'],
+});
+
+// 2. Wrap your wallet / RPC client(s). initWeb3 auto-detects viem, ethers, and Solana
+//    and returns each wrapped — pass whatever you currently hand to your dapp.
+const { walletClient } = initWeb3({
+  walletClient: /* your existing viem walletClient OR ethers signer */,
+});`,
+    wrapSnippet: null,
   },
   {
     slug: 'react-native',
@@ -90,6 +204,23 @@ export const SDK_CATALOG = [
     installCmd: 'npm install @arguslog/sdk-react-native@^2',
     detect: 'package.json contains "react-native"',
     entryFile: 'App.tsx (top of the file, above the root component)',
+    lang: 'tsx',
+    initSnippet: `import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react-native';
+
+init({
+  dsn: '<DSN>',
+  environment: __DEV__ ? 'development' : 'production',
+  integrations: ['globalHandlers'],
+});
+
+export default function App() {
+  return (
+    <ArguslogErrorBoundary fallback={<CrashScreen />}>
+      <RootNavigator />
+    </ArguslogErrorBoundary>
+  );
+}`,
+    wrapSnippet: null,
   },
   {
     slug: 'node',
@@ -98,6 +229,18 @@ export const SDK_CATALOG = [
     installCmd: 'npm install @arguslog/sdk-node@^2',
     detect: 'package.json with no frontend framework (Express, Fastify, plain Node, workers)',
     entryFile: 'the FIRST file your process loads (e.g., src/index.ts before any handler import)',
+    lang: 'ts',
+    initSnippet: `import { init, captureException } from '@arguslog/sdk-node';
+
+init({
+  dsn: '<DSN>',
+  environment: process.env.NODE_ENV,
+  release: process.env.GIT_SHA,
+  integrations: ['processHandlers', 'http'],
+});
+
+process.on('unhandledRejection', (err) => captureException(err));`,
+    wrapSnippet: null,
   },
   {
     slug: 'java-spring',
@@ -107,6 +250,13 @@ export const SDK_CATALOG = [
       'add to build.gradle (implementation "org.arguslog:java-sdk:2.0.0") or pom.xml dependency block',
     detect: 'build.gradle / build.gradle.kts / pom.xml with Spring Boot starter',
     entryFile: 'src/main/resources/application.yml (arguslog.dsn property)',
+    lang: 'yaml',
+    initSnippet: `# src/main/resources/application.yml — Spring Boot autoconfig picks this up at startup.
+arguslog:
+  dsn: "<DSN>"
+  environment: production
+  release: \${GIT_SHA:dev}`,
+    wrapSnippet: null,
   },
   {
     slug: 'python',
@@ -116,6 +266,16 @@ export const SDK_CATALOG = [
     detect: 'pyproject.toml, requirements.txt, or setup.py',
     entryFile:
       'the application entry — Django wsgi.py / Flask app.py / FastAPI main.py / a worker boot script',
+    lang: 'python',
+    initSnippet: `import arguslog
+
+arguslog.init(
+    dsn="<DSN>",
+    environment="production",
+    install_excepthook=True,        # global sys.excepthook
+    install_logging_handler=30,     # forward WARNING+ through Python logging
+)`,
+    wrapSnippet: null,
   },
 ] as const;
 
@@ -253,6 +413,21 @@ function agentSdkInstallTable(): string {
     (p) =>
       `| \`${p.slug}\` | ${p.detect} | \`${p.installCmd}\` | \`${p.pkg}@${p.version}\` | ${p.entryFile} |`,
   ).join('\n');
+
+  // Per-platform init + wrap templates. Each block is what the agent should paste verbatim
+  // once it picks the slug matching its stack-detection. `<DSN>` stays literal here — the
+  // credentials block at the end of the prompt carries the real value the agent substitutes.
+  const templates = SDK_CATALOG.map((p) => {
+    const wrap = p.wrapSnippet
+      ? `\n\nThen wire the framework wrap / boundary as well:\n\n\`\`\`${p.lang}\n${p.wrapSnippet}\n\`\`\``
+      : '';
+    return `#### \`${p.slug}\` — full template
+
+\`\`\`${p.lang}
+${p.initSnippet}
+\`\`\`${wrap}`;
+  }).join('\n\n');
+
   return `## Step 2 — install the SDK and wire init()
 
 Pick the row matching your detection. Use the EXACT package + version listed below — the catalog is the single source of truth.
@@ -261,27 +436,11 @@ Pick the row matching your detection. Use the EXACT package + version listed bel
 |---|---|---|---|---|
 ${rows}
 
-For \`init({ dsn })\`, use the DSN provided at the bottom of this document. JS/TS SDKs share the same option shape:
+### Init templates per stack
 
-\`\`\`ts
-import { init } from '@arguslog/sdk-<slug>';
-init({ dsn: '<DSN>', environment: process.env.NODE_ENV });
-\`\`\`
+For the detected slug, paste the matching block verbatim. The templates already carry the recommended default integrations (\`globalHandlers\`, \`autoBreadcrumbs\` for browser/UI SDKs; \`processHandlers\`/\`http\` for server SDKs) and, where the SDK exports one, the framework wrap (React/Vue/Next.js/React-Native \`<ArguslogErrorBoundary>\`, Angular \`provideArguslog\` providers, Next.js server \`instrumentation.ts\`). Replace \`<DSN>\` with the real DSN from the Credentials block at the bottom — no other edits needed.
 
-Python:
-
-\`\`\`python
-import arguslog
-arguslog.init(dsn="<DSN>", environment="production", install_excepthook=True)
-\`\`\`
-
-Java / Spring (application.yml):
-
-\`\`\`yaml
-arguslog:
-  dsn: "<DSN>"
-  environment: production
-\`\`\``;
+${templates}`;
 }
 
 function agentMcpInstructions(

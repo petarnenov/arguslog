@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Improved — full default integrations + framework wrap in every agent prompt
+
+Step 2 of the magic prompt (the "install the SDK and wire init()" block) now
+emits per-stack full templates with the recommended default integrations
+already wired:
+- Browser-family SDKs (javascript, react, vue, angular, nextjs client, web3):
+  `integrations: ['globalHandlers', 'autoBreadcrumbs']`.
+- Server SDKs (node, nextjs server, instrumentation.ts): `['processHandlers', 'http']`.
+- React Native: `['globalHandlers']` (no DOM / no breadcrumbs).
+- Plus framework wraps where the SDK exports one: `<ArguslogErrorBoundary>` for
+  React, Vue, Next.js client, and React Native; `provideArguslog()` for Angular;
+  `instrumentation.ts` with `onRequestError` for Next.js server; Vue `arguslogPlugin`
+  via `app.use(...)`; Python `install_excepthook=True` + `install_logging_handler=30`;
+  Spring Boot autoconfig YAML. The agent picks the section matching its detected
+  stack and pastes it verbatim — no more stripped-down `init({ dsn })`.
+
 ### Fixed — MCP config schemas verified against current docs (May 2026)
 
 Direct WebFetch on each tool's MCP docs surfaced four schema bugs in the V3
