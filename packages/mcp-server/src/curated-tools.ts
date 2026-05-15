@@ -303,6 +303,56 @@ Method: GET /api/v1/orgs/{orgId}/alert-destinations`,
     hasBody: false,
   },
 
+  create_alert_rule: {
+    name: 'create_alert_rule',
+    description: `Create an alert rule on a project. All condition clauses are AND-ed; an empty
+\`conditions\` object means "always match". Levels accept any subset of
+\`fatal | error | warning | info | debug\`; \`firstSeenWindow\` is an ISO-8601 duration like
+\`PT5M\` / \`PT2H\` / \`P1D\`; \`occurrenceThreshold\` only fires after N occurrences;
+\`tag.{key,in}\` matches an SDK-supplied tag value against a non-empty list.
+
+Actions carry at least one destinationId; cap is 8 per rule. \`throttleSeconds\` is clamped
+server-side to [30, 86400]. \`enabled\` defaults to true.
+
+Example body:
+\`\`\`json
+{
+  "name": "production fatals",
+  "conditions": {
+    "level": { "in": ["fatal", "error"] },
+    "firstSeenWindow": "PT5M",
+    "tag": { "key": "env", "in": ["production"] }
+  },
+  "actions": { "destinationIds": [10, 11] },
+  "throttleSeconds": 600
+}
+\`\`\`
+
+Method: POST /api/v1/projects/{projectId}/alert-rules`,
+    method: 'POST',
+    path: '/api/v1/projects/{projectId}/alert-rules',
+    pathParams: [{ name: 'projectId', required: true, type: 'integer' }],
+    queryParams: [],
+    hasBody: true,
+  },
+
+  update_alert_rule: {
+    name: 'update_alert_rule',
+    description: `Replace an alert rule. Full-PUT semantics — the entire body overwrites the
+existing row, so fetch via \`get_alert_rule\` first and merge if you only want to change a
+subset of fields. Same conditions / actions shape as create_alert_rule.
+
+Method: PUT /api/v1/projects/{projectId}/alert-rules/{id}`,
+    method: 'PUT',
+    path: '/api/v1/projects/{projectId}/alert-rules/{id}',
+    pathParams: [
+      { name: 'projectId', required: true, type: 'integer' },
+      { name: 'id', required: true, type: 'integer' },
+    ],
+    queryParams: [],
+    hasBody: true,
+  },
+
   list_members: {
     name: 'list_members',
     description: `List members of an org with their roles (owner / admin / member) and join dates.

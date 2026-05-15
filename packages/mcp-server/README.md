@@ -213,7 +213,7 @@ descriptions and example payloads in their tool docstring:
 | Projects    | list, create, archive, DSN keys CRUD                                    |
 | Issues      | list with filters, get, list events, change status                      |
 | Releases    | list, create, attach source-map artifacts, delete                       |
-| Alerts      | rules CRUD, destinations CRUD (Telegram / Slack / email / webhook)      |
+| Alerts      | rules CRUD with **typed conditions DSL** (`level.in`, `firstSeenWindow`, `occurrenceThreshold`, `tag.{key,in}` — all AND-ed), destinations CRUD (Telegram / Slack / email / webhook) |
 | Slack       | `list_slack_workspaces`, `revoke_slack_workspace`, `set_slack_default_project` — manage Slack-app installs against an org |
 | Billing     | plan catalog, usage snapshot, **user-level checkout / portal / crypto** |
 | Admin       | platform stats, user / org tables, **per-user + per-org bonus grants**  |

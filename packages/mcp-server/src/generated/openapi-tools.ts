@@ -284,10 +284,10 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
         },
         conditions: {
-          $ref: '#/components/schemas/JsonNode',
+          $ref: '#/components/schemas/AlertRuleConditions',
         },
         actions: {
-          $ref: '#/components/schemas/JsonNode',
+          $ref: '#/components/schemas/AlertRuleActions',
         },
         throttleSeconds: {
           type: 'integer',
@@ -340,10 +340,10 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
         },
         conditions: {
-          $ref: '#/components/schemas/JsonNode',
+          $ref: '#/components/schemas/AlertRuleConditions',
         },
         actions: {
-          $ref: '#/components/schemas/JsonNode',
+          $ref: '#/components/schemas/AlertRuleActions',
         },
         throttleSeconds: {
           type: 'integer',
@@ -369,10 +369,10 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
         },
         conditions: {
-          $ref: '#/components/schemas/JsonNode',
+          $ref: '#/components/schemas/AlertRuleConditions',
         },
         actions: {
-          $ref: '#/components/schemas/JsonNode',
+          $ref: '#/components/schemas/AlertRuleActions',
         },
         throttleSeconds: {
           type: 'integer',
@@ -586,6 +586,33 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
       readOnlyHint: false,
       idempotentHint: true,
       destructiveHint: true,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'slack_interactivity_handle',
+    title: 'Slack interactivity handle',
+    description: 'POST /api/v1/slack/interactivity\n\nMethod: POST /api/v1/slack/interactivity',
+    method: 'POST',
+    path: '/api/v1/slack/interactivity',
+    pathParams: [],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        result: {
+          type: 'string',
+        },
+      },
+      required: ['result'],
+    },
+    outputResultWrapped: true,
+    annotations: {
+      title: 'POST /api/v1/slack/interactivity',
+      readOnlyHint: false,
+      idempotentHint: false,
+      destructiveHint: false,
       openWorldHint: true,
     },
   },
@@ -1013,10 +1040,10 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
         },
         conditions: {
-          $ref: '#/components/schemas/JsonNode',
+          $ref: '#/components/schemas/AlertRuleConditions',
         },
         actions: {
-          $ref: '#/components/schemas/JsonNode',
+          $ref: '#/components/schemas/AlertRuleActions',
         },
         throttleSeconds: {
           type: 'integer',
@@ -1042,10 +1069,10 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
         },
         conditions: {
-          $ref: '#/components/schemas/JsonNode',
+          $ref: '#/components/schemas/AlertRuleConditions',
         },
         actions: {
-          $ref: '#/components/schemas/JsonNode',
+          $ref: '#/components/schemas/AlertRuleActions',
         },
         throttleSeconds: {
           type: 'integer',
@@ -1319,6 +1346,64 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
     annotations: {
       title: 'POST /api/v1/orgs/{orgId}/members',
+      readOnlyHint: false,
+      idempotentHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'integrations_slack_create_alert_destination',
+    title: 'Integrations slack create alert destination',
+    description:
+      'POST /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}/alert-destination\n\nMethod: POST /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}/alert-destination',
+    method: 'POST',
+    path: '/api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}/alert-destination',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+      {
+        name: 'id',
+        required: true,
+        type: 'integer',
+        description: 'id (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+        },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'integer',
+          format: 'int64',
+        },
+        orgId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        kind: {
+          type: 'string',
+        },
+        name: {
+          type: 'string',
+        },
+      },
+    },
+    annotations: {
+      title: 'POST /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}/alert-destination',
       readOnlyHint: false,
       idempotentHint: false,
       destructiveHint: false,
@@ -2309,6 +2394,12 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         active: {
           type: 'boolean',
         },
+        webhookChannel: {
+          type: 'string',
+        },
+        hasWebhook: {
+          type: 'boolean',
+        },
       },
     },
     annotations: {
@@ -2625,8 +2716,6 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     hasBody: false,
     outputSchema: {
       type: 'object',
-      additionalProperties: true,
-      description: 'No response body — successful response is a 204 No Content or similar.',
     },
     annotations: {
       title: 'GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install',

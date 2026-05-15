@@ -139,6 +139,40 @@ If step 2 fails after step 1 succeeded, the artifact row exists but has no bytes
 Re-run the same command — the API treats a repeat upload of the same `sha256` as the
 authoritative copy.
 
+### `arguslog alerts`
+
+Manage alert rules from the terminal. The wire shape is the same typed DSL the dashboard
+emits — `level.in`, `firstSeenWindow` (ISO-8601 duration), `occurrenceThreshold`, and
+`tag.{key,in}`, all AND-ed.
+
+```bash
+# List rules on a project
+arguslog alerts list --project 42
+
+# Inspect one rule
+arguslog alerts get 7 --project 42
+
+# Create a rule firing on production fatals seen in the last 5 minutes
+arguslog alerts create --project 42 \
+  --name "production fatals" \
+  --level error,fatal \
+  --window 5m \
+  --tag-key env --tag-values production \
+  --destination 10 \
+  --throttle 600
+
+# Update (full-PUT — omitted flags inherit from the current row)
+arguslog alerts update 7 --project 42 --throttle 300
+
+# Delete (requires --yes)
+arguslog alerts delete 7 --project 42 --yes
+```
+
+Window shorthand: `5m` → `PT5M`, `2h` → `PT2H`, `1d` → `P1D`. Anything starting with `P`
+(`PT30S`, `P1DT12H`) passes through unchanged. Levels must be a subset of
+`fatal,error,warning,info,debug`. `--tag-key` and `--tag-values` must be set together
+(or both omitted). `--destination` accepts comma-separated ids; cap is 8.
+
 ### `arguslog help` / `arguslog version`
 
 ```bash

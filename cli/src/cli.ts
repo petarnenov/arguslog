@@ -1,3 +1,17 @@
+import {
+  type AlertLevel,
+  type AlertRule,
+  alertsCreate,
+  alertsDelete,
+  alertsGet,
+  alertsList,
+  alertsUpdate,
+  composeBody,
+  parseDestinationIds,
+  parseLevels,
+  parseTagValuesFlag,
+  parseWindowShorthand,
+} from './commands/alerts.js';
 import { ping } from './commands/ping.js';
 import {
   type Release,
@@ -59,6 +73,22 @@ Commands:
                                   maps). Pass --yes to skip the confirmation.
   sourcemaps upload <path> --project <id> --release <id> [--name <originalPath>]
                                   Upload a sourcemap and attach it to a release.
+  alerts list --project <id>      List alert rules for a project.
+  alerts get <ruleId> --project <id>
+                                  Fetch full detail for one alert rule.
+  alerts create --project <id> --name <s> --destination <id> [--destination <id> ...]
+                                  [--level error,fatal] [--window 5m|2h|1d|<iso>]
+                                  [--threshold N] [--tag-key <s> --tag-values v1,v2]
+                                  [--throttle <seconds>] [--disabled]
+                                  Create an alert rule. --level / --window /
+                                  --threshold are optional (omit = match-all on
+                                  that clause); --tag-key requires --tag-values
+                                  and vice versa.
+  alerts update <ruleId> --project <id> [flags as above]
+                                  Edit a rule. Omit a flag to keep its current
+                                  value (full-PUT against the existing row).
+  alerts delete <ruleId> --project <id> [--yes]
+                                  Delete a rule. Pass --yes to skip confirmation.
   help                            Show this help.
   version                         Print CLI version.
 
@@ -96,6 +126,8 @@ export async function run(
       return runReleases(rest, options);
     case 'sourcemaps':
       return runSourcemaps(rest, options);
+    case 'alerts':
+      return runAlerts(rest, options);
     default:
       return {
         exitCode: 1,
@@ -352,6 +384,276 @@ async function runSourcemaps(rest: readonly string[], options: RunOptions): Prom
         `sha256=${result.artifact.sha256.slice(0, 12)}…)\n`,
     );
   });
+}
+
+async function runAlerts(rest: readonly string[], options: RunOptions): Promise<CommandResult> {
+  const [sub, ...subRest] = rest;
+  switch (sub) {
+    case 'list':
+      return runAlertsList(subRest, options);
+    case 'get':
+      return runAlertsGet(subRest, options);
+    case 'create':
+      return runAlertsCreate(subRest, options);
+    case 'update':
+      return runAlertsUpdate(subRest, options);
+    case 'delete':
+      return runAlertsDelete(subRest, options);
+    default:
+      return usageError(
+        `alerts: unknown subcommand '${sub ?? ''}'. Try one of: list, get, create, update, delete.`,
+      );
+  }
+}
+
+async function runAlertsList(rest: readonly string[], options: RunOptions): Promise<CommandResult> {
+  const { flags } = parseFlags(rest);
+  const projectId = parseProjectId(flags.project);
+  if (projectId === null) {
+    return usageError('alerts list: --project <id> is required (numeric).');
+  }
+  return withConfig(options, async (config) => {
+    const rules = await alertsList(projectId, config);
+    if (rules.length === 0) return ok('no alert rules yet.\n');
+    return ok(rules.map(formatAlertRuleLine).join('') + `\n${rules.length} rule(s).\n`);
+  });
+}
+
+async function runAlertsGet(rest: readonly string[], options: RunOptions): Promise<CommandResult> {
+  const { positional, flags } = parseFlags(rest);
+  const ruleId = parseProjectId(positional[0]);
+  if (ruleId === null) return usageError('alerts get: missing <ruleId> argument.');
+  const projectId = parseProjectId(flags.project);
+  if (projectId === null) return usageError('alerts get: --project <id> is required (numeric).');
+
+  return withConfig(options, async (config) => {
+    const rule = await alertsGet(projectId, ruleId, config);
+    return ok(formatAlertRuleDetail(rule));
+  });
+}
+
+interface AlertFlagDescriptor {
+  levels?: AlertLevel[];
+  firstSeenWindow?: string;
+  occurrenceThreshold?: number;
+  tagKey?: string;
+  tagValues?: string[];
+  destinationIds?: number[];
+  throttleSeconds?: number;
+  enabled?: boolean;
+}
+
+/** Parses the flags shared by create + update. Returns either a populated descriptor or a usage error. */
+function parseAlertFlags(
+  flags: Record<string, string>,
+): { ok: true; descriptor: AlertFlagDescriptor } | { ok: false; message: string } {
+  let levels: AlertLevel[] | undefined;
+  if (flags.level !== undefined) {
+    const parsed = parseLevels(flags.level);
+    if (parsed === null) {
+      return {
+        ok: false,
+        message: '--level expects a comma-separated subset of fatal,error,warning,info,debug.',
+      };
+    }
+    levels = parsed;
+  }
+
+  let firstSeenWindow: string | undefined;
+  if (flags.window !== undefined) {
+    const parsed = parseWindowShorthand(flags.window);
+    if (parsed === null) {
+      return {
+        ok: false,
+        message: '--window expects "5m" / "2h" / "1d" shorthand or a raw ISO-8601 duration.',
+      };
+    }
+    firstSeenWindow = parsed;
+  }
+
+  let occurrenceThreshold: number | undefined;
+  if (flags.threshold !== undefined) {
+    const n = Number(flags.threshold);
+    if (!Number.isInteger(n) || n < 1) {
+      return { ok: false, message: '--threshold expects a positive integer.' };
+    }
+    occurrenceThreshold = n;
+  }
+
+  const hasTagKey = flags['tag-key'] !== undefined;
+  const hasTagValues = flags['tag-values'] !== undefined;
+  if (hasTagKey !== hasTagValues) {
+    return {
+      ok: false,
+      message: '--tag-key and --tag-values must be supplied together (or omitted together).',
+    };
+  }
+  let tagKey: string | undefined;
+  let tagValues: string[] | undefined;
+  if (hasTagKey && hasTagValues) {
+    tagKey = (flags['tag-key'] ?? '').trim();
+    tagValues = parseTagValuesFlag(flags['tag-values'] ?? '');
+    if (!tagKey || tagValues.length === 0) {
+      return {
+        ok: false,
+        message: '--tag-key and --tag-values must each carry non-empty values.',
+      };
+    }
+  }
+
+  let destinationIds: number[] | undefined;
+  if (flags.destination !== undefined) {
+    // parseFlags collapses repeated --flag values to the last one, so we expect users to pass
+    // comma-separated ids (the README documents this).
+    const ids = parseDestinationIds([flags.destination]);
+    if (ids === null) {
+      return {
+        ok: false,
+        message: '--destination expects one or more positive integer ids (comma-separated).',
+      };
+    }
+    destinationIds = ids;
+  }
+
+  let throttleSeconds: number | undefined;
+  if (flags.throttle !== undefined) {
+    const n = Number(flags.throttle);
+    if (!Number.isInteger(n) || n < 0) {
+      return { ok: false, message: '--throttle expects a non-negative integer (seconds).' };
+    }
+    throttleSeconds = n;
+  }
+
+  const enabled = flags.disabled !== undefined ? false : undefined;
+
+  return {
+    ok: true,
+    descriptor: {
+      levels,
+      firstSeenWindow,
+      occurrenceThreshold,
+      tagKey,
+      tagValues,
+      destinationIds,
+      throttleSeconds,
+      enabled,
+    },
+  };
+}
+
+async function runAlertsCreate(
+  rest: readonly string[],
+  options: RunOptions,
+): Promise<CommandResult> {
+  const { flags } = parseFlags(rest);
+  const projectId = parseProjectId(flags.project);
+  if (projectId === null) {
+    return usageError('alerts create: --project <id> is required (numeric).');
+  }
+  const name = optional(flags.name);
+  if (!name || !name.trim()) {
+    return usageError('alerts create: --name <s> is required.');
+  }
+  const parsed = parseAlertFlags(flags);
+  if (!parsed.ok) return usageError(`alerts create: ${parsed.message}`);
+  if (!parsed.descriptor.destinationIds || parsed.descriptor.destinationIds.length === 0) {
+    return usageError(
+      'alerts create: at least one --destination <id> is required so the rule has somewhere to fire.',
+    );
+  }
+
+  return withConfig(options, async (config) => {
+    const body = composeBody({
+      name: name.trim(),
+      levels: parsed.descriptor.levels,
+      firstSeenWindow: parsed.descriptor.firstSeenWindow,
+      occurrenceThreshold: parsed.descriptor.occurrenceThreshold,
+      tagKey: parsed.descriptor.tagKey,
+      tagValues: parsed.descriptor.tagValues,
+      destinationIds: parsed.descriptor.destinationIds,
+      throttleSeconds: parsed.descriptor.throttleSeconds,
+      enabled: parsed.descriptor.enabled,
+    });
+    const rule = await alertsCreate(projectId, body, config);
+    return ok(`rule #${rule.id} created: ${rule.name}\n`);
+  });
+}
+
+async function runAlertsUpdate(
+  rest: readonly string[],
+  options: RunOptions,
+): Promise<CommandResult> {
+  const { positional, flags } = parseFlags(rest);
+  const ruleId = parseProjectId(positional[0]);
+  if (ruleId === null) return usageError('alerts update: missing <ruleId> argument.');
+  const projectId = parseProjectId(flags.project);
+  if (projectId === null) {
+    return usageError('alerts update: --project <id> is required (numeric).');
+  }
+  const parsed = parseAlertFlags(flags);
+  if (!parsed.ok) return usageError(`alerts update: ${parsed.message}`);
+
+  return withConfig(options, async (config) => {
+    const current = await alertsGet(projectId, ruleId, config);
+    const body = composeBody({
+      base: current,
+      name: optional(flags.name),
+      levels: parsed.descriptor.levels,
+      firstSeenWindow: parsed.descriptor.firstSeenWindow,
+      occurrenceThreshold: parsed.descriptor.occurrenceThreshold,
+      tagKey: parsed.descriptor.tagKey,
+      tagValues: parsed.descriptor.tagValues,
+      destinationIds: parsed.descriptor.destinationIds,
+      throttleSeconds: parsed.descriptor.throttleSeconds,
+      enabled: parsed.descriptor.enabled,
+    });
+    const rule = await alertsUpdate(projectId, ruleId, body, config);
+    return ok(`rule #${rule.id} updated: ${rule.name}\n`);
+  });
+}
+
+async function runAlertsDelete(
+  rest: readonly string[],
+  options: RunOptions,
+): Promise<CommandResult> {
+  const { positional, flags } = parseFlags(rest);
+  const ruleId = parseProjectId(positional[0]);
+  if (ruleId === null) return usageError('alerts delete: missing <ruleId> argument.');
+  const projectId = parseProjectId(flags.project);
+  if (projectId === null) {
+    return usageError('alerts delete: --project <id> is required (numeric).');
+  }
+  if (flags.yes === undefined && flags.y === undefined) {
+    return usageError('alerts delete: pass --yes to confirm.');
+  }
+  return withConfig(options, async (config) => {
+    await alertsDelete(projectId, ruleId, config);
+    return ok(`rule #${ruleId} deleted.\n`);
+  });
+}
+
+function formatAlertRuleLine(r: AlertRule): string {
+  const dest = r.actions.destinationIds.length;
+  const status = r.enabled ? '' : ' [disabled]';
+  return `#${r.id}\t${r.name}\t${dest} dest\t${r.throttleSeconds}s${status}\n`;
+}
+
+function formatAlertRuleDetail(r: AlertRule): string {
+  const lines = [
+    `id:                  ${r.id}`,
+    `name:                ${r.name}`,
+    `projectId:           ${r.projectId}`,
+    `enabled:             ${r.enabled}`,
+    `throttleSeconds:     ${r.throttleSeconds}`,
+    `level.in:            ${r.conditions.level?.in?.join(', ') ?? '-'}`,
+    `firstSeenWindow:     ${r.conditions.firstSeenWindow ?? '-'}`,
+    `occurrenceThreshold: ${r.conditions.occurrenceThreshold ?? '-'}`,
+    `tag.key:             ${r.conditions.tag?.key ?? '-'}`,
+    `tag.in:              ${r.conditions.tag?.in?.join(', ') ?? '-'}`,
+    `destinationIds:      ${r.actions.destinationIds.join(', ')}`,
+    `createdAt:           ${r.createdAt}`,
+  ];
+  return lines.join('\n') + '\n';
 }
 
 async function withConfig(
