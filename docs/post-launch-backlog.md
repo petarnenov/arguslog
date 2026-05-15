@@ -21,16 +21,16 @@ items marked _(obsolete — OSS)_ were dropped by the OSS conversion (payments/S
 
 ## Open — feature work
 
-| #   | Item                                                            | Trigger                                |
-| --- | --------------------------------------------------------------- | -------------------------------------- |
+| #   | Item                                                             | Trigger                                |
+| --- | ---------------------------------------------------------------- | -------------------------------------- |
 | 6   | Email-verification end-to-end smoke from real registration flow. | Before second real user registers.     |
-| 8   | Audit log CSV/JSON export endpoint + real prod DR drill.        | SOC2 prep / first enterprise customer. |
+| 8   | Audit log CSV/JSON export endpoint + real prod DR drill.         | SOC2 prep / first enterprise customer. |
 
 For item 8 the MinIO-backed restore smoke (`scripts/restore-smoke.sh` + weekly CI) is shipped;
 what remains is a dump endpoint on `/api/v1/admin/audit` and a rehearsal restore from a real
 production backup.
 
-### Shipped (was listed as open)
+### Feature work — shipped
 
 - ~~2~~ First SDK publish (`@arguslog/sdk-browser@0.1.1`, `@arguslog/sdk-react@0.1.1`,
   `org.arguslog:java-sdk:0.1.0`) — done 2026-05-07.
@@ -40,23 +40,24 @@ production backup.
 - ~~5~~ Status page — self-hosted `/status` in landing (`apps/landing/src/pages/StatusPage.tsx`)
   probes api/ingest/web/auth/mcp + markdown incidents feed.
 
-### Obsolete after OSS conversion
+### Feature work — obsolete after OSS conversion
 
 - ~~1~~ Stripe live keys — payments removed.
 - ~~7~~ `payment_failed` auto-downgrade rehearsal — replaced by `TierExpiryJob`
   (daily 04:00 UTC); no payment webhook path exists anymore.
 
-## Open — tech debt (carry-forward from P4/P5 "out of scope")
+## Tech debt (carry-forward from P4/P5 "out of scope") — all settled
 
-| #   | Item                                                                                            |
-| --- | ----------------------------------------------------------------------------------------------- |
-| 1   | `@TestConfiguration` extraction to stop the mock churn that hits every controller-test commit. |
+Nothing open. Every original item is shipped or obsolete.
 
-214 inline `@MockitoBean` declarations across api/worker/ingest tests still re-declare the same
-bean stubs every commit.
+### Tech debt — shipped
 
-### Shipped (was listed as open)
-
+- ~~1~~ Mock churn in controller tests — solved via base class instead of `@TestConfiguration`.
+  `services/api/src/test/java/org/arguslog/api/testsupport/AbstractControllerTest.java`
+  centralizes `@SpringBootTest` + `@AutoConfigureMockMvc` + 35 shared `@MockitoBean`
+  declarations; all 13 controller tests extend it with zero inline mock walls. The remaining
+  214 `@MockitoBean` occurrences are either the 35 in this base class or per-test mocks inside
+  service/repository unit tests where isolation is the point.
 - ~~2~~ `AesGcmSecretCipher` extraction — `lib/crypto-aes-gcm/` ships `SecretCipher` +
   `AesGcmSecretCipher`; api + worker consume the shared lib.
 - ~~3~~ RLS owner-bypass test split — `RowLevelSecurityIsolationTest` builds a `NOBYPASSRLS`
@@ -66,39 +67,46 @@ bean stubs every commit.
 - ~~7~~ `import/order` lint warning in `apps/web/src/providers.tsx` — `pnpm exec eslint
   src/providers.tsx` exits clean.
 
-### Obsolete after OSS conversion
+### Tech debt — obsolete after OSS conversion
 
 - ~~5~~ Annual prepay / yearly discount — Stripe removed.
 - ~~6~~ Metered billing / usage-based pricing — paid plans removed; tier model is admin-grant-driven.
 
 ## Open — operational
 
-| #   | Item                                                                                                                  |
-| --- | --------------------------------------------------------------------------------------------------------------------- |
-| 1   | Re-enable `RETENTION_DRY_RUN=false` after one nightly cycle confirms the per-org delete count is sane.                |
-| 2   | Move staging Keycloak's backing store off the auto-provisioned `Postgres` template onto a long-lived volume.          |
-| 4   | Decide if production should use a separate R2 bucket from staging (currently `arguslog-attachments` serves both).     |
+| #   | Item                                                                                                              |
+| --- | ----------------------------------------------------------------------------------------------------------------- |
+| 1   | Re-enable `RETENTION_DRY_RUN=false` after one nightly cycle confirms the per-org delete count is sane.            |
+| 4   | Decide if production should use a separate R2 bucket from staging (currently `arguslog-attachments` serves both). |
 
 Code anchors: item 1 — `services/worker/src/main/resources/application.yml:47` still defaults
-to `true`. Item 2 — `services/keycloak/railway.toml` has no volume declaration; backing is the
-managed Postgres. Item 4 — `infra/railway/README.md:156` + `:183` both pin
-`R2_BUCKET=arguslog-attachments`.
+to `true`. Item 4 — `infra/railway/README.md` pins `R2_BUCKET=arguslog-attachments` for both envs.
 
-### Shipped (was listed as open)
+### Operational — shipped
 
 - ~~5~~ `RAILWAY_TOKEN_PRODUCTION` wired into the deploy workflow —
   `.github/workflows/deploy.yml:70,88,93` ternaries on `inputs.environment == 'production'`.
+- ~~2~~ Keycloak dedicated Postgres + Volume — **staging + production both done 2026-05-15**.
+  Service `arguslog-keycloak-db` (postgres:18, project-scoped ID `6d1b83f5-...`) per-env
+  instances with 50 GB Volumes on `/var/lib/postgresql/data`. Data migrated via inline
+  `pg_dump | pg_restore` inside Railway network on both envs; 10/10 critical KC tables
+  row-count parity verified. KC repointed: staging booted in 27.964 s, production in 25.238 s
+  (faster), zero errors / Cloudflare 502s. Old plugin `Postgres` services kept until 2026-05-16
+  14:00 UTC as rollback safety net. Repo side: `services/keycloak/railway.toml` +
+  `infra/railway/README.md` document the dedicated backing store, both executed-steps tables
+  (staging + production), and lessons learned (project-scoped service names, `source: null` on
+  per-env instances, `railway ssh` TTY gotcha, GraphQL `tcpProxyCreate`/`Delete`).
 
-### Obsolete after OSS conversion
+### Operational — obsolete after OSS conversion
 
 - ~~3~~ `arguslog-internal` `enterprise` plan decision — plans → tiers; runs on `platinum`.
 
 ## Open — Slack polish (deferred from `docs/slack-plan.md`)
 
-| #   | Item                                                                                                        |
-| --- | ----------------------------------------------------------------------------------------------------------- |
-| S1  | `/arguslog ping` subcommand — needs a Java synthetic-event builder + HTTP ingest client.                    |
-| S2  | `app_uninstalled` Slack Events API handler — auto-deactivate when a workspace removes the app Slack-side.   |
+| #   | Item                                                                                                      |
+| --- | --------------------------------------------------------------------------------------------------------- |
+| S1  | `/arguslog ping` subcommand — needs a Java synthetic-event builder + HTTP ingest client.                  |
+| S2  | `app_uninstalled` Slack Events API handler — auto-deactivate when a workspace removes the app Slack-side. |
 
 `SlackCommandDispatcher` javadoc already documents the ping deferral; operators can use the
 dashboard Connect wizard's Test ping button in the meantime. `SlackWorkspaceWriteRepository

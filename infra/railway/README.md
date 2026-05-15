@@ -7,28 +7,36 @@ image built by their per-service Dockerfile.
 
 ## Services
 
-| Railway service     | Source path             | Builder    | Health check                    |
-| ------------------- | ----------------------- | ---------- | ------------------------------- |
-| `arguslog-api`      | `services/api/`         | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-ingest`   | `services/ingest/`      | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-worker`   | `services/worker/`      | Dockerfile | `/actuator/health/readiness`    |
-| `arguslog-web`      | `apps/web/`             | Dockerfile | `/healthz` (Caddy `respond ok`) |
-| `arguslog-keycloak` | `services/keycloak/`    | Dockerfile | `/realms/master` (8080)         |
-| `arguslog-landing`  | `apps/landing/`         | Dockerfile | `/healthz` (Caddy `respond ok`) |
-| `arguslog-mcp`      | `packages/mcp-server/`  | Dockerfile | `/healthz`                      |
+| Railway service        | Source path             | Builder    | Health check                    |
+| ---------------------- | ----------------------- | ---------- | ------------------------------- |
+| `arguslog-api`         | `services/api/`         | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-ingest`      | `services/ingest/`      | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-worker`      | `services/worker/`      | Dockerfile | `/actuator/health/readiness`    |
+| `arguslog-web`         | `apps/web/`             | Dockerfile | `/healthz` (Caddy `respond ok`) |
+| `arguslog-keycloak`    | `services/keycloak/`    | Dockerfile | `/realms/master` (8080)         |
+| `arguslog-keycloak-db` | image `postgres:16`     | Image      | `pg_isready -U postgres`        |
+| `arguslog-landing`     | `apps/landing/`         | Dockerfile | `/healthz` (Caddy `respond ok`) |
+| `arguslog-mcp`         | `packages/mcp-server/`  | Dockerfile | `/healthz`                      |
 
 Each service has a `railway.toml` co-located with its source — Railway auto-detects them so
 there's no per-service dashboard config to drift. The list above is mirrored by
 `find . -name railway.toml -not -path '*/node_modules/*'`; if you add a new service, drop a
 `railway.toml` next to its source and update this table in the same commit.
+`arguslog-keycloak-db` is the exception — it is an image-only service with no repo source, so
+it has no `railway.toml`. See "Keycloak backing store" below for its configuration.
 
 ## Managed add-ons
 
 | Add-on               | Plugin                                 | Notes                                                             |
 | -------------------- | -------------------------------------- | ----------------------------------------------------------------- |
-| Postgres + Timescale | `railway add postgresql + timescaledb` | Owns all Flyway migrations (api service).                         |
+| Postgres + Timescale | `railway add postgresql + timescaledb` | Owns all Flyway migrations (api service). App services only.      |
 | Redis                | `railway add redis`                    | Used by ingest (Streams) + worker (consumer group) + api (cache). |
 | Cloudflare R2        | external (S3-compatible)               | Source maps + attachments.                                        |
+
+> Keycloak does NOT share the app-tier Postgres. Its backing store is the dedicated
+> `arguslog-keycloak-db` image-based service with a Railway Volume on
+> `/var/lib/postgresql/data`. See the "Keycloak backing store" section near the bottom of this
+> file for the rationale + migration runbook for staging.
 
 ## Current state — production live (P5 #7 ✅)
 
@@ -60,23 +68,49 @@ debug:
 
 ## Staging
 
-| Service           | Status                | Public URL                                       |
-| ----------------- | --------------------- | ------------------------------------------------ |
-| `arguslog-api`    | ✅ deployed           | https://arguslog-api-staging.up.railway.app      |
-| `arguslog-ingest` | ✅ deployed           | https://arguslog-ingest-staging.up.railway.app   |
-| `arguslog-worker` | ✅ deployed           | _internal — no public domain_                    |
-| `arguslog-web`    | ✅ deployed           | https://arguslog-web-staging.up.railway.app      |
-| `timescaledb`     | ✅ running (image)    | _internal — `timescaledb.railway.internal:5432`_ |
-| `Redis`           | ✅ running (template) | _internal — `redis.railway.internal:6379`_       |
+| Service                | Status                | Public URL                                            |
+| ---------------------- | --------------------- | ----------------------------------------------------- |
+| `arguslog-api`         | ✅ deployed           | https://arguslog-api-staging.up.railway.app           |
+| `arguslog-ingest`      | ✅ deployed           | https://arguslog-ingest-staging.up.railway.app        |
+| `arguslog-worker`      | ✅ deployed           | _internal — no public domain_                         |
+| `arguslog-web`         | ✅ deployed           | https://arguslog-web-staging.up.railway.app           |
+| `arguslog-keycloak`    | ✅ deployed           | https://arguslog-keycloak-staging.up.railway.app      |
+| `arguslog-keycloak-db` | ✅ running (image)    | _internal — `arguslog-keycloak-db.railway.internal:5432`_ |
+| `timescaledb`          | ✅ running (image)    | _internal — `timescaledb.railway.internal:5432`_      |
+| `Redis`                | ✅ running (template) | _internal — `redis.railway.internal:6379`_            |
+
+### Production-only services (intentionally offline in staging)
+
+The following services exist project-wide but have `source: null` on the staging instance —
+their per-env source has never been assigned, so the staging dashboard shows "Service is
+offline". This is by design; no staging value to add given the role of each service. If a
+future change demands staging coverage, mirror the production source via GraphQL
+`serviceInstanceUpdate(input: { source: { ... } })` then trigger an initial deploy with a
+no-op variable write.
+
+- **`arguslog-mcp`** — public hosted MCP server on `mcp.arguslog.org`. Per-request PAT auth +
+  the published `@arguslog/mcp-server` npm package mean no staging gap exists in the integration
+  test surface (self-host-smoke CI exercises the MCP HTTP path inside Docker compose). No
+  Cloudflare proxy fronts staging, so the `CF_ORIGIN_TOKEN` guard wouldn't function there
+  anyway.
+- **`arguslog-landing`** — marketing site on apex `arguslog.org` (CNAME). Static Caddy build
+  with zero per-env behavior; serving a staging copy adds nothing.
 
 Open follow-ups (deferred — none block #5/#6 starting):
 
-- **Keycloak service.** Auth flow can't end-to-end work without a Keycloak realm. Add as
-  another image-based service (`quay.io/keycloak/keycloak`) with its own Postgres backing
-  store + realm import; tackled as part of #6 dogfood when a real user actually logs in.
-- **Stale plain Postgres service.** `railway add --database postgres` left an unused service
-  alongside `timescaledb`. CLI doesn't expose `service delete`; remove via the dashboard.
-- **Stripe live keys.** Placeholders; populate when ready to charge real cards.
+- ~~**Keycloak service.**~~ Done — `arguslog-keycloak` is live with `auth.arguslog.org` and
+  realm import working. Backing store moved off the auto-provisioned plugin onto the dedicated
+  `arguslog-keycloak-db` image-based Postgres + Railway Volume; see "Keycloak backing store"
+  below.
+- **Stale plain Postgres plugin services** — the post-migration plugins (`Postgres` with
+  `postgres-volume-J1m2`) on both staging and production are intentionally kept until
+  2026-05-16 14:00 UTC as a rollback safety net. Delete via dashboard after the soak window
+  closes (CLI has no service-delete primitive). The pre-migration orphan volumes
+  (`postgres-volume`, `redis-volume-G0e_`) that were left behind by earlier setup attempts
+  were **deleted by the operator on 2026-05-15** — both staging and production volume lists
+  are now clean apart from the attached `redis-volume`, `arguslog-keycloak-db-volume`,
+  `postgres-volume-J1m2` (rollback), and `timescaledb-volume` (where applicable).
+- ~~**Stripe live keys.**~~ Obsolete — OSS conversion removed payments.
 - **R2 bucket** (`arguslog-attachments`, WEUR) is provisioned and wired to api + worker via
   `R2_ENDPOINT` + `R2_ACCESS_KEY` + `R2_SECRET_KEY` + `R2_BUCKET` on both staging + production.
   Same bucket serves both envs — fine for dogfood; consider a separate prod bucket if customer
@@ -130,7 +164,13 @@ for env in staging production; do
   done
 done
 
-# 6. Wire reference variables (per service, per environment) — see "Variables" below.
+# 6. Create the dedicated Keycloak Postgres + attach a Volume (per environment).
+#    This service is image-only — no railway.toml in the repo. Create it via the dashboard
+#    or `railway service create --image postgres:16`. Then in the dashboard:
+#    Settings → Volumes → Add → mount path `/var/lib/postgresql/data`, name `keycloak-data`.
+#    Set service variables POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB.
+
+# 7. Wire reference variables (per service, per environment) — see "Variables" below.
 #    Use the dashboard for the secrets-bearing ones (Stripe keys, etc.) so they never hit a
 #    shell history.
 ```
@@ -201,6 +241,37 @@ VITE_KEYCLOAK_CLIENT_ID   = arguslog-web
 
 Runtime: just `PORT` (Railway-injected; Caddy reads it).
 
+### `arguslog-keycloak`
+
+```
+KC_DB                       = postgres
+KC_DB_URL                   = jdbc:postgresql://${{arguslog-keycloak-db.RAILWAY_PRIVATE_DOMAIN}}:5432/${{arguslog-keycloak-db.POSTGRES_DB}}
+KC_DB_USERNAME              = ${{arguslog-keycloak-db.POSTGRES_USER}}
+KC_DB_PASSWORD              = ${{arguslog-keycloak-db.POSTGRES_PASSWORD}}
+KC_HOSTNAME                 = auth.arguslog.org   # staging: leave unset to use Railway-issued domain
+KC_BOOTSTRAP_ADMIN_USERNAME = (initial admin; rotate after first login)
+KC_BOOTSTRAP_ADMIN_PASSWORD = (initial admin password; rotate after first login)
+```
+
+> Reference Variables (`${{arguslog-keycloak-db.*}}`) keep the connection string in lockstep
+> with whatever password / domain the Postgres service exposes; no manual copy-paste between
+> services.
+
+### `arguslog-keycloak-db`
+
+Image-only service (`postgres:16`). Required variables:
+
+```
+POSTGRES_USER             = keycloak
+POSTGRES_PASSWORD         = (generated; treat as a secret)
+POSTGRES_DB               = keycloak
+PGDATA                    = /var/lib/postgresql/data/pgdata   # subdir prevents lost+found clashes
+```
+
+Volume: mount `keycloak-data` at `/var/lib/postgresql/data` (dashboard → Settings → Volumes).
+The `PGDATA` env points one level deeper so Postgres can boot on a fresh volume that already
+contains the FS metadata directory.
+
 ## Deploy flow
 
 1. `main` is protected; merges trigger
@@ -224,6 +295,113 @@ Set in Railway → Service → Settings → Domains. Cloudflare DNS for `arguslo
 | `auth.arguslog.org`   | Keycloak          | on                | OIDC issuer; cf is fine in front.                                      |
 
 Railway provisions Let's Encrypt certificates automatically for each custom domain.
+
+## Keycloak backing store
+
+Keycloak's database holds two classes of data that the realm-import JSON does NOT cover and
+which therefore CANNOT be regenerated by redeploying:
+
+- Runtime-applied SMTP overrides (production points realm SMTP at Resend via admin API; the
+  committed `services/keycloak/realm/arguslog-realm.json` keeps `mailhog` for local dev). See
+  the `project_keycloak_smtp` memory note.
+- Live user accounts, sessions, federated-identity links, password hashes, login history.
+- Admin password rotations after the bootstrap user is replaced.
+
+That is why the backing store is a dedicated `arguslog-keycloak-db` Postgres service with an
+attached Railway Volume — both per environment. It must survive any churn that would prune an
+auto-provisioned plugin instance: template re-provision, plugin downgrade/upgrade, accidental
+service delete on the wrong tab.
+
+### Rationale recap
+
+| Concern                     | Plugin Postgres (old)                   | Dedicated image + Volume (new)               |
+| --------------------------- | --------------------------------------- | -------------------------------------------- |
+| Lifecycle ownership         | Railway-managed, can be pruned          | Operator-owned; explicit volume attachment   |
+| Co-tenancy with app data    | Shared with `Postgres` plugin           | Isolated; backup of app DB never includes KC |
+| Restore on data loss        | Re-import realm + reapply SMTP by hand  | `pg_restore` from a `pg_dump` snapshot       |
+| Production / staging parity | Same plugin in both envs                | Same image + volume layout in both envs      |
+
+### Staging migration — executed 2026-05-15
+
+Performed end-to-end against the live staging Railway project. Service IDs + observed
+behavior captured below so the production runbook below can reuse them.
+
+| Step | Tool                                                                         | Outcome                                                                   |
+| ---- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 0    | `railway variables --service arguslog-keycloak --kv`                         | Confirmed old plugin `Postgres` host = `postgres.railway.internal`, db `railway`, user `postgres` |
+| —    | `psql ... SELECT version()` through the plugin's public proxy                 | Plugin runs **PostgreSQL 18.3** — production migration must use `postgres:18` image to match the major version, NOT `postgres:16` |
+| 1    | `railway add --service arguslog-keycloak-db --image postgres:18 --variables` | Service ID `6d1b83f5-ec27-49f0-b094-79da89e012b3` created with `POSTGRES_USER=keycloak`, `POSTGRES_DB=keycloak`, `PGDATA=/var/lib/postgresql/data/pgdata` + 39-char random password |
+| 2    | `railway service link arguslog-keycloak-db` → `railway volume add --mount-path /var/lib/postgresql/data` | Volume `arguslog-keycloak-db-volume` (50 GB cap, 0 MB used at start) attached; auto-redeploy fired |
+| 3    | `railway ssh --service arguslog-keycloak-db 'pg_dump -Fc ... | pg_restore ...'` | EXIT=0; entire pipeline ran inside Railway network — no public exposure required for data transit |
+| 4    | GraphQL `tcpProxyCreate(input:{...applicationPort:5432})` (CLI v4.30.2 doesn't have a `tcp-proxy` subcommand; HTTP `railway domain` is the wrong tool) | Temp proxy `trolley.proxy.rlwy.net:29951` created so target row-counts could be queried from outside Railway |
+| 5    | `psql ... SELECT count(*)` per critical table                                | 100% row-count parity on 10 critical tables: 2 realms, 4 user_entity, 3 credentials, 15 clients, 10 realm_smtp_config (Resend overrides), 150 databasechangelog, 416 protocol_mapper_config, 39 authentication_flow, 5 user_role_mapping, 83 keycloak_role |
+| 6    | `railway variables --service arguslog-keycloak --set "KC_DB_URL=jdbc:postgresql://arguslog-keycloak-db.railway.internal:5432/keycloak" --set KC_DB_USERNAME=... --set KC_DB_PASSWORD=...` | Auto-triggered redeploy. Reference-variable form (`${{arguslog-keycloak-db.*}}`) is documented in the per-service Variables block above but was NOT used here — hardcoded literals were chosen so the cutover failure mode is easier to grep |
+| 7    | Wait loop on `railway service status` until status != BUILDING/DEPLOYING     | Final status `SUCCESS` after ~2 min                                       |
+| 8    | `curl https://arguslog-keycloak-staging.up.railway.app/realms/arguslog/.well-known/openid-configuration` | Issuer + token endpoint live; KC booted in **27.964 s** on the new DB; zero error/exception/fatal lines in deployment logs |
+| 9    | GraphQL `tcpProxyDelete` + `serviceDomainDelete`                             | Temp TCP proxy + the unused HTTP domain created during exploration both removed; service is now private-only |
+| 10   | Stale plugin `Postgres` left running                                         | Kept until 2026-05-16 14:00 UTC as rollback safety net; rollback creds saved at `/tmp/kc-rollback.env` |
+
+### Lessons learned (apply to production runbook below)
+
+- **`railway ssh` hangs in non-interactive shells** when stdin is `/dev/null` (e.g. Bash
+  background mode in this environment, CI, `nohup`). Run dump/restore from a shell that has
+  a TTY, or schedule it as a Railway cron / one-shot job instead.
+- **CLI v4.30.2 has no `tcp-proxy` subcommand.** Use the GraphQL mutation
+  `tcpProxyCreate(input: { serviceId, environmentId, applicationPort })` via
+  `curl https://backboard.railway.com/graphql/v2` with the bearer token read from
+  `~/.railway/config.json` (key path `user.token`). Same for `tcpProxyDelete(id)` and
+  `serviceDomainDelete(id)`.
+- **`railway connect <service>` requires `DATABASE_PUBLIC_URL` on the target service.** It is
+  auto-populated only after a TCP proxy exists. Useless for fresh private-only DBs.
+- **Setting variables auto-redeploys** unless `--skip-deploys` is passed. The cutover does not
+  need a separate `railway up` call.
+
+### Production migration — executed 2026-05-15
+
+Performed end-to-end immediately after the staging migration. Same procedure, with the
+deltas noted below. Service IDs + observed behavior captured for any future re-run.
+
+| Step | Tool                                                                                                                                               | Outcome                                                                                                                                            |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | `railway environment production` + `railway variables --service arguslog-keycloak --kv`                                                            | Old plugin host `postgres.railway.internal`, db `railway`, user `postgres`. Plugin version verified **PostgreSQL 18.3** via public proxy.          |
+| 1a   | `railway add --service arguslog-keycloak-db --image postgres:18 --variables ...`                                                                   | Failed: "service already exists" — same `arguslog-keycloak-db` service was created in staging, and Railway service names are project-scoped.       |
+| 1b   | `railway variables --service arguslog-keycloak-db --environment production --set ...` (POSTGRES_*+PGDATA)                                          | Set vars on the production-environment instance of the shared service.                                                                             |
+| 1c   | `railway volume add --mount-path /var/lib/postgresql/data`                                                                                         | Volume `arguslog-keycloak-db-volume-yjaD` (50 GB cap) attached to the production instance.                                                         |
+| 1d   | Status `NO DEPLOYMENT`. GraphQL `serviceInstanceUpdate(input: { source: { image: "postgres:18" } })` then a benign var write `BOOT_TRIGGER=1`      | The production service instance had `source: null` (the staging instance had `image: postgres:18`). Setting source + triggering a var change kicked the first deploy. Status `SUCCESS`. |
+| 2    | `railway ssh --service arguslog-keycloak-db --environment production 'pg_dump -Fc ... | pg_restore ...'`                                          | EXIT=0; inline pipe inside Railway network.                                                                                                        |
+| 3    | GraphQL `tcpProxyCreate(...applicationPort:5432)` → `yamanote.proxy.rlwy.net:45232`, then row-count query                                          | 100% parity on 10 critical KC tables: 2/5/4/15/10/150/416/39/6/83 (realm/user_entity/credential/client/realm_smtp_config/databasechangelog/protocol_mapper_config/authentication_flow/user_role_mapping/keycloak_role). |
+| 4    | `railway variables --service arguslog-keycloak --environment production --set "KC_DB_URL=..." --set KC_DB_USERNAME=keycloak --set KC_DB_PASSWORD=...` | Auto-triggered redeploy; final status `SUCCESS`. KC booted in **25.238 s** on the new DB (faster than staging's 27.964 s).                          |
+| 5    | `curl https://auth.arguslog.org/realms/arguslog/.well-known/openid-configuration`                                                                  | Issuer `https://auth.arguslog.org/realms/arguslog` + token endpoint live; **no Cloudflare 502 observed** during the cutover.                       |
+| 6    | GraphQL `tcpProxyDelete` + `railway variable delete BOOT_TRIGGER`                                                                                  | Temp TCP proxy removed; service-instance vars trimmed back to 4 production-relevant keys (POSTGRES_USER/PASSWORD/DB + PGDATA).                     |
+| 7    | Stale plugin `Postgres` left running                                                                                                               | Kept until 2026-05-16 14:00 UTC as rollback safety net; rollback creds saved at `/tmp/kc-rollback-prod.env`.                                       |
+
+### Lessons learned (production-specific, on top of staging's)
+
+- **Project-scoped service names.** `railway add --service <name>` fails with "service already
+  exists" if a service of that name lives in any environment in the project. Fix: switch to
+  `railway variables --set ...` + `railway volume add` against the existing service in the
+  target environment.
+- **`source: null` on a fresh per-env instance blocks the first deploy.** When a service is
+  created in one environment, sibling environments get a service instance with `source: null`.
+  Setting variables alone does not trigger a deploy — the instance needs `source` set first.
+  Use GraphQL `serviceInstanceUpdate(environmentId, serviceId, input: { source: { image:
+  "<img>" } })`, then a no-op variable write to fire the initial deploy.
+- **Cloudflare behaved.** No 502 observed during the KC restart, despite the proxy being ON
+  for `auth.arguslog.org`. The 30-second Cloudflare-stale-502 risk noted in the staging-side
+  lessons did not materialize — likely because Railway's healthcheck delay kept the old pod
+  serving until the new one was ready.
+
+### Post-migration cleanup (scheduled 2026-05-16 14:00 UTC)
+
+After 24 hours of healthy operation on the new dedicated DB, the operator should:
+
+1. Delete the old plugin `Postgres` services on both staging and production (dashboard only;
+   CLI has no service-delete primitive). They still hold a copy of the pre-cutover KC data
+   on `postgres-volume-J1m2`.
+2. Remove the local rollback files: `rm /tmp/kc-rollback.env /tmp/kc-rollback-prod.env
+   /tmp/keycloak-db-pw.txt /tmp/keycloak-db-pw-prod.txt`.
+3. (Already done 2026-05-15 by the operator) Pre-migration orphan volumes `postgres-volume`
+   and `redis-volume-G0e_` deleted from both environments.
 
 ## Local equivalent
 

@@ -1,7 +1,14 @@
 # Railway service config for Keycloak. Built from services/keycloak/Dockerfile (multi-stage,
-# realm baked in). Backing store is the existing managed Postgres (auto-injected as DATABASE_URL
-# in environments that have the plugin) — Keycloak's KC_DB_URL etc. variables resolve against
-# Reference Variables wired in the dashboard.
+# realm baked in). Backing store is a DEDICATED image-based Postgres service per environment
+# (`arguslog-keycloak-db`, postgres:16, with an attached Railway Volume on
+# /var/lib/postgresql/data) — NOT the auto-provisioned `Postgres` plugin used by the app
+# services. The plugin pattern leaves a template-managed instance whose lifecycle Railway can
+# prune; the dedicated image + volume is explicitly owned and survives any template churn.
+#
+# Keycloak resolves the DB via `KC_DB_URL` / `KC_DB_USERNAME` / `KC_DB_PASSWORD` reference
+# variables wired to the dedicated service (see infra/railway/README.md → "Variables (per
+# service)" → arguslog-keycloak + the "Keycloak backing store" runbook for the data-migration
+# procedure).
 
 [build]
 builder = "DOCKERFILE"
