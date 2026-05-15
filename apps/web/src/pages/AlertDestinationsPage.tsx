@@ -8,11 +8,12 @@ import {
   Group,
   Loader,
   Modal,
+  PasswordInput,
   Select,
   Stack,
   Table,
+  TagsInput,
   Text,
-  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -41,20 +42,80 @@ const KIND_OPTIONS: { value: DestinationKind; label: string }[] = [
   { value: 'webhook', label: 'Webhook' },
 ];
 
-const CONFIG_PLACEHOLDERS: Record<DestinationKind, string> = {
-  telegram: '{\n  "chatId": "-1001234567890"\n}',
-  email: '{\n  "to": "ops@example.com"\n}',
-  slack: '{\n  "webhookUrl": "https://hooks.slack.com/services/T00/B00/XXX"\n}',
-  webhook: '{\n  "url": "https://hooks.example.com/arguslog"\n}',
-};
-
 interface DraftValues {
   kind: DestinationKind;
   name: string;
-  config: string;
+  // Per-kind config fields. Each kind reads/writes its own subset.
+  // Telegram
+  chatId: string;
+  botToken: string;
+  // Email
+  emailTo: string[];
+  // Slack
+  slackWebhookUrl: string;
+  // Webhook (generic)
+  webhookUrl: string;
+  webhookSecret: string;
 }
 
-const EMPTY_DRAFT: DraftValues = { kind: 'telegram', name: '', config: '' };
+const EMPTY_DRAFT: DraftValues = {
+  kind: 'telegram',
+  name: '',
+  chatId: '',
+  botToken: '',
+  emailTo: [],
+  slackWebhookUrl: '',
+  webhookUrl: '',
+  webhookSecret: '',
+};
+
+/**
+ * Builds the JSON config payload from form state for the given kind. Returns null when the
+ * caller's editing an existing destination and left every config field blank — that's the
+ * "leave config alone, just rename" path the api supports.
+ */
+function buildConfigPayload(
+  values: DraftValues,
+  isEditMode: boolean,
+): { config: Record<string, unknown> | null; error: string | null } {
+  switch (values.kind) {
+    case 'telegram': {
+      const chatId = values.chatId.trim();
+      const botToken = values.botToken.trim();
+      if (isEditMode && !chatId && !botToken) return { config: null, error: null };
+      if (!chatId || !botToken) {
+        return {
+          config: null,
+          error: 'Telegram needs both Chat ID and Bot token (or leave both blank to keep current).',
+        };
+      }
+      return { config: { chatId, botToken }, error: null };
+    }
+    case 'email': {
+      const recipients = values.emailTo.map((s) => s.trim()).filter((s) => s.length > 0);
+      if (isEditMode && recipients.length === 0) return { config: null, error: null };
+      if (recipients.length === 0) {
+        return { config: null, error: 'Add at least one recipient email.' };
+      }
+      return { config: { to: recipients }, error: null };
+    }
+    case 'slack': {
+      const webhookUrl = values.slackWebhookUrl.trim();
+      if (isEditMode && !webhookUrl) return { config: null, error: null };
+      if (!webhookUrl) return { config: null, error: 'Slack webhook URL is required.' };
+      return { config: { webhookUrl }, error: null };
+    }
+    case 'webhook': {
+      const url = values.webhookUrl.trim();
+      const secret = values.webhookSecret.trim();
+      if (isEditMode && !url && !secret) return { config: null, error: null };
+      if (!url) return { config: null, error: 'Webhook URL is required.' };
+      const config: Record<string, unknown> = { url };
+      if (secret) config.secret = secret;
+      return { config, error: null };
+    }
+  }
+}
 
 export function AlertDestinationsPage() {
   const { orgSlug } = useParams();
@@ -77,18 +138,6 @@ export function AlertDestinationsPage() {
     initialValues: EMPTY_DRAFT,
     validate: {
       name: (v) => (v.trim().length < 1 ? t('alertDestinations.errorName') : null),
-      config: (v) => {
-        if (!v.trim()) return t('alertDestinations.errorConfigRequired');
-        try {
-          const parsed = JSON.parse(v);
-          if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-            return t('alertDestinations.errorConfigShape');
-          }
-          return null;
-        } catch {
-          return t('alertDestinations.errorConfigJson');
-        }
-      },
     },
   });
 
@@ -102,9 +151,10 @@ export function AlertDestinationsPage() {
 
   function openEdit(d: AlertDestination) {
     setError(null);
-    // We never get the config back from the server (write-only secret).
-    // The user must re-type it to save changes — flagged in the form.
-    form.setValues({ kind: d.kind, name: d.name, config: '' });
+    // Config field stays blank on edit — the api never echoes the secret back, and the form
+    // treats "all config inputs blank" as "leave the existing encrypted blob alone, just
+    // rename." If the user wants to rotate a secret, they fill the relevant input and submit.
+    form.setValues({ ...EMPTY_DRAFT, kind: d.kind, name: d.name });
     setEditing(d);
   }
 
@@ -117,18 +167,23 @@ export function AlertDestinationsPage() {
   const saveMutation = useMutation({
     mutationFn: async (values: DraftValues) => {
       if (!org) throw new Error('org missing');
-      const config = JSON.parse(values.config) as unknown;
+      const built = buildConfigPayload(values, Boolean(isEditMode));
+      if (built.error) {
+        throw new Error(built.error);
+      }
       if (isEditMode) {
         return updateAlertDestination(org.id, editing.id, {
           kind: values.kind,
           name: values.name,
-          config,
+          config: built.config,
         });
       }
+      // Create path: TypeScript types config as required, but the buildConfigPayload guarantees
+      // a non-null object here (the isEditMode=false branch rejects blank-everywhere above).
       return createAlertDestination(org.id, {
         kind: values.kind,
         name: values.name,
-        config,
+        config: built.config as Record<string, unknown>,
       });
     },
     onSuccess: async () => {
@@ -257,20 +312,82 @@ export function AlertDestinationsPage() {
               {...form.getInputProps('name')}
               disabled={saveMutation.isPending}
             />
-            <Textarea
-              label={t('alertDestinations.config')}
-              description={
-                isEditMode
-                  ? t('alertDestinations.configEditHint')
-                  : t('alertDestinations.configCreateHint')
-              }
-              placeholder={CONFIG_PLACEHOLDERS[form.values.kind]}
-              autosize
-              minRows={4}
-              styles={{ input: { fontFamily: 'monospace' } }}
-              {...form.getInputProps('config')}
-              disabled={saveMutation.isPending}
-            />
+
+            {form.values.kind === 'telegram' && (
+              <>
+                <TextInput
+                  label={t('alertDestinations.telegramChatId')}
+                  description={t('alertDestinations.telegramChatIdHint')}
+                  placeholder="-1001234567890"
+                  {...form.getInputProps('chatId')}
+                  disabled={saveMutation.isPending}
+                />
+                <PasswordInput
+                  label={t('alertDestinations.telegramBotToken')}
+                  description={
+                    isEditMode
+                      ? t('alertDestinations.secretEditHint')
+                      : t('alertDestinations.telegramBotTokenHint')
+                  }
+                  placeholder={isEditMode ? '••••••••' : '12345:ABC-DEF...'}
+                  {...form.getInputProps('botToken')}
+                  disabled={saveMutation.isPending}
+                />
+              </>
+            )}
+
+            {form.values.kind === 'email' && (
+              <TagsInput
+                label={t('alertDestinations.emailTo')}
+                description={t('alertDestinations.emailToHint')}
+                placeholder={isEditMode ? t('alertDestinations.leaveBlankToKeep') : 'ops@example.com'}
+                value={form.values.emailTo}
+                onChange={(v) => form.setFieldValue('emailTo', v)}
+                splitChars={[',', ' ', ';']}
+                disabled={saveMutation.isPending}
+              />
+            )}
+
+            {form.values.kind === 'slack' && (
+              <PasswordInput
+                label={t('alertDestinations.slackWebhookUrl')}
+                description={
+                  isEditMode
+                    ? t('alertDestinations.secretEditHint')
+                    : t('alertDestinations.slackWebhookUrlHint')
+                }
+                placeholder={isEditMode ? '••••••••' : 'https://hooks.slack.com/services/T00/B00/XXX'}
+                {...form.getInputProps('slackWebhookUrl')}
+                disabled={saveMutation.isPending}
+              />
+            )}
+
+            {form.values.kind === 'webhook' && (
+              <>
+                <TextInput
+                  label={t('alertDestinations.webhookUrl')}
+                  description={
+                    isEditMode
+                      ? t('alertDestinations.leaveBlankToKeep')
+                      : t('alertDestinations.webhookUrlHint')
+                  }
+                  placeholder="https://hooks.example.com/arguslog"
+                  {...form.getInputProps('webhookUrl')}
+                  disabled={saveMutation.isPending}
+                />
+                <PasswordInput
+                  label={t('alertDestinations.webhookSecret')}
+                  description={
+                    isEditMode
+                      ? t('alertDestinations.secretEditHint')
+                      : t('alertDestinations.webhookSecretHint')
+                  }
+                  placeholder={isEditMode ? '••••••••' : t('alertDestinations.webhookSecretPlaceholder')}
+                  {...form.getInputProps('webhookSecret')}
+                  disabled={saveMutation.isPending}
+                />
+              </>
+            )}
             {error ? (
               <Alert color="red" variant="light">
                 {error}

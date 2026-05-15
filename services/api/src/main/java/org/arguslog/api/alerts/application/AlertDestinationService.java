@@ -52,9 +52,19 @@ public class AlertDestinationService implements AlertDestinationUseCase {
   public Optional<AlertDestination> update(long orgId, long id, String name, JsonNode config) {
     Optional<AlertDestination> existing = repository.find(orgId, id);
     if (existing.isEmpty()) return Optional.empty();
-    validateConfig(existing.get().kind(), config);
     requireName(name);
-    return writes.update(orgId, id, name.trim(), serialize(config));
+    // Per-field structured editing posture: a caller updating the name alone shouldn't have to
+    // re-supply the secret config blob (the dashboard never shows it back, so the user would
+    // be forced into a copy-paste-from-1Password ritual just to rename). Null/missing config
+    // means "keep what's there"; an object means "replace and revalidate".
+    String configJson;
+    if (config == null || config.isNull()) {
+      configJson = existing.get().configJson();
+    } else {
+      validateConfig(existing.get().kind(), config);
+      configJson = serialize(config);
+    }
+    return writes.update(orgId, id, name.trim(), configJson);
   }
 
   @Override

@@ -89,7 +89,7 @@ describe('AlertDestinationsPage', () => {
     await waitFor(() => expect(screen.getByText(/No destinations yet/i)).toBeInTheDocument());
   });
 
-  it('posts the typed config when the user submits the create form', async () => {
+  it('posts the structured per-kind config when creating a telegram destination', async () => {
     const calls: { url: string; init?: RequestInit }[] = [];
     globalThis.fetch = vi.fn(async (input, init) => {
       const url = typeof input === 'string' ? input : (input as Request).url;
@@ -111,13 +111,10 @@ describe('AlertDestinationsPage', () => {
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole('button', { name: /New destination/i }));
-    // Modal renders into a portal — wait for the form to appear.
     const nameInput = await screen.findByLabelText(/^Name$/i);
     await user.type(nameInput, 'ops');
-    const configField = screen.getByLabelText(/Config \(JSON\)/i);
-    await user.clear(configField);
-    // userEvent treats `{{` as escape for `{`
-    await user.type(configField, '{{"chatId":"-1001"}');
+    await user.type(screen.getByLabelText(/^Chat ID$/i), '-1001');
+    await user.type(screen.getByLabelText(/^Bot token$/i), 'abc:def');
     await user.click(screen.getByRole('button', { name: /^Create$/i }));
 
     await waitFor(() => {
@@ -126,7 +123,54 @@ describe('AlertDestinationsPage', () => {
       const body = JSON.parse(post!.init!.body as string) as Record<string, unknown>;
       expect(body.kind).toBe('telegram');
       expect(body.name).toBe('ops');
-      expect((body.config as Record<string, string>).chatId).toBe('-1001');
+      const config = body.config as Record<string, string>;
+      expect(config.chatId).toBe('-1001');
+      expect(config.botToken).toBe('abc:def');
+    });
+  });
+
+  it('sends config=null when editing a destination with blank config inputs (rename only)', async () => {
+    const calls: { url: string; init?: RequestInit }[] = [];
+    globalThis.fetch = vi.fn(async (input, init) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      calls.push({ url, init });
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/alert-destinations') && (init?.method ?? 'GET') === 'GET') {
+        return jsonResponse([
+          { id: 10, orgId: 1, kind: 'slack', name: 'alerts', createdAt: '2026-05-01T00:00:00Z' },
+        ]);
+      }
+      if (
+        url.endsWith('/api/v1/orgs/1/alert-destinations/10') &&
+        init?.method === 'PUT'
+      ) {
+        return jsonResponse({
+          id: 10,
+          orgId: 1,
+          kind: 'slack',
+          name: 'renamed',
+          createdAt: '2026-05-01T00:00:00Z',
+        });
+      }
+      return jsonResponse([]);
+    }) as typeof fetch;
+
+    renderAt();
+    const user = userEvent.setup();
+
+    await waitFor(() => expect(screen.getByText('alerts')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: /Edit alerts/i }));
+    const nameInput = await screen.findByLabelText(/^Name$/i);
+    await user.clear(nameInput);
+    await user.type(nameInput, 'renamed');
+    await user.click(screen.getByRole('button', { name: /^Save$/i }));
+
+    await waitFor(() => {
+      const put = calls.find((c) => c.init?.method === 'PUT');
+      expect(put).toBeDefined();
+      const body = JSON.parse(put!.init!.body as string) as Record<string, unknown>;
+      expect(body.name).toBe('renamed');
+      expect(body.config).toBeNull();
     });
   });
 });

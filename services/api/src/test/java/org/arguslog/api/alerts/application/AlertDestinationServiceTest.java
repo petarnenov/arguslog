@@ -128,6 +128,21 @@ class AlertDestinationServiceTest {
   }
 
   @Test
+  void updateWithNullConfigKeepsExistingConfigJson() {
+    // Renaming alone shouldn't force a re-paste of the secret config — the service must reuse
+    // the stored configJson when the caller passes null.
+    AlertDestination existing = sample(DestinationKind.SLACK, "old-name");
+    when(repository.find(1L, 7L)).thenReturn(Optional.of(existing));
+    when(writes.update(eq(1L), eq(7L), eq("new-name"), eq(existing.configJson())))
+        .thenReturn(Optional.of(sample(DestinationKind.SLACK, "new-name")));
+
+    Optional<AlertDestination> result = service.update(1L, 7L, "new-name", null);
+
+    assertThat(result).isPresent();
+    verify(writes).update(1L, 7L, "new-name", existing.configJson());
+  }
+
+  @Test
   void deletePassesThrough() {
     when(writes.delete(1L, 7L)).thenReturn(true);
     assertThat(service.delete(1L, 7L)).isTrue();
