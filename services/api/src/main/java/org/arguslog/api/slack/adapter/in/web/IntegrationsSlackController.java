@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Optional;
 import org.arguslog.api.alerts.application.AlertDestinationUseCase;
+import org.arguslog.api.alerts.application.AlertDestinationUseCase.DuplicateDestinationException;
 import org.arguslog.api.alerts.domain.AlertDestination;
 import org.arguslog.api.alerts.domain.DestinationKind;
 import org.arguslog.api.application.port.ProjectRepository;
@@ -123,8 +124,22 @@ public class IntegrationsSlackController {
         : defaultDestinationName(workspace);
     ObjectNode config = mapper.createObjectNode();
     config.put("webhookUrl", workspace.webhookUrl());
-    AlertDestination created = alertDestinations.create(orgId, DestinationKind.SLACK, name, config);
-    return ResponseEntity.status(HttpStatus.CREATED).body(AlertDestinationDto.from(created));
+    // Idempotent one-click: if the caller already created a destination with this name (eg.
+    // they double-clicked the button or hit the API twice), surface the existing row instead
+    // of bubbling a 409 to the dashboard. Distinct user-renamed destinations still collide as
+    // expected — the duplicate-name guard fires only on exact-name match.
+    try {
+      AlertDestination created =
+          alertDestinations.create(orgId, DestinationKind.SLACK, name, config);
+      return ResponseEntity.status(HttpStatus.CREATED).body(AlertDestinationDto.from(created));
+    } catch (DuplicateDestinationException e) {
+      AlertDestination existing =
+          alertDestinations.list(orgId).stream()
+              .filter(d -> d.kind() == DestinationKind.SLACK && name.equals(d.name()))
+              .findFirst()
+              .orElseThrow(() -> e);
+      return ResponseEntity.ok(AlertDestinationDto.from(existing));
+    }
   }
 
   private static String defaultDestinationName(SlackWorkspace w) {
