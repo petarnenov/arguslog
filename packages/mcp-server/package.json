@@ -1,6 +1,6 @@
 {
   "name": "@arguslog/mcp-server",
-  "version": "2.1.4",
+  "version": "2.2.0",
   "description": "Arguslog MCP server — exposes the full Arguslog API (issues, projects, orgs, alerts, releases, tier admin, …) as Model Context Protocol tools. Authenticate with a Personal Access Token from the dashboard.",
   "license": "MIT",
   "type": "module",
