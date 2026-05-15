@@ -16,6 +16,7 @@ import { listMyOrgs } from './orgs';
 import { listPlatforms } from './platforms';
 import { listProjects } from './projects';
 import { getRelease, listIssuesIntroducedInRelease, listReleases } from './releases';
+import { listSlackWorkspaces } from './slackIntegrations';
 import { listSourceMaps } from './sourcemaps';
 import { listMyTokens } from './tokens';
 
@@ -46,7 +47,17 @@ export const queryKeys = {
   adminOrgs: (q: string, offset: number, limit: number) =>
     ['admin', 'orgs', q, offset, limit] as const,
   adminAudit: (offset: number, limit: number) => ['admin', 'audit', offset, limit] as const,
+  slackWorkspaces: (orgId: number) => ['slack-workspaces', orgId] as const,
 };
+
+export function useSlackWorkspaces(orgId: number | undefined, options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: queryKeys.slackWorkspaces(orgId ?? -1),
+    queryFn: () => listSlackWorkspaces(orgId as number),
+    enabled: (options.enabled ?? true) && orgId != null,
+    staleTime: 30_000,
+  });
+}
 
 export function useMyOrgs(options: { enabled?: boolean } = {}) {
   return useQuery({

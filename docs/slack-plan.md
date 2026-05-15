@@ -23,8 +23,8 @@
 | 1   | 1+2   | `V36__slack_workspaces.sql` schema + RLS + `SlackWorkspace` domain + JDBC repo (read + write) + `SlackSigningVerifier` + SecurityConfig allowlist for `/api/v1/slack/**`. | ✅ done     | `64fb2ae`   |
 | 2   | 3     | `POST /api/v1/slack/commands` — `SlackController` + `SlackCommandDispatcher` (help / issues / issue / resolve / release) + `SlackBlockBuilder` + DTOs.                  | ✅ done     | `794c586`   |
 | 3   | 4     | **OAuth install flow.** `SlackOAuthService` (state JWT + token exchange) + `SlackInstallController` (`GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install`, `GET /api/v1/slack/oauth/callback`). Wires `upsert()`. | ✅ done     | `1c63d1f`   |
-| 4   | 5     | **Dashboard REST API.** `IntegrationsSlackController` under `/api/v1/orgs/{orgId}/integrations/slack/workspaces` (`GET` list, `DELETE /{id}`, `PATCH /{id}` defaultProjectId). `SlackWorkspaceDto` excludes `install_token`. | ✅ done     | _next commit_ |
-| 5   | 6     | **Dashboard UI.** `SlackIntegrationsPage` under `/settings/integrations/slack` — list / connect / disconnect / pick default project. Sidebar link under Settings.       | ⏳ pending  |             |
+| 4   | 5     | **Dashboard REST API.** `IntegrationsSlackController` under `/api/v1/orgs/{orgId}/integrations/slack/workspaces` (`GET` list, `DELETE /{id}`, `PATCH /{id}` defaultProjectId). `SlackWorkspaceDto` excludes `install_token`. | ✅ done     | `3f237ea`   |
+| 5   | 6     | **Dashboard UI.** `SlackIntegrationsPage` under `/orgs/{orgSlug}/settings/integrations/slack` — list / connect / disconnect / pick default project. Sidebar link.       | ✅ done     | _next commit_ |
 | 6   | 7     | **`/arguslog set-project <slug>` subcommand.** Extends dispatcher switch + help text. Calls `setDefaultProject`.                                                       | ⏳ pending  |             |
 
 ## Phase 4 — OAuth install flow (point A)

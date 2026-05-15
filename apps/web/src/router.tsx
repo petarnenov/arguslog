@@ -18,6 +18,7 @@ import { ProjectKeysPage } from './pages/ProjectKeysPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ReleaseDetailPage } from './pages/ReleaseDetailPage';
 import { ReleasesPage } from './pages/ReleasesPage';
+import { SlackIntegrationsPage } from './pages/SlackIntegrationsPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/orgs" replace /> },
@@ -47,6 +48,10 @@ export const router = createBrowserRouter([
       },
       { path: '/orgs/:orgSlug/settings', element: <OrgSettingsPage /> },
       { path: '/orgs/:orgSlug/settings/destinations', element: <AlertDestinationsPage /> },
+      {
+        path: '/orgs/:orgSlug/settings/integrations/slack',
+        element: <SlackIntegrationsPage />,
+      },
       { path: '/me/tokens', element: <PersonalAccessTokensPage /> },
       { path: '/admin', element: <AdminPage /> },
     ],

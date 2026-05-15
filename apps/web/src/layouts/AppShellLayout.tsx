@@ -20,6 +20,7 @@ import { useDisclosure } from '@mantine/hooks';
 import {
   IconAlertTriangle,
   IconBell,
+  IconBrandSlack,
   IconBuilding,
   IconCheck,
   IconChevronDown,
@@ -282,6 +283,15 @@ export function AppShellLayout() {
               to={`/orgs/${orgSlug}/settings/destinations`}
               label={t('nav.destinations')}
               leftSection={<IconSend size={16} />}
+            />
+          )}
+          {orgSlug && (
+            <NavLink
+              component={Link}
+              to={`/orgs/${orgSlug}/settings/integrations/slack`}
+              label={t('nav.slack')}
+              leftSection={<IconBrandSlack size={16} />}
+              data-testid="nav-slack"
             />
           )}
           {orgSlug && (

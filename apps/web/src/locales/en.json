@@ -9,6 +9,7 @@
     "alerts": "Alerts",
     "alertRules": "Alert rules",
     "destinations": "Destinations",
+    "slack": "Slack",
     "connect": "Connect",
     "members": "Members",
     "releases": "Releases",
@@ -318,6 +319,27 @@
   "errors": {
     "generic": "Something went wrong",
     "tryAgain": "Try again"
+  },
+  "common": {
+    "cancel": "Cancel"
+  },
+  "slackIntegrations": {
+    "title": "Slack integration",
+    "lead": "Install the Arguslog Slack app to run slash commands like /arguslog issues, /arguslog resolve <id>, and /arguslog release <version> from any channel.",
+    "connect": "Connect Slack",
+    "connected": "Connected to {{team}}",
+    "connectError": "Slack install failed: {{error}}",
+    "empty": "No Slack workspaces connected yet. Click Connect Slack to install the app.",
+    "colTeam": "Workspace",
+    "colDefaultProject": "Default project",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "pickProject": "Select project",
+    "active": "Active",
+    "revoked": "Revoked",
+    "disconnect": "Disconnect",
+    "disconnectTitle": "Disconnect Slack workspace?",
+    "disconnectBody": "{{team}} will stop responding to /arguslog commands. You can reinstall any time."
   },
   "alertDestinations": {
     "title": "Alert destinations",
