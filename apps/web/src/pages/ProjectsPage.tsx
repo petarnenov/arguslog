@@ -23,7 +23,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-import { LineChart } from '@mantine/charts';
+import { AreaChart } from '@mantine/charts';
 import { useForm } from '@mantine/form';
 import {
   IconArchive,
@@ -568,7 +568,7 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
               <Text size="xs" c="dimmed" mb={4}>
                 {t('projects.sparklineCaption')}
               </Text>
-              <LineChart
+              <AreaChart
                 h={90}
                 data={stats.eventsByDay}
                 dataKey="day"
@@ -576,7 +576,9 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
                 curveType="monotone"
                 withDots={false}
                 withYAxis={false}
+                withGradient={false}
                 strokeWidth={2}
+                fillOpacity={0.35}
                 gridAxis="none"
                 xAxisProps={{
                   tickFormatter: formatShortDay,
