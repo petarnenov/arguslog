@@ -3,7 +3,10 @@ package org.arguslog.api.slack.adapter.in.web;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.UUID;
+import org.arguslog.api.application.port.OrgWriteRepository;
+import org.arguslog.api.domain.Org;
 import org.arguslog.api.security.AuthActor;
 import org.arguslog.api.slack.application.SlackInstallStateCodec;
 import org.arguslog.api.slack.application.SlackOAuthProperties;
@@ -50,16 +53,19 @@ public class SlackInstallController {
   private final SlackInstallStateCodec stateCodec;
   private final SlackOAuthService oauth;
   private final SlackWorkspaceWriteRepository workspaces;
+  private final OrgWriteRepository orgs;
 
   public SlackInstallController(
       SlackOAuthProperties props,
       SlackInstallStateCodec stateCodec,
       SlackOAuthService oauth,
-      SlackWorkspaceWriteRepository workspaces) {
+      SlackWorkspaceWriteRepository workspaces,
+      OrgWriteRepository orgs) {
     this.props = props;
     this.stateCodec = stateCodec;
     this.oauth = oauth;
     this.workspaces = workspaces;
+    this.orgs = orgs;
   }
 
   public record InstallResponse(String authorizeUrl) {}
@@ -83,10 +89,16 @@ public class SlackInstallController {
     if (!props.configured()) return notConfigured();
 
     // Slack reports user-cancelled / error scenarios via ?error=... — surface that as a
-    // friendly redirect with a query flag, not an opaque 4xx.
+    // friendly redirect with a query flag, not an opaque 4xx. Slack still echoes state on
+    // error, so we can usually decode it to land on the right org's integrations page.
     if (slackError != null && !slackError.isBlank()) {
       log.info("slack oauth callback returned error={}", slackError);
-      return redirectToDashboard("error=" + slackError);
+      Long orgIdForRedirect = null;
+      if (state != null && !state.isBlank()
+          && stateCodec.decode(state) instanceof SlackInstallStateCodec.Result.Ok ok) {
+        orgIdForRedirect = ok.orgId();
+      }
+      return redirectToDashboard(orgIdForRedirect, "error=" + slackError);
     }
     if (code == null || code.isBlank() || state == null || state.isBlank()) {
       return ResponseEntity.badRequest().body("missing code or state");
@@ -103,7 +115,7 @@ public class SlackInstallController {
     if (!(exchanged instanceof SlackOAuthService.Result.Success success)) {
       var err = ((SlackOAuthService.Result.Failure) exchanged).error();
       log.warn("slack token exchange failed for org={}: {}", ok.orgId(), err);
-      return redirectToDashboard("error=token_exchange_" + err);
+      return redirectToDashboard(ok.orgId(), "error=token_exchange_" + err);
     }
 
     workspaces.upsert(
@@ -120,7 +132,7 @@ public class SlackInstallController {
         ok.orgId(),
         ok.userId());
 
-    return redirectToDashboard("installed=" + urlEncode(success.teamName()));
+    return redirectToDashboard(ok.orgId(), "installed=" + urlEncode(success.teamName()));
   }
 
   private ResponseEntity<String> notConfigured() {
@@ -128,9 +140,20 @@ public class SlackInstallController {
         .body("Slack OAuth is not configured on this Arguslog instance.");
   }
 
-  private ResponseEntity<String> redirectToDashboard(String query) {
-    String url = props.dashboardBaseUrl() + "/settings/integrations/slack?" + query;
-    return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(url)).build();
+  /**
+   * Where to drop the user after the callback. The integrations page is org-scoped
+   * ({@code /orgs/<slug>/integrations/slack}) so we need the slug — look it up from the orgId
+   * that the state token carried. If we don't have an orgId (e.g. Slack returned an error with
+   * a missing/bad state) or the org row vanished mid-flow, fall back to the dashboard root so
+   * the user at least lands somewhere that exists rather than a 404.
+   */
+  private ResponseEntity<String> redirectToDashboard(Long orgId, String query) {
+    Optional<Org> org = orgId == null ? Optional.empty() : orgs.findById(orgId);
+    String path =
+        org.map(o -> "/orgs/" + o.slug() + "/integrations/slack?" + query).orElse("/?" + query);
+    return ResponseEntity.status(HttpStatus.FOUND)
+        .location(URI.create(props.dashboardBaseUrl() + path))
+        .build();
   }
 
   private static String urlEncode(String s) {

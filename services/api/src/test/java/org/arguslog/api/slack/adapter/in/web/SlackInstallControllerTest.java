@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.arguslog.api.alerts.application.port.AlertDestinationRepository;
 import org.arguslog.api.alerts.application.port.AlertDestinationWriteRepository;
@@ -23,6 +25,7 @@ import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.MembershipWriteRepository;
 import org.arguslog.api.application.port.OrgWriteRepository;
+import org.arguslog.api.domain.Org;
 import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
@@ -145,6 +148,8 @@ class SlackInstallControllerTest {
     when(slackOAuthService.exchangeCode(
             eq("the-code"), eq("http://localhost:8081/api/v1/slack/oauth/callback")))
         .thenReturn(new SlackOAuthService.Result.Success("T123", "Acme", "xoxb-x", "U42"));
+    when(orgWriteRepository.findById(42L))
+        .thenReturn(Optional.of(new Org(42L, "acme", "Acme", "free", Instant.EPOCH)));
 
     mvc.perform(
             get("/api/v1/slack/oauth/callback")
@@ -154,7 +159,7 @@ class SlackInstallControllerTest {
         .andExpect(
             header().string(
                 "Location",
-                "http://localhost:5173/settings/integrations/slack?installed=Acme"));
+                "http://localhost:5173/orgs/acme/integrations/slack?installed=Acme"));
 
     verify(slackWorkspaceWriteRepository)
         .upsert(eq("T123"), eq("Acme"), eq("xoxb-x"), eq(42L), eq(null), eq(USER));
@@ -198,7 +203,7 @@ class SlackInstallControllerTest {
         .andExpect(
             header().string(
                 "Location",
-                "http://localhost:5173/settings/integrations/slack?error=access_denied"));
+                "http://localhost:5173/?error=access_denied"));
 
     verify(slackInstallStateCodec, never()).decode(any());
   }
@@ -215,6 +220,8 @@ class SlackInstallControllerTest {
         .thenReturn(SlackInstallStateCodec.Result.ok(42L, USER));
     when(slackOAuthService.exchangeCode(any(), any()))
         .thenReturn(new SlackOAuthService.Result.Failure("invalid_code"));
+    when(orgWriteRepository.findById(42L))
+        .thenReturn(Optional.of(new Org(42L, "acme", "Acme", "free", Instant.EPOCH)));
 
     mvc.perform(
             get("/api/v1/slack/oauth/callback")
@@ -224,7 +231,7 @@ class SlackInstallControllerTest {
         .andExpect(
             header().string(
                 "Location",
-                "http://localhost:5173/settings/integrations/slack?error=token_exchange_invalid_code"));
+                "http://localhost:5173/orgs/acme/integrations/slack?error=token_exchange_invalid_code"));
 
     verify(slackWorkspaceWriteRepository, never())
         .upsert(any(), any(), any(), anyLong(), any(), any());
