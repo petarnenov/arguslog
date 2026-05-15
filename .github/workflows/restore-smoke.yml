@@ -56,15 +56,9 @@ jobs:
         ports:
           - 55433:5432
 
-      minio:
-        image: minio/minio:RELEASE.2024-10-13T13-34-11Z
-        env:
-          MINIO_ROOT_USER: smokekey
-          MINIO_ROOT_PASSWORD: smokesecretsmoke
-        ports:
-          - 59000:9000
-        # GitHub Actions doesn't allow arbitrary `command:` on services, so we accept MinIO's
-        # default container CMD which serves `/data` on port 9000 — exactly what we need.
+      # MinIO is NOT a service-container here. GH Actions services don't accept a `command:`
+      # field and the minio/minio image's entrypoint requires `server /data` as its CMD, so a
+      # service-style boot exits immediately. We launch it via `docker run` in a step below.
 
     env:
       # Talk to services from the runner via the host-mapped ports.
@@ -93,6 +87,14 @@ jobs:
 
       - name: Verify aws-cli on runner
         run: aws --version
+
+      - name: Start MinIO (S3-compatible stand-in for R2)
+        run: |
+          docker run -d --name restore-smoke-minio \
+            -p 59000:9000 \
+            -e MINIO_ROOT_USER=smokekey \
+            -e MINIO_ROOT_PASSWORD=smokesecretsmoke \
+            minio/minio:RELEASE.2024-10-13T13-34-11Z server /data
 
       - name: Wait for source Postgres
         run: |
