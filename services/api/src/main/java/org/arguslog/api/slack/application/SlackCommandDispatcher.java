@@ -112,6 +112,8 @@ public class SlackCommandDispatcher {
         case "issues" -> handleIssues(workspace, org);
         case "issue" -> handleIssueDetail(workspace, org, parts);
         case "resolve" -> handleResolve(workspace, org, parts);
+        case "ignore" -> handleIgnore(workspace, org, parts);
+        case "reopen" -> handleReopen(workspace, org, parts);
         case "release" -> handleRelease(workspace, org, parts);
         case "set-project" -> handleSetProject(workspace, org, parts);
         default ->
@@ -181,6 +183,40 @@ public class SlackCommandDispatcher {
     // Mutating commands broadcast to channel so the rest of the team sees the audit trail.
     return SlackCommandResponse.inChannel(
         "Resolved", blocks.resolvedConfirmation(org.slug(), updated.get()));
+  }
+
+  private SlackCommandResponse handleIgnore(
+      SlackWorkspace workspace, Org org, String[] parts) {
+    Long issueId = parsePositive(parts, 1);
+    if (issueId == null) return SlackCommandResponse.ephemeralText("Usage: `/arguslog ignore <id>`");
+    Long projectId = workspace.defaultProjectId();
+    if (projectId == null) {
+      return SlackCommandResponse.ephemeralText("No default project set for this workspace.");
+    }
+    Optional<Issue> updated =
+        triage.updateStatus(workspace.orgId(), projectId, issueId, Issue.Status.IGNORED);
+    if (updated.isEmpty()) {
+      return SlackCommandResponse.ephemeralText("Issue #" + issueId + " not found.");
+    }
+    return SlackCommandResponse.inChannel(
+        "Ignored", blocks.ignoredConfirmation(org.slug(), updated.get()));
+  }
+
+  private SlackCommandResponse handleReopen(
+      SlackWorkspace workspace, Org org, String[] parts) {
+    Long issueId = parsePositive(parts, 1);
+    if (issueId == null) return SlackCommandResponse.ephemeralText("Usage: `/arguslog reopen <id>`");
+    Long projectId = workspace.defaultProjectId();
+    if (projectId == null) {
+      return SlackCommandResponse.ephemeralText("No default project set for this workspace.");
+    }
+    Optional<Issue> updated =
+        triage.updateStatus(workspace.orgId(), projectId, issueId, Issue.Status.UNRESOLVED);
+    if (updated.isEmpty()) {
+      return SlackCommandResponse.ephemeralText("Issue #" + issueId + " not found.");
+    }
+    return SlackCommandResponse.inChannel(
+        "Reopened", blocks.reopenedConfirmation(org.slug(), updated.get()));
   }
 
   private SlackCommandResponse handleRelease(

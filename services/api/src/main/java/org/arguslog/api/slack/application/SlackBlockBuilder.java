@@ -86,6 +86,18 @@ public final class SlackBlockBuilder {
   }
 
   public List<Map<String, Object>> resolvedConfirmation(String orgSlug, Issue issue) {
+    return statusConfirmation(orgSlug, issue, "✅ Resolved");
+  }
+
+  public List<Map<String, Object>> ignoredConfirmation(String orgSlug, Issue issue) {
+    return statusConfirmation(orgSlug, issue, "🔕 Ignored");
+  }
+
+  public List<Map<String, Object>> reopenedConfirmation(String orgSlug, Issue issue) {
+    return statusConfirmation(orgSlug, issue, "🔄 Reopened");
+  }
+
+  private List<Map<String, Object>> statusConfirmation(String orgSlug, Issue issue, String prefix) {
     String url =
         dashboardBaseUrl
             + "/orgs/"
@@ -96,7 +108,14 @@ public final class SlackBlockBuilder {
             + issue.id();
     return List.of(
         section(
-            "✅ Resolved <" + url + "|" + escape(truncate(issue.title(), 200)) + "> (#" + issue.id() + ")"));
+            prefix
+                + " <"
+                + url
+                + "|"
+                + escape(truncate(issue.title(), 200))
+                + "> (#"
+                + issue.id()
+                + ")"));
   }
 
   public List<Map<String, Object>> releaseIssues(
@@ -145,6 +164,8 @@ public final class SlackBlockBuilder {
             + "• `/arguslog issues` — top 10 unresolved in the default project\n"
             + "• `/arguslog issue <id>` — full detail card\n"
             + "• `/arguslog resolve <id>` — mark resolved (broadcasts to channel)\n"
+            + "• `/arguslog ignore <id>` — mute a known-noisy issue (broadcasts)\n"
+            + "• `/arguslog reopen <id>` — reopen a resolved/ignored issue (broadcasts)\n"
             + "• `/arguslog release <version>` — issues first seen in this release\n"
             + "• `/arguslog set-project <slug>` — switch the workspace's default project\n"
             + "• `/arguslog help` — this card";

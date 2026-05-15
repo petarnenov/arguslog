@@ -197,6 +197,54 @@ class SlackCommandDispatcherTest {
   }
 
   @Test
+  void ignoreRoutesToTriageWithIgnoredStatusAndBroadcasts() {
+    primeWorkspace();
+    Issue ignored =
+        new Issue(
+            42L,
+            101L,
+            "fp",
+            Issue.Status.IGNORED,
+            Issue.Level.ERROR,
+            "boom",
+            null,
+            Instant.now(),
+            Instant.now(),
+            3L,
+            null);
+    when(triage.updateStatus(1L, 101L, 42L, Issue.Status.IGNORED))
+        .thenReturn(Optional.of(ignored));
+
+    SlackCommandResponse r = dispatcher.dispatch(payload("T123", "ignore 42"));
+    assertThat(r.response_type()).isEqualTo("in_channel");
+    verify(triage).updateStatus(1L, 101L, 42L, Issue.Status.IGNORED);
+  }
+
+  @Test
+  void reopenRoutesToTriageWithUnresolvedStatusAndBroadcasts() {
+    primeWorkspace();
+    Issue reopened =
+        new Issue(
+            42L,
+            101L,
+            "fp",
+            Issue.Status.UNRESOLVED,
+            Issue.Level.ERROR,
+            "boom",
+            null,
+            Instant.now(),
+            Instant.now(),
+            3L,
+            null);
+    when(triage.updateStatus(1L, 101L, 42L, Issue.Status.UNRESOLVED))
+        .thenReturn(Optional.of(reopened));
+
+    SlackCommandResponse r = dispatcher.dispatch(payload("T123", "reopen 42"));
+    assertThat(r.response_type()).isEqualTo("in_channel");
+    verify(triage).updateStatus(1L, 101L, 42L, Issue.Status.UNRESOLVED);
+  }
+
+  @Test
   void releaseRoutesToFindByVersionThenIssuesByRelease() {
     primeWorkspace();
     Release release = new Release(9L, 101L, "v1.2.3", Instant.now());
