@@ -10,6 +10,9 @@
   never deletes objects.
 - To restore: `scripts/restore-postgres.sh` downloads any snapshot by S3 key and pipes it
   through `pg_restore` into a target database.
+- The end-to-end shape of both scripts is exercised every Monday by
+  `.github/workflows/restore-smoke.yml` against a MinIO stand-in. Locally, run
+  `bash scripts/restore-smoke.sh` for the same round-trip in Docker.
 
 ---
 
@@ -132,3 +135,19 @@ snapshot:
 
 Alternatively, run `scripts/backup-postgres.sh` from your laptop with the same env vars the
 workflow uses (you'll need DB-host network access).
+
+## Restore smoke
+
+A real DR drill against a prod backup is the only thing that proves the restore path works
+top-to-bottom — but it's heavy. To catch script-level regressions cheaply, two harnesses
+exercise both scripts end-to-end against a MinIO bucket and ephemeral Postgres:
+
+- **Locally** — `bash scripts/restore-smoke.sh` (needs Docker). Spins up source + target +
+  MinIO, seeds 1000 rows, runs the real backup + restore scripts, asserts row-count and
+  payload parity, then tears everything down. ~60 seconds.
+- **CI** — `.github/workflows/restore-smoke.yml` runs the same flow every Monday at 05:00 UTC
+  and on any PR that touches the backup/restore scripts or this doc.
+
+Neither smoke touches production data or R2 — they're cheap to run, but if either script
+ever regresses (renamed flag, broken env-var guard, wrong S3 key shape), the smoke fails the
+same way a real DR would. That's the point.

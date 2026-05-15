@@ -1,0 +1,177 @@
+name: Restore smoke
+
+# Proves scripts/backup-postgres.sh + scripts/restore-postgres.sh work end-to-end
+# against a fake R2 (MinIO). Without this, the runbook in docs/operations/backup-restore.md
+# only ever runs in anger during a real disaster — the worst time to discover a typo.
+#
+# Triggers:
+#   - Weekly cron (Mondays 05:00 UTC) — catches bitrot from package/version updates.
+#   - PR that touches the backup/restore scripts, this workflow, or the runbook.
+#   - Manual dispatch.
+#
+# No secrets needed: MinIO stands in for R2, ephemeral Postgres containers stand in for prod.
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  pull_request:
+    paths:
+      - 'scripts/backup-postgres.sh'
+      - 'scripts/restore-postgres.sh'
+      - 'scripts/restore-smoke.sh'
+      - '.github/workflows/restore-smoke.yml'
+      - 'docs/operations/backup-restore.md'
+  workflow_dispatch:
+
+concurrency:
+  group: restore-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Round-trip backup → MinIO → restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    services:
+      source-db:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_USER: arguslog
+          POSTGRES_PASSWORD: arguslog
+          POSTGRES_DB: arguslog
+        ports:
+          - 55432:5432
+        # No `options:` health check — the timescale image's entrypoint doesn't ship pg_isready
+        # on the host network namespace cleanly. We poll manually in the workflow body.
+
+      target-db:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_USER: arguslog
+          POSTGRES_PASSWORD: arguslog
+          POSTGRES_DB: arguslog
+        ports:
+          - 55433:5432
+
+      minio:
+        image: minio/minio:RELEASE.2024-10-13T13-34-11Z
+        env:
+          MINIO_ROOT_USER: smokekey
+          MINIO_ROOT_PASSWORD: smokesecretsmoke
+        ports:
+          - 59000:9000
+        # GitHub Actions doesn't allow arbitrary `command:` on services, so we accept MinIO's
+        # default container CMD which serves `/data` on port 9000 — exactly what we need.
+
+    env:
+      # Talk to services from the runner via the host-mapped ports.
+      DATABASE_URL: postgres://arguslog:arguslog@localhost:55432/arguslog
+      TARGET_DATABASE_URL: postgres://arguslog:arguslog@localhost:55433/arguslog
+      R2_ENDPOINT: http://localhost:59000
+      R2_BUCKET: arguslog-backups-smoke
+      AWS_ACCESS_KEY_ID: smokekey
+      AWS_SECRET_ACCESS_KEY: smokesecretsmoke
+      AWS_DEFAULT_REGION: us-east-1
+      BACKUP_PREFIX: smoke
+      ROW_COUNT_SQL: "SELECT 'smoke_data', COUNT(*)::text FROM smoke_data"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install postgresql-client-16 (matches prod major version)
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+
+      - name: Verify aws-cli on runner
+        run: aws --version
+
+      - name: Wait for source Postgres
+        run: |
+          for _ in $(seq 1 60); do
+            if pg_isready -h localhost -p 55432 -U arguslog -d arguslog -q; then
+              echo "source up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "source-db never became ready" >&2; exit 1
+
+      - name: Wait for target Postgres
+        run: |
+          for _ in $(seq 1 60); do
+            if pg_isready -h localhost -p 55433 -U arguslog -d arguslog -q; then
+              echo "target up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "target-db never became ready" >&2; exit 1
+
+      - name: Wait for MinIO
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -fsS -o /dev/null "$R2_ENDPOINT/minio/health/live"; then
+              echo "minio up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "minio never became ready" >&2; exit 1
+
+      - name: Create MinIO bucket
+        env:
+          PGPASSWORD: arguslog
+        run: |
+          aws --endpoint-url "$R2_ENDPOINT" s3 mb "s3://$R2_BUCKET"
+
+      - name: Seed source with synthetic smoke_data (1000 rows)
+        env:
+          PGPASSWORD: arguslog
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE smoke_data (id int primary key, payload text not null);
+          INSERT INTO smoke_data SELECT g, 'row-' || g FROM generate_series(1, 1000) g;
+          SQL
+
+      - name: Run scripts/backup-postgres.sh
+        run: bash scripts/backup-postgres.sh
+
+      - name: Discover the just-uploaded dump
+        id: discover
+        run: |
+          S3_KEY=$(aws --endpoint-url "$R2_ENDPOINT" s3api list-objects-v2 \
+            --bucket "$R2_BUCKET" --prefix smoke/ \
+            --query 'Contents[?ends_with(Key, `dump.gz`)] | sort_by(@, &LastModified)[-1].Key' \
+            --output text)
+          if [[ -z "$S3_KEY" || "$S3_KEY" == "None" ]]; then
+            echo "ERROR: backup-postgres.sh did not upload any dump.gz" >&2
+            exit 1
+          fi
+          echo "S3_KEY=$S3_KEY" >> "$GITHUB_OUTPUT"
+          echo "  S3_KEY=$S3_KEY"
+
+      - name: Run scripts/restore-postgres.sh
+        env:
+          S3_KEY: ${{ steps.discover.outputs.S3_KEY }}
+          ALLOW_DESTRUCTIVE: 'yes'
+        run: bash scripts/restore-postgres.sh
+
+      - name: Validate row count + payload on target
+        env:
+          PGPASSWORD: arguslog
+        run: |
+          COUNT=$(psql "$TARGET_DATABASE_URL" -At -c "SELECT COUNT(*) FROM smoke_data" | tr -d '[:space:]')
+          if [[ "$COUNT" != "1000" ]]; then
+            echo "ERROR: expected 1000 rows on target.smoke_data, got '$COUNT'" >&2; exit 1
+          fi
+          ROW_500=$(psql "$TARGET_DATABASE_URL" -At -c "SELECT payload FROM smoke_data WHERE id = 500" | tr -d '[:space:]')
+          if [[ "$ROW_500" != "row-500" ]]; then
+            echo "ERROR: row id=500 payload mismatch: got '$ROW_500', want 'row-500'" >&2; exit 1
+          fi
+          echo "✓ Round-trip parity confirmed (1000 rows, payload integrity)."
