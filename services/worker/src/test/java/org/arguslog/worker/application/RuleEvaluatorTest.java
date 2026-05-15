@@ -56,9 +56,10 @@ class RuleEvaluatorTest {
   }
 
   @Test
-  void tagClauseNeverFiresUntilPayloadIsWired() {
+  void tagClauseRejectsEventsWithNoTagsAtAll() {
     AlertRule r = rule("{\"tag\":{\"key\":\"env\",\"in\":[\"prod\"]}}");
-    // Documented gap — tag rules silently never match until the payload is piped through.
+    // Event with empty tag map — the rule clearly asks for an environment scope; if the SDK
+    // didn't send any tags, that's a non-match (rather than the legacy "tag never fires").
     assertThat(evaluator.matches(r, event("error", 1, NOW))).isFalse();
   }
 
@@ -87,5 +88,44 @@ class RuleEvaluatorTest {
 
   private PersistedEvent event(String level, long occurrenceCount, Instant firstSeenAt) {
     return new PersistedEvent(7L, 101L, level, false, occurrenceCount, firstSeenAt, NOW);
+  }
+
+  private PersistedEvent eventWithTags(java.util.Map<String, String> tags) {
+    return new PersistedEvent(7L, 101L, "error", false, 1, NOW, NOW, tags);
+  }
+
+  @org.junit.jupiter.api.Test
+  void tagClauseMatchesWhenEventCarriesTagValueInList() {
+    AlertRule r = rule("{\"tag\":{\"key\":\"env\",\"in\":[\"production\",\"staging\"]}}");
+    assertThat(evaluator.matches(r, eventWithTags(java.util.Map.of("env", "production")))).isTrue();
+    assertThat(evaluator.matches(r, eventWithTags(java.util.Map.of("env", "staging")))).isTrue();
+  }
+
+  @org.junit.jupiter.api.Test
+  void tagClauseRejectsWhenEventCarriesDifferentValue() {
+    AlertRule r = rule("{\"tag\":{\"key\":\"env\",\"in\":[\"production\"]}}");
+    assertThat(evaluator.matches(r, eventWithTags(java.util.Map.of("env", "development"))))
+        .isFalse();
+  }
+
+  @org.junit.jupiter.api.Test
+  void tagClauseRejectsWhenEventMissingTheKey() {
+    AlertRule r = rule("{\"tag\":{\"key\":\"env\",\"in\":[\"production\"]}}");
+    assertThat(evaluator.matches(r, eventWithTags(java.util.Map.of("region", "us-east-1"))))
+        .isFalse();
+    assertThat(evaluator.matches(r, eventWithTags(java.util.Map.of()))).isFalse();
+  }
+
+  @org.junit.jupiter.api.Test
+  void tagClauseAndsWithLevelClause() {
+    AlertRule r =
+        rule(
+            "{\"level\":{\"in\":[\"error\"]},\"tag\":{\"key\":\"env\",\"in\":[\"production\"]}}");
+    // level match + tag match → fire
+    assertThat(evaluator.matches(r, eventWithTags(java.util.Map.of("env", "production")))).isTrue();
+    // tag match + wrong level → no fire
+    PersistedEvent infoLevel =
+        new PersistedEvent(7L, 101L, "info", false, 1, NOW, NOW, java.util.Map.of("env", "production"));
+    assertThat(evaluator.matches(r, infoLevel)).isFalse();
   }
 }

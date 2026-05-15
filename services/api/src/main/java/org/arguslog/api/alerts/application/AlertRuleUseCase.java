@@ -1,8 +1,9 @@
 package org.arguslog.api.alerts.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Optional;
+import org.arguslog.api.alerts.adapter.in.web.dto.AlertRuleActions;
+import org.arguslog.api.alerts.adapter.in.web.dto.AlertRuleConditions;
 import org.arguslog.api.alerts.domain.AlertRule;
 
 public interface AlertRuleUseCase {
@@ -10,8 +11,8 @@ public interface AlertRuleUseCase {
   AlertRule create(
       long projectId,
       String name,
-      JsonNode conditions,
-      JsonNode actions,
+      AlertRuleConditions conditions,
+      AlertRuleActions actions,
       int throttleSeconds,
       boolean enabled);
 
@@ -23,8 +24,8 @@ public interface AlertRuleUseCase {
       long projectId,
       long id,
       String name,
-      JsonNode conditions,
-      JsonNode actions,
+      AlertRuleConditions conditions,
+      AlertRuleActions actions,
       int throttleSeconds,
       boolean enabled);
 

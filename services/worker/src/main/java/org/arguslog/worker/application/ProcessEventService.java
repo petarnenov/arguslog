@@ -2,6 +2,8 @@ package org.arguslog.worker.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.arguslog.worker.application.port.EventStore;
 import org.arguslog.worker.application.port.Fingerprinter;
 import org.arguslog.worker.application.port.PersistedEventPublisher;
@@ -49,9 +51,10 @@ public class ProcessEventService implements ProcessEventUseCase {
 
     Fingerprint fingerprint = fingerprinter.compute(enriched.rawPayload());
     String releaseVersion = extractReleaseVersion(enriched.rawPayload());
+    Map<String, String> tags = extractTags(enriched.rawPayload());
     try {
       EventStore.PersistResult result = store.persist(enriched, fingerprint, releaseVersion);
-      publishPersisted(enriched, result);
+      publishPersisted(enriched, result, tags);
       if ("unknown".equals(fingerprint.hash())) {
         return new Result.SalvagedAsUnknown(result.issueId());
       }
@@ -94,11 +97,43 @@ public class ProcessEventService implements ProcessEventUseCase {
   }
 
   /**
+   * Pulls SDK tags off the payload as a flat {@code Map<String,String>}. Supports both Sentry-
+   * style shapes — top-level object ({@code "tags":{"env":"prod"}}) and array-of-pairs
+   * ({@code "tags":[["env","prod"]]}). Non-textual values are stringified; non-textual keys
+   * dropped. Returns an empty map on missing field or malformed JSON — tag-clause rules then
+   * simply don't fire for this event.
+   */
+  private Map<String, String> extractTags(String payload) {
+    try {
+      JsonNode root = mapper.readTree(payload);
+      JsonNode tags = root.path("tags");
+      Map<String, String> out = new LinkedHashMap<>();
+      if (tags.isObject()) {
+        tags.fields()
+            .forEachRemaining(
+                e -> {
+                  if (!e.getValue().isNull()) out.put(e.getKey(), e.getValue().asText());
+                });
+      } else if (tags.isArray()) {
+        for (JsonNode pair : tags) {
+          if (pair.isArray() && pair.size() == 2 && pair.get(0).isTextual()) {
+            out.put(pair.get(0).asText(), pair.get(1).asText());
+          }
+        }
+      }
+      return out;
+    } catch (Exception e) {
+      return Map.of();
+    }
+  }
+
+  /**
    * Best-effort hand-off to the alerts pipeline. Failure here MUST NOT fail the event persistence —
    * Redis being briefly unreachable would otherwise look like a persistence failure and the caller
    * would re-deliver, double-counting occurrence_count.
    */
-  private void publishPersisted(IncomingEvent event, EventStore.PersistResult result) {
+  private void publishPersisted(
+      IncomingEvent event, EventStore.PersistResult result, Map<String, String> tags) {
     try {
       persistedEventPublisher.publish(
           new PersistedEvent(
@@ -108,7 +143,8 @@ public class ProcessEventService implements ProcessEventUseCase {
               result.newIssue(),
               result.occurrenceCount(),
               result.firstSeenAt(),
-              result.lastSeenAt()));
+              result.lastSeenAt(),
+              tags));
     } catch (RuntimeException e) {
       log.warn(
           "failed to publish persisted-event for issue {}; alerts may miss this occurrence: {}",

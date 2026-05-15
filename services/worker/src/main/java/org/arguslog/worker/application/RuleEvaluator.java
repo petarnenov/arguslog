@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import org.arguslog.worker.domain.AlertRule;
 import org.arguslog.worker.domain.PersistedEvent;
 import org.springframework.stereotype.Component;
@@ -17,11 +18,8 @@ import org.springframework.stereotype.Component;
  *   <li>{@code level.in: [...] } — match issue level
  *   <li>{@code firstSeenWindow: ISO-8601 } — only fire while the issue is fresh
  *   <li>{@code occurrenceThreshold: N } — only fire after N occurrences
+ *   <li>{@code tag: {key, in: [...]} } — match against an SDK-supplied tag on the event payload
  * </ul>
- *
- * <p>{@code tag.{key,in}} is accepted at the api but evaluated against {@code null} (no payload
- * tags reach this layer yet); rules using tag never fire until the payload is wired through. Same
- * "extend the worker, no api PR" stance as the rest of the DSL.
  *
  * <p>Unknown clauses are ignored on read (forward-compat: api can ship a new clause before the
  * worker learns it; the rule just over-matches until the worker catches up).
@@ -47,7 +45,7 @@ public final class RuleEvaluator {
         conditions.get("occurrenceThreshold"), event.occurrenceCount())) {
       return false;
     }
-    if (!matchesTag(conditions.get("tag"))) return false;
+    if (!matchesTag(conditions.get("tag"), event.tags())) return false;
     return true;
   }
 
@@ -79,10 +77,25 @@ public final class RuleEvaluator {
     return occurrenceCount >= threshold.asLong();
   }
 
-  private static boolean matchesTag(JsonNode tag) {
+  /**
+   * Tag clause: {@code {"key":"env","in":["production","staging"]}}. Match if the event carries a
+   * tag with the same key and a value inside the {@code in} array. Missing key on the event is a
+   * non-match — the rule was clearly asking for environment scoping and the event didn't supply
+   * one. Malformed clauses (no key, empty array) tolerate as match-all so a worker reading from
+   * a corrupted row doesn't drop legit traffic; the api validator is the real gate.
+   */
+  private static boolean matchesTag(JsonNode tag, Map<String, String> eventTags) {
     if (tag == null || tag.isNull()) return true;
-    // Payload tags aren't piped to PersistedEvent yet — a rule that uses tag never fires today.
-    // Documented gap; lifted when the dispatcher gets the full payload.
+    JsonNode keyNode = tag.path("key");
+    JsonNode inNode = tag.path("in");
+    if (!keyNode.isTextual() || keyNode.asText().isBlank()) return true;
+    if (!inNode.isArray() || inNode.isEmpty()) return true;
+    String key = keyNode.asText();
+    String value = eventTags == null ? null : eventTags.get(key);
+    if (value == null) return false;
+    for (JsonNode v : inNode) {
+      if (v.isTextual() && v.asText().equals(value)) return true;
+    }
     return false;
   }
 }

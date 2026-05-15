@@ -12,11 +12,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import org.arguslog.api.alerts.adapter.in.web.dto.AlertRuleActions;
+import org.arguslog.api.alerts.adapter.in.web.dto.AlertRuleConditions;
+import org.arguslog.api.alerts.adapter.in.web.dto.AlertRuleConditions.LevelClause;
+import org.arguslog.api.alerts.adapter.in.web.dto.AlertRuleConditions.TagClause;
 import org.arguslog.api.alerts.application.AlertRuleUseCase.InvalidAlertRuleException;
 import org.arguslog.api.alerts.application.port.AlertRuleRepository;
 import org.arguslog.api.alerts.application.port.AlertRuleWriteRepository;
@@ -39,14 +42,13 @@ class AlertRuleServiceTest {
   @BeforeEach
   void setUp() {
     mapper = new ObjectMapper();
-    service = new AlertRuleService(repository, writes);
+    service = new AlertRuleService(repository, writes, mapper);
   }
 
   @Test
   void minimalCreateGoesThroughWithEmptyConditionsAndOneDestination() {
-    JsonNode conditions = mapper.createObjectNode();
-    ObjectNode actions = mapper.createObjectNode();
-    actions.putArray("destinationIds").add(7);
+    AlertRuleConditions conditions = new AlertRuleConditions(null, null, null, null);
+    AlertRuleActions actions = new AlertRuleActions(List.of(7L));
 
     when(writes.create(eq(101L), eq("ops"), any(), any(), eq(300), eq(true)))
         .thenReturn(sample(101L, "ops"));
@@ -58,30 +60,28 @@ class AlertRuleServiceTest {
 
   @Test
   void blankNameIsRejected() {
-    ObjectNode actions = mapper.createObjectNode();
-    actions.putArray("destinationIds").add(7);
+    AlertRuleActions actions = new AlertRuleActions(List.of(7L));
     assertThatThrownBy(
-            () -> service.create(101L, "  ", mapper.createObjectNode(), actions, 300, true))
+            () ->
+                service.create(
+                    101L, "  ", new AlertRuleConditions(null, null, null, null), actions, 300, true))
         .isInstanceOf(InvalidAlertRuleException.class)
         .hasMessageContaining("name");
   }
 
   @Test
-  void conditionsMustBeJsonObject() {
-    ObjectNode actions = mapper.createObjectNode();
-    actions.putArray("destinationIds").add(7);
-    assertThatThrownBy(
-            () -> service.create(101L, "x", mapper.createArrayNode(), actions, 300, true))
+  void conditionsRequiredEvenIfAllClausesEmpty() {
+    AlertRuleActions actions = new AlertRuleActions(List.of(7L));
+    assertThatThrownBy(() -> service.create(101L, "x", null, actions, 300, true))
         .isInstanceOf(InvalidAlertRuleException.class)
         .hasMessageContaining("conditions");
   }
 
   @Test
   void unknownLevelEnumIsRejected() {
-    ObjectNode conditions = mapper.createObjectNode();
-    conditions.putObject("level").putArray("in").add("critical");
-    ObjectNode actions = mapper.createObjectNode();
-    actions.putArray("destinationIds").add(7);
+    AlertRuleConditions conditions =
+        new AlertRuleConditions(new LevelClause(List.of("critical")), null, null, null);
+    AlertRuleActions actions = new AlertRuleActions(List.of(7L));
 
     assertThatThrownBy(() -> service.create(101L, "x", conditions, actions, 300, true))
         .isInstanceOf(InvalidAlertRuleException.class)
@@ -90,12 +90,9 @@ class AlertRuleServiceTest {
 
   @Test
   void emptyTagInIsRejected() {
-    ObjectNode conditions = mapper.createObjectNode();
-    ObjectNode tag = conditions.putObject("tag");
-    tag.put("key", "env");
-    tag.putArray("in"); // empty
-    ObjectNode actions = mapper.createObjectNode();
-    actions.putArray("destinationIds").add(7);
+    AlertRuleConditions conditions =
+        new AlertRuleConditions(null, null, null, new TagClause("env", List.of()));
+    AlertRuleActions actions = new AlertRuleActions(List.of(7L));
 
     assertThatThrownBy(() -> service.create(101L, "x", conditions, actions, 300, true))
         .isInstanceOf(InvalidAlertRuleException.class)
@@ -103,10 +100,20 @@ class AlertRuleServiceTest {
   }
 
   @Test
+  void blankTagKeyIsRejected() {
+    AlertRuleConditions conditions =
+        new AlertRuleConditions(null, null, null, new TagClause("  ", List.of("prod")));
+    AlertRuleActions actions = new AlertRuleActions(List.of(7L));
+
+    assertThatThrownBy(() -> service.create(101L, "x", conditions, actions, 300, true))
+        .isInstanceOf(InvalidAlertRuleException.class)
+        .hasMessageContaining("tag.key");
+  }
+
+  @Test
   void firstSeenWindowMustBeIso8601() {
-    ObjectNode conditions = mapper.createObjectNode().put("firstSeenWindow", "5min");
-    ObjectNode actions = mapper.createObjectNode();
-    actions.putArray("destinationIds").add(7);
+    AlertRuleConditions conditions = new AlertRuleConditions(null, "5min", null, null);
+    AlertRuleActions actions = new AlertRuleActions(List.of(7L));
 
     assertThatThrownBy(() -> service.create(101L, "x", conditions, actions, 300, true))
         .isInstanceOf(InvalidAlertRuleException.class)
@@ -115,9 +122,8 @@ class AlertRuleServiceTest {
 
   @Test
   void occurrenceThresholdMustBePositive() {
-    ObjectNode conditions = mapper.createObjectNode().put("occurrenceThreshold", 0);
-    ObjectNode actions = mapper.createObjectNode();
-    actions.putArray("destinationIds").add(7);
+    AlertRuleConditions conditions = new AlertRuleConditions(null, null, 0, null);
+    AlertRuleActions actions = new AlertRuleActions(List.of(7L));
 
     assertThatThrownBy(() -> service.create(101L, "x", conditions, actions, 300, true))
         .isInstanceOf(InvalidAlertRuleException.class)
@@ -126,21 +132,36 @@ class AlertRuleServiceTest {
 
   @Test
   void emptyDestinationIdsIsRejected() {
-    ObjectNode actions = mapper.createObjectNode();
-    actions.putArray("destinationIds"); // empty
+    AlertRuleActions actions = new AlertRuleActions(List.of());
     assertThatThrownBy(
-            () -> service.create(101L, "x", mapper.createObjectNode(), actions, 300, true))
+            () ->
+                service.create(
+                    101L,
+                    "x",
+                    new AlertRuleConditions(null, null, null, null),
+                    actions,
+                    300,
+                    true))
         .isInstanceOf(InvalidAlertRuleException.class)
         .hasMessageContaining("destinationIds");
   }
 
   @Test
   void tooManyDestinationIdsIsRejected() {
-    ObjectNode actions = mapper.createObjectNode();
-    var arr = actions.putArray("destinationIds");
-    for (int i = 1; i <= AlertRuleService.MAX_DESTINATIONS + 1; i++) arr.add(i);
+    List<Long> ids =
+        java.util.stream.LongStream.rangeClosed(1, AlertRuleService.MAX_DESTINATIONS + 1)
+            .boxed()
+            .toList();
+    AlertRuleActions actions = new AlertRuleActions(ids);
     assertThatThrownBy(
-            () -> service.create(101L, "x", mapper.createObjectNode(), actions, 300, true))
+            () ->
+                service.create(
+                    101L,
+                    "x",
+                    new AlertRuleConditions(null, null, null, null),
+                    actions,
+                    300,
+                    true))
         .isInstanceOf(InvalidAlertRuleException.class)
         .hasMessageContaining("capped");
   }
@@ -164,8 +185,8 @@ class AlertRuleServiceTest {
             101L,
             999L,
             "x",
-            mapper.createObjectNode(),
-            mapper.createObjectNode().set("destinationIds", mapper.createArrayNode().add(7)),
+            new AlertRuleConditions(null, null, null, null),
+            new AlertRuleActions(List.of(7L)),
             300,
             true);
 

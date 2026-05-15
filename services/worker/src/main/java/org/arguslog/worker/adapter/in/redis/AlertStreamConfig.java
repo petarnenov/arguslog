@@ -63,8 +63,9 @@ public class AlertStreamConfig {
   }
 
   @Bean
-  public PersistedEventListener persistedEventListener(EvaluatePersistedEventUseCase useCase) {
-    return new PersistedEventListener(useCase, redis, props);
+  public PersistedEventListener persistedEventListener(
+      EvaluatePersistedEventUseCase useCase, com.fasterxml.jackson.databind.ObjectMapper mapper) {
+    return new PersistedEventListener(useCase, redis, mapper, props);
   }
 
   @Bean(initMethod = "start", destroyMethod = "stop")

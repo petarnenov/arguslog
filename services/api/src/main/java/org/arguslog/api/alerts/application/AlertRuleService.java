@@ -1,9 +1,12 @@
 package org.arguslog.api.alerts.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import org.arguslog.api.alerts.adapter.in.web.dto.AlertRuleActions;
+import org.arguslog.api.alerts.adapter.in.web.dto.AlertRuleConditions;
 import org.arguslog.api.alerts.application.port.AlertRuleRepository;
 import org.arguslog.api.alerts.application.port.AlertRuleWriteRepository;
 import org.arguslog.api.alerts.domain.AlertRule;
@@ -24,10 +27,13 @@ public class AlertRuleService implements AlertRuleUseCase {
 
   private final AlertRuleRepository repository;
   private final AlertRuleWriteRepository writes;
+  private final ObjectMapper mapper;
 
-  public AlertRuleService(AlertRuleRepository repository, AlertRuleWriteRepository writes) {
+  public AlertRuleService(
+      AlertRuleRepository repository, AlertRuleWriteRepository writes, ObjectMapper mapper) {
     this.repository = repository;
     this.writes = writes;
+    this.mapper = mapper;
   }
 
   @Override
@@ -35,15 +41,16 @@ public class AlertRuleService implements AlertRuleUseCase {
   public AlertRule create(
       long projectId,
       String name,
-      JsonNode conditions,
-      JsonNode actions,
+      AlertRuleConditions conditions,
+      AlertRuleActions actions,
       int throttleSeconds,
       boolean enabled) {
     requireName(name);
     validateConditions(conditions);
     validateActions(actions);
     int throttle = clampThrottle(throttleSeconds);
-    return writes.create(projectId, name.trim(), conditions, actions, throttle, enabled);
+    return writes.create(
+        projectId, name.trim(), toJson(conditions), toJson(actions), throttle, enabled);
   }
 
   @Override
@@ -64,8 +71,8 @@ public class AlertRuleService implements AlertRuleUseCase {
       long projectId,
       long id,
       String name,
-      JsonNode conditions,
-      JsonNode actions,
+      AlertRuleConditions conditions,
+      AlertRuleActions actions,
       int throttleSeconds,
       boolean enabled) {
     if (repository.find(projectId, id).isEmpty()) return Optional.empty();
@@ -73,7 +80,8 @@ public class AlertRuleService implements AlertRuleUseCase {
     validateConditions(conditions);
     validateActions(actions);
     int throttle = clampThrottle(throttleSeconds);
-    return writes.update(projectId, id, name.trim(), conditions, actions, throttle, enabled);
+    return writes.update(
+        projectId, id, name.trim(), toJson(conditions), toJson(actions), throttle, enabled);
   }
 
   @Override
@@ -91,63 +99,65 @@ public class AlertRuleService implements AlertRuleUseCase {
   }
 
   /**
-   * Surface-level shape check. Deeper semantic evaluation happens in the worker — keeping it out of
-   * the api means worker-only DSL extensions don't need an api PR every time.
+   * Surface-level shape check on the typed record. Deeper semantic evaluation happens in the
+   * worker — keeping it out of the api means worker-only DSL extensions don't need an api PR
+   * every time.
    */
-  static void validateConditions(JsonNode conditions) {
-    if (conditions == null || !conditions.isObject()) {
-      throw new InvalidAlertRuleException("conditions must be a JSON object (use {} for 'always')");
+  static void validateConditions(AlertRuleConditions conditions) {
+    if (conditions == null) {
+      throw new InvalidAlertRuleException("conditions are required (use {} for 'always')");
     }
-    JsonNode level = conditions.get("level");
-    if (level != null) {
-      if (!level.isObject() || !level.path("in").isArray() || level.path("in").isEmpty()) {
+    if (conditions.level() != null) {
+      List<String> in = conditions.level().in();
+      if (in == null || in.isEmpty()) {
         throw new InvalidAlertRuleException(
             "conditions.level must look like {\"in\":[\"error\",…]}");
       }
-      for (JsonNode entry : level.path("in")) {
-        if (!entry.isTextual() || !KNOWN_LEVELS.contains(entry.asText())) {
+      for (String entry : in) {
+        if (entry == null || !KNOWN_LEVELS.contains(entry)) {
           throw new InvalidAlertRuleException(
               "conditions.level.in entries must be one of " + KNOWN_LEVELS);
         }
       }
     }
-    JsonNode tag = conditions.get("tag");
-    if (tag != null) {
-      if (!tag.isObject() || !tag.path("key").isTextual() || tag.path("key").asText().isBlank()) {
+    if (conditions.tag() != null) {
+      String key = conditions.tag().key();
+      if (key == null || key.isBlank()) {
         throw new InvalidAlertRuleException("conditions.tag.key must be a non-empty string");
       }
-      if (!tag.path("in").isArray() || tag.path("in").isEmpty()) {
+      List<String> in = conditions.tag().in();
+      if (in == null || in.isEmpty()) {
         throw new InvalidAlertRuleException("conditions.tag.in must be a non-empty array");
       }
-    }
-    JsonNode window = conditions.get("firstSeenWindow");
-    if (window != null) {
-      if (!window.isTextual()) {
-        throw new InvalidAlertRuleException(
-            "conditions.firstSeenWindow must be an ISO-8601 duration string (e.g. PT5M)");
+      for (String entry : in) {
+        if (entry == null || entry.isBlank()) {
+          throw new InvalidAlertRuleException(
+              "conditions.tag.in entries must be non-empty strings");
+        }
       }
+    }
+    String window = conditions.firstSeenWindow();
+    if (window != null) {
       try {
-        Duration.parse(window.asText());
+        Duration.parse(window);
       } catch (RuntimeException e) {
         throw new InvalidAlertRuleException(
-            "conditions.firstSeenWindow is not a valid ISO-8601 duration: " + window.asText());
+            "conditions.firstSeenWindow is not a valid ISO-8601 duration: " + window);
       }
     }
-    JsonNode threshold = conditions.get("occurrenceThreshold");
-    if (threshold != null) {
-      if (!threshold.canConvertToInt() || threshold.asInt() < 1) {
-        throw new InvalidAlertRuleException(
-            "conditions.occurrenceThreshold must be a positive integer");
-      }
+    Integer threshold = conditions.occurrenceThreshold();
+    if (threshold != null && threshold < 1) {
+      throw new InvalidAlertRuleException(
+          "conditions.occurrenceThreshold must be a positive integer");
     }
   }
 
-  static void validateActions(JsonNode actions) {
-    if (actions == null || !actions.isObject()) {
-      throw new InvalidAlertRuleException("actions must be a JSON object");
+  static void validateActions(AlertRuleActions actions) {
+    if (actions == null) {
+      throw new InvalidAlertRuleException("actions are required");
     }
-    JsonNode dests = actions.get("destinationIds");
-    if (dests == null || !dests.isArray() || dests.isEmpty()) {
+    List<Long> dests = actions.destinationIds();
+    if (dests == null || dests.isEmpty()) {
       throw new InvalidAlertRuleException(
           "actions.destinationIds must be a non-empty array of destination ids");
     }
@@ -155,8 +165,8 @@ public class AlertRuleService implements AlertRuleUseCase {
       throw new InvalidAlertRuleException(
           "actions.destinationIds capped at " + MAX_DESTINATIONS + " per rule");
     }
-    for (JsonNode entry : dests) {
-      if (!entry.canConvertToLong() || entry.asLong() <= 0) {
+    for (Long entry : dests) {
+      if (entry == null || entry <= 0) {
         throw new InvalidAlertRuleException(
             "actions.destinationIds entries must be positive integers");
       }
@@ -167,5 +177,15 @@ public class AlertRuleService implements AlertRuleUseCase {
     if (requested < MIN_THROTTLE) return MIN_THROTTLE;
     if (requested > MAX_THROTTLE) return MAX_THROTTLE;
     return requested;
+  }
+
+  private JsonNode toJson(Object value) {
+    try {
+      // Round-trip through tree → bytes → tree to honor @JsonInclude(NON_NULL) on the records.
+      return mapper.readTree(mapper.writeValueAsBytes(value));
+    } catch (java.io.IOException e) {
+      // The typed records are always serializable; this should not happen short of a JVM bug.
+      throw new IllegalStateException("re-serialize alert rule payload failed", e);
+    }
   }
 }
