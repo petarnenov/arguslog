@@ -45,7 +45,7 @@ interface InviteValues {
   role: MemberRole;
 }
 
-export function OrgSettingsPage() {
+export function OrgMembersPage() {
   const { orgSlug } = useParams();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -58,7 +58,7 @@ export function OrgSettingsPage() {
 
   useReportSoftError(
     Boolean(orgsQuery.data && !org && orgSlug),
-    `OrgSettingsPage: org slug "${orgSlug}" not in user's memberships`,
+    `OrgMembersPage: org slug "${orgSlug}" not in user's memberships`,
   );
 
   const myMembership = membersQuery.data?.find((m) => m.userId === currentUserId);

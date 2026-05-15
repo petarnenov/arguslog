@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../../i18n';
 import { useAuthStore } from '../../auth/useAuthStore';
-import { OrgSettingsPage } from '../../pages/OrgSettingsPage';
+import { OrgMembersPage } from '../../pages/OrgMembersPage';
 
 const originalFetch = globalThis.fetch;
 
@@ -23,14 +23,14 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function renderAt(path = '/orgs/acme/settings') {
+function renderAt(path = '/orgs/acme/members') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <MantineProvider>
       <QueryClientProvider client={client}>
         <MemoryRouter initialEntries={[path]}>
           <Routes>
-            <Route path="/orgs/:orgSlug/settings" element={<OrgSettingsPage />} />
+            <Route path="/orgs/:orgSlug/members" element={<OrgMembersPage />} />
             <Route path="/orgs" element={<div>orgs landing</div>} />
           </Routes>
         </MemoryRouter>
@@ -39,7 +39,7 @@ function renderAt(path = '/orgs/acme/settings') {
   );
 }
 
-describe('OrgSettingsPage', () => {
+describe('OrgMembersPage', () => {
   beforeEach(() => {
     globalThis.fetch = originalFetch;
     useAuthStore.setState({

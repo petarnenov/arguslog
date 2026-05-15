@@ -283,7 +283,7 @@ export function AppShellLayout() {
           {orgSlug && (
             <NavLink
               component={Link}
-              to={`/orgs/${orgSlug}/settings/destinations`}
+              to={`/orgs/${orgSlug}/destinations`}
               label={t('nav.destinations')}
               leftSection={<IconSend size={16} />}
             />
@@ -291,7 +291,7 @@ export function AppShellLayout() {
           {orgSlug && (
             <NavLink
               component={Link}
-              to={`/orgs/${orgSlug}/settings/integrations/slack`}
+              to={`/orgs/${orgSlug}/integrations/slack`}
               label={t('nav.slack')}
               leftSection={<IconBrandSlack size={16} />}
               data-testid="nav-slack"
@@ -300,7 +300,7 @@ export function AppShellLayout() {
           {orgSlug && (
             <NavLink
               component={Link}
-              to={`/orgs/${orgSlug}/settings`}
+              to={`/orgs/${orgSlug}/members`}
               label={t('nav.members')}
               leftSection={<IconUsers size={16} />}
             />
@@ -352,7 +352,7 @@ export function AppShellLayout() {
               />
               <NavLink
                 component={Link}
-                to={`/orgs/${orgSlug}/projects/${projectId}/settings/keys`}
+                to={`/orgs/${orgSlug}/projects/${projectId}/keys`}
                 label="Keys"
                 leftSection={<IconShieldLock size={16} />}
               />

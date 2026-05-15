@@ -19,7 +19,7 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function renderAt(path = '/orgs/acme/settings/integrations/slack') {
+function renderAt(path = '/orgs/acme/integrations/slack') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <MantineProvider>
@@ -27,7 +27,7 @@ function renderAt(path = '/orgs/acme/settings/integrations/slack') {
         <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route
-              path="/orgs/:orgSlug/settings/integrations/slack"
+              path="/orgs/:orgSlug/integrations/slack"
               element={<SlackIntegrationsPage />}
             />
           </Routes>
@@ -160,7 +160,7 @@ describe('SlackIntegrationsPage', () => {
       return jsonResponse([]);
     }) as typeof fetch;
 
-    renderAt('/orgs/acme/settings/integrations/slack?installed=Acme');
+    renderAt('/orgs/acme/integrations/slack?installed=Acme');
 
     await waitFor(() =>
       expect(screen.getByText(/Connected to Acme/i)).toBeInTheDocument(),
@@ -174,7 +174,7 @@ describe('SlackIntegrationsPage', () => {
       return jsonResponse([]);
     }) as typeof fetch;
 
-    renderAt('/orgs/acme/settings/integrations/slack?error=access_denied');
+    renderAt('/orgs/acme/integrations/slack?error=access_denied');
 
     await waitFor(() =>
       expect(screen.getByText(/Slack install failed: access_denied/i)).toBeInTheDocument(),

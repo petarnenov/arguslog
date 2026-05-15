@@ -10,7 +10,7 @@ import { IssueDetailPage } from './pages/IssueDetailPage';
 import { IssuesPage } from './pages/IssuesPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { OnboardingPage } from './pages/OnboardingPage';
-import { OrgSettingsPage } from './pages/OrgSettingsPage';
+import { OrgMembersPage } from './pages/OrgMembersPage';
 import { OrgsLandingPage } from './pages/OrgsLandingPage';
 import { PersonalAccessTokensPage } from './pages/PersonalAccessTokensPage';
 import { ConnectProjectPage } from './pages/ConnectProjectPage';
@@ -38,7 +38,7 @@ export const router = createBrowserRouter([
         path: '/orgs/:orgSlug/projects/:projectId/issues/:issueId',
         element: <IssueDetailPage />,
       },
-      { path: '/orgs/:orgSlug/projects/:projectId/settings/keys', element: <ProjectKeysPage /> },
+      { path: '/orgs/:orgSlug/projects/:projectId/keys', element: <ProjectKeysPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/connect', element: <ConnectProjectPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/alert-rules', element: <AlertRulesPage /> },
       { path: '/orgs/:orgSlug/projects/:projectId/releases', element: <ReleasesPage /> },
@@ -46,11 +46,27 @@ export const router = createBrowserRouter([
         path: '/orgs/:orgSlug/projects/:projectId/releases/:releaseId',
         element: <ReleaseDetailPage />,
       },
-      { path: '/orgs/:orgSlug/settings', element: <OrgSettingsPage /> },
-      { path: '/orgs/:orgSlug/settings/destinations', element: <AlertDestinationsPage /> },
+      { path: '/orgs/:orgSlug/members', element: <OrgMembersPage /> },
+      { path: '/orgs/:orgSlug/destinations', element: <AlertDestinationsPage /> },
+      { path: '/orgs/:orgSlug/integrations/slack', element: <SlackIntegrationsPage /> },
+      // Back-compat redirects from the old /settings/* URLs. Bookmarks, copy-pasted links,
+      // and Slack OAuth callbacks still encoded with the old path continue to work and land
+      // on the canonical page. Drop after a release or two when stragglers have re-bookmarked.
+      {
+        path: '/orgs/:orgSlug/settings',
+        element: <Navigate to="../members" relative="path" replace />,
+      },
+      {
+        path: '/orgs/:orgSlug/settings/destinations',
+        element: <Navigate to="../../destinations" relative="path" replace />,
+      },
       {
         path: '/orgs/:orgSlug/settings/integrations/slack',
-        element: <SlackIntegrationsPage />,
+        element: <Navigate to="../../../integrations/slack" relative="path" replace />,
+      },
+      {
+        path: '/orgs/:orgSlug/projects/:projectId/settings/keys',
+        element: <Navigate to="../../keys" relative="path" replace />,
       },
       { path: '/me/tokens', element: <PersonalAccessTokensPage /> },
       { path: '/admin', element: <AdminPage /> },

@@ -19,7 +19,7 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function renderAt(path = '/orgs/acme/settings/destinations') {
+function renderAt(path = '/orgs/acme/destinations') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <MantineProvider>
@@ -27,7 +27,7 @@ function renderAt(path = '/orgs/acme/settings/destinations') {
         <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route
-              path="/orgs/:orgSlug/settings/destinations"
+              path="/orgs/:orgSlug/destinations"
               element={<AlertDestinationsPage />}
             />
           </Routes>

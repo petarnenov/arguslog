@@ -217,7 +217,7 @@ export function AlertRulesPage() {
       {noDestinations ? (
         <Alert color="yellow" variant="light">
           {t('alertRules.needDestinations')}{' '}
-          <Text component={Link} to={`/orgs/${orgSlug}/settings/destinations`} fw={500}>
+          <Text component={Link} to={`/orgs/${orgSlug}/destinations`} fw={500}>
             {t('alertRules.goToDestinations')}
           </Text>
         </Alert>

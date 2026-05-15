@@ -18,7 +18,7 @@ function renderAt(path: string) {
         <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route
-              path="/orgs/:orgSlug/projects/:projectId/settings/keys"
+              path="/orgs/:orgSlug/projects/:projectId/keys"
               element={<ProjectKeysPage />}
             />
           </Routes>
@@ -87,7 +87,7 @@ describe('ProjectKeysPage', () => {
     });
     globalThis.fetch = fetchMock as typeof fetch;
 
-    renderAt('/orgs/acme/projects/9/settings/keys');
+    renderAt('/orgs/acme/projects/9/keys');
 
     await screen.findByText(KEY_A.dsnPublic);
     await screen.findByText(KEY_B.dsnPublic);
@@ -112,7 +112,7 @@ describe('ProjectKeysPage', () => {
     });
     globalThis.fetch = fetchMock as typeof fetch;
 
-    renderAt('/orgs/acme/projects/9/settings/keys');
+    renderAt('/orgs/acme/projects/9/keys');
     const user = userEvent.setup();
 
     await screen.findByText(/No active keys yet/i);
@@ -151,7 +151,7 @@ describe('ProjectKeysPage', () => {
     });
     globalThis.fetch = fetchMock as typeof fetch;
 
-    renderAt('/orgs/acme/projects/9/settings/keys');
+    renderAt('/orgs/acme/projects/9/keys');
     const user = userEvent.setup();
 
     const row = await screen.findByTestId(`dsn-row-${KEY_A.id}`);
@@ -182,7 +182,7 @@ describe('ProjectKeysPage', () => {
     });
     globalThis.fetch = fetchMock as typeof fetch;
 
-    renderAt('/orgs/acme/projects/9/settings/keys');
+    renderAt('/orgs/acme/projects/9/keys');
     const user = userEvent.setup();
 
     await screen.findByTestId(`dsn-row-${KEY_A.id}`);
@@ -228,7 +228,7 @@ describe('ProjectKeysPage', () => {
     });
     globalThis.fetch = fetchMock as typeof fetch;
 
-    renderAt('/orgs/acme/projects/9/settings/keys');
+    renderAt('/orgs/acme/projects/9/keys');
     const user = userEvent.setup();
 
     const row = await screen.findByTestId(`dsn-row-${KEY_A.id}`);
@@ -259,7 +259,7 @@ describe('ProjectKeysPage', () => {
     });
     globalThis.fetch = fetchMock as typeof fetch;
 
-    renderAt('/orgs/acme/projects/9/settings/keys');
+    renderAt('/orgs/acme/projects/9/keys');
     const user = userEvent.setup();
 
     const row = await screen.findByTestId(`dsn-row-${KEY_A.id}`);
