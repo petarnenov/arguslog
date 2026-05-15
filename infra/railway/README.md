@@ -202,6 +202,9 @@ R2_ACCESS_KEY             = (per-env scoped R2 API token — DIFFERENT in stagin
 R2_SECRET_KEY             = (per-env scoped R2 API token — DIFFERENT in staging vs prod)
 R2_BUCKET                 = arguslog-attachments         # production
                           # arguslog-staging-attachments  # staging
+ARGUSLOG_ALERTS_SECRET_KEY = (base64-encoded 32-byte AES-256 master key — see
+                              "Secret cipher master key" section below; empty value
+                              falls back to the OSS-public dev key and prints a loud WARN)
 DASHBOARD_BASE_URL        = https://app.arguslog.org
 RESEND_API_KEY            = (Resend API key)
 INGEST_PUBLIC_HOST        = https://ingest.arguslog.org
@@ -227,6 +230,10 @@ R2_ACCESS_KEY             = (same as arguslog-api in this env — per-env scoped
 R2_SECRET_KEY             = (same as arguslog-api in this env — per-env scoped token)
 R2_BUCKET                 = arguslog-attachments         # production
                           # arguslog-staging-attachments  # staging
+ARGUSLOG_ALERTS_SECRET_KEY = (same value as arguslog-api in this env; api + worker MUST share
+                              the key — api encrypts new alert destinations on write, worker
+                              decrypts on dispatch. A mismatch silently breaks delivery.)
+RETENTION_DRY_RUN          = false   # was true until 2026-05-15
 TELEGRAM_BOT_TOKEN        = (Telegram bot token, optional)
 RESEND_API_KEY            = (Resend API key, optional)
 RESEND_FROM               = alerts@arguslog.org
@@ -397,6 +404,74 @@ deltas noted below. Service IDs + observed behavior captured for any future re-r
   lessons did not materialize — likely because Railway's healthcheck delay kept the old pod
   serving until the new one was ready.
 
+## Secret cipher master key
+
+`AesGcmSecretCipher` (`lib/crypto-aes-gcm/`) encrypts two production-sensitive columns:
+
+- `alert_destinations.config_encrypted` — Telegram bot tokens, Slack webhook URLs, email
+  recipient addresses, generic-webhook bearer tokens.
+- `slack_workspaces.install_token_encrypted` — Slack bot OAuth tokens (`xoxb-...`).
+
+The cipher reads `arguslog.alerts.secret-key` (env var `ARGUSLOG_ALERTS_SECRET_KEY`) — a
+**base64-encoded 32-byte AES-256 master key**. If the var is empty, the cipher loudly falls
+back to a built-in dev key whose plaintext is in the OSS source — *every* encrypted column
+in such a deploy is publicly decryptable. The boot WARN reads:
+
+```
+AesGcmSecretCipher: base64 master key is empty — using the built-in dev key. DO NOT run prod like this.
+```
+
+### Generate + apply
+
+```bash
+KEY=$(openssl rand -base64 32)
+railway variables --service arguslog-api    --environment <env> --set "ARGUSLOG_ALERTS_SECRET_KEY=$KEY"
+railway variables --service arguslog-worker --environment <env> --set "ARGUSLOG_ALERTS_SECRET_KEY=$KEY"
+# Both services MUST share the value. api writes, worker reads.
+```
+
+Setting the variable auto-redeploys both services. After the redeploy, the dev-key WARN line
+disappears from the boot logs.
+
+### Rotation impact
+
+Rotating the master key invalidates every existing ciphertext. The dashboard's encrypt path
+only ever uses the *current* key — there is no automatic decrypt-rewrite migration. Plan
+accordingly:
+
+- Pre-rotation: count rows in both encrypted columns with `SELECT count(*) FROM
+  alert_destinations` and `SELECT count(*) FROM slack_workspaces WHERE install_token_encrypted
+  IS NOT NULL`. Whatever ciphertext is in those columns at rotation time becomes garbage.
+- Post-rotation: every operator/user whose alert destination or Slack workspace lived in the
+  table must recreate it in the dashboard. Old rows fail decryption silently — the worker
+  log-and-drops the alert dispatch.
+
+If zero-data-loss is a hard requirement, the proper rotation path is a one-shot Java
+migration utility (decrypt with old key, encrypt with new key, UPDATE). Not implemented as
+of 2026-05-15 — see backlog if/when revisited.
+
+### Executed 2026-05-15 (key set on all four api+worker × staging+prod instances)
+
+- Old master key: built-in OSS dev key (`arguslog-dev-fallback-key-32byte`).
+- New master key: 32-byte random, stored in operator secrets (and at
+  `/tmp/arguslog-secret-cipher-key.txt` for the duration of this session).
+- Post-rotation impact: staging held 0 encrypted rows → zero loss; production had 2 stale
+  email alert destinations (`alert_destinations` ids 1 + 2, orgs `geo-mini` + `geowealth`) —
+  documented at `/tmp/alert-destinations-to-recreate.md`; operator should recreate them in
+  the dashboard. No Slack workspaces to lose (0 rows in both envs).
+
+## Retention purge — live mode (since 2026-05-15)
+
+`RETENTION_DRY_RUN=false` set on both staging and production after a dry-run emulation
+confirmed every org's owner currently sits at `platinum` tier (365-day retention floor) —
+worker finds 0 orgs below the floor and the purge loop is a no-op until an admin grant
+downgrades someone to `gold` (90 d), `silver` (30 d) or `regular` (30 d). The flip is a
+hygiene change so the deploy is "correctly configured for the steady state" rather than
+"forever in dry-run mode by default".
+
+The TimescaleDB hypertable retention policy (chunk drop at 365 days) still handles the
+no-org-below-floor case automatically — set in `services/api/src/main/resources/db/migration/V10__events_retention_policy.sql`.
+
 ### Post-migration cleanup (scheduled 2026-05-16 14:00 UTC)
 
 After 24 hours of healthy operation on the new dedicated DB, the operator should:
@@ -405,9 +480,12 @@ After 24 hours of healthy operation on the new dedicated DB, the operator should
    CLI has no service-delete primitive). They still hold a copy of the pre-cutover KC data
    on `postgres-volume-J1m2`.
 2. Remove the local rollback files: `rm /tmp/kc-rollback.env /tmp/kc-rollback-prod.env
-   /tmp/keycloak-db-pw.txt /tmp/keycloak-db-pw-prod.txt`.
+   /tmp/keycloak-db-pw.txt /tmp/keycloak-db-pw-prod.txt /tmp/r2-rollback-staging.env
+   /tmp/arguslog-secret-cipher-key.txt /tmp/alert-destinations-to-recreate.md`.
 3. (Already done 2026-05-15 by the operator) Pre-migration orphan volumes `postgres-volume`
    and `redis-volume-G0e_` deleted from both environments.
+4. Recreate the 2 stale email alert destinations in production
+   (`/tmp/alert-destinations-to-recreate.md` lists org slugs + names).
 
 ## Local equivalent
 

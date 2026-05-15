@@ -74,11 +74,11 @@ Nothing open. Every original item is shipped or obsolete.
 
 ## Open — operational
 
-| #   | Item                                                                                                   |
-| --- | ------------------------------------------------------------------------------------------------------ |
-| 1   | Re-enable `RETENTION_DRY_RUN=false` after one nightly cycle confirms the per-org delete count is sane. |
+_None — every operational item from the original backlog is shipped or replaced._
 
-Code anchors: item 1 — `services/worker/src/main/resources/application.yml:47` still defaults to `true`.
+If the existing rotation impacts ever need zero-data-loss, a one-shot decrypt-rewrite migration
+utility for `AesGcmSecretCipher` should be written before the next key rotation. Today's setup
+accepts a recreate-in-dashboard step for stale alert destinations / Slack workspaces.
 
 ### Operational — shipped
 
@@ -101,6 +101,19 @@ Code anchors: item 1 — `services/worker/src/main/resources/application.yml:47`
   bucket. `arguslog-api` + `arguslog-worker` staging services redeployed clean against the new
   bucket; rollback creds at `/tmp/r2-rollback-staging.env`. Doc + per-service Variables blocks
   in `infra/railway/README.md` reflect the split.
+- ~~1~~ `RETENTION_DRY_RUN=false` — **flipped on both envs 2026-05-15** after a dry-run
+  emulation confirmed every org's owner is currently `platinum` (365 d retention floor); the
+  worker now operates in live-DELETE mode but finds 0 orgs below the floor until an admin
+  grant downgrades someone to gold/silver/regular tier. Hygiene flip so the deploy is
+  correctly configured for steady state, not perpetually in dry-run-by-default.
+- `AesGcmSecretCipher` master key — **rotated off the OSS dev key 2026-05-15**. New 32-byte
+  AES-256 key set as `ARGUSLOG_ALERTS_SECRET_KEY` on all four api+worker × staging+prod
+  instances; dev-key WARN gone from boot logs. Blast radius: 0 staging records affected;
+  production had 2 email alert destinations (`alert_destinations` ids 1 + 2) whose ciphertext
+  is now garbage — operator to recreate in dashboard
+  (`/tmp/alert-destinations-to-recreate.md`). Slack workspaces: 0 in both envs, no loss.
+  Procedure + rotation impact + executed-on-prod notes captured in
+  `infra/railway/README.md` → "Secret cipher master key".
 
 ### Operational — obsolete after OSS conversion
 
