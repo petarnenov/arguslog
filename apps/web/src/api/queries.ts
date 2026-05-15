@@ -152,14 +152,11 @@ export function useOrgMembers(orgId: number | undefined, options: { enabled?: bo
     queryKey: queryKeys.orgMembers(orgId ?? -1),
     queryFn: () => listOrgMembers(orgId as number),
     enabled: (options.enabled ?? true) && orgId != null,
-    staleTime: 10_000,
-    // Owners need to see an invitee's row flip from "pending" to a real user shortly after the
-    // invitee first signs in — the JWT sync interceptor binds the placeholder on the invitee's
-    // own request, but the owner's tab has no other signal that it happened. Poll only while at
-    // least one row is still pending so we don't pay request volume for fully-bound orgs.
-    refetchOnWindowFocus: true,
-    refetchInterval: (query) =>
-      query.state.data?.some((m) => m.pending) ? 15_000 : false,
+    // One fetch per visit to the Members page: staleTime=0 forces a refetch on every mount,
+    // and focus/interval refetches are off so the list never reloads behind the user's back.
+    // Owners refresh the page (or re-enter Members) to pick up new pending→bound transitions.
+    staleTime: 0,
+    refetchOnWindowFocus: false,
   });
 }
 
