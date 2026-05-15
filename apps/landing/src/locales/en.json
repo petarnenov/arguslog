@@ -20,6 +20,20 @@
     "ctaPrimary": "Get started free",
     "ctaSecondary": "View on GitHub"
   },
+  "agentInstall": {
+    "badge": "3-second install",
+    "heading": "Install Arguslog with your AI agent — one paste, done.",
+    "subheading": "The Connect page auto-mints your DSN and Personal Access Token. Copy one prompt, paste it into your coding agent, and it installs the SDK, wires init(), and registers the MCP server — all in one shot.",
+    "step1Title": "Sign up",
+    "step1Body": "GitHub or Google. 30 seconds.",
+    "step2Title": "Open Connect",
+    "step2Body": "DSN and PAT auto-provision on first visit. Both are inlined into every prompt at the exact key your agent reads — no placeholders to fix later.",
+    "step3Title": "Paste into your agent",
+    "step3Body": "The prompt detects your stack, installs the matching @arguslog SDK, drops init({ dsn }) in the right entry file, and registers the Arguslog MCP server.",
+    "agentsLabel": "Works with",
+    "footnoteComingSoon": "Codeium, Tabnine, GitHub Copilot CLI — MCP support coming soon.",
+    "cta": "Start in 3 seconds"
+  },
   "features": {
     "heading": "Everything you need, nothing you don't.",
     "subheading": "Built on the same multi-tenant stack we run in production. The wire format, DSN scheme, and SDK shape are all Arguslog-native — no vendor lock-in to inherit, no bridge layer to maintain.",

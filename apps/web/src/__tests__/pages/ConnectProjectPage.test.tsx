@@ -117,6 +117,9 @@ describe('ConnectProjectPage — AI agents tab', () => {
     expect(screen.getByRole('tab', { name: /^cursor$/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^codex$/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^github copilot$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^windsurf$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^continue$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^aider$/i })).toBeInTheDocument();
     expect(screen.getByTestId('connect-snippet-copy-agent-claude-code')).toBeInTheDocument();
   });
 

@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+### Added — 3-second install for AI coding agents
+
+The Connect page on the dashboard now ships a paste-ready magic prompt for
+seven AI coding agents. Open the page, copy one prompt, paste it into your
+agent, and it detects your stack, installs the matching `@arguslog/sdk-*`
+at the pinned catalog version, wires `init({ dsn })`, and registers the
+Arguslog MCP server in the agent's own config file. No manual `generate
+DSN` / `generate PAT` round-trip — both are auto-provisioned on first
+visit and inlined into the prompt at the exact key the agent reads.
+
+- **Auto-provisioning**: first visit to Connect for a new project silently
+  mints `Connect quickstart — <project>` PAT and an active DSN. Return
+  visits surface a Rotate CTA (plaintext is one-shot; the old PAT remains
+  valid until the user revokes it from `/me/tokens` or via the
+  `delete_me_tokens` MCP tool).
+- **Supported agents**: Claude Code · Cursor · Codex · GitHub Copilot Chat ·
+  **Windsurf** · **Continue** · **Aider**. Each prompt writes to the agent's
+  canonical config file (`.mcp.json` / `.cursor/mcp.json` / `.vscode/mcp.json`
+  / `~/.codeium/windsurf/mcp_config.json` / `~/.continue/config.json` /
+  `~/.aider.conf.yml`). Aider is stdio-only — PAT travels via
+  `env.ARGUSLOG_PAT` to the locally-spawned `npx @arguslog/mcp-server`.
+- **Prompt resilience**: the agent is explicitly told not to assume a git
+  repo and not to file "replace the PAT/DSN" as a manual TODO. An
+  escape-hatch paragraph documents how the user (or the agent itself) can
+  rotate credentials later via the dashboard or MCP tools.
+- **Landing**: new "3-second install" section under the hero promotes the
+  flow with a 3-step visual and the full supported-agents list.
+
 ### Added — Slack workspace integration (inbound)
 
 Closes the triage loop in chat. Until now Slack was a one-way alert destination

@@ -119,7 +119,14 @@ export const SDK_CATALOG = [
   },
 ] as const;
 
-export type AgentTarget = 'claude-code' | 'cursor' | 'codex' | 'copilot';
+export type AgentTarget =
+  | 'claude-code'
+  | 'cursor'
+  | 'codex'
+  | 'copilot'
+  | 'windsurf'
+  | 'continue'
+  | 'aider';
 
 /** Per-agent MCP config file location + install hint shown in the magic prompt. */
 const AGENT_MCP_TARGETS: Record<AgentTarget, { name: string; configPath: string; note: string }> =
@@ -143,6 +150,21 @@ const AGENT_MCP_TARGETS: Record<AgentTarget, { name: string; configPath: string;
       name: 'GitHub Copilot Chat',
       configPath: '.vscode/mcp.json (workspace)',
       note: 'Requires the GitHub Copilot Chat extension with MCP support enabled in VS Code settings.',
+    },
+    windsurf: {
+      name: 'Windsurf',
+      configPath: '~/.codeium/windsurf/mcp_config.json',
+      note: 'Windsurf (Codeium) keeps MCP config in its own Codeium folder — separate from Cursor.',
+    },
+    continue: {
+      name: 'Continue',
+      configPath: '~/.continue/config.json (under experimental.modelContextProtocolServers)',
+      note: 'Continue 0.0.52+ supports Streamable HTTP; older versions fall back to stdio with `npx -y @arguslog/mcp-server`.',
+    },
+    aider: {
+      name: 'Aider',
+      configPath: '~/.aider.conf.yml (mcp-servers block)',
+      note: 'Aider is stdio-only — it runs `npx -y @arguslog/mcp-server` locally and receives the PAT via env var.',
     },
   };
 
@@ -355,8 +377,8 @@ Write \`${target.configPath}\` (create the file if missing):
 > ${target.note}`;
   }
 
-  // copilot
-  return `## Step 3 — register the Arguslog MCP server
+  if (agent === 'copilot') {
+    return `## Step 3 — register the Arguslog MCP server
 
 Write \`${target.configPath}\`:
 
@@ -375,6 +397,98 @@ Write \`${target.configPath}\`:
 \`\`\`
 
 Reload the VS Code window so Copilot Chat picks up the new server.
+
+> ${target.note}`;
+  }
+
+  if (agent === 'windsurf') {
+    return `## Step 3 — register the Arguslog MCP server
+
+Write \`${target.configPath}\` (create the file and parent directories if missing):
+
+\`\`\`json
+{
+  "mcpServers": {
+    "arguslog": {
+      "url": "${httpUrl}",
+      "headers": {
+        "Authorization": "Bearer ${pat}"${envBlock}
+      }
+    }
+  }
+}
+\`\`\`
+
+Reload Windsurf so the new MCP server is registered.
+
+> ${target.note}`;
+  }
+
+  if (agent === 'continue') {
+    return `## Step 3 — register the Arguslog MCP server
+
+Edit \`${target.configPath}\` and add an entry under \`experimental.modelContextProtocolServers\`:
+
+\`\`\`json
+{
+  "experimental": {
+    "modelContextProtocolServers": [
+      {
+        "name": "arguslog",
+        "transport": "http",
+        "url": "${httpUrl}",
+        "headers": {
+          "Authorization": "Bearer ${pat}"${envBlock}
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+If the user's Continue is older than 0.0.52 (no HTTP MCP transport), fall back to stdio:
+
+\`\`\`json
+{
+  "experimental": {
+    "modelContextProtocolServers": [
+      {
+        "name": "arguslog",
+        "command": "npx",
+        "args": ["-y", "@arguslog/mcp-server"],
+        "env": {
+          "ARGUSLOG_PAT": "${pat}"${
+            isSelfHosted ? `,\n          "ARGUSLOG_API_URL": "${apiUrl}"` : ''
+          }
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+Restart Continue so the new server is picked up.
+
+> ${target.note}`;
+  }
+
+  // aider — stdio-only; PAT lives in env var, hosted HTTP URL is ignored
+  return `## Step 3 — register the Arguslog MCP server
+
+Aider does not support Streamable HTTP MCP servers yet, so we run \`@arguslog/mcp-server\` locally over stdio. Edit \`${target.configPath}\` (create the file if missing) and add:
+
+\`\`\`yaml
+mcp-servers:
+  arguslog:
+    command: npx
+    args:
+      - "-y"
+      - "@arguslog/mcp-server"
+    env:
+      ARGUSLOG_PAT: "${pat}"${isSelfHosted ? `\n      ARGUSLOG_API_URL: "${apiUrl}"` : ''}
+\`\`\`
+
+The PAT travels through the \`ARGUSLOG_PAT\` env var into the locally-spawned mcp-server process — same real token, different transport. Restart Aider so the new server is registered.
 
 > ${target.note}`;
 }
@@ -396,12 +510,19 @@ Summarise:
 }
 
 function agentCredentialsBlock(dsn: string, pat: string): string {
-  return `## Credentials (provided by the user)
+  return `## Credentials (auto-provisioned by Arguslog)
 
-- **DSN** (for the SDK): \`${dsn}\`
-- **Personal Access Token** (for the MCP server): \`${pat}\`
+- **DSN** (for the SDK): \`${dsn}\` — already inlined in every SDK snippet above.
+- **Personal Access Token** (for the MCP server): \`${pat}\` — already inlined in every MCP config snippet above.
 
-These are already inlined into the snippets above — no further substitution needed.`;
+These are real, freshly issued by the Arguslog dashboard, and substituted at the exact key the agent reads (\`headers.Authorization\` for HTTP transports; \`env.ARGUSLOG_PAT\` for stdio). You do **not** need to ask the user to replace them — there shouldn't be any placeholders left.
+
+### Revoking or rotating later
+
+If the user wants different credentials at any point:
+
+- **Via dashboard**: revoke the PAT at https://app.arguslog.org/me/tokens and the DSN on the project's Keys page. Then revisit the Connect page; a "Rotate" button mints new ones and refills every snippet.
+- **Via MCP** (after this install is done and the server is registered): the agent itself can call \`delete_me_tokens\` / \`revoke_dsn\` to invalidate the current pair, then \`create_me_tokens\` / \`create_dsn\` to mint replacements, and write the new values back into the config files touched above. End-to-end rotation without leaving the editor.`;
 }
 
 export function buildAgentPrompt(ctx: SnippetContext, agent: AgentTarget): string {
@@ -464,6 +585,33 @@ export function buildSnippets(ctx: SnippetContext): ConnectSnippet[] {
       description:
         'Paste into GitHub Copilot Chat (VS Code). It will install the SDK and write the MCP entry to .vscode/mcp.json.',
       code: buildAgentPrompt(ctx, 'copilot'),
+    },
+    {
+      id: 'agent-windsurf',
+      group: 'agent',
+      client: 'Windsurf',
+      language: 'markdown',
+      description:
+        'Paste into Windsurf chat. It will install the SDK and write ~/.codeium/windsurf/mcp_config.json.',
+      code: buildAgentPrompt(ctx, 'windsurf'),
+    },
+    {
+      id: 'agent-continue',
+      group: 'agent',
+      client: 'Continue',
+      language: 'markdown',
+      description:
+        'Paste into Continue chat (VS Code / JetBrains). It will install the SDK and update ~/.continue/config.json.',
+      code: buildAgentPrompt(ctx, 'continue'),
+    },
+    {
+      id: 'agent-aider',
+      group: 'agent',
+      client: 'Aider',
+      language: 'markdown',
+      description:
+        'Paste into the Aider CLI. Aider is stdio-only — instructions install @arguslog/mcp-server locally with the PAT in env.',
+      code: buildAgentPrompt(ctx, 'aider'),
     },
 
     // ─── SDK group ────────────────────────────────────────────────────────────

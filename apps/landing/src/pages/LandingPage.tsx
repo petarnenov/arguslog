@@ -74,12 +74,98 @@ export function LandingPage() {
 
       <AppShell.Main>
         <Hero onboardingUrl={onboardingUrl} />
+        <AgentInstallSection onboardingUrl={onboardingUrl} />
         <Features />
         <Platforms platforms={platformsQuery.data ?? []} loading={platformsQuery.isLoading} />
         <McpSection />
         <FooterSection dashboardUrl={dashboardUrl} />
       </AppShell.Main>
     </AppShell>
+  );
+}
+
+const AGENT_INSTALL_LIST = [
+  'Claude Code',
+  'Cursor',
+  'Codex',
+  'GitHub Copilot',
+  'Windsurf',
+  'Continue',
+  'Aider',
+] as const;
+
+/**
+ * "Install in 3 seconds" pitch shown right under the hero. The dashboard auto-provisions
+ * DSN + PAT on first Connect-page visit, and a single magic prompt covers SDK install,
+ * init() wiring, and MCP server registration. This section turns that UX into landing
+ * copy so visitors see the value before signing up.
+ */
+function AgentInstallSection({ onboardingUrl }: { onboardingUrl: string }) {
+  const { t } = useTranslation();
+  const stepIcons = [IconBolt, IconCheck, IconRobot] as const;
+  return (
+    <Box py={{ base: 48, sm: 80 }} bg="var(--mantine-color-default-hover)">
+      <Container size="lg">
+        <Stack gap="xl">
+          <Stack gap="xs" align="center">
+            <Badge size="md" variant="filled" color="green" radius="sm">
+              {t('agentInstall.badge')}
+            </Badge>
+            <Title order={2} ta="center" maw={720}>
+              {t('agentInstall.heading')}
+            </Title>
+            <Text c="dimmed" ta="center" maw={680}>
+              {t('agentInstall.subheading')}
+            </Text>
+          </Stack>
+
+          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+            {(['step1', 'step2', 'step3'] as const).map((stepKey, idx) => {
+              const Icon = stepIcons[idx]!;
+              return (
+                <Card key={stepKey} withBorder padding="lg" radius="md">
+                  <Stack gap="sm">
+                    <Group gap="xs">
+                      <ThemeIcon variant="light" color="green" size="lg" radius="md">
+                        <Icon size={18} />
+                      </ThemeIcon>
+                      <Text fw={600}>
+                        {idx + 1}. {t(`agentInstall.${stepKey}Title`)}
+                      </Text>
+                    </Group>
+                    <Text size="sm" c="dimmed">
+                      {t(`agentInstall.${stepKey}Body`)}
+                    </Text>
+                  </Stack>
+                </Card>
+              );
+            })}
+          </SimpleGrid>
+
+          <Stack gap="xs">
+            <Text size="sm" c="dimmed" ta="center" fw={500}>
+              {t('agentInstall.agentsLabel')}
+            </Text>
+            <Group gap="xs" justify="center" wrap="wrap">
+              {AGENT_INSTALL_LIST.map((name) => (
+                <Badge key={name} size="lg" variant="light" radius="sm" color="green">
+                  {name}
+                </Badge>
+              ))}
+            </Group>
+            <Text size="xs" c="dimmed" ta="center">
+              {t('agentInstall.footnoteComingSoon')}
+            </Text>
+          </Stack>
+
+          <Group justify="center">
+            <Button component="a" href={onboardingUrl} size="md" rightSection={<IconBolt size={16} />}>
+              {t('agentInstall.cta')}
+            </Button>
+          </Group>
+        </Stack>
+      </Container>
+    </Box>
   );
 }
 

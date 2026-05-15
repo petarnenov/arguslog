@@ -12,6 +12,26 @@ inherit. Run it on your own infrastructure, or use the hosted instance at
 Read. Eval. Triage. Loop. — every issue, event, and breadcrumb is one MCP
 tool-call away through [`@arguslog/mcp-server`](packages/mcp-server).
 
+## Quick start — 3 seconds with your AI agent
+
+1. Sign up at [arguslog.org](https://arguslog.org) — GitHub or Google.
+2. Create your org + first project in the onboarding wizard.
+3. Open the **Connect** page. Your project's DSN and a Personal Access Token
+   are auto-provisioned on first visit and inlined into every prompt — no
+   manual "generate / copy" round-trip.
+4. Pick your AI coding agent and copy the magic prompt:
+   - **Claude Code · Cursor · Codex · GitHub Copilot Chat · Windsurf · Continue · Aider** are all supported.
+5. Paste into the agent. It detects your stack (`package.json` / `pyproject.toml`
+   / `build.gradle`), installs `@arguslog/sdk-<platform>` at the pinned version
+   from the platforms catalog, drops `init({ dsn })` in the right entry point,
+   and registers the Arguslog MCP server in the agent's own config file. The
+   credentials live at the exact key the agent reads (`headers.Authorization`
+   for HTTP transports, `env.ARGUSLOG_PAT` for stdio) — no placeholders to
+   patch later. Rotate or revoke any time from `/me/tokens` or by calling the
+   `delete_me_tokens` / `create_me_tokens` MCP tools.
+
+Self-hosting? Skip to [SELF_HOSTING.md](SELF_HOSTING.md).
+
 ## What it does
 
 - Captures uncaught exceptions, log records, and breadcrumbs from JS, JVM, and

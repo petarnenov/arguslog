@@ -1,5 +1,12 @@
 # Arguslog SDKs
 
+> **Skip the manual install** — the dashboard's **Connect** page auto-mints a DSN and a
+> Personal Access Token on first visit and ships a paste-ready magic prompt for Claude
+> Code / Cursor / Codex / GitHub Copilot / Windsurf / Continue / Aider. The agent runs
+> install + `init()` wiring for you in one paste. This file is the canonical reference
+> for everything below the surface; reach for it when integrating manually, when on a
+> self-hosted Arguslog, or when you want to know what the magic prompt is actually doing.
+
 Quick install + first-event snippets for every shipped SDK. Source for
 each lives under the path listed in the table; the marketing landing
 page and the dashboard's project-create dropdown both render the same

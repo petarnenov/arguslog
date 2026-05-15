@@ -18,8 +18,9 @@ describe('buildSnippets', () => {
     const all = buildSnippets(baseCtx);
     const ids = all.map((s) => s.id);
 
-    // Agent: 4 (claude-code, cursor, codex, copilot), SDK: 5, MCP: 4, CLI: 2.
-    expect(all.filter((s) => s.group === 'agent')).toHaveLength(4);
+    // Agent: 7 (claude-code, cursor, codex, copilot, windsurf, continue, aider),
+    // SDK: 5, MCP: 4, CLI: 2.
+    expect(all.filter((s) => s.group === 'agent')).toHaveLength(7);
     expect(all.filter((s) => s.group === 'sdk')).toHaveLength(5);
     expect(all.filter((s) => s.group === 'mcp')).toHaveLength(4);
     expect(all.filter((s) => s.group === 'cli')).toHaveLength(2);
@@ -28,6 +29,9 @@ describe('buildSnippets', () => {
       'agent-cursor',
       'agent-codex',
       'agent-copilot',
+      'agent-windsurf',
+      'agent-continue',
+      'agent-aider',
       'sdk-javascript',
       'sdk-react',
       'sdk-node',
@@ -112,8 +116,18 @@ describe('buildSnippets', () => {
 });
 
 describe('buildAgentPrompt', () => {
+  const ALL_AGENTS = [
+    'claude-code',
+    'cursor',
+    'codex',
+    'copilot',
+    'windsurf',
+    'continue',
+    'aider',
+  ] as const;
+
   it('renders a self-describing brief for every supported agent', () => {
-    for (const agent of ['claude-code', 'cursor', 'codex', 'copilot'] as const) {
+    for (const agent of ALL_AGENTS) {
       const md = buildAgentPrompt(baseCtx, agent);
       // Title + step headings present.
       expect(md).toContain('# Integrate Arguslog');
@@ -127,12 +141,32 @@ describe('buildAgentPrompt', () => {
         expect(md).toContain(`\`${p.slug}\``);
         expect(md).toContain(`${p.pkg}@${p.version}`);
       }
-      // Hosted MCP URL on the default arguslog.org deployment.
-      expect(md).toContain('https://mcp.arguslog.org/mcp');
-      // Credentials block carries both secrets inline.
+      // Credentials block carries both secrets inline. The PAT must appear at the exact
+      // place the agent reads (Authorization header or env var) — the invariant under test.
       expect(md).toContain(baseCtx.dsn!);
       expect(md).toContain(baseCtx.pat!);
+      // Escape-hatch paragraph must always be present so the user knows how to rotate.
+      expect(md).toMatch(/Revoking or rotating later/i);
+      expect(md).toContain('https://app.arguslog.org/me/tokens');
+      expect(md).toMatch(/delete_me_tokens/);
     }
+  });
+
+  it('uses hosted MCP URL for every HTTP-transport agent (not Aider)', () => {
+    for (const agent of ['claude-code', 'cursor', 'codex', 'copilot', 'windsurf', 'continue'] as const) {
+      const md = buildAgentPrompt(baseCtx, agent);
+      expect(md).toContain('https://mcp.arguslog.org/mcp');
+    }
+  });
+
+  it('aider prompt uses stdio (npx) — hosted HTTP URL never appears, PAT goes through env var', () => {
+    const md = buildAgentPrompt(baseCtx, 'aider');
+    expect(md).toContain('npx');
+    expect(md).toContain('@arguslog/mcp-server');
+    expect(md).toContain('ARGUSLOG_PAT:');
+    expect(md).toContain(baseCtx.pat!);
+    // No hosted MCP URL — Aider can't speak it.
+    expect(md).not.toContain('https://mcp.arguslog.org/mcp');
   });
 
   it('does not treat git status as a required step (workspace may not be a git repo)', () => {
@@ -153,6 +187,9 @@ describe('buildAgentPrompt', () => {
     expect(buildAgentPrompt(baseCtx, 'cursor')).toContain('.cursor/mcp.json');
     expect(buildAgentPrompt(baseCtx, 'codex')).toContain('.mcp.json');
     expect(buildAgentPrompt(baseCtx, 'copilot')).toContain('.vscode/mcp.json');
+    expect(buildAgentPrompt(baseCtx, 'windsurf')).toContain('.codeium/windsurf/mcp_config.json');
+    expect(buildAgentPrompt(baseCtx, 'continue')).toContain('.continue/config.json');
+    expect(buildAgentPrompt(baseCtx, 'aider')).toContain('.aider.conf.yml');
   });
 
   it('falls back to placeholders when DSN or PAT are missing', () => {
