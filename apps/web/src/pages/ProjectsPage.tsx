@@ -23,7 +23,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-import { AreaChart } from '@mantine/charts';
+import { Sparkline } from '@mantine/charts';
 import { useForm } from '@mantine/form';
 import {
   IconArchive,
@@ -559,19 +559,14 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
               <Text size="xs" c="dimmed" mb={4}>
                 {t('projects.sparklineCaption')}
               </Text>
-              <AreaChart
+              <Sparkline
                 h={60}
-                data={stats.eventsByDay.map((b) => ({ date: b.day, value: b.count }))}
-                dataKey="date"
-                series={[{ name: 'value', color: 'green.6' }]}
+                w="100%"
+                data={stats.eventsByDay.map((b) => b.count)}
                 curveType="monotone"
-                withDots={false}
-                withXAxis={false}
-                withYAxis={false}
-                withTooltip={false}
-                gridAxis="none"
+                color="green.6"
+                fillOpacity={0.3}
                 strokeWidth={1.5}
-                fillOpacity={0.25}
               />
             </Box>
           ) : (
