@@ -22,7 +22,7 @@ on:
         required: true
         default: 'all'
         type: choice
-        options: [all, api, ingest, worker, web, mcp]
+        options: [all, api, ingest, worker, web, mcp, landing]
       environment:
         description: 'Target Railway environment'
         required: true
