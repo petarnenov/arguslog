@@ -2200,6 +2200,47 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
+    name: 'slack_install_callback',
+    title: 'Slack install callback',
+    description: 'GET /api/v1/slack/oauth/callback\n\nMethod: GET /api/v1/slack/oauth/callback',
+    method: 'GET',
+    path: '/api/v1/slack/oauth/callback',
+    pathParams: [],
+    queryParams: [
+      {
+        name: 'code',
+        required: false,
+        type: 'string',
+        description: 'code (string) — optional.',
+      },
+      {
+        name: 'state',
+        required: false,
+        type: 'string',
+        description: 'state (string) — optional.',
+      },
+      {
+        name: 'error',
+        required: false,
+        type: 'string',
+        description: 'error (string) — optional.',
+      },
+    ],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      additionalProperties: true,
+      description: 'No response body — successful response is a 204 No Content or similar.',
+    },
+    annotations: {
+      title: 'GET /api/v1/slack/oauth/callback',
+      readOnlyHint: true,
+      idempotentHint: true,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
     name: 'release_issues_introduced_in_release',
     title: 'Release issues introduced in release',
     description:
@@ -2401,6 +2442,36 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/platforms',
+      readOnlyHint: true,
+      idempotentHint: true,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'slack_install_install',
+    title: 'Slack install install',
+    description:
+      'GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install\n\nMethod: GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install',
+    method: 'GET',
+    path: '/api/v1/orgs/{orgId}/integrations/slack/oauth/install',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      additionalProperties: true,
+      description: 'No response body — successful response is a 204 No Content or similar.',
+    },
+    annotations: {
+      title: 'GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install',
       readOnlyHint: true,
       idempotentHint: true,
       destructiveHint: false,

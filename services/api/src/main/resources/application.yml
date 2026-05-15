@@ -116,6 +116,30 @@ arguslog:
       from: ${RESEND_FROM:noreply@arguslog.local}
       dashboard-base-url: ${DASHBOARD_BASE_URL:http://${DEV_HOST:localhost}:5173}
       timeout: 5s
+  slack:
+    # OAuth install flow — dashboard → Slack consent → callback → upsert workspace.
+    # Empty client-id / client-secret short-circuits the install controller to 503 so
+    # self-hosters who haven't created a Slack app yet aren't surprised by a 500.
+    oauth:
+      client-id: ${SLACK_CLIENT_ID:}
+      client-secret: ${SLACK_CLIENT_SECRET:}
+      # Secret used to HMAC-sign the state token round-tripped through Slack's authorize URL.
+      # Separate from SLACK_SIGNING_SECRET on purpose — leaking one secret must not let an
+      # attacker forge the other.
+      state-secret: ${SLACK_OAUTH_STATE_SECRET:}
+      authorize-url: ${SLACK_AUTHORIZE_URL:https://slack.com/oauth/v2/authorize}
+      api-base-url: ${SLACK_API_BASE_URL:https://slack.com/api}
+      # Public URL of the API's callback endpoint — must match a redirect URL registered in
+      # the Slack app config. One per environment.
+      redirect-uri: ${SLACK_OAUTH_REDIRECT_URI:http://${DEV_HOST:localhost}:8081/api/v1/slack/oauth/callback}
+      # Where the callback redirects the browser back to after upsert. Matches the dashboard
+      # origin so the toast `?installed=<team>` renders inside the existing SPA.
+      dashboard-base-url: ${DASHBOARD_BASE_URL:http://${DEV_HOST:localhost}:5173}
+      timeout: 5s
+      # Bot scopes requested at install — commands lets us register the slash command,
+      # chat:write + incoming-webhook leave room for future worker-side broadcasts without
+      # a re-consent round trip.
+      scopes: ${SLACK_OAUTH_SCOPES:commands,chat:write,incoming-webhook}
 
 logging:
   level:

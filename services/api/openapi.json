@@ -1303,6 +1303,46 @@
         }
       }
     },
+    "/api/v1/slack/oauth/callback" : {
+      "get" : {
+        "tags" : [ "slack-install-controller" ],
+        "operationId" : "callback",
+        "parameters" : [ {
+          "name" : "code",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "state",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "error",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{projectId}/releases/{id}/issues" : {
       "get" : {
         "tags" : [ "release-controller" ],
@@ -1477,6 +1517,33 @@
                   "items" : {
                     "$ref" : "#/components/schemas/PlatformResponse"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{orgId}/integrations/slack/oauth/install" : {
+      "get" : {
+        "tags" : [ "slack-install-controller" ],
+        "operationId" : "install",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
                 }
               }
             }
