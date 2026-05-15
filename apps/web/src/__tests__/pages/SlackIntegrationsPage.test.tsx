@@ -60,7 +60,9 @@ describe('SlackIntegrationsPage', () => {
     // Connect button must link directly to the install endpoint — clicking it triggers a
     // top-level navigation, not an XHR, so the OAuth state cookie / CORS dance works.
     const connect = screen.getByTestId('slack-connect-button');
-    expect(connect).toHaveAttribute('href', '/api/v1/orgs/1/integrations/slack/oauth/install');
+    const href = connect.getAttribute('href') ?? '';
+    expect(href).toMatch(/^https?:\/\//);
+    expect(href).toContain('/api/v1/orgs/1/integrations/slack/oauth/install');
   });
 
   it('renders workspaces and never leaks the install token in the DOM', async () => {

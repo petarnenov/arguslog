@@ -52,7 +52,9 @@ describe('slackIntegrations api client', () => {
     });
   });
 
-  it('slackInstallUrl renders the org-scoped install path', () => {
-    expect(slackInstallUrl(42)).toBe('/api/v1/orgs/42/integrations/slack/oauth/install');
+  it('slackInstallUrl renders the absolute org-scoped install URL', () => {
+    const url = slackInstallUrl(42);
+    expect(url).toMatch(/^https?:\/\//);
+    expect(url).toContain('/api/v1/orgs/42/integrations/slack/oauth/install');
   });
 });
