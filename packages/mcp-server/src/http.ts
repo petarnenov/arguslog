@@ -253,6 +253,29 @@ export function createApp(): Application {
     res.status(200).json({ ok: true, service: PACKAGE_NAME, version: PACKAGE_VERSION });
   });
 
+  // Friendly landing payload for anyone who opens the bare host in a browser or scanner.
+  // Replaces Express's default "Cannot GET /" 404 with a self-describing JSON document
+  // pointing at the MCP endpoint, healthcheck, docs and dashboard. No auth, no rate limit —
+  // identical for every caller, same access stance as /healthz.
+  app.get('/', (_req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.status(200).json({
+      service: PACKAGE_NAME,
+      version: PACKAGE_VERSION,
+      description:
+        'Arguslog MCP server — Model Context Protocol bridge for AI agents. POST JSON-RPC to /mcp with Authorization: Bearer arglog_pat_<rest>.',
+      endpoints: {
+        mcp: { method: 'POST', path: '/mcp', auth: 'Authorization: Bearer arglog_pat_<rest>' },
+        health: { method: 'GET', path: '/healthz', auth: 'none' },
+      },
+      links: {
+        documentation: 'https://arguslog.org/docs/mcp',
+        dashboard: 'https://app.arguslog.org',
+        repository: 'https://github.com/petarnenov/arguslog',
+      },
+    });
+  });
+
   // /mcp gets the full security stack: optional CF origin guard → rate limiter → handler.
   const mcpStack: RequestHandler[] = [];
   const cfGuard = makeCfOriginGuard();

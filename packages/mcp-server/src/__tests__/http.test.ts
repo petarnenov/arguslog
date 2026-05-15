@@ -63,6 +63,39 @@ describe('createApp — security middleware', () => {
     }
   });
 
+  it('GET / returns a self-describing landing payload instead of Express default 404', async () => {
+    const { server, url } = await listen();
+    try {
+      const res = await fetch(`${url}/`);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        service: string;
+        version: string;
+        endpoints: { mcp: { path: string }; health: { path: string } };
+        links: Record<string, string>;
+      };
+      expect(body.service).toBe('@arguslog/mcp-server');
+      expect(body.endpoints.mcp.path).toBe('/mcp');
+      expect(body.endpoints.health.path).toBe('/healthz');
+      expect(body.links.dashboard).toMatch(/arguslog/);
+      // Same CORS stance as /healthz — public, no auth, identical body for everyone.
+      expect(res.headers.get('access-control-allow-origin')).toBe('*');
+    } finally {
+      await close(server);
+    }
+  });
+
+  it('GET / bypasses the CF origin guard (public discovery, no auth)', async () => {
+    process.env.CF_ORIGIN_TOKEN = 'secret-token-value';
+    const { server, url } = await listen();
+    try {
+      const res = await fetch(`${url}/`);
+      expect(res.status).toBe(200);
+    } finally {
+      await close(server);
+    }
+  });
+
   it('healthz works without CF origin token (Railway healthcheck bypasses the CDN)', async () => {
     process.env.CF_ORIGIN_TOKEN = 'secret-token-value';
     const { server, url } = await listen();
