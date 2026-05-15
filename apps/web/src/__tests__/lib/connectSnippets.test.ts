@@ -186,7 +186,12 @@ describe('buildAgentPrompt', () => {
     expect(buildAgentPrompt(baseCtx, 'claude-code')).toContain('claude mcp add arguslog');
     expect(buildAgentPrompt(baseCtx, 'cursor')).toContain('.cursor/mcp.json');
     expect(buildAgentPrompt(baseCtx, 'codex')).toContain('.mcp.json');
+    // Copilot prompt covers BOTH Chat (.vscode/mcp.json) and the post-migration Copilot
+    // CLI (.mcp.json) so a single paste lands the server in whichever surface the user
+    // is actually running.
     expect(buildAgentPrompt(baseCtx, 'copilot')).toContain('.vscode/mcp.json');
+    expect(buildAgentPrompt(baseCtx, 'copilot')).toContain('.mcp.json');
+    expect(buildAgentPrompt(baseCtx, 'copilot')).toContain('gh.io/copilotcli-mcpmigrate');
     expect(buildAgentPrompt(baseCtx, 'windsurf')).toContain('.codeium/windsurf/mcp_config.json');
     expect(buildAgentPrompt(baseCtx, 'continue')).toContain('.continue/config.json');
     expect(buildAgentPrompt(baseCtx, 'aider')).toContain('.aider.conf.yml');

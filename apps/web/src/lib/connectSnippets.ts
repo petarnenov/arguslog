@@ -147,9 +147,9 @@ const AGENT_MCP_TARGETS: Record<AgentTarget, { name: string; configPath: string;
       note: 'Codex CLI reads the same .mcp.json file Claude Code uses, so a single config covers both.',
     },
     copilot: {
-      name: 'GitHub Copilot Chat',
-      configPath: '.vscode/mcp.json (workspace)',
-      note: 'Requires the GitHub Copilot Chat extension with MCP support enabled in VS Code settings.',
+      name: 'GitHub Copilot',
+      configPath: '.vscode/mcp.json (Copilot Chat in VS Code) AND .mcp.json (Copilot CLI)',
+      note: 'GitHub Copilot CLI migrated from .vscode/mcp.json to .mcp.json (https://gh.io/copilotcli-mcpmigrate); the prompt writes both so the same install works for the VS Code extension and the gh CLI.',
     },
     windsurf: {
       name: 'Windsurf',
@@ -380,7 +380,9 @@ Write \`${target.configPath}\` (create the file if missing):
   if (agent === 'copilot') {
     return `## Step 3 — register the Arguslog MCP server
 
-Write \`${target.configPath}\`:
+GitHub Copilot has two surfaces that each read a different MCP config file. Write **both** so the install works whether the user is in VS Code (Copilot Chat extension) or running the \`gh copilot\` CLI:
+
+**A. Copilot Chat (VS Code)** — write \`.vscode/mcp.json\`:
 
 \`\`\`json
 {
@@ -396,7 +398,22 @@ Write \`${target.configPath}\`:
 }
 \`\`\`
 
-Reload the VS Code window so Copilot Chat picks up the new server.
+**B. Copilot CLI** — write \`.mcp.json\` at the repo root (same shape Claude Code / Codex use; Copilot CLI migrated to this file per https://gh.io/copilotcli-mcpmigrate):
+
+\`\`\`json
+{
+  "mcpServers": {
+    "arguslog": {
+      "url": "${httpUrl}",
+      "headers": {
+        "Authorization": "Bearer ${pat}"${envBlock}
+      }
+    }
+  }
+}
+\`\`\`
+
+Reload the VS Code window (Chat) and/or re-run \`gh copilot\` (CLI) so the new server is picked up.
 
 > ${target.note}`;
   }
@@ -583,7 +600,7 @@ export function buildSnippets(ctx: SnippetContext): ConnectSnippet[] {
       client: 'GitHub Copilot',
       language: 'markdown',
       description:
-        'Paste into GitHub Copilot Chat (VS Code). It will install the SDK and write the MCP entry to .vscode/mcp.json.',
+        'Paste into GitHub Copilot (VS Code Chat or gh CLI). The prompt writes BOTH .vscode/mcp.json (Chat) and .mcp.json (CLI, post-migration).',
       code: buildAgentPrompt(ctx, 'copilot'),
     },
     {
