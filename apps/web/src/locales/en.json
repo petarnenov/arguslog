@@ -156,6 +156,7 @@
     "statEvents24h": "Events · 24h",
     "statEvents7d": "Events · 7d",
     "sparklineCaption": "Events · last 14 days",
+    "events": "events",
     "noEvents": "Awaiting first event",
     "lastEventAgo": "Last event {{relative}}",
     "lastEventNever": "No events yet"

@@ -23,7 +23,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-import { Sparkline } from '@mantine/charts';
+import { AreaChart } from '@mantine/charts';
 import { useForm } from '@mantine/form';
 import {
   IconArchive,
@@ -425,6 +425,15 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
   const stats = project.stats;
   const totalEventsInWindow = stats?.eventsByDay?.reduce((acc, b) => acc + b.count, 0) ?? 0;
   const hasSparklineData = stats != null && totalEventsInWindow > 0;
+  const locale = i18n.language || 'en';
+  const formatShortDay = (iso: string) =>
+    new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  const formatTooltipDay = (iso: string) =>
+    new Date(iso).toLocaleDateString(locale, {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    });
   const lastEventRelative =
     stats?.lastEventAt && i18n.language
       ? formatRelativeTime(stats.lastEventAt, i18n.language || 'en')
@@ -559,14 +568,24 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
               <Text size="xs" c="dimmed" mb={4}>
                 {t('projects.sparklineCaption')}
               </Text>
-              <Sparkline
-                h={60}
+              <AreaChart
+                h={90}
                 w="100%"
-                data={stats.eventsByDay.map((b) => b.count)}
+                data={stats.eventsByDay}
+                dataKey="day"
+                series={[{ name: 'count', color: 'green.6', label: t('projects.events') }]}
                 curveType="monotone"
-                color="green.6"
-                fillOpacity={0.3}
+                withDots={false}
+                withYAxis={false}
+                gridAxis="none"
                 strokeWidth={1.5}
+                fillOpacity={0.25}
+                xAxisProps={{
+                  tickFormatter: formatShortDay,
+                  interval: 'preserveStartEnd',
+                  minTickGap: 24,
+                }}
+                tooltipProps={{ labelFormatter: formatTooltipDay }}
               />
             </Box>
           ) : (
