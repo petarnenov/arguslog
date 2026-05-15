@@ -110,11 +110,12 @@ public class WebhookAlertDispatcher implements AlertDispatcher {
     alertNode.put("lastSeenAt", a.lastSeenAt().toString());
     alertNode.put(
         "url",
+        // Numeric projectId — the dashboard issue route doesn't accept slugs.
         props.dashboardBaseUrl()
             + "/orgs/"
             + a.orgSlug()
             + "/projects/"
-            + a.projectSlug()
+            + a.projectId()
             + "/issues/"
             + a.issueId());
     return root;

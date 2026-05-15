@@ -120,12 +120,13 @@ public class TelegramAlertDispatcher implements AlertDispatcher {
 
   private String renderMessage(Alert a) {
     String emoji = emojiFor(a.level());
+    // Numeric projectId — the dashboard issue route doesn't accept slugs.
     String url =
         props.dashboardBaseUrl()
             + "/orgs/"
             + a.orgSlug()
             + "/projects/"
-            + a.projectSlug()
+            + a.projectId()
             + "/issues/"
             + a.issueId();
     String firstSeen = ISO.format(a.firstSeenAt());

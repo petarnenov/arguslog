@@ -71,7 +71,7 @@ class SlackAlertDispatcherTest {
         .contains("error")
         .contains("web")
         .contains("TypeError")
-        .contains("https://arguslog.example/orgs/acme/projects/web/issues/42")
+        .contains("https://arguslog.example/orgs/acme/projects/101/issues/42")
         .contains("rule: errors-in-prod");
   }
 

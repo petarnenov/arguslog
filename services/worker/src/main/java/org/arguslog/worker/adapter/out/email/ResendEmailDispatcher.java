@@ -136,12 +136,15 @@ public class ResendEmailDispatcher implements AlertDispatcher {
   }
 
   private String renderBody(Alert a) {
+    // The dashboard's IssueDetailPage route expects a numeric project id (it coerces with
+    // Number(rawProjectId) and bails on NaN). Using the slug here was sending users to an
+    // "Invalid project" page.
     String url =
         props.dashboardBaseUrl()
             + "/orgs/"
             + a.orgSlug()
             + "/projects/"
-            + a.projectSlug()
+            + a.projectId()
             + "/issues/"
             + a.issueId();
     return a.issueTitle()

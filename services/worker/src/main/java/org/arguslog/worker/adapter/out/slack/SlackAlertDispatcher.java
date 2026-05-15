@@ -177,11 +177,13 @@ public class SlackAlertDispatcher implements AlertDispatcher {
   }
 
   private String issueUrl(Alert a) {
+    // Numeric projectId — the dashboard issue route does Number(rawProjectId) and rejects NaN
+    // (slug yields NaN → "Invalid project" banner).
     return props.dashboardBaseUrl()
         + "/orgs/"
         + a.orgSlug()
         + "/projects/"
-        + a.projectSlug()
+        + a.projectId()
         + "/issues/"
         + a.issueId();
   }
@@ -193,14 +195,7 @@ public class SlackAlertDispatcher implements AlertDispatcher {
 
   private String renderMessage(Alert a) {
     String emoji = emojiFor(a.level());
-    String url =
-        props.dashboardBaseUrl()
-            + "/orgs/"
-            + a.orgSlug()
-            + "/projects/"
-            + a.projectSlug()
-            + "/issues/"
-            + a.issueId();
+    String url = issueUrl(a);
     return emoji
         + " *"
         + a.level()

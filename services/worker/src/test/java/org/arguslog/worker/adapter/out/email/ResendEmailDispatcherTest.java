@@ -84,7 +84,7 @@ class ResendEmailDispatcherTest {
     assertThat(text)
         .contains("TypeError")
         .contains("Project:    web")
-        .contains("https://arguslog.example/orgs/acme/projects/web/issues/42")
+        .contains("https://arguslog.example/orgs/acme/projects/101/issues/42")
         .contains("rule: errors-in-prod");
   }
 

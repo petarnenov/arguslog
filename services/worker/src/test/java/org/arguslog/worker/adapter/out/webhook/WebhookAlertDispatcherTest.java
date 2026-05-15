@@ -77,7 +77,7 @@ class WebhookAlertDispatcherTest {
     assertThat(a.path("level").asText()).isEqualTo("error");
     assertThat(a.path("occurrenceCount").asLong()).isEqualTo(5L);
     assertThat(a.path("url").asText())
-        .isEqualTo("https://arguslog.example/orgs/acme/projects/web/issues/42");
+        .isEqualTo("https://arguslog.example/orgs/acme/projects/101/issues/42");
     assertThat(requests.get(0).getHeader("X-Arguslog-Signature")).isNull();
   }
 
