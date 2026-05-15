@@ -1,7 +1,9 @@
 package org.arguslog.api.application.port;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import org.arguslog.api.application.dto.ProjectStats;
 import org.arguslog.api.domain.Project;
 
 /** Write/read port for projects. RLS-pinned: the org_id GUC must be set before each call. */
@@ -22,4 +24,11 @@ public interface ProjectWriteRepository {
    * or empty if it does not exist or is already archived.
    */
   Optional<Project> rename(long orgId, long projectId, String name);
+
+  /**
+   * Returns per-project activity stats for every live project in the org, keyed by project id.
+   * Projects with no events / issues yet land in the map with zero counts and {@code null}
+   * {@code lastEventAt}. Used by the dashboard project-list card; not for hot ingest paths.
+   */
+  Map<Long, ProjectStats> statsForOrg(long orgId);
 }

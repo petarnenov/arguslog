@@ -1,6 +1,16 @@
 import { apiFetch } from './client';
 import type { Dsn } from './keys';
 
+export interface ProjectStats {
+  unresolvedIssueCount: number;
+  events24h: number;
+  events7d: number;
+  /** ISO timestamp, or null when the project has never received an event. */
+  lastEventAt: string | null;
+  /** Always 14 entries, oldest → newest. ISO date in `day`. */
+  eventsByDay: { day: string; count: number }[];
+}
+
 export interface Project {
   id: number;
   orgId: number;
@@ -8,6 +18,8 @@ export interface Project {
   name: string;
   platform: string;
   createdAt: string;
+  /** Populated by the list endpoint; absent on single-project lookups. */
+  stats?: ProjectStats;
 }
 
 /**

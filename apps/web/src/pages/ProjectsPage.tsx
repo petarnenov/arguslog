@@ -8,10 +8,12 @@ import {
   Center,
   Code,
   CopyButton,
+  Divider,
   Group,
   Loader,
   Menu,
   Modal,
+  NumberFormatter,
   Select,
   SimpleGrid,
   Stack,
@@ -21,6 +23,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
+import { AreaChart } from '@mantine/charts';
 import { useForm } from '@mantine/form';
 import {
   IconArchive,
@@ -405,6 +408,13 @@ interface ProjectCardProps {
   onRename: (project: Project) => void;
 }
 
+function unresolvedColor(n: number): string {
+  if (n === 0) return 'green';
+  if (n < 10) return 'blue';
+  if (n < 50) return 'yellow';
+  return 'red';
+}
+
 function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps) {
   const { t, i18n } = useTranslation();
   const visuals = platformVisuals(project.platform);
@@ -412,6 +422,16 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
   const issuesUrl = `/orgs/${orgSlug}/projects/${project.id}/issues`;
   const createdRelative = formatRelativeTime(project.createdAt, i18n.language || 'en');
   const createdAbsolute = new Date(project.createdAt).toLocaleString(i18n.language || 'en');
+  const stats = project.stats;
+  const totalEventsInWindow = stats?.eventsByDay?.reduce((acc, b) => acc + b.count, 0) ?? 0;
+  const hasSparklineData = stats != null && totalEventsInWindow > 0;
+  const lastEventRelative =
+    stats?.lastEventAt && i18n.language
+      ? formatRelativeTime(stats.lastEventAt, i18n.language || 'en')
+      : null;
+  const lastEventAbsolute = stats?.lastEventAt
+    ? new Date(stats.lastEventAt).toLocaleString(i18n.language || 'en')
+    : null;
 
   return (
     <Card
@@ -505,20 +525,95 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
         </Box>
       </Group>
 
+      {stats ? (
+        <>
+          <SimpleGrid cols={3} spacing="xs" mb="sm" data-testid={`project-stats-${project.slug}`}>
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                {t('projects.statUnresolved')}
+              </Text>
+              <Title order={4} c={unresolvedColor(stats.unresolvedIssueCount)}>
+                <NumberFormatter value={stats.unresolvedIssueCount} thousandSeparator />
+              </Title>
+            </Stack>
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                {t('projects.statEvents24h')}
+              </Text>
+              <Title order={4}>
+                <NumberFormatter value={stats.events24h} thousandSeparator />
+              </Title>
+            </Stack>
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+                {t('projects.statEvents7d')}
+              </Text>
+              <Title order={4}>
+                <NumberFormatter value={stats.events7d} thousandSeparator />
+              </Title>
+            </Stack>
+          </SimpleGrid>
+
+          {hasSparklineData ? (
+            <Box mb="sm" data-testid={`project-sparkline-${project.slug}`}>
+              <Text size="xs" c="dimmed" mb={4}>
+                {t('projects.sparklineCaption')}
+              </Text>
+              <AreaChart
+                h={60}
+                data={stats.eventsByDay.map((b) => ({ date: b.day, value: b.count }))}
+                dataKey="date"
+                series={[{ name: 'value', color: 'green.6' }]}
+                curveType="monotone"
+                withDots={false}
+                withXAxis={false}
+                withYAxis={false}
+                withTooltip={false}
+                gridAxis="none"
+                strokeWidth={1.5}
+                fillOpacity={0.25}
+              />
+            </Box>
+          ) : (
+            <Box mb="sm">
+              <Text size="xs" c="dimmed" fs="italic" data-testid={`project-no-events-${project.slug}`}>
+                {t('projects.noEvents')}
+              </Text>
+            </Box>
+          )}
+
+          <Divider mb="sm" />
+        </>
+      ) : null}
+
       <Group justify="space-between" wrap="nowrap" gap="xs">
-        <Badge
-          size="sm"
-          variant="light"
-          color={visuals.color}
-          leftSection={<PlatformIcon size={12} />}
-        >
-          {project.platform}
-        </Badge>
-        <Tooltip label={createdAbsolute} withArrow>
-          <Text size="xs" c="dimmed">
-            {t('projects.createdAt', { relative: createdRelative })}
-          </Text>
+        <Tooltip label={t('projects.createdAt', { relative: createdRelative })} withArrow>
+          <Badge
+            size="sm"
+            variant="light"
+            color={visuals.color}
+            leftSection={<PlatformIcon size={12} />}
+          >
+            {project.platform}
+          </Badge>
         </Tooltip>
+        {stats?.lastEventAt && lastEventAbsolute ? (
+          <Tooltip label={lastEventAbsolute} withArrow>
+            <Text size="xs" c="dimmed">
+              {t('projects.lastEventAgo', { relative: lastEventRelative })}
+            </Text>
+          </Tooltip>
+        ) : stats ? (
+          <Text size="xs" c="dimmed">
+            {t('projects.lastEventNever')}
+          </Text>
+        ) : (
+          <Tooltip label={createdAbsolute} withArrow>
+            <Text size="xs" c="dimmed">
+              {t('projects.createdAt', { relative: createdRelative })}
+            </Text>
+          </Tooltip>
+        )}
       </Group>
     </Card>
   );

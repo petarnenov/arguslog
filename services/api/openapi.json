@@ -2361,6 +2361,19 @@
           }
         }
       },
+      "DailyEventBucket" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
       "ProjectCreateResponse" : {
         "type" : "object",
         "properties" : {
@@ -2395,6 +2408,36 @@
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
+          },
+          "stats" : {
+            "$ref" : "#/components/schemas/ProjectStats"
+          }
+        }
+      },
+      "ProjectStats" : {
+        "type" : "object",
+        "properties" : {
+          "unresolvedIssueCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "events24h" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "events7d" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "lastEventAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "eventsByDay" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DailyEventBucket"
+            }
           }
         }
       },

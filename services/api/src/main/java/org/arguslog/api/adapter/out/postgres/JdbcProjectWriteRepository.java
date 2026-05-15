@@ -1,9 +1,19 @@
 package org.arguslog.api.adapter.out.postgres;
 
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.api.application.ProjectUseCase.DuplicateProjectException;
+import org.arguslog.api.application.dto.ProjectStats;
+import org.arguslog.api.application.dto.ProjectStats.DailyEventBucket;
 import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.domain.Project;
 import org.arguslog.api.security.OrgContext;
@@ -135,6 +145,123 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
     } catch (EmptyResultDataAccessException e) {
       return Optional.empty();
     }
+  }
+
+  private static final int SPARKLINE_DAYS = 14;
+
+  @Override
+  public Map<Long, ProjectStats> statsForOrg(long orgId) {
+    pinOrg();
+
+    // 1. Unresolved issue counts per project.
+    Map<Long, Integer> unresolved = new HashMap<>();
+    jdbc.query(
+        """
+        SELECT i.project_id, COUNT(*)::int AS n
+          FROM issues i
+          JOIN projects p ON p.id = i.project_id
+         WHERE p.org_id = ?
+           AND p.archived_at IS NULL
+           AND i.status = 'unresolved'
+         GROUP BY i.project_id
+        """,
+        rs -> {
+          unresolved.put(rs.getLong("project_id"), rs.getInt("n"));
+        },
+        orgId);
+
+    // 2. Events in last 24h.
+    Map<Long, Long> events24h = countEvents(orgId, "24 hours");
+    // 3. Events in last 7d.
+    Map<Long, Long> events7d = countEvents(orgId, "7 days");
+
+    // 4. Last event timestamp per project.
+    Map<Long, Instant> lastEvent = new HashMap<>();
+    jdbc.query(
+        """
+        SELECT e.project_id, MAX(e.received_at) AS last_at
+          FROM events e
+          JOIN projects p ON p.id = e.project_id
+         WHERE p.org_id = ?
+           AND p.archived_at IS NULL
+         GROUP BY e.project_id
+        """,
+        rs -> {
+          Timestamp ts = rs.getTimestamp("last_at");
+          if (ts != null) lastEvent.put(rs.getLong("project_id"), ts.toInstant());
+        },
+        orgId);
+
+    // 5. Daily event buckets for the last 14 days.
+    Map<Long, Map<LocalDate, Long>> buckets = new HashMap<>();
+    jdbc.query(
+        """
+        SELECT e.project_id,
+               date_trunc('day', e.received_at AT TIME ZONE 'UTC')::date AS day,
+               COUNT(*)::bigint AS n
+          FROM events e
+          JOIN projects p ON p.id = e.project_id
+         WHERE p.org_id = ?
+           AND p.archived_at IS NULL
+           AND e.received_at > NOW() - INTERVAL '14 days'
+         GROUP BY e.project_id, day
+         ORDER BY e.project_id, day
+        """,
+        rs -> {
+          long pid = rs.getLong("project_id");
+          LocalDate day = rs.getDate("day").toLocalDate();
+          long n = rs.getLong("n");
+          buckets.computeIfAbsent(pid, k -> new HashMap<>()).put(day, n);
+        },
+        orgId);
+
+    // Compose one ProjectStats per project that appears in any of the maps above.
+    java.util.Set<Long> projectIds = new java.util.HashSet<>();
+    projectIds.addAll(unresolved.keySet());
+    projectIds.addAll(events24h.keySet());
+    projectIds.addAll(events7d.keySet());
+    projectIds.addAll(lastEvent.keySet());
+    projectIds.addAll(buckets.keySet());
+
+    Map<Long, ProjectStats> out = new LinkedHashMap<>();
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
+    for (long pid : projectIds) {
+      Map<LocalDate, Long> hits = buckets.getOrDefault(pid, Map.of());
+      List<DailyEventBucket> series = new ArrayList<>(SPARKLINE_DAYS);
+      for (int i = SPARKLINE_DAYS - 1; i >= 0; i--) {
+        LocalDate day = today.minusDays(i);
+        series.add(new DailyEventBucket(day, hits.getOrDefault(day, 0L)));
+      }
+      out.put(
+          pid,
+          new ProjectStats(
+              unresolved.getOrDefault(pid, 0),
+              events24h.getOrDefault(pid, 0L),
+              events7d.getOrDefault(pid, 0L),
+              lastEvent.get(pid),
+              List.copyOf(series)));
+    }
+    return out;
+  }
+
+  private Map<Long, Long> countEvents(long orgId, String interval) {
+    Map<Long, Long> out = new HashMap<>();
+    // String concatenation for the interval is safe because the caller passes a literal —
+    // never user input — but keep the receivedAt filter as an inline interval since
+    // JdbcTemplate doesn't bind INTERVAL values cleanly.
+    jdbc.query(
+        "SELECT e.project_id, COUNT(*)::bigint AS n "
+            + "FROM events e JOIN projects p ON p.id = e.project_id "
+            + "WHERE p.org_id = ? AND p.archived_at IS NULL "
+            + "AND e.received_at > NOW() - INTERVAL '"
+            + interval
+            + "' "
+            + "GROUP BY e.project_id",
+        rs -> {
+          out.put(rs.getLong("project_id"), rs.getLong("n"));
+        },
+        orgId);
+    return out;
   }
 
   private void pinOrg() {

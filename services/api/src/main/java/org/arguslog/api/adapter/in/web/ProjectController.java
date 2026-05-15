@@ -54,7 +54,10 @@ public class ProjectController {
 
   @GetMapping
   public List<ProjectResponse> list(@PathVariable long orgId) {
-    return useCase.list(orgId).stream().map(ProjectResponse::from).toList();
+    java.util.List<Project> projects = useCase.list(orgId);
+    java.util.Map<Long, org.arguslog.api.application.dto.ProjectStats> stats =
+        useCase.statsForOrg(orgId);
+    return projects.stream().map(p -> ProjectResponse.from(p, stats.get(p.id()))).toList();
   }
 
   /**

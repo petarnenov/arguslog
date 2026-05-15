@@ -1,9 +1,11 @@
 package org.arguslog.api.application;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.arguslog.api.application.dto.ProjectStats;
 import org.arguslog.api.application.port.MembershipRepository;
 import org.arguslog.api.application.port.PlatformRepository;
 import org.arguslog.api.application.port.ProjectWriteRepository;
@@ -71,6 +73,12 @@ public class ProjectService implements ProjectUseCase {
   @Transactional(readOnly = true)
   public List<Project> list(long orgId) {
     return projects.listForOrg(orgId);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Map<Long, ProjectStats> statsForOrg(long orgId) {
+    return projects.statsForOrg(orgId);
   }
 
   @Override

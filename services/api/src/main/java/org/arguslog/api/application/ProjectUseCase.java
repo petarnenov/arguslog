@@ -1,7 +1,9 @@
 package org.arguslog.api.application;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import org.arguslog.api.application.dto.ProjectStats;
 import org.arguslog.api.domain.Project;
 
 public interface ProjectUseCase {
@@ -9,6 +11,13 @@ public interface ProjectUseCase {
   Project create(long orgId, String name, String platform);
 
   List<Project> list(long orgId);
+
+  /**
+   * Per-project activity snapshot keyed by id — used by the dashboard project-list card.
+   * Projects with no events / issues are still returned with zero counts so the caller can
+   * render a "no activity yet" state without an extra branch.
+   */
+  Map<Long, ProjectStats> statsForOrg(long orgId);
 
   Optional<Project> get(long orgId, long projectId);
 

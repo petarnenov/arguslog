@@ -162,4 +162,65 @@ describe('ProjectsPage', () => {
     // DSN modal should not appear.
     expect(screen.queryByText(/arguslog:\/\/PUB/)).not.toBeInTheDocument();
   });
+
+  it('renders stats numbers + sparkline when the api returns project.stats', async () => {
+    const ACTIVE_PROJECT = {
+      ...NEW_PROJECT,
+      stats: {
+        unresolvedIssueCount: 7,
+        events24h: 142,
+        events7d: 1024,
+        lastEventAt: new Date(Date.now() - 60_000).toISOString(),
+        eventsByDay: Array.from({ length: 14 }, (_, i) => ({
+          day: new Date(Date.now() - (13 - i) * 86_400_000).toISOString().slice(0, 10),
+          count: i * 5,
+        })),
+      },
+    };
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/projects')) return jsonResponse([ACTIVE_PROJECT]);
+      throw new Error(`unexpected ${url}`);
+    }) as typeof fetch;
+
+    renderAt('/orgs/acme/projects');
+
+    await screen.findByTestId('project-card-web');
+    const stats = await screen.findByTestId('project-stats-web');
+    // Numbers are formatted with thousands separator — match relaxed.
+    expect(stats.textContent).toContain('7');
+    expect(stats.textContent).toContain('142');
+    expect(stats.textContent).toMatch(/1[,. ]?024/); // locale-tolerant
+    // Sparkline container renders.
+    expect(screen.getByTestId('project-sparkline-web')).toBeInTheDocument();
+  });
+
+  it('shows "No events yet" when the project has stats but lastEventAt is null', async () => {
+    const QUIET_PROJECT = {
+      ...NEW_PROJECT,
+      stats: {
+        unresolvedIssueCount: 0,
+        events24h: 0,
+        events7d: 0,
+        lastEventAt: null,
+        eventsByDay: Array.from({ length: 14 }, (_, i) => ({
+          day: new Date(Date.now() - (13 - i) * 86_400_000).toISOString().slice(0, 10),
+          count: 0,
+        })),
+      },
+    };
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/projects')) return jsonResponse([QUIET_PROJECT]);
+      throw new Error(`unexpected ${url}`);
+    }) as typeof fetch;
+
+    renderAt('/orgs/acme/projects');
+
+    await screen.findByTestId('project-no-events-web');
+    expect(screen.getByText(/No events yet/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('project-sparkline-web')).not.toBeInTheDocument();
+  });
 });
