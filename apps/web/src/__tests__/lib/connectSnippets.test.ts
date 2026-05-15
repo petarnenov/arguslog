@@ -14,13 +14,14 @@ const baseCtx: SnippetContext = {
 };
 
 describe('buildSnippets', () => {
-  it('produces the full catalog grouped agent/sdk/mcp/cli', () => {
+  it('produces the full catalog grouped agent/workflow/sdk/mcp/cli', () => {
     const all = buildSnippets(baseCtx);
     const ids = all.map((s) => s.id);
 
-    // Agent: 6 (claude-code, cursor, codex, copilot, windsurf, continue),
-    // SDK: 5, MCP: 4, CLI: 2. Aider dropped — Aider is not an MCP client.
+    // Agent: 6, Workflow: 4 (triage / postmortem / regression / investigate),
+    // SDK: 5, MCP: 4, CLI: 2.
     expect(all.filter((s) => s.group === 'agent')).toHaveLength(6);
+    expect(all.filter((s) => s.group === 'workflow')).toHaveLength(4);
     expect(all.filter((s) => s.group === 'sdk')).toHaveLength(5);
     expect(all.filter((s) => s.group === 'mcp')).toHaveLength(4);
     expect(all.filter((s) => s.group === 'cli')).toHaveLength(2);
@@ -31,6 +32,10 @@ describe('buildSnippets', () => {
       'agent-copilot',
       'agent-windsurf',
       'agent-continue',
+      'workflow-triage-loop',
+      'workflow-release-postmortem',
+      'workflow-regression-check',
+      'workflow-investigate-issue',
       'sdk-javascript',
       'sdk-react',
       'sdk-node',
@@ -43,6 +48,31 @@ describe('buildSnippets', () => {
       'cli',
       'curl-test',
     ]);
+  });
+
+  it('workflow bodies reference the right MCP tools and stay read-only by default', () => {
+    const all = buildSnippets(baseCtx);
+    const triage = all.find((s) => s.id === 'workflow-triage-loop')!;
+    expect(triage.code).toContain('list_issues');
+    expect(triage.code).toContain('triage_issue');
+    expect(triage.code).toContain('assign_issue');
+    expect(triage.code).toContain('<PROJECT_ID>');
+
+    const postmortem = all.find((s) => s.id === 'workflow-release-postmortem')!;
+    expect(postmortem.code).toContain('list_release');
+    expect(postmortem.code).toContain('# Postmortem — <VERSION>');
+    // Postmortem is read-only — must explicitly forbid mutations.
+    expect(postmortem.code).toMatch(/do not call any mutating MCP tools/i);
+
+    const regression = all.find((s) => s.id === 'workflow-regression-check')!;
+    expect(regression.code).toContain('<CURRENT_VERSION>');
+    expect(regression.code).toContain('<PREVIOUS_VERSION>');
+    expect(regression.code).toContain('git blame');
+
+    const investigate = all.find((s) => s.id === 'workflow-investigate-issue')!;
+    expect(investigate.code).toContain('list_issue_events');
+    expect(investigate.code).toContain('<ISSUE_ID>');
+    expect(investigate.code).toContain('explicit confirmation');
   });
 
   it('curl-test snippet uses the DSN public key + ingest URL', () => {

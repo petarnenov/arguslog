@@ -17,10 +17,16 @@
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 
 import { ArguslogApiError, ArguslogClient } from './client.js';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './generated/version.js';
+import { getMcpPrompt, listMcpPrompts } from './prompts.js';
 import { buildToolResult, executeTool, listMcpTools } from './tools.js';
 
 async function main(): Promise<void> {
@@ -45,16 +51,24 @@ async function main(): Promise<void> {
 
   const server = new Server(
     { name: PACKAGE_NAME, version: PACKAGE_VERSION },
-    // `listChanged: false` makes the static-registry contract explicit — the tool catalog is
-    // built once at startup from `OPENAPI_TOOLS + CURATED_TOOLS`, never mutated at runtime,
-    // so clients shouldn't subscribe to `notifications/tools/list_changed`. MCP spec
-    // 2025-11-25 §Tools allows the empty default but explicit is clearer for capability
-    // negotiation.
-    { capabilities: { tools: { listChanged: false } } },
+    // Both `tools.listChanged` and `prompts.listChanged` are explicitly false: the catalog is
+    // built once at startup (from `OPENAPI_TOOLS + CURATED_TOOLS` for tools, `WORKFLOWS` for
+    // prompts) and never mutated at runtime. Clients don't need to subscribe to change
+    // notifications. The `prompts` capability ships the "Read · Eval · Triage · Loop"
+    // workflows defined in ./prompts.ts.
+    { capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } } },
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return { tools: listMcpTools() };
+  });
+
+  server.setRequestHandler(ListPromptsRequestSchema, async () => {
+    return { prompts: listMcpPrompts() };
+  });
+
+  server.setRequestHandler(GetPromptRequestSchema, async (req) => {
+    return getMcpPrompt(req.params.name, (req.params.arguments ?? {}) as Record<string, string>);
   });
 
   server.setRequestHandler(CallToolRequestSchema, async (req) => {

@@ -34,7 +34,12 @@ import crypto from 'node:crypto';
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 import express, {
   type Application,
   type Request,
@@ -46,6 +51,7 @@ import helmet from 'helmet';
 
 import { ArguslogApiError, ArguslogClient } from './client.js';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './generated/version.js';
+import { getMcpPrompt, listMcpPrompts } from './prompts.js';
 import { buildToolResult, executeTool, listMcpTools } from './tools.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
@@ -91,13 +97,22 @@ function patRateKey(pat: string): string {
 function makeServer(client: ArguslogClient | null): Server {
   const server = new Server(
     { name: PACKAGE_NAME, version: PACKAGE_VERSION },
-    // See index.ts for rationale — registry is static, so listChanged is explicitly false.
-    { capabilities: { tools: { listChanged: false } } },
+    // See index.ts for rationale — both registries are static, so listChanged is explicitly
+    // false. Prompts capability ships the "Read · Eval · Triage · Loop" workflows.
+    { capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } } },
   );
 
   // Static tool catalog — no API call, always works regardless of auth. This is what
   // Smithery / Glama / other gateways probe with on first connection.
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: listMcpTools() }));
+
+  // Static workflow catalog — same auth-free guarantee. Prompts don't make API calls; the
+  // agent reads the body and calls tools itself (with the PAT it already had).
+  server.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts: listMcpPrompts() }));
+
+  server.setRequestHandler(GetPromptRequestSchema, async (req) =>
+    getMcpPrompt(req.params.name, (req.params.arguments ?? {}) as Record<string, string>),
+  );
 
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
     if (!client) {

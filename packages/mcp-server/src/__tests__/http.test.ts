@@ -265,4 +265,74 @@ describe('createApp — security middleware', () => {
       await close(server);
     }
   });
+
+  it('prompts/list returns the 4 Arguslog workflows over HTTP (no PAT required)', async () => {
+    delete process.env.CF_ORIGIN_TOKEN;
+    const { server, url } = await listen();
+    try {
+      const res = await fetch(`${url}/mcp`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'prompts/list', id: 1 }),
+      });
+      expect(res.status).toBe(200);
+      // SSE-formatted body — parse the data: payload to grab the JSON-RPC result.
+      const text = await res.text();
+      const json = text
+        .split('\n')
+        .filter((l) => l.startsWith('data:'))
+        .map((l) => JSON.parse(l.slice(5).trim()))[0] as {
+        result: { prompts: { name: string }[] };
+      };
+      const names = json.result.prompts.map((p) => p.name);
+      expect(names).toEqual([
+        'arguslog_triage_loop',
+        'arguslog_release_postmortem',
+        'arguslog_regression_check',
+        'arguslog_investigate_issue',
+      ]);
+    } finally {
+      await close(server);
+    }
+  });
+
+  it('prompts/get renders a workflow body over HTTP', async () => {
+    delete process.env.CF_ORIGIN_TOKEN;
+    const { server, url } = await listen();
+    try {
+      const res = await fetch(`${url}/mcp`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'prompts/get',
+          params: {
+            name: 'arguslog_triage_loop',
+            arguments: { projectId: '42', batchSize: '5' },
+          },
+          id: 2,
+        }),
+      });
+      expect(res.status).toBe(200);
+      const text = await res.text();
+      const json = text
+        .split('\n')
+        .filter((l) => l.startsWith('data:'))
+        .map((l) => JSON.parse(l.slice(5).trim()))[0] as {
+        result: { messages: { content: { type: string; text: string } }[] };
+      };
+      const body = json.result.messages[0]!.content.text;
+      expect(body).toContain('project 42');
+      expect(body).toContain('"limit": 5');
+      expect(body).toContain('triage_issue');
+    } finally {
+      await close(server);
+    }
+  });
 });

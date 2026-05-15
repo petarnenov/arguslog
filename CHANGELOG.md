@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+### Added — Read · Eval · Triage · Loop workflows (mcp-server 2.4.0)
+
+The landing slogan finally has a concrete deliverable. The MCP server now
+exposes a `prompts/` capability with four canned playbooks the agent runs
+end-to-end:
+
+- **`arguslog_triage_loop`** — walks the unresolved queue one issue at a time,
+  proposes an action (assign / resolve / set release), waits for the user's
+  OK, applies via MCP tools. Operationalises the "Loop".
+- **`arguslog_release_postmortem`** — fetches issues first-seen-in-a-given-
+  release, groups by stack-frame fingerprint, writes a Markdown postmortem.
+  Read-only by design.
+- **`arguslog_regression_check`** — diffs two releases, surfaces issues that
+  are new or spiking ≥3× current vs previous count, pairs each finding with
+  git blame on the top stack frame.
+- **`arguslog_investigate_issue`** — deep-dives one issue, hypothesises root
+  cause from breadcrumbs + recent events, proposes a fix diff.
+
+Discoverable via `prompts/list` (Claude Code / Cursor / Continue see them as
+slash-style commands) and mirrored on the Connect → Workflows tab for every
+other agent. Mutating tools are gated behind explicit user confirmation in
+every workflow body — no auto-apply.
+
 ### Improved — full default integrations + framework wrap in every agent prompt
 
 Step 2 of the magic prompt (the "install the SDK and wire init()" block) now

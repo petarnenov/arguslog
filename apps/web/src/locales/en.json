@@ -180,9 +180,13 @@
       "hint": "Pick your stack and click Copy. Snippets fill in your DSN / PAT automatically; missing credentials show a placeholder so you can still copy the structure.",
       "group": {
         "agent": "AI coding agents",
+        "workflow": "Workflows",
         "sdk": "SDKs",
         "mcp": "MCP clients",
         "cli": "CLI"
+      },
+      "workflow": {
+        "hint": "Read · Eval · Triage · Loop — four canned playbooks your agent runs end-to-end. Discoverable via MCP prompts/list (Claude Code, Cursor, Continue) and paste-ready here for every other agent. Replace the <PLACEHOLDERS> with your project/issue/release values."
       },
       "agent": {
         "hint": "Copy one prompt, paste into your coding agent. It detects the stack, installs the matching Arguslog SDK, wires init(), and registers the MCP server — single paste, ~3 seconds of user effort.",

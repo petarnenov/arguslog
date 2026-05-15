@@ -165,6 +165,43 @@ The agent chains:
 The agent calls arguslog_admin_grant_bonus with tier=pro months=3.
 ```
 
+## Workflows — Read · Eval · Triage · Loop
+
+In addition to the per-endpoint tools, this server exposes four canned workflows via the MCP
+`prompts/` capability — the agent discovers them through `prompts/list` and renders one with
+`prompts/get`. Each workflow is a paste-ready playbook that walks the agent through a real
+debugging loop, calling the tools above with the right arguments and waiting for user
+confirmation before any mutation.
+
+| Workflow | Required args | Mutating? |
+| -------- | ------------- | --------- |
+| `arguslog_triage_loop`        | `projectId` (+ optional `batchSize`)        | Yes — `triage_issue` / `assign_issue` after user OK |
+| `arguslog_release_postmortem` | `projectId`, `version`                      | **No** — read-only |
+| `arguslog_regression_check`   | `projectId`, `currentVersion`, `previousVersion` | Only on explicit "apply" |
+| `arguslog_investigate_issue`  | `projectId`, `issueId`                      | Only on explicit user confirmation |
+
+Invoke via JSON-RPC:
+
+```json
+{ "jsonrpc": "2.0", "method": "prompts/list", "id": 1 }
+```
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "prompts/get",
+  "params": {
+    "name": "arguslog_triage_loop",
+    "arguments": { "projectId": "42", "batchSize": "10" }
+  },
+  "id": 2
+}
+```
+
+In Claude Code, Cursor, and Continue, these appear as slash-style suggestions discovered from
+the server automatically. The dashboard's **Connect → Workflows** tab mirrors the same bodies
+verbatim for agents that don't yet support MCP prompts (Aider et al.) — copy-paste path.
+
 ## What's covered
 
 Every endpoint in `/api/v1/...` is callable. The high-leverage ones have curated

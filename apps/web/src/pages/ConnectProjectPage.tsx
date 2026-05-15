@@ -415,6 +415,7 @@ export function ConnectProjectPage() {
         <Tabs defaultValue="agent" keepMounted={false}>
           <Tabs.List>
             <Tabs.Tab value="agent">{t('connect.snippets.group.agent')}</Tabs.Tab>
+            <Tabs.Tab value="workflow">{t('connect.snippets.group.workflow')}</Tabs.Tab>
             <Tabs.Tab value="sdk">{t('connect.snippets.group.sdk')}</Tabs.Tab>
             <Tabs.Tab value="mcp">{t('connect.snippets.group.mcp')}</Tabs.Tab>
             <Tabs.Tab value="cli">{t('connect.snippets.group.cli')}</Tabs.Tab>
@@ -462,6 +463,14 @@ export function ConnectProjectPage() {
                 </Alert>
               )}
               <SnippetSubTabs items={grouped.agent} />
+            </Stack>
+          </Tabs.Panel>
+          <Tabs.Panel value="workflow" pt="md">
+            <Stack gap="xs">
+              <Text size="sm" c="dimmed">
+                {t('connect.snippets.workflow.hint')}
+              </Text>
+              <SnippetSubTabs items={grouped.workflow} />
             </Stack>
           </Tabs.Panel>
           <Tabs.Panel value="sdk" pt="md">
@@ -539,6 +548,7 @@ function SnippetSubTabs({ items }: SnippetSubTabsProps) {
 function groupSnippets(all: ConnectSnippet[]): Record<SnippetGroup, ConnectSnippet[]> {
   return {
     agent: all.filter((s) => s.group === 'agent'),
+    workflow: all.filter((s) => s.group === 'workflow'),
     sdk: all.filter((s) => s.group === 'sdk'),
     mcp: all.filter((s) => s.group === 'mcp'),
     cli: all.filter((s) => s.group === 'cli'),

@@ -11,7 +11,102 @@
  *     `<GENERATE_PAT_FIRST>` placeholder so the user can still copy the structure.
  */
 
-export type SnippetGroup = 'agent' | 'sdk' | 'mcp' | 'cli';
+export type SnippetGroup = 'agent' | 'workflow' | 'sdk' | 'mcp' | 'cli';
+
+/**
+ * "Read · Eval · Triage · Loop" workflows — exact mirror of the catalog the MCP server
+ * exposes via `prompts/list` (see `packages/mcp-server/src/prompts.ts`). Bodies are duplicated
+ * in TypeScript form on both sides; a snapshot regression test on the web side asserts the
+ * Markdown comes out identical for a frozen args fixture, so drift between server and dashboard
+ * is caught in CI rather than at runtime. Keeping the catalog inline (instead of pulling it
+ * into a shared workspace package) avoids growing @arguslog/sdk-core out of its current
+ * transport/scope/scrubber scope.
+ */
+export const WORKFLOWS = [
+  {
+    id: 'workflow-triage-loop',
+    name: 'arguslog_triage_loop',
+    client: 'Triage loop',
+    description:
+      'Walk the unresolved issue queue one item at a time. For each, propose an action, wait for the user, apply via MCP tools. Operationalises the "Loop" half of the slogan.',
+    body: `You are running the Arguslog triage loop for project <PROJECT_ID>.
+
+Goal: keep the unresolved queue moving. Walk issues one at a time; for each one suggest an action; apply only after the user confirms.
+
+**Step 1 — fetch the batch.** Call \`list_issues\` with:
+\`\`\`json
+{ "projectId": <PROJECT_ID>, "status": "unresolved", "sort": "lastSeenAt:desc", "limit": 10 }
+\`\`\`
+
+**Step 2 — walk each issue.** For every result: print one line (\`#<id> · <title> · level=<level> · count=<count> · lastSeen=<lastSeenAt> · assignee=<assigneeUserId or "—">\`), then \`get_issue\` for full detail. Propose ONE action: \`assign_issue\` to a likely owner, \`triage_issue\` → resolved if duplicate, \`triage_issue\` to set firstSeenRelease, or skip. **Wait for "ok"** before applying the matching MCP tool.
+
+**Step 3 — report.** After the batch print counts (triaged / skipped / errored) and ask whether to fetch the next batch.
+
+**Stop conditions**: the user says "stop", \`list_issues\` returns empty, or two consecutive MCP errors.
+
+Never invent issue ids — only act on data fetched this session.`,
+  },
+  {
+    id: 'workflow-release-postmortem',
+    name: 'arguslog_release_postmortem',
+    client: 'Release postmortem',
+    description:
+      'Auto-generate a Markdown postmortem for issues first seen in a given release. Groups by stack-frame fingerprint, hypothesises root cause, recommends actions. Read-only — never mutates issues.',
+    body: `You are writing a release postmortem for project <PROJECT_ID>, release \`<VERSION>\`.
+
+**Step 1 — resolve the release.** Call \`list_release\` with \`{ projectId: <PROJECT_ID> }\`; capture the id whose version equals \`<VERSION>\`. If no match, stop and tell the user.
+
+**Step 2 — fetch issues introduced.** \`list_issues\` with \`{ projectId: <PROJECT_ID>, firstSeenReleaseId: <releaseId>, limit: 50 }\`.
+
+**Step 3 — detail.** For each (cap 25), \`get_issue\` and capture title, level, count, lastSeen, top stack frame, and the latest event's exception message.
+
+**Step 4 — group by stack-frame fingerprint.** Issues sharing a top frame are likely one root cause.
+
+**Step 5 — write Markdown postmortem** with sections: Title (\`# Postmortem — <VERSION>\`), summary (released date, issue count, severity mix), top regressions (max 5 with hypothesis + recommended action), timeline, recommended next steps.
+
+**Step 6 — save.** If \`docs/postmortems/\` exists, write \`docs/postmortems/<VERSION>.md\`; otherwise print to chat.
+
+Read-only — do not call any mutating MCP tools (no \`triage_issue\`, no \`assign_issue\`).`,
+  },
+  {
+    id: 'workflow-regression-check',
+    name: 'arguslog_regression_check',
+    client: 'Regression check',
+    description:
+      'Diff the current release against the previous one — surfaces issues that are new or spiking. Pairs each finding with stack frames + git blame.',
+    body: `You are running a regression check for project <PROJECT_ID>: \`<PREVIOUS_VERSION>\` → \`<CURRENT_VERSION>\`.
+
+**Step 1 — resolve both releases.** \`list_release\` → capture ids for \`<CURRENT_VERSION>\` and \`<PREVIOUS_VERSION>\`. If either missing, stop.
+
+**Step 2 — fetch.** \`list_issues\` twice: new-in-current (filter by \`firstSeenReleaseId\`); active-in-previous (filter by \`seenInReleaseId\`).
+
+**Step 3 — classify.** NEW: only in current. SPIKING: in both but current count ≥3× previous count.
+
+**Step 4 — detail + blame.** For each finding (cap 15), \`get_issue\` for top frame; if \`.git/\` exists, run \`git blame -L <line>,<line> <file>\` for the top frame and capture commit hash + author.
+
+**Step 5 — report** in a Markdown table: \`| Issue | Status | Count(new/prev) | Top frame | Likely author |\`. Below the table, suggest rollback / assign / hotfix as appropriate.
+
+Read-only by default. Only call \`triage_issue\` / \`assign_issue\` if the user explicitly says "apply".`,
+  },
+  {
+    id: 'workflow-investigate-issue',
+    name: 'arguslog_investigate_issue',
+    client: 'Investigate single issue',
+    description:
+      'Deep-dive a single issue: detail + recent events + breadcrumbs → root-cause hypothesis with file:line references → action proposal.',
+    body: `You are investigating Arguslog issue #<ISSUE_ID> in project <PROJECT_ID>.
+
+**Step 1 — fetch detail.** \`get_issue\` with \`{ projectId: <PROJECT_ID>, issueId: <ISSUE_ID> }\`. Capture title, level, count, firstSeenAt, lastSeenAt, current assignee, top stack frame.
+
+**Step 2 — recent events.** \`list_issue_events\` with \`{ projectId: <PROJECT_ID>, issueId: <ISSUE_ID>, limit: 5 }\`. Inspect exception chain, breadcrumbs (HTTP, console, navigation), request context.
+
+**Step 3 — hypothesise root cause.** Show the throwing line (\`<file>:<line> · <function>\`), one-sentence hypothesis using breadcrumbs + exception chain, file-level evidence if the repo is checked out, and a reproduction hint from breadcrumbs.
+
+**Step 4 — propose action.** Choose ONE: fix suggestion with a diff for review, assign to likely owner from \`git blame\`, resolve as duplicate, or mark as not-a-bug.
+
+**Step 5 — wait for user.** Ask "what would you like to do?". Only call \`triage_issue\` / \`assign_issue\` after explicit confirmation.`,
+  },
+] as const;
 
 export interface ConnectSnippet {
   /** Stable id — used for tab keys, test selectors, copy-button telemetry. */
@@ -728,6 +823,22 @@ export function buildSnippets(ctx: SnippetContext): ConnectSnippet[] {
         'Paste into Continue chat (VS Code / JetBrains). It will install the SDK and drop a .continue/mcpServers/arguslog.yaml in the workspace.',
       code: buildAgentPrompt(ctx, 'continue'),
     },
+
+    // ─── Workflow group ──────────────────────────────────────────────────────
+    // "Read · Eval · Triage · Loop" canned workflows. Mirror of the catalog the MCP server
+    // exposes via prompts/list — agents that support MCP prompts discover these natively;
+    // for everyone else, the Connect tab is the copy-paste path. Bodies use literal
+    // placeholders (<PROJECT_ID>, <VERSION>, <ISSUE_ID>) — the user fills them in once when
+    // pasting. Unlike the install prompts, these don't need DSN/PAT inlining: the MCP server
+    // already authenticates per-request with the Bearer header.
+    ...WORKFLOWS.map((w) => ({
+      id: w.id,
+      group: 'workflow' as const,
+      client: w.client,
+      language: 'markdown' as const,
+      description: w.description,
+      code: w.body,
+    })),
 
     // ─── SDK group ────────────────────────────────────────────────────────────
     {

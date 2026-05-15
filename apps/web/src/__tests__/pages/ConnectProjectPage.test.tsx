@@ -123,6 +123,24 @@ describe('ConnectProjectPage — AI agents tab', () => {
     expect(screen.getByTestId('connect-snippet-copy-agent-claude-code')).toBeInTheDocument();
   });
 
+  it('exposes the Workflows group tab with all four "Read · Eval · Triage · Loop" playbooks', async () => {
+    installFetchMock();
+    renderAt();
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /paste-ready snippets/i })).toBeInTheDocument(),
+    );
+    const workflowGroupTab = screen.getByRole('tab', { name: /workflows/i });
+    expect(workflowGroupTab).toBeInTheDocument();
+    // It's NOT default — agent stays default. User must click to reveal sub-tabs.
+    expect(workflowGroupTab).toHaveAttribute('aria-selected', 'false');
+    const user = userEvent.setup();
+    await user.click(workflowGroupTab);
+    expect(screen.getByRole('tab', { name: /triage loop/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /release postmortem/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /regression check/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /investigate single issue/i })).toBeInTheDocument();
+  });
+
   it('auto-provisions DSN + PAT on first visit (no rotate CTA, no missing-creds alert)', async () => {
     const calls = installFetchMock();
     renderAt();

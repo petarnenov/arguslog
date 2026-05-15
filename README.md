@@ -29,6 +29,12 @@ tool-call away through [`@arguslog/mcp-server`](packages/mcp-server).
    for HTTP transports, `env.ARGUSLOG_PAT` for stdio) — no placeholders to
    patch later. Rotate or revoke any time from `/me/tokens` or by calling the
    `delete_me_tokens` / `create_me_tokens` MCP tools.
+6. After install, your agent discovers four canned **Read · Eval · Triage · Loop**
+   workflows via the MCP `prompts/` capability: `arguslog_triage_loop`,
+   `arguslog_release_postmortem`, `arguslog_regression_check`,
+   `arguslog_investigate_issue`. Claude Code / Cursor / Continue surface them
+   automatically; the Connect → Workflows tab mirrors them as copy-paste for the
+   rest. All mutating tools sit behind an explicit user OK — no auto-apply.
 
 Self-hosting? Skip to [SELF_HOSTING.md](SELF_HOSTING.md).
 
