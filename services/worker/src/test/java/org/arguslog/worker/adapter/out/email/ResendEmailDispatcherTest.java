@@ -89,8 +89,32 @@ class ResendEmailDispatcherTest {
   }
 
   @Test
+  void postsResendPayloadForArrayOfRecipients() throws Exception {
+    wm.stubFor(
+        post(urlPathEqualTo(SEND_PATH))
+            .willReturn(aResponse().withStatus(200).withBody("{\"id\":\"e_x\"}")));
+
+    dispatcher.dispatch(
+        alert, emailDestination("{\"to\":[\"ops@example.com\",\"sre@example.com\"]}"));
+
+    var requests = wm.findAll(postRequestedFor(urlPathEqualTo(SEND_PATH)));
+    assertThat(requests).hasSize(1);
+    JsonNode toArr = mapper.readTree(requests.get(0).getBodyAsString()).path("to");
+    assertThat(toArr.isArray()).isTrue();
+    assertThat(toArr).hasSize(2);
+    assertThat(toArr.get(0).asText()).isEqualTo("ops@example.com");
+    assertThat(toArr.get(1).asText()).isEqualTo("sre@example.com");
+  }
+
+  @Test
   void missingToDropsTheMessage() {
     dispatcher.dispatch(alert, emailDestination("{}"));
+    wm.verify(0, postRequestedFor(urlPathEqualTo(SEND_PATH)));
+  }
+
+  @Test
+  void emptyArrayDropsTheMessage() {
+    dispatcher.dispatch(alert, emailDestination("{\"to\":[]}"));
     wm.verify(0, postRequestedFor(urlPathEqualTo(SEND_PATH)));
   }
 

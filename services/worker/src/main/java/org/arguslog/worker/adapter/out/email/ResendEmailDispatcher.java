@@ -3,12 +3,15 @@ package org.arguslog.worker.adapter.out.email;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import org.arguslog.worker.application.port.AlertDispatcher;
 import org.arguslog.worker.domain.Alert;
 import org.arguslog.worker.domain.AlertDestination;
@@ -20,8 +23,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * Sends alert emails via the Resend HTTP API (no SDK — keeps worker dep-free). Plain-text body to
- * stay well under spam-filter thresholds. Per-destination config is just {@code {to: "..."}};
- * {@code from} is global so a single Arguslog install can verify one sender domain.
+ * stay well under spam-filter thresholds. Per-destination config accepts {@code {to: "x@y"}} or
+ * {@code {to: ["a@y", "b@y"]}} (UI emits the array form, legacy single-string is kept for
+ * backward compat); {@code from} is global so a single Arguslog install can verify one sender
+ * domain.
  */
 @Component
 @EnableConfigurationProperties(EmailProperties.class)
@@ -58,8 +63,8 @@ public class ResendEmailDispatcher implements AlertDispatcher {
           alert.issueId());
       return;
     }
-    String to = readTo(destination);
-    if (to == null) {
+    List<String> recipients = readRecipients(destination);
+    if (recipients.isEmpty()) {
       log.warn(
           "destination {} ({}) missing 'to' in config; dropping alert",
           destination.id(),
@@ -71,7 +76,8 @@ public class ResendEmailDispatcher implements AlertDispatcher {
     try {
       ObjectNode payload = mapper.createObjectNode();
       payload.put("from", props.from());
-      payload.putArray("to").add(to);
+      ArrayNode toArr = payload.putArray("to");
+      for (String r : recipients) toArr.add(r);
       payload.put("subject", renderSubject(alert));
       payload.put("text", renderBody(alert));
       body = mapper.writeValueAsString(payload);
@@ -92,26 +98,36 @@ public class ResendEmailDispatcher implements AlertDispatcher {
       if (resp.statusCode() / 100 != 2) {
         log.warn(
             "resend send to {} failed: HTTP {} body={}",
-            to,
+            recipients,
             resp.statusCode(),
             truncate(resp.body()));
       }
     } catch (java.io.IOException | InterruptedException e) {
       if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-      log.warn("resend send to {} threw: {}", to, e.getMessage());
+      log.warn("resend send to {} threw: {}", recipients, e.getMessage());
     }
   }
 
-  private String readTo(AlertDestination destination) {
+  private List<String> readRecipients(AlertDestination destination) {
     try {
       JsonNode node = mapper.readTree(destination.configJson());
       JsonNode to = node.path("to");
-      if (to.isMissingNode() || to.isNull() || !to.isTextual()) return null;
-      String raw = to.asText().trim();
-      return raw.isEmpty() ? null : raw;
+      if (to.isMissingNode() || to.isNull()) return List.of();
+      List<String> out = new ArrayList<>();
+      if (to.isTextual()) {
+        String raw = to.asText().trim();
+        if (!raw.isEmpty()) out.add(raw);
+      } else if (to.isArray()) {
+        for (JsonNode el : to) {
+          if (!el.isTextual()) continue;
+          String raw = el.asText().trim();
+          if (!raw.isEmpty()) out.add(raw);
+        }
+      }
+      return out;
     } catch (JsonProcessingException e) {
       log.warn("destination {} config is not valid JSON: {}", destination.id(), e.getMessage());
-      return null;
+      return List.of();
     }
   }
 
