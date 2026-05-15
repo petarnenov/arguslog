@@ -65,7 +65,7 @@ class MemberServiceTest {
     when(users.createPlaceholder("new@example.com")).thenReturn(INVITEE);
     when(membershipWrites.addMember(ORG, INVITEE, "member")).thenReturn(true);
     when(memberships.listMembersOf(ORG))
-        .thenReturn(List.of(new Member(INVITEE, "new@example.com", null, "member", T)));
+        .thenReturn(List.of(new Member(INVITEE, "new@example.com", null, "member", T, true)));
 
     Member out = service.invite(ACTOR, ORG, "  new@example.com ", "MEMBER");
 
@@ -82,7 +82,7 @@ class MemberServiceTest {
     when(users.findIdByEmail("known@example.com")).thenReturn(Optional.of(INVITEE));
     when(membershipWrites.addMember(ORG, INVITEE, "admin")).thenReturn(true);
     when(memberships.listMembersOf(ORG))
-        .thenReturn(List.of(new Member(INVITEE, "known@example.com", "Bob", "admin", T)));
+        .thenReturn(List.of(new Member(INVITEE, "known@example.com", "Bob", "admin", T, false)));
 
     service.invite(ACTOR, ORG, "known@example.com", "admin");
 
@@ -139,7 +139,7 @@ class MemberServiceTest {
     when(memberships.userRoleInOrg(INVITEE, ORG)).thenReturn(Optional.of("member"));
     when(membershipWrites.updateRole(ORG, INVITEE, "owner")).thenReturn(true);
     when(memberships.listMembersOf(ORG))
-        .thenReturn(List.of(new Member(INVITEE, "x@y.com", null, "owner", T)));
+        .thenReturn(List.of(new Member(INVITEE, "x@y.com", null, "owner", T, true)));
 
     Member out = service.changeRole(ACTOR, ORG, INVITEE, "owner");
 
@@ -160,7 +160,7 @@ class MemberServiceTest {
     when(memberships.userRoleInOrg(ACTOR, ORG)).thenReturn(Optional.of("owner"));
     when(memberships.userRoleInOrg(INVITEE, ORG)).thenReturn(Optional.of("admin"));
     when(memberships.listMembersOf(ORG))
-        .thenReturn(List.of(new Member(INVITEE, "x@y.com", null, "admin", T)));
+        .thenReturn(List.of(new Member(INVITEE, "x@y.com", null, "admin", T, true)));
 
     service.changeRole(ACTOR, ORG, INVITEE, "admin");
 
@@ -184,7 +184,7 @@ class MemberServiceTest {
     // the last-owner guard. Sanity test.
     when(memberships.userRoleInOrg(ACTOR, ORG)).thenReturn(Optional.of("owner"));
     when(memberships.listMembersOf(ORG))
-        .thenReturn(List.of(new Member(ACTOR, "x@y.com", null, "owner", T)));
+        .thenReturn(List.of(new Member(ACTOR, "x@y.com", null, "owner", T, false)));
 
     service.changeRole(ACTOR, ORG, ACTOR, "owner");
 
@@ -198,7 +198,7 @@ class MemberServiceTest {
     when(memberships.countOwnersOf(ORG)).thenReturn(2);
     when(membershipWrites.updateRole(ORG, OTHER_OWNER, "member")).thenReturn(true);
     when(memberships.listMembersOf(ORG))
-        .thenReturn(List.of(new Member(OTHER_OWNER, "x@y.com", null, "member", T)));
+        .thenReturn(List.of(new Member(OTHER_OWNER, "x@y.com", null, "member", T, false)));
 
     service.changeRole(ACTOR, ORG, OTHER_OWNER, "member");
 
@@ -265,7 +265,7 @@ class MemberServiceTest {
 
   @Test
   void listDelegatesToRepo() {
-    List<Member> expected = List.of(new Member(ACTOR, "a@b.com", "A", "owner", T));
+    List<Member> expected = List.of(new Member(ACTOR, "a@b.com", "A", "owner", T, false));
     when(memberships.listMembersOf(ORG)).thenReturn(expected);
     assertThat(service.list(ORG)).isEqualTo(expected);
   }

@@ -498,6 +498,8 @@
     "colActions": "Actions",
     "youSuffix": "(you)",
     "noDisplayName": "(invitation pending)",
+    "pendingBadge": "Pending",
+    "pendingTooltip": "This invitee hasn't signed in yet. The row will update automatically on their first sign-in.",
     "removeAria": "Remove {{email}}",
     "removeTitle": "Remove {{email}}?",
     "removeBody": "They'll lose access to every project in this organization. PATs they own continue to work until revoked separately.",

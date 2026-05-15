@@ -34,7 +34,8 @@ class MemberControllerTest extends AbstractControllerTest {
                     "alice@example.com",
                     "Alice",
                     "owner",
-                    Instant.parse("2026-05-08T00:00:00Z"))));
+                    Instant.parse("2026-05-08T00:00:00Z"),
+                    false)));
 
     mvc.perform(get("/api/v1/orgs/1/members"))
         .andExpect(status().isOk())
@@ -43,7 +44,27 @@ class MemberControllerTest extends AbstractControllerTest {
         .andExpect(jsonPath("$[0].email").value("alice@example.com"))
         .andExpect(jsonPath("$[0].displayName").value("Alice"))
         .andExpect(jsonPath("$[0].role").value("owner"))
-        .andExpect(jsonPath("$[0].addedAt").value("2026-05-08T00:00:00Z"));
+        .andExpect(jsonPath("$[0].addedAt").value("2026-05-08T00:00:00Z"))
+        .andExpect(jsonPath("$[0].pending").value(false));
+  }
+
+  @Test
+  void listMarksUnseenUsersAsPending() throws Exception {
+    when(memberUseCase.list(1L))
+        .thenReturn(
+            List.of(
+                new Member(
+                    USER,
+                    "invited@example.com",
+                    null,
+                    "member",
+                    Instant.parse("2026-05-13T00:00:00Z"),
+                    true)));
+
+    mvc.perform(get("/api/v1/orgs/1/members"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].pending").value(true))
+        .andExpect(jsonPath("$[0].email").value("invited@example.com"));
   }
 
   @Test

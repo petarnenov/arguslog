@@ -8,6 +8,7 @@ export interface OrgMember {
   displayName: string | null;
   role: MemberRole;
   addedAt: string;
+  pending: boolean;
 }
 
 export function listOrgMembers(orgId: number): Promise<OrgMember[]> {

@@ -191,18 +191,36 @@ export function OrgSettingsPage() {
                 const isSelf = m.userId === currentUserId;
                 const canChangeRole = isOwner && !isSelf;
                 const canRemove = isOwner || isSelf;
+                // displayName goes null only for placeholder rows; fall back to the email's
+                // local-part so the row never reads as an opaque "(invitation pending)" label.
+                // The explicit Pending badge below carries that state — keeping the two signals
+                // separate means a freshly-signed-in invitee whose displayName backfilled from
+                // local-part already looks like a real member while the badge fades on next poll.
+                const displayName = m.displayName ?? m.email.split('@')[0];
                 return (
                   <Table.Tr key={m.userId}>
                     <Table.Td>
                       <Stack gap={0}>
-                        <Text size="sm" fw={500}>
-                          {m.displayName ?? t('members.noDisplayName')}
-                          {isSelf ? (
-                            <Text span c="dimmed">
-                              {' ' + t('members.youSuffix')}
-                            </Text>
+                        <Group gap="xs" wrap="nowrap">
+                          <Text size="sm" fw={500}>
+                            {displayName}
+                            {isSelf ? (
+                              <Text span c="dimmed">
+                                {' ' + t('members.youSuffix')}
+                              </Text>
+                            ) : null}
+                          </Text>
+                          {m.pending ? (
+                            <Badge
+                              color="yellow"
+                              variant="light"
+                              size="sm"
+                              title={t('members.pendingTooltip')}
+                            >
+                              {t('members.pendingBadge')}
+                            </Badge>
                           ) : null}
-                        </Text>
+                        </Group>
                         <Text size="xs" c="dimmed">
                           {m.email}
                         </Text>

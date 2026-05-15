@@ -66,6 +66,7 @@ describe('OrgSettingsPage', () => {
             displayName: 'Me',
             role: 'owner',
             addedAt: '2026-05-01T00:00:00Z',
+            pending: false,
           },
           {
             userId: OTHER_ID,
@@ -73,6 +74,7 @@ describe('OrgSettingsPage', () => {
             displayName: 'Other',
             role: 'member',
             addedAt: '2026-05-02T00:00:00Z',
+            pending: false,
           },
         ]);
       }
@@ -101,6 +103,7 @@ describe('OrgSettingsPage', () => {
             displayName: 'Me',
             role: 'member',
             addedAt: '2026-05-01T00:00:00Z',
+            pending: false,
           },
         ]);
       }
@@ -128,6 +131,7 @@ describe('OrgSettingsPage', () => {
             displayName: 'Me',
             role: 'owner',
             addedAt: '2026-05-01T00:00:00Z',
+            pending: false,
           },
         ]);
       }
@@ -163,6 +167,45 @@ describe('OrgSettingsPage', () => {
     });
   });
 
+  it('shows a Pending badge for invitees who have not signed in yet', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/members')) {
+        return jsonResponse([
+          {
+            userId: ME_ID,
+            email: 'me@example.com',
+            displayName: 'Me',
+            role: 'owner',
+            addedAt: '2026-05-01T00:00:00Z',
+            pending: false,
+          },
+          {
+            userId: OTHER_ID,
+            email: 'invitee@example.com',
+            displayName: null,
+            role: 'member',
+            addedAt: '2026-05-13T00:00:00Z',
+            pending: true,
+          },
+        ]);
+      }
+      return jsonResponse([]);
+    }) as typeof fetch;
+
+    renderAt();
+
+    await waitFor(() => expect(screen.getByTestId('members-table')).toBeInTheDocument());
+    // Pending row shows the email's local-part as the display name, never the legacy
+    // "(invitation pending)" string — the badge carries the status.
+    expect(screen.getByText('invitee')).toBeInTheDocument();
+    expect(screen.queryByText(/invitation pending/i)).not.toBeInTheDocument();
+    // Owner's own row is not pending → no badge for that row.
+    const badges = screen.getAllByText(/^Pending$/);
+    expect(badges).toHaveLength(1);
+  });
+
   it('rejects bad emails before posting', async () => {
     const calls: string[] = [];
     globalThis.fetch = vi.fn(async (input, init) => {
@@ -177,6 +220,7 @@ describe('OrgSettingsPage', () => {
             displayName: 'Me',
             role: 'owner',
             addedAt: '2026-05-01T00:00:00Z',
+            pending: false,
           },
         ]);
       }

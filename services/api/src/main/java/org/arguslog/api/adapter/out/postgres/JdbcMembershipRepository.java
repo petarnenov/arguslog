@@ -50,7 +50,12 @@ public class JdbcMembershipRepository implements MembershipRepository, Membershi
   public List<Member> listMembersOf(long orgId) {
     return jdbc.query(
         """
-        SELECT u.id AS user_id, u.email, u.display_name, m.role::text AS role, m.added_at
+        SELECT u.id AS user_id,
+               u.email,
+               u.display_name,
+               m.role::text AS role,
+               m.added_at,
+               (u.last_seen_at IS NULL) AS pending
           FROM org_members m
           JOIN users u ON u.id = m.user_id
          WHERE m.org_id = ?
@@ -62,7 +67,8 @@ public class JdbcMembershipRepository implements MembershipRepository, Membershi
                 rs.getString("email"),
                 rs.getString("display_name"),
                 rs.getString("role"),
-                rs.getTimestamp("added_at").toInstant()),
+                rs.getTimestamp("added_at").toInstant(),
+                rs.getBoolean("pending")),
         orgId);
   }
 
