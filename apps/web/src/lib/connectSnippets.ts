@@ -211,9 +211,13 @@ function agentRoleHeader(agent: AgentTarget): string {
   const target = AGENT_MCP_TARGETS[agent];
   return `# Integrate Arguslog (error tracking + MCP) into this project
 
-You are integrating **Arguslog** — open-source multi-tenant error tracking — into the user's project. Do all of the following in one pass, then report a summary of changed files and any manual steps the user still owes.
+You are integrating **Arguslog** — open-source multi-tenant error tracking — into the user's project. Do all of the following in one pass, then report a summary.
 
-**Target agent**: ${target.name}.`;
+**Target agent**: ${target.name}.
+
+**Environment notes**:
+- This workspace may or may not be a git repository. Do **not** assume \`git\` works; if \`.git/\` is missing, list edited files with plain \`ls\` / \`find\` instead of \`git status\`.
+- The DSN and PAT at the bottom of this document are real, freshly issued, and already inlined into every snippet. Do **not** ask the user to "replace placeholders" — there shouldn't be any. If you see a literal \`<GENERATE_DSN_FIRST>\` or \`<GENERATE_PAT_FIRST>\` string, stop and tell the user to revisit the Connect page so the dashboard can re-issue credentials.`;
 }
 
 function agentDetectionInstructions(): string {
@@ -378,17 +382,17 @@ Reload the VS Code window so Copilot Chat picks up the new server.
 function agentVerifyStep(): string {
   return `## Step 4 — verify
 
-1. Run the project's normal build/test command (\`npm run build\`, \`pnpm test\`, \`pytest -q\`, \`./gradlew build\` — pick what fits).
-2. Call the MCP server: invoke the \`list_projects\` Arguslog tool. A successful response means the PAT and MCP wiring work end-to-end.
-3. Trigger a synthetic error (throw + catch in JS, \`raise\` in Python) and confirm the event reaches the dashboard at https://app.arguslog.org.
+1. Run the project's normal build/test command (\`npm run build\`, \`pnpm test\`, \`pytest -q\`, \`./gradlew build\` — pick what fits, skip if no obvious command exists).
+2. Call the MCP server: invoke the \`list_projects\` Arguslog tool. A successful response means the PAT and MCP wiring work end-to-end. If MCP isn't available in this session yet, note that the user needs to reload their editor / agent for the new config to take effect — this is expected, not a failure.
+3. Trigger a synthetic error (throw + catch in JS, \`raise\` in Python) and confirm the event reaches the dashboard at https://app.arguslog.org. If you can't run the project from here, leave this as a quick verification step for the user.
 
 ## Step 5 — report
 
 Summarise:
 - Which SDK you installed and where you wired init().
 - Which MCP config file you touched.
-- Any TODOs the user still owes (e.g., setting env vars in CI).
-- Run \`git status\` and list the changed files so the user can review before committing.`;
+- Any genuine TODOs (e.g., environment variables that still need to be set in CI). Do **not** list "replace the PAT" or "replace the DSN" as a TODO — both are already inlined above.
+- List the files you changed. If \`.git/\` exists in the repo root, \`git status --short\` is the most concise way; otherwise just enumerate the paths you edited. Don't fail the report if \`git status\` errors — fall back to the plain file list.`;
 }
 
 function agentCredentialsBlock(dsn: string, pat: string): string {

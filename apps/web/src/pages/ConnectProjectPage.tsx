@@ -12,9 +12,16 @@ import {
   Text,
   Title,
 } from '@mantine/core';
-import { IconBolt, IconCheck, IconCopy, IconKey, IconPlugConnected } from '@tabler/icons-react';
+import {
+  IconBolt,
+  IconCheck,
+  IconCopy,
+  IconKey,
+  IconPlugConnected,
+  IconRefresh,
+} from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 
@@ -22,7 +29,7 @@ import { buildSyntheticEvent, parseDsn } from '@arguslog/sdk-react';
 
 import { ApiError } from '../api/client';
 import { createDsn, type Dsn, type DsnSummary } from '../api/keys';
-import { queryKeys, useDsns, useMyOrgs, useProjects } from '../api/queries';
+import { queryKeys, useDsns, useMyOrgs, useMyTokens, useProjects } from '../api/queries';
 import { createMyToken, type PersonalAccessToken } from '../api/tokens';
 import { env } from '../env';
 import { buildSnippets, type ConnectSnippet, type SnippetGroup } from '../lib/connectSnippets';
@@ -42,8 +49,14 @@ function reconstructDsn(dsnPublic: string, projectId: number, ingestBaseUrl: str
   return `arguslog://${dsnPublic}@${host}/api/${projectId}`;
 }
 
-/** Default PAT name + scopes preset for the wizard flow. */
-const PAT_DEFAULT_NAME = 'Connect wizard';
+/**
+ * PAT name prefix for tokens minted by the Connect wizard's auto-provision flow. The exact
+ * name is `Connect quickstart — <project name>` for the very first visit, and
+ * `Connect quickstart — <project name> — <YYYY-MM-DD>` for subsequent rotations. We match by
+ * prefix to detect "user already passed through Connect for this project at least once" so
+ * the auto-provision useEffect doesn't fire on every revisit.
+ */
+const PAT_QUICKSTART_PREFIX = 'Connect quickstart';
 const PAT_DEFAULT_SCOPES = [
   'orgs:read',
   'projects:read',
@@ -120,18 +133,74 @@ export function ConnectProjectPage() {
     },
   });
 
+  const tokensQuery = useMyTokens();
+
+  // Has THIS user passed through the Connect wizard at any point in the past? Plaintext is
+  // gone after page navigation, so on a return visit we can only see the name — not the
+  // token — and have to offer Rotate to refill the magic prompt.
+  const hasExistingQuickstartPat = useMemo(
+    () =>
+      (tokensQuery.data ?? []).some((t) => t.name.startsWith(PAT_QUICKSTART_PREFIX)),
+    [tokensQuery.data],
+  );
+
   const generatePatMutation = useMutation({
-    mutationFn: () =>
-      createMyToken({
-        name: `${PAT_DEFAULT_NAME} — ${project?.name ?? `project ${projectId}`}`,
-        scopes: [...PAT_DEFAULT_SCOPES],
-      }),
-    onSuccess: (pat) => {
+    mutationFn: (rotate: boolean = false) => {
+      const projectLabel = project?.name ?? `project ${projectId}`;
+      // First visit → `Connect quickstart — <project>`. Rotation → suffix with ISO date so
+      // existing tokens stay valid until the user revokes them from /me/tokens.
+      const name = rotate
+        ? `${PAT_QUICKSTART_PREFIX} — ${projectLabel} — ${new Date().toISOString().slice(0, 10)}`
+        : `${PAT_QUICKSTART_PREFIX} — ${projectLabel}`;
+      return createMyToken({ name, scopes: [...PAT_DEFAULT_SCOPES] });
+    },
+    onSuccess: async (pat) => {
       setPatError(null);
       setFreshPat(pat);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.myTokens() });
     },
     onError: (err) => setPatError(describeApiError(err)),
   });
+
+  // ─── Auto-provision: zero-step install on first visit ───────────────────────
+  // When the user lands on Connect for a brand-new project with no DSN and no prior
+  // quickstart PAT, mint both silently so the AI-agent prompt is already inlined with real
+  // secrets — no "Manual steps still owed" footnote from the agent. The ref guard makes this
+  // strictly one-shot per page mount so React StrictMode double-invocation can't fire the
+  // mutations twice.
+  const autoProvisionStartedRef = useRef(false);
+  useEffect(() => {
+    if (autoProvisionStartedRef.current) return;
+    if (!dsnsQuery.data || !tokensQuery.data) return;
+    if (orgsQuery.isLoading || projectsQuery.isLoading) return;
+    if (!org || !project) return;
+    const hasAnyDsn = dsnsQuery.data.some((d) => d.active);
+    // Auto-provision only when this looks like a true first visit: no active DSN AND no
+    // prior quickstart PAT. If either side exists, we leave the user in control (Rotate CTA
+    // covers them) so we never accumulate junk tokens unintentionally.
+    if (hasAnyDsn || hasExistingQuickstartPat) return;
+    autoProvisionStartedRef.current = true;
+    generateDsnMutation.mutate();
+    generatePatMutation.mutate(false);
+  }, [
+    dsnsQuery.data,
+    tokensQuery.data,
+    orgsQuery.isLoading,
+    projectsQuery.isLoading,
+    org,
+    project,
+    hasExistingQuickstartPat,
+    generateDsnMutation,
+    generatePatMutation,
+  ]);
+
+  const isAutoProvisioning =
+    autoProvisionStartedRef.current &&
+    (generateDsnMutation.isPending || generatePatMutation.isPending);
+
+  // Repeat visit: a quickstart PAT exists in the user's token list but plaintext is gone.
+  // Magic prompts will render `<GENERATE_PAT_FIRST>` until the user rotates.
+  const showRotateCta = hasExistingQuickstartPat && !freshPat;
 
   /**
    * Resolution order for the DSN string we paste into snippets:
@@ -312,7 +381,7 @@ export function ConnectProjectPage() {
               variant="light"
               color="violet"
               loading={generatePatMutation.isPending}
-              onClick={() => generatePatMutation.mutate()}
+              onClick={() => generatePatMutation.mutate(false)}
               data-testid="connect-pat-generate"
             >
               {t('connect.pat.generate')}
@@ -349,7 +418,38 @@ export function ConnectProjectPage() {
               <Text size="sm" c="dimmed">
                 {t('connect.snippets.agent.hint')}
               </Text>
-              {(!dsnString || !patString) && (
+              {isAutoProvisioning && (
+                <Group gap="xs" align="center">
+                  <Loader size="xs" />
+                  <Text size="sm" c="dimmed">
+                    {t('connect.snippets.agent.provisioning')}
+                  </Text>
+                </Group>
+              )}
+              {showRotateCta && (
+                <Alert
+                  color="blue"
+                  variant="light"
+                  title={t('connect.snippets.agent.rotateTitle')}
+                  data-testid="connect-rotate-cta"
+                >
+                  <Stack gap="xs">
+                    <Text size="sm">{t('connect.snippets.agent.rotateBody')}</Text>
+                    <Group gap="xs">
+                      <Button
+                        size="xs"
+                        leftSection={<IconRefresh size={14} />}
+                        loading={generatePatMutation.isPending}
+                        onClick={() => generatePatMutation.mutate(true)}
+                        data-testid="connect-rotate-pat"
+                      >
+                        {t('connect.snippets.agent.rotate')}
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Alert>
+              )}
+              {!isAutoProvisioning && !showRotateCta && (!dsnString || !patString) && (
                 <Alert color="yellow" variant="light">
                   {t('connect.snippets.agent.missingCredentials')}
                 </Alert>

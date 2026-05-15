@@ -186,7 +186,11 @@
       },
       "agent": {
         "hint": "Copy one prompt, paste into your coding agent. It detects the stack, installs the matching Arguslog SDK, wires init(), and registers the MCP server — single paste, ~3 seconds of user effort.",
-        "missingCredentials": "Generate a DSN and PAT above; both get inlined into the prompts so the agent can finish the integration in one pass."
+        "missingCredentials": "Generate a DSN and PAT above; both get inlined into the prompts so the agent can finish the integration in one pass.",
+        "provisioning": "Setting up your one-paste install — minting DSN and PAT…",
+        "rotateTitle": "Need a fresh prompt?",
+        "rotateBody": "You've been through Connect for this project before. Personal access tokens are shown in plaintext exactly once, so the prompts now carry a placeholder instead of a real PAT. Rotate to mint a new token and refill every snippet — the old one stays valid until you revoke it from Personal access tokens.",
+        "rotate": "Rotate PAT"
       }
     }
   },

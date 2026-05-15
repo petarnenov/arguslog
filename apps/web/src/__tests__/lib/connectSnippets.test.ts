@@ -135,6 +135,18 @@ describe('buildAgentPrompt', () => {
     }
   });
 
+  it('does not treat git status as a required step (workspace may not be a git repo)', () => {
+    const md = buildAgentPrompt(baseCtx, 'claude-code');
+    expect(md).toMatch(/may or may not be a git repository/i);
+    // The "report" step should not order the agent to run git status as if it were mandatory.
+    expect(md).not.toMatch(/Run `git status` and list/);
+  });
+
+  it('explicitly tells the agent not to list secret-replacement as a manual TODO', () => {
+    const md = buildAgentPrompt(baseCtx, 'cursor');
+    expect(md).toMatch(/Do \*\*not\*\* list "replace the PAT"/);
+  });
+
   it('points each agent at its canonical MCP config file', () => {
     expect(buildAgentPrompt(baseCtx, 'claude-code')).toContain('.mcp.json');
     expect(buildAgentPrompt(baseCtx, 'claude-code')).toContain('claude mcp add arguslog');
