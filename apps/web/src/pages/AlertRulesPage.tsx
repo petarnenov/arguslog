@@ -10,11 +10,12 @@ import {
   Modal,
   MultiSelect,
   NumberInput,
+  Select,
   Stack,
   Switch,
   Table,
+  TagsInput,
   Text,
-  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -25,7 +26,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 
-import { type AlertRule, createAlertRule, deleteAlertRule, updateAlertRule } from '../api/alerts';
+import {
+  type AlertLevel,
+  type AlertRule,
+  type AlertRuleConditions,
+  createAlertRule,
+  deleteAlertRule,
+  updateAlertRule,
+} from '../api/alerts';
 import { ApiError } from '../api/client';
 import {
   useAlertDestinations,
@@ -36,11 +44,18 @@ import {
 } from '../api/queries';
 import { useReportSoftError } from '../lib/reportSoftError';
 
-const DEFAULT_CONDITIONS = '{\n  "level": { "in": ["error", "fatal"] }\n}';
+const LEVELS: AlertLevel[] = ['fatal', 'error', 'warning', 'info', 'debug'];
+type WindowUnit = 'minutes' | 'hours' | 'days';
 
 interface DraftValues {
   name: string;
-  conditions: string;
+  levels: AlertLevel[];
+  windowValue: number | '';
+  windowUnit: WindowUnit;
+  windowAdvanced: string; // populated when an existing rule's duration doesn't fit value+unit
+  occurrenceThreshold: number | '';
+  tagKey: string;
+  tagValues: string[];
   destinationIds: string[];
   throttleSeconds: number;
   enabled: boolean;
@@ -48,28 +63,83 @@ interface DraftValues {
 
 const EMPTY_DRAFT: DraftValues = {
   name: '',
-  conditions: DEFAULT_CONDITIONS,
+  levels: ['error', 'fatal'],
+  windowValue: '',
+  windowUnit: 'minutes',
+  windowAdvanced: '',
+  occurrenceThreshold: '',
+  tagKey: '',
+  tagValues: [],
   destinationIds: [],
   throttleSeconds: 300,
   enabled: true,
 };
 
+const SIMPLE_DURATION = /^(?:PT(\d+)(M|H)|P(\d+)D)$/;
+
+function toIso(value: number, unit: WindowUnit): string {
+  switch (unit) {
+    case 'minutes':
+      return `PT${value}M`;
+    case 'hours':
+      return `PT${value}H`;
+    case 'days':
+      return `P${value}D`;
+  }
+}
+
+function parseIso(
+  iso: string | undefined,
+): { value: number; unit: WindowUnit } | { advanced: string } | null {
+  if (!iso) return null;
+  const m = iso.match(SIMPLE_DURATION);
+  if (!m) return { advanced: iso };
+  if (m[3]) return { value: Number(m[3]), unit: 'days' };
+  const value = Number(m[1]);
+  const unit: WindowUnit = m[2] === 'H' ? 'hours' : 'minutes';
+  return { value, unit };
+}
+
 function ruleToDraft(rule: AlertRule): DraftValues {
-  const ids = readDestinationIds(rule.actions);
+  const c = rule.conditions ?? {};
+  const parsed = parseIso(c.firstSeenWindow);
   return {
     name: rule.name,
-    conditions: JSON.stringify(rule.conditions ?? {}, null, 2),
-    destinationIds: ids.map(String),
+    levels: c.level?.in ?? [],
+    windowValue: parsed && 'value' in parsed ? parsed.value : '',
+    windowUnit: parsed && 'unit' in parsed ? parsed.unit : 'minutes',
+    windowAdvanced: parsed && 'advanced' in parsed ? parsed.advanced : '',
+    occurrenceThreshold: c.occurrenceThreshold ?? '',
+    tagKey: c.tag?.key ?? '',
+    tagValues: c.tag?.in ?? [],
+    destinationIds: (rule.actions?.destinationIds ?? []).map(String),
     throttleSeconds: rule.throttleSeconds,
     enabled: rule.enabled,
   };
 }
 
-function readDestinationIds(actions: unknown): number[] {
-  if (!actions || typeof actions !== 'object') return [];
-  const ids = (actions as { destinationIds?: unknown }).destinationIds;
-  if (!Array.isArray(ids)) return [];
-  return ids.filter((x): x is number => typeof x === 'number');
+function buildConditions(values: DraftValues): {
+  conditions: AlertRuleConditions;
+  error: string | null;
+} {
+  const conditions: AlertRuleConditions = {};
+  if (values.levels.length > 0) conditions.level = { in: values.levels };
+  if (values.windowAdvanced.trim()) {
+    conditions.firstSeenWindow = values.windowAdvanced.trim();
+  } else if (typeof values.windowValue === 'number' && values.windowValue > 0) {
+    conditions.firstSeenWindow = toIso(values.windowValue, values.windowUnit);
+  }
+  if (typeof values.occurrenceThreshold === 'number' && values.occurrenceThreshold >= 1) {
+    conditions.occurrenceThreshold = values.occurrenceThreshold;
+  }
+  const tagKey = values.tagKey.trim();
+  const tagValues = values.tagValues.map((v) => v.trim()).filter((v) => v.length > 0);
+  if (tagKey && tagValues.length > 0) {
+    conditions.tag = { key: tagKey, in: tagValues };
+  } else if (tagKey || tagValues.length > 0) {
+    return { conditions, error: 'Both Tag key and Tag values are required when filtering by tag.' };
+  }
+  return { conditions, error: null };
 }
 
 export function AlertRulesPage() {
@@ -105,18 +175,6 @@ export function AlertRulesPage() {
     initialValues: EMPTY_DRAFT,
     validate: {
       name: (v) => (v.trim().length < 1 ? t('alertRules.errorName') : null),
-      conditions: (v) => {
-        if (!v.trim()) return t('alertRules.errorConditionsRequired');
-        try {
-          const parsed = JSON.parse(v);
-          if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-            return t('alertRules.errorConditionsShape');
-          }
-          return null;
-        } catch {
-          return t('alertRules.errorConditionsJson');
-        }
-      },
       throttleSeconds: (v) => (v < 0 ? t('alertRules.errorThrottle') : null),
     },
   });
@@ -144,12 +202,12 @@ export function AlertRulesPage() {
   const saveMutation = useMutation({
     mutationFn: async (values: DraftValues) => {
       if (!Number.isFinite(projectId)) throw new Error('project id missing');
-      const conditions = JSON.parse(values.conditions) as unknown;
-      const actions = { destinationIds: values.destinationIds.map(Number) };
+      const built = buildConditions(values);
+      if (built.error) throw new Error(built.error);
       const body = {
         name: values.name,
-        conditions,
-        actions,
+        conditions: built.conditions,
+        actions: { destinationIds: values.destinationIds.map(Number) },
         throttleSeconds: values.throttleSeconds,
         enabled: values.enabled,
       };
@@ -247,7 +305,7 @@ export function AlertRulesPage() {
             </Table.Thead>
             <Table.Tbody>
               {rulesQuery.data?.map((rule) => {
-                const ids = readDestinationIds(rule.actions);
+                const ids = rule.actions?.destinationIds ?? [];
                 return (
                   <Table.Tr key={rule.id}>
                     <Table.Td>{rule.name}</Table.Td>
@@ -322,15 +380,82 @@ export function AlertRulesPage() {
               {...form.getInputProps('name')}
               disabled={saveMutation.isPending}
             />
-            <Textarea
-              label={t('alertRules.conditions')}
-              description={t('alertRules.conditionsHint')}
-              autosize
-              minRows={5}
-              styles={{ input: { fontFamily: 'monospace' } }}
-              {...form.getInputProps('conditions')}
+
+            <MultiSelect
+              label={t('alertRules.level')}
+              description={t('alertRules.levelHint')}
+              data={LEVELS.map((l) => ({ value: l, label: l }))}
+              value={form.values.levels}
+              onChange={(v) => form.setFieldValue('levels', v as AlertLevel[])}
+              disabled={saveMutation.isPending}
+              placeholder={t('alertRules.levelAny')}
+            />
+
+            {form.values.windowAdvanced ? (
+              <TextInput
+                label={t('alertRules.windowAdvanced')}
+                description={t('alertRules.windowAdvancedHint')}
+                {...form.getInputProps('windowAdvanced')}
+                disabled={saveMutation.isPending}
+                styles={{ input: { fontFamily: 'monospace' } }}
+              />
+            ) : (
+              <Group grow align="end">
+                <NumberInput
+                  label={t('alertRules.window')}
+                  description={t('alertRules.windowHint')}
+                  min={1}
+                  allowDecimal={false}
+                  placeholder={t('alertRules.windowAny')}
+                  {...form.getInputProps('windowValue')}
+                  disabled={saveMutation.isPending}
+                />
+                <Select
+                  label={t('alertRules.windowUnit')}
+                  data={[
+                    { value: 'minutes', label: t('alertRules.windowUnits.minutes') },
+                    { value: 'hours', label: t('alertRules.windowUnits.hours') },
+                    { value: 'days', label: t('alertRules.windowUnits.days') },
+                  ]}
+                  value={form.values.windowUnit}
+                  onChange={(v) =>
+                    form.setFieldValue('windowUnit', (v ?? 'minutes') as WindowUnit)
+                  }
+                  disabled={saveMutation.isPending}
+                  allowDeselect={false}
+                />
+              </Group>
+            )}
+
+            <NumberInput
+              label={t('alertRules.threshold')}
+              description={t('alertRules.thresholdHint')}
+              min={1}
+              allowDecimal={false}
+              placeholder="1"
+              {...form.getInputProps('occurrenceThreshold')}
               disabled={saveMutation.isPending}
             />
+
+            <Group grow align="start">
+              <TextInput
+                label={t('alertRules.tagKey')}
+                description={t('alertRules.tagKeyHint')}
+                placeholder="env"
+                {...form.getInputProps('tagKey')}
+                disabled={saveMutation.isPending}
+              />
+              <TagsInput
+                label={t('alertRules.tagValues')}
+                description={t('alertRules.tagValuesHint')}
+                placeholder={t('alertRules.tagValuesPlaceholder')}
+                value={form.values.tagValues}
+                onChange={(v) => form.setFieldValue('tagValues', v)}
+                splitChars={[',', ' ', ';']}
+                disabled={saveMutation.isPending || !form.values.tagKey.trim()}
+              />
+            </Group>
+
             <MultiSelect
               label={t('alertRules.destinations')}
               data={destinationOptions}

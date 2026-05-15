@@ -103,7 +103,7 @@ describe('AlertRulesPage', () => {
     await waitFor(() => expect(screen.getByText(/Add a destination first/i)).toBeInTheDocument());
   });
 
-  it('posts conditions JSON + destination ids on create', async () => {
+  it('builds typed conditions from the structured form on create', async () => {
     const calls: { url: string; init?: RequestInit }[] = [];
     globalThis.fetch = vi.fn(async (input, init) => {
       const url = typeof input === 'string' ? input : (input as Request).url;
@@ -120,7 +120,7 @@ describe('AlertRulesPage', () => {
             id: 99,
             projectId: 101,
             name: 'fatal-only',
-            conditions: { level: { in: ['fatal'] } },
+            conditions: {},
             actions: { destinationIds: [10] },
             throttleSeconds: 300,
             enabled: true,
@@ -138,8 +138,10 @@ describe('AlertRulesPage', () => {
     await user.click(await screen.findByRole('button', { name: /New rule/i }));
     const nameInput = await screen.findByLabelText(/^Name$/i);
     await user.type(nameInput, 'fatal-only');
-    // Mantine MultiSelect renders a hidden input + a visible label both bound to the same name —
-    // grab the underlying searchbox role to disambiguate.
+    // Window: 5 minutes
+    const windowInput = screen.getByRole('textbox', { name: /^Time window$/i });
+    await user.type(windowInput, '5');
+    // Destinations MultiSelect
     await user.click(screen.getByRole('textbox', { name: /^Destinations$/i }));
     await user.click(await screen.findByRole('option', { name: /ops-chat \(telegram\)/i }));
     await user.click(screen.getByRole('button', { name: /^Create$/i }));
@@ -149,10 +151,58 @@ describe('AlertRulesPage', () => {
       expect(post).toBeDefined();
       const body = JSON.parse(post!.init!.body as string) as Record<string, unknown>;
       expect(body.name).toBe('fatal-only');
+      const conditions = body.conditions as {
+        level?: { in: string[] };
+        firstSeenWindow?: string;
+      };
+      // Default level filter is preserved.
+      expect(conditions.level?.in).toEqual(['error', 'fatal']);
+      // value+unit -> ISO emission.
+      expect(conditions.firstSeenWindow).toBe('PT5M');
       expect((body.actions as { destinationIds: number[] }).destinationIds).toEqual([10]);
-      // default throttle
       expect(body.throttleSeconds).toBe(300);
       expect(body.enabled).toBe(true);
     });
+  });
+
+  it('pre-fills the structured form when editing a rule with PT5M window', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/projects')) return jsonResponse([PROJECT]);
+      if (url.endsWith('/alert-destinations')) return jsonResponse(DESTINATIONS);
+      if (url.endsWith('/alert-rules')) {
+        return jsonResponse([
+          {
+            id: 1,
+            projectId: 101,
+            name: 'fresh-errors',
+            conditions: {
+              level: { in: ['error'] },
+              firstSeenWindow: 'PT5M',
+              occurrenceThreshold: 3,
+            },
+            actions: { destinationIds: [10] },
+            throttleSeconds: 300,
+            enabled: true,
+            createdAt: '2026-05-01T00:00:00Z',
+          },
+        ]);
+      }
+      return jsonResponse([]);
+    }) as typeof fetch;
+
+    renderAt();
+    const user = userEvent.setup();
+
+    await waitFor(() => expect(screen.getByText('fresh-errors')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: /Edit fresh-errors/i }));
+
+    const windowInput = (await screen.findByRole('textbox', { name: /^Time window$/i })) as
+      HTMLInputElement;
+    expect(windowInput.value).toBe('5');
+    const thresholdInput = (await screen.findByRole('textbox', { name: /^Occurrence threshold$/i })) as
+      HTMLInputElement;
+    expect(thresholdInput.value).toBe('3');
   });
 });

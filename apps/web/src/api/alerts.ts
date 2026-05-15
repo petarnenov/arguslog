@@ -10,12 +10,26 @@ export interface AlertDestination {
   createdAt: string;
 }
 
+export type AlertLevel = 'fatal' | 'error' | 'warning' | 'info' | 'debug';
+
+/** Mirrors `AlertRuleConditions` on the api. All clauses optional; {} = "always match". */
+export interface AlertRuleConditions {
+  level?: { in: AlertLevel[] };
+  firstSeenWindow?: string; // ISO-8601 duration (e.g. PT5M, PT2H, P1D)
+  occurrenceThreshold?: number;
+  tag?: { key: string; in: string[] };
+}
+
+export interface AlertRuleActions {
+  destinationIds: number[];
+}
+
 export interface AlertRule {
   id: number;
   projectId: number;
   name: string;
-  conditions: unknown;
-  actions: unknown;
+  conditions: AlertRuleConditions;
+  actions: AlertRuleActions;
   throttleSeconds: number;
   enabled: boolean;
   createdAt: string;
@@ -60,8 +74,8 @@ export function listAlertRules(projectId: number): Promise<AlertRule[]> {
 
 export interface AlertRuleWriteBody {
   name: string;
-  conditions: unknown;
-  actions: unknown;
+  conditions: AlertRuleConditions;
+  actions: AlertRuleActions;
   throttleSeconds: number;
   enabled: boolean;
 }
