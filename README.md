@@ -20,6 +20,10 @@ tool-call away through [`@arguslog/mcp-server`](packages/mcp-server).
   Postgres+TimescaleDB, and exposes a React dashboard for triage.
 - Sends real-time alerts to Slack, Telegram, generic webhooks, or email via
   configurable rules with throttling.
+- Closes the triage loop in Slack — install the Arguslog Slack app and run
+  `/arguslog issues|issue <id>|resolve <id>|release <ver>|set-project <slug>`
+  from any channel; mutations broadcast in-channel so the team sees them
+  without a separate ping.
 - Resolves minified JS stack traces back to original source via uploaded
   source maps (CLI `argus releases upload-sourcemaps`).
 - Multi-tenant — orgs / projects / members / roles — so a single instance can

@@ -169,6 +169,7 @@ descriptions and example payloads in their tool docstring:
 | Issues      | list with filters, get, list events, change status                      |
 | Releases    | list, create, attach source-map artifacts, delete                       |
 | Alerts      | rules CRUD, destinations CRUD (Telegram / Slack / email / webhook)      |
+| Slack       | `list_slack_workspaces`, `revoke_slack_workspace`, `set_slack_default_project` — manage Slack-app installs against an org |
 | Billing     | plan catalog, usage snapshot, **user-level checkout / portal / crypto** |
 | Admin       | platform stats, user / org tables, **per-user + per-org bonus grants**  |
 | Me          | who am I + **billing state (plan, renew, bonus, grace)**, PATs          |

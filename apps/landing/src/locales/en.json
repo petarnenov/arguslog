@@ -38,6 +38,10 @@
         "title": "Multi-channel alerts",
         "body": "Telegram, Slack, email, and generic webhooks out of the box. Per-rule throttling and DSL-driven matching on level, tags, and first-seen windows."
       },
+      "slackInbound": {
+        "title": "Triage in Slack",
+        "body": "Install the Arguslog Slack app and run `/arguslog issues|issue <id>|resolve <id>|release <version>|set-project <slug>` from any channel. Mutations broadcast in-channel so the team sees who fixed what without a separate ping."
+      },
       "team": {
         "title": "Team workflows",
         "body": "Owner / admin / member roles, invite flows with email verification, scoped Personal Access Tokens for CI and scripts, full RFC 9457 problem responses."
@@ -70,6 +74,7 @@
       "Projects + DSN keys CRUD",
       "Organizations, members, invites",
       "Alert rules + Slack/Telegram/email/webhook destinations",
+      "Slack workspace management (install / revoke / set default project)",
       "Releases + source-map artifacts",
       "Admin panel — tier grants, audit log (allowlisted PATs only)"
     ],

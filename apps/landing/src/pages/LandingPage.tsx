@@ -21,6 +21,7 @@ import {
   IconAlertCircle,
   IconBolt,
   IconBrandGithub,
+  IconBrandSlack,
   IconCheck,
   IconCode,
   IconCoin,
@@ -156,6 +157,7 @@ const FEATURE_ICONS = {
   breadcrumbs: IconRoute,
   web3: IconCoin,
   alerts: IconAlertCircle,
+  slackInbound: IconBrandSlack,
   team: IconUsers,
 } as const;
 

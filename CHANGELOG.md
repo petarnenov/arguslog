@@ -1,5 +1,49 @@
 # Changelog
 
+## Unreleased
+
+### Added — Slack workspace integration (inbound)
+
+Closes the triage loop in chat. Until now Slack was a one-way alert destination
+(alert webhooks shipped in P3); now operators can act on issues without leaving
+the channel.
+
+- **Slash commands** (`/arguslog …`):
+  - `issues` — top 10 unresolved in the workspace's default project
+  - `issue <id>` — full detail card (level, occurrences, first/last seen)
+  - `resolve <id>` — mark resolved + broadcast in-channel for team visibility
+  - `release <version>` — issues first seen in this release (regression signal)
+  - `set-project <slug>` — switch the workspace's default project
+  - `help` — command card
+- **OAuth install flow** at `GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install`
+  redirects through Slack consent and back to a signed-state-protected
+  `GET /api/v1/slack/oauth/callback` which upserts the workspace install.
+- **Dashboard UI** at `/orgs/{orgSlug}/settings/integrations/slack` — list
+  installs, pick a default project, disconnect. Install token never leaves
+  the server (excluded from every response shape).
+- **MCP tools**: `list_slack_workspaces`, `revoke_slack_workspace`,
+  `set_slack_default_project` (curated) + auto-generated `slack_commands`,
+  `slack_install_install`, `slack_install_callback`, `integrations_slack` GET
+  + DELETE + PATCH. Ships in `@arguslog/mcp-server@2.2.0`.
+
+### Configuration
+
+`arguslog-api` needs these env vars for the install flow to work (otherwise
+the install endpoint fail-closes to 503; existing routes are unaffected):
+
+| Variable | Purpose |
+| --- | --- |
+| `SLACK_CLIENT_ID` | OAuth app client id (`slack.com/apps` → your app → Basic Information) |
+| `SLACK_CLIENT_SECRET` | OAuth app client secret (same page) |
+| `SLACK_SIGNING_SECRET` | HMAC key Slack uses on every slash-command POST (already required for P3 outbound) |
+| `SLACK_OAUTH_STATE_SECRET` | HMAC key for the install-flow state token. **MUST be distinct from `SLACK_SIGNING_SECRET`** — leaking one must not let an attacker forge the other |
+| `SLACK_OAUTH_REDIRECT_URI` | Public URL of the callback endpoint (must match a redirect URL registered in the Slack app config) |
+
+### Migrations
+
+- V36: `slack_workspaces` table with RLS — one row per Slack-team install,
+  install token AES-GCM encrypted via the existing `SecretCipher`.
+
 ## 2.0.0 — Open-source release
 
 The SaaS-only repository becomes a self-hostable OSS project. The hosted

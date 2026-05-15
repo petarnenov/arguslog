@@ -57,6 +57,10 @@ have a default that's only safe for local dev:
 | `ARGUSLOG_WEB_DOGFOOD_DSN`            | web        | Optional — DSN the dashboard's own errors get reported to. Runtime.                    |
 | `ARGUSLOG_WEB_RELEASE`                | web        | Optional release stamp shown in event payloads. Runtime.                               |
 | `VITE_*` (legacy)                     | web        | Build-time fallback, used when an image is baked with hardcoded URLs. The runtime path above supersedes these on every restart. |
+| `SLACK_SIGNING_SECRET`                | api        | HMAC key Slack signs every slash-command POST with. Empty → `/api/v1/slack/commands` rejects everything (fail-closed).             |
+| `SLACK_CLIENT_ID` / `SLACK_CLIENT_SECRET` | api    | OAuth app credentials (see "Slack workspace integration" below). Empty → install endpoint fail-closes to 503.                       |
+| `SLACK_OAUTH_STATE_SECRET`            | api        | HMAC key for the install-flow state token. **Must be distinct from `SLACK_SIGNING_SECRET`.** Generate with `openssl rand -hex 32`. |
+| `SLACK_OAUTH_REDIRECT_URI`            | api        | Public URL of the OAuth callback. Defaults to `http://localhost:8081/api/v1/slack/oauth/callback` for dev — set to your prod URL.   |
 
 Production deployments must override:
 
@@ -115,6 +119,35 @@ curl -X PUT $KEYCLOAK_ISSUER/admin/realms/arguslog \
 
 The SMTP settings live in the Keycloak DB, not the realm import file —
 once configured they survive future realm re-imports.
+
+## Slack workspace integration
+
+Inbound Slack — slash commands (`/arguslog …`) + a Connect-Slack button in
+the dashboard — is optional. Leave the env vars unset and the install endpoint
+fail-closes to 503 ("Slack OAuth is not configured"); the rest of the app is
+unaffected.
+
+To enable it:
+
+1. **Create a Slack app** at https://api.slack.com/apps → "From scratch" →
+   pick a workspace. Under **OAuth & Permissions**:
+   - Add bot scopes: `commands`, `chat:write`, `incoming-webhook`.
+   - Add a redirect URL matching `SLACK_OAUTH_REDIRECT_URI` (e.g.
+     `https://api.yourdomain.com/api/v1/slack/oauth/callback`).
+2. Under **Slash Commands**, add `/arguslog` pointing at
+   `https://api.yourdomain.com/api/v1/slack/commands`.
+3. Under **Basic Information** copy the **Signing Secret** → set as
+   `SLACK_SIGNING_SECRET` on `arguslog-api`.
+4. Under **OAuth & Permissions** copy the **Client ID** and **Client
+   Secret** → set as `SLACK_CLIENT_ID` and `SLACK_CLIENT_SECRET`.
+5. Generate a separate `SLACK_OAUTH_STATE_SECRET` (`openssl rand -hex 32`) —
+   never reuse the signing secret; leaking one must not let an attacker
+   forge the other.
+6. Restart `arguslog-api`.
+
+Users then go to **Dashboard → Settings → Integrations → Slack →
+Connect Slack** and pick a default project. Slash commands work the moment
+the OAuth flow completes.
 
 ## TLS / reverse proxy
 

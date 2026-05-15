@@ -42,6 +42,9 @@ Arguslog is an **open-source**, **multi-tenant** error-tracking platform — lik
 - Fingerprints events, groups them into issues, stores them in Postgres + TimescaleDB
 - Shows them in a React dashboard for triage
 - Sends real-time alerts to Slack, Telegram, webhooks, or email
+- **Triage from Slack** — `/arguslog issues|issue <id>|resolve <id>|release <ver>|
+  set-project <slug>` slash commands from any channel; resolutions broadcast
+  in-channel so the team sees them without a separate ping
 - Translates minified JS stack traces back through source maps
 - Multi-tenant: orgs / projects / members / roles
 
