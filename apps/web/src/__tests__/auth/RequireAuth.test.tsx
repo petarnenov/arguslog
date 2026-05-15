@@ -15,7 +15,14 @@ vi.mock('../../auth/userManager', () => ({
 }));
 
 function setStatus(status: ReturnType<typeof useAuthStore.getState>['status']) {
-  useAuthStore.setState({ status, user: null, accessToken: null, expiresAt: null, error: null });
+  useAuthStore.setState({
+    status,
+    user: null,
+    accessToken: null,
+    expiresAt: null,
+    error: null,
+    signingOut: false,
+  });
 }
 
 function renderAt(initialPath: string) {
@@ -74,5 +81,23 @@ describe('RequireAuth', () => {
     renderAt('/protected');
     await Promise.resolve();
     expect(signinRedirect).toHaveBeenCalled();
+  });
+
+  it('skips signinRedirect while a logout navigation is in flight', async () => {
+    // signOut() flips signingOut=true synchronously, then oidc-client-ts wipes localStorage
+    // and emits userUnloaded → status becomes 'unauthenticated'. RequireAuth must NOT compete
+    // with the in-flight top-level navigation to Keycloak's end-session endpoint.
+    useAuthStore.setState({
+      status: 'unauthenticated',
+      user: null,
+      accessToken: null,
+      expiresAt: null,
+      error: null,
+      signingOut: true,
+    });
+    renderAt('/protected');
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(signinRedirect).not.toHaveBeenCalled();
   });
 });

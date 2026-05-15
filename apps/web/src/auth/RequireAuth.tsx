@@ -16,11 +16,17 @@ import { useAuthStore } from './useAuthStore';
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const status = useAuthStore((s) => s.status);
+  const signingOut = useAuthStore((s) => s.signingOut);
   const location = useLocation();
   const redirectStartedRef = useRef(false);
   const [redirectError, setRedirectError] = useState<string | null>(null);
 
   useEffect(() => {
+    // signOut() sets signingOut=true synchronously before async-chaining into signoutRedirect.
+    // Skipping here means the logout's top-level navigation isn't cancelled by a competing
+    // signinRedirect when oidc-client-ts wipes localStorage mid-flight. The page is leaving
+    // anyway — KC will redirect us back to "/" once it clears its SSO cookie.
+    if (signingOut) return;
     if (status !== 'unauthenticated' && status !== 'error') return;
     if (redirectStartedRef.current) return;
     redirectStartedRef.current = true;
@@ -32,7 +38,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
         redirectStartedRef.current = false;
         setRedirectError(err instanceof Error ? err.message : 'sign-in failed');
       });
-  }, [status, location]);
+  }, [status, location, signingOut]);
 
   if (status === 'authenticated') {
     return <>{children}</>;

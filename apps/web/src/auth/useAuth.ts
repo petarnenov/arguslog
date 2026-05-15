@@ -19,6 +19,13 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
+    // SYNCHRONOUS first: claim the "navigating to Keycloak end-session" lane so RequireAuth
+    // doesn't race us. signoutRedirect() internally wipes localStorage and emits userUnloaded
+    // before the browser receives KC's response; without this flag, the resulting
+    // status='unauthenticated' makes RequireAuth fire a competing signinRedirect that cancels
+    // the in-flight logout request, leaving the KC SSO cookie alive.
+    useAuthStore.getState().setSigningOut(true);
+
     const um = getUserManager();
     const user = await um.getUser();
     const tokenLooksUsable =

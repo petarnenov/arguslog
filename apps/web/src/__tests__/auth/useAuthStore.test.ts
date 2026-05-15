@@ -24,6 +24,7 @@ describe('useAuthStore', () => {
       accessToken: null,
       expiresAt: null,
       error: null,
+      signingOut: false,
     });
   });
 
@@ -75,5 +76,14 @@ describe('useAuthStore', () => {
     const s = useAuthStore.getState();
     expect(s.status).toBe('error');
     expect(s.error).toBe('boom');
+  });
+
+  it('setSigningOut toggles the signingOut flag without touching other state', () => {
+    useAuthStore.getState().setSession(fakeOidcUser());
+    useAuthStore.getState().setSigningOut(true);
+    expect(useAuthStore.getState().signingOut).toBe(true);
+    expect(useAuthStore.getState().status).toBe('authenticated');
+    useAuthStore.getState().setSigningOut(false);
+    expect(useAuthStore.getState().signingOut).toBe(false);
   });
 });
