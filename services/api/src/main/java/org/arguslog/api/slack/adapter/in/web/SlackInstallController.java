@@ -124,7 +124,9 @@ public class SlackInstallController {
         success.botAccessToken(),
         ok.orgId(),
         null, // default project picked from the dashboard after install
-        ok.userId());
+        ok.userId(),
+        success.incomingWebhookUrl(),
+        success.incomingWebhookChannel());
     log.info(
         "slack workspace installed: team={} ({}), org={}, by user={}",
         success.teamName(),

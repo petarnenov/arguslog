@@ -50,7 +50,8 @@ public class JdbcSlackWorkspaceRepository
           jdbc.queryForObject(
               """
               SELECT id, slack_team_id, slack_team_name, install_token_encrypted, org_id,
-                     default_project_id, installed_by_user_id, installed_at, deactivated_at
+                     default_project_id, installed_by_user_id, installed_at, deactivated_at,
+                     webhook_url_encrypted, webhook_channel
                 FROM slack_workspaces
                WHERE slack_team_id = ?
                  AND deactivated_at IS NULL
@@ -69,7 +70,8 @@ public class JdbcSlackWorkspaceRepository
     return jdbc.query(
         """
         SELECT id, slack_team_id, slack_team_name, install_token_encrypted, org_id,
-               default_project_id, installed_by_user_id, installed_at, deactivated_at
+               default_project_id, installed_by_user_id, installed_at, deactivated_at,
+               webhook_url_encrypted, webhook_channel
           FROM slack_workspaces
          WHERE org_id = ?
          ORDER BY installed_at DESC, id DESC
@@ -85,24 +87,30 @@ public class JdbcSlackWorkspaceRepository
       String installToken,
       long orgId,
       Long defaultProjectId,
-      UUID installedByUserId) {
-    String encrypted =
-        Base64.getEncoder().encodeToString(cipher.encrypt(installToken.getBytes(StandardCharsets.UTF_8)));
+      UUID installedByUserId,
+      String webhookUrl,
+      String webhookChannel) {
+    String encrypted = encryptToBase64(installToken);
+    String webhookEncrypted = webhookUrl == null ? null : encryptToBase64(webhookUrl);
     return jdbc.queryForObject(
         """
         INSERT INTO slack_workspaces (slack_team_id, slack_team_name, install_token_encrypted,
-                                      org_id, default_project_id, installed_by_user_id)
-             VALUES (?, ?, ?, ?, ?, ?)
+                                      org_id, default_project_id, installed_by_user_id,
+                                      webhook_url_encrypted, webhook_channel)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT (slack_team_id)
             DO UPDATE SET slack_team_name         = EXCLUDED.slack_team_name,
                           install_token_encrypted = EXCLUDED.install_token_encrypted,
                           org_id                  = EXCLUDED.org_id,
                           default_project_id      = EXCLUDED.default_project_id,
                           installed_by_user_id    = EXCLUDED.installed_by_user_id,
+                          webhook_url_encrypted   = EXCLUDED.webhook_url_encrypted,
+                          webhook_channel         = EXCLUDED.webhook_channel,
                           installed_at            = NOW(),
                           deactivated_at          = NULL
           RETURNING id, slack_team_id, slack_team_name, install_token_encrypted, org_id,
-                    default_project_id, installed_by_user_id, installed_at, deactivated_at
+                    default_project_id, installed_by_user_id, installed_at, deactivated_at,
+                    webhook_url_encrypted, webhook_channel
         """,
         rowMapper,
         slackTeamId,
@@ -110,7 +118,13 @@ public class JdbcSlackWorkspaceRepository
         encrypted,
         orgId,
         defaultProjectId,
-        installedByUserId);
+        installedByUserId,
+        webhookEncrypted,
+        webhookChannel);
+  }
+
+  private String encryptToBase64(String plaintext) {
+    return Base64.getEncoder().encodeToString(cipher.encrypt(plaintext.getBytes(StandardCharsets.UTF_8)));
   }
 
   @Override
@@ -136,7 +150,8 @@ public class JdbcSlackWorkspaceRepository
            SET default_project_id = ?
          WHERE id = ?
         RETURNING id, slack_team_id, slack_team_name, install_token_encrypted, org_id,
-                  default_project_id, installed_by_user_id, installed_at, deactivated_at
+                  default_project_id, installed_by_user_id, installed_at, deactivated_at,
+                  webhook_url_encrypted, webhook_channel
         """,
         rowMapper,
         defaultProjectId,
@@ -157,6 +172,13 @@ public class JdbcSlackWorkspaceRepository
     long defaultProjectRaw = rs.getLong("default_project_id");
     Long defaultProject = rs.wasNull() ? null : defaultProjectRaw;
     java.sql.Timestamp deactivatedAt = rs.getTimestamp("deactivated_at");
+    String webhookEncrypted = rs.getString("webhook_url_encrypted");
+    String webhookUrl = null;
+    if (webhookEncrypted != null) {
+      webhookUrl =
+          new String(
+              cipher.decrypt(Base64.getDecoder().decode(webhookEncrypted)), StandardCharsets.UTF_8);
+    }
     return new SlackWorkspace(
         rs.getLong("id"),
         rs.getString("slack_team_id"),
@@ -166,6 +188,8 @@ public class JdbcSlackWorkspaceRepository
         defaultProject,
         installedByUuid,
         rs.getTimestamp("installed_at").toInstant(),
-        deactivatedAt == null ? null : deactivatedAt.toInstant());
+        deactivatedAt == null ? null : deactivatedAt.toInstant(),
+        webhookUrl,
+        rs.getString("webhook_channel"));
   }
 }

@@ -197,6 +197,90 @@ describe('SlackIntegrationsPage', () => {
     );
   });
 
+  it('creates an alert destination when the workspace has a captured webhook', async () => {
+    const calls: { url: string; init?: RequestInit }[] = [];
+    globalThis.fetch = vi.fn(async (input, init) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      calls.push({ url, init });
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (
+        url.endsWith('/api/v1/orgs/1/integrations/slack/workspaces') &&
+        (init?.method ?? 'GET') === 'GET'
+      ) {
+        return jsonResponse([
+          {
+            id: 7,
+            slackTeamId: 'T123',
+            slackTeamName: 'Acme',
+            orgId: 1,
+            defaultProjectId: null,
+            installedByUserId: null,
+            installedAt: '2026-05-15T10:00:00Z',
+            deactivatedAt: null,
+            active: true,
+            webhookChannel: '#alerts',
+            hasWebhook: true,
+          },
+        ]);
+      }
+      if (url.endsWith('/api/v1/orgs/1/projects')) return jsonResponse([]);
+      if (
+        url.endsWith('/api/v1/orgs/1/integrations/slack/workspaces/7/alert-destination') &&
+        init?.method === 'POST'
+      ) {
+        return jsonResponse({ id: 99, orgId: 1, kind: 'slack', name: 'Slack: Acme #alerts' });
+      }
+      return jsonResponse([]);
+    }) as typeof fetch;
+
+    renderAt();
+
+    const btn = await screen.findByTestId('slack-create-destination-7');
+    await userEvent.click(btn);
+
+    await waitFor(() => {
+      const post = calls.find(
+        (c) =>
+          c.url.endsWith('/api/v1/orgs/1/integrations/slack/workspaces/7/alert-destination') &&
+          c.init?.method === 'POST',
+      );
+      expect(post).toBeTruthy();
+    });
+    await waitFor(() =>
+      expect(screen.getByText(/Created alert destination/i)).toBeInTheDocument(),
+    );
+  });
+
+  it('hides the create-alert-destination button when the workspace has no webhook', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/integrations/slack/workspaces')) {
+        return jsonResponse([
+          {
+            id: 7,
+            slackTeamId: 'T123',
+            slackTeamName: 'Acme',
+            orgId: 1,
+            defaultProjectId: null,
+            installedByUserId: null,
+            installedAt: '2026-05-15T10:00:00Z',
+            deactivatedAt: null,
+            active: true,
+            webhookChannel: null,
+            hasWebhook: false,
+          },
+        ]);
+      }
+      return jsonResponse([]);
+    }) as typeof fetch;
+
+    renderAt();
+
+    await waitFor(() => expect(screen.getByTestId('slack-disconnect-7')).toBeInTheDocument());
+    expect(screen.queryByTestId('slack-create-destination-7')).not.toBeInTheDocument();
+  });
+
   it('surfaces ?error=<code> as an error banner', async () => {
     globalThis.fetch = vi.fn(async (input) => {
       const url = typeof input === 'string' ? input : (input as Request).url;

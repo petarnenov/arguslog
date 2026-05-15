@@ -147,7 +147,9 @@ class SlackInstallControllerTest {
         .thenReturn(SlackInstallStateCodec.Result.ok(42L, USER));
     when(slackOAuthService.exchangeCode(
             eq("the-code"), eq("http://localhost:8081/api/v1/slack/oauth/callback")))
-        .thenReturn(new SlackOAuthService.Result.Success("T123", "Acme", "xoxb-x", "U42"));
+        .thenReturn(
+            new SlackOAuthService.Result.Success(
+                "T123", "Acme", "xoxb-x", "U42", "https://hooks.slack.com/services/T/B/X", "#alerts"));
     when(orgWriteRepository.findById(42L))
         .thenReturn(Optional.of(new Org(42L, "acme", "Acme", "free", Instant.EPOCH)));
 
@@ -162,7 +164,15 @@ class SlackInstallControllerTest {
                 "http://localhost:5173/orgs/acme/integrations/slack?installed=Acme"));
 
     verify(slackWorkspaceWriteRepository)
-        .upsert(eq("T123"), eq("Acme"), eq("xoxb-x"), eq(42L), eq(null), eq(USER));
+        .upsert(
+            eq("T123"),
+            eq("Acme"),
+            eq("xoxb-x"),
+            eq(42L),
+            eq(null),
+            eq(USER),
+            eq("https://hooks.slack.com/services/T/B/X"),
+            eq("#alerts"));
   }
 
   @Test
@@ -170,7 +180,8 @@ class SlackInstallControllerTest {
     when(slackInstallStateCodec.decode("good-state"))
         .thenReturn(SlackInstallStateCodec.Result.ok(42L, USER));
     when(slackOAuthService.exchangeCode(any(), any()))
-        .thenReturn(new SlackOAuthService.Result.Success("T999", "", "xoxb-y", "U42"));
+        .thenReturn(
+            new SlackOAuthService.Result.Success("T999", "", "xoxb-y", "U42", null, null));
 
     mvc.perform(
             get("/api/v1/slack/oauth/callback")
@@ -179,7 +190,15 @@ class SlackInstallControllerTest {
         .andExpect(status().isFound());
 
     verify(slackWorkspaceWriteRepository)
-        .upsert(eq("T999"), eq("T999"), eq("xoxb-y"), eq(42L), eq(null), eq(USER));
+        .upsert(
+            eq("T999"),
+            eq("T999"),
+            eq("xoxb-y"),
+            eq(42L),
+            eq(null),
+            eq(USER),
+            eq(null),
+            eq(null));
   }
 
   @Test
@@ -193,7 +212,7 @@ class SlackInstallControllerTest {
 
     verify(slackOAuthService, never()).exchangeCode(any(), any());
     verify(slackWorkspaceWriteRepository, never())
-        .upsert(any(), any(), any(), anyLong(), any(), any());
+        .upsert(any(), any(), any(), anyLong(), any(), any(), any(), any());
   }
 
   @Test
@@ -234,6 +253,6 @@ class SlackInstallControllerTest {
                 "http://localhost:5173/orgs/acme/integrations/slack?error=token_exchange_invalid_code"));
 
     verify(slackWorkspaceWriteRepository, never())
-        .upsert(any(), any(), any(), anyLong(), any(), any());
+        .upsert(any(), any(), any(), anyLong(), any(), any(), any(), any());
   }
 }

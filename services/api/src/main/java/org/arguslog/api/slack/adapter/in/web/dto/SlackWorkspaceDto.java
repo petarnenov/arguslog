@@ -6,8 +6,11 @@ import java.util.UUID;
 import org.arguslog.api.slack.domain.SlackWorkspace;
 
 /**
- * Dashboard-facing view of one Slack workspace install. Excludes {@code installToken} on
- * purpose — the bot token is never leaked through any HTTP response.
+ * Dashboard-facing view of one Slack workspace install. Excludes {@code installToken} and
+ * {@code webhookUrl} on purpose — bot token + webhook URL are both bearer-style secrets that
+ * never leave the api process. The dashboard only needs to know <em>that</em> a webhook is
+ * available (so the "Create alert destination" button can render) and which channel it lands
+ * in (so the user knows where alerts will appear).
  */
 public record SlackWorkspaceDto(
     @JsonProperty("id") long id,
@@ -18,7 +21,9 @@ public record SlackWorkspaceDto(
     @JsonProperty("installedByUserId") UUID installedByUserId,
     @JsonProperty("installedAt") Instant installedAt,
     @JsonProperty("deactivatedAt") Instant deactivatedAt,
-    @JsonProperty("active") boolean active) {
+    @JsonProperty("active") boolean active,
+    @JsonProperty("webhookChannel") String webhookChannel,
+    @JsonProperty("hasWebhook") boolean hasWebhook) {
 
   public static SlackWorkspaceDto from(SlackWorkspace w) {
     return new SlackWorkspaceDto(
@@ -30,6 +35,8 @@ public record SlackWorkspaceDto(
         w.installedByUserId(),
         w.installedAt(),
         w.deactivatedAt(),
-        w.isActive());
+        w.isActive(),
+        w.webhookChannel(),
+        w.hasWebhook());
   }
 }

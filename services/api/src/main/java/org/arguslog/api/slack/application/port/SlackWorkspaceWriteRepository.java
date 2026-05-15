@@ -21,7 +21,9 @@ public interface SlackWorkspaceWriteRepository {
       String installToken,
       long orgId,
       Long defaultProjectId,
-      UUID installedByUserId);
+      UUID installedByUserId,
+      String webhookUrl,
+      String webhookChannel);
 
   /**
    * Marks the workspace as uninstalled. The row stays for audit; future slash-command lookups

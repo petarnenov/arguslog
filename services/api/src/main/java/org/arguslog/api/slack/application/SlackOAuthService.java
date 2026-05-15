@@ -114,7 +114,18 @@ public class SlackOAuthService {
       log.warn("slack oauth.v2.access missing team.id or access_token; body={}", resp.body());
       return Result.failure("incomplete_response");
     }
-    return new Result.Success(teamId, teamName, accessToken, authedUserId);
+    // incoming-webhook scope is in our manifest, but Slack only includes the block when the
+    // installer ticked through the channel selector. Treat missing/blank as "user declined the
+    // channel step" and store nulls — slash commands still work, the dashboard just hides the
+    // one-click alert destination button.
+    JsonNode hook = node.path("incoming_webhook");
+    String hookUrl = blankToNull(hook.path("url").asText(""));
+    String hookChannel = blankToNull(hook.path("channel").asText(""));
+    return new Result.Success(teamId, teamName, accessToken, authedUserId, hookUrl, hookChannel);
+  }
+
+  private static String blankToNull(String s) {
+    return s == null || s.isBlank() ? null : s;
   }
 
   private static String urlEncode(String s) {
@@ -126,7 +137,13 @@ public class SlackOAuthService {
       return new Failure(error);
     }
 
-    record Success(String teamId, String teamName, String botAccessToken, String authedUserId)
+    record Success(
+        String teamId,
+        String teamName,
+        String botAccessToken,
+        String authedUserId,
+        String incomingWebhookUrl,
+        String incomingWebhookChannel)
         implements Result {}
 
     record Failure(String error) implements Result {}

@@ -1,7 +1,12 @@
 package org.arguslog.api.slack.adapter.in.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Optional;
+import org.arguslog.api.alerts.application.AlertDestinationUseCase;
+import org.arguslog.api.alerts.domain.AlertDestination;
+import org.arguslog.api.alerts.domain.DestinationKind;
 import org.arguslog.api.application.port.ProjectRepository;
 import org.arguslog.api.security.AccessException;
 import org.arguslog.api.slack.adapter.in.web.dto.SlackWorkspaceDto;
@@ -18,6 +23,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,14 +51,20 @@ public class IntegrationsSlackController {
   private final SlackWorkspaceRepository reads;
   private final SlackWorkspaceWriteRepository writes;
   private final ProjectRepository projects;
+  private final AlertDestinationUseCase alertDestinations;
+  private final ObjectMapper mapper;
 
   public IntegrationsSlackController(
       SlackWorkspaceRepository reads,
       SlackWorkspaceWriteRepository writes,
-      ProjectRepository projects) {
+      ProjectRepository projects,
+      AlertDestinationUseCase alertDestinations,
+      ObjectMapper mapper) {
     this.reads = reads;
     this.writes = writes;
     this.projects = projects;
+    this.alertDestinations = alertDestinations;
+    this.mapper = mapper;
   }
 
   @GetMapping
@@ -86,6 +98,66 @@ public class IntegrationsSlackController {
     }
     SlackWorkspace updated = writes.setDefaultProject(id, body.defaultProjectId());
     return SlackWorkspaceDto.from(updated);
+  }
+
+  /**
+   * Creates an Alert Destination of kind SLACK using the workspace's stored incoming-webhook
+   * URL. One-click setup: user installs the Slack app → comes back to this page → clicks
+   * "Create alert destination" → no copy-paste of the webhook URL required.
+   *
+   * <p>Returns 422 if the workspace has no captured webhook (legacy row, or installer skipped
+   * the channel selector during OAuth). Caller's expected to surface the right UI hint.
+   */
+  @PostMapping(value = "/{id}/alert-destination", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<AlertDestinationDto> createAlertDestination(
+      @PathVariable long orgId,
+      @PathVariable long id,
+      @RequestBody(required = false) CreateDestinationBody body) {
+    SlackWorkspace workspace = findOwnedOrThrow(orgId, id);
+    if (!workspace.hasWebhook()) {
+      throw new MissingWebhookException(
+          "workspace " + id + " has no captured incoming-webhook; reinstall the Slack app");
+    }
+    String name = body != null && body.name() != null && !body.name().isBlank()
+        ? body.name().trim()
+        : defaultDestinationName(workspace);
+    ObjectNode config = mapper.createObjectNode();
+    config.put("webhookUrl", workspace.webhookUrl());
+    AlertDestination created = alertDestinations.create(orgId, DestinationKind.SLACK, name, config);
+    return ResponseEntity.status(HttpStatus.CREATED).body(AlertDestinationDto.from(created));
+  }
+
+  private static String defaultDestinationName(SlackWorkspace w) {
+    String channel = w.webhookChannel();
+    String suffix = channel == null || channel.isBlank() ? "" : " " + channel;
+    return "Slack: " + w.slackTeamName() + suffix;
+  }
+
+  public record CreateDestinationBody(String name) {}
+
+  /** Response body for the create-alert-destination endpoint — config is stripped. */
+  public record AlertDestinationDto(long id, long orgId, String kind, String name) {
+    static AlertDestinationDto from(AlertDestination d) {
+      return new AlertDestinationDto(d.id(), d.orgId(), d.kind().dbValue(), d.name());
+    }
+  }
+
+  static class MissingWebhookException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    MissingWebhookException(String message) {
+      super(message);
+    }
+  }
+
+  @ExceptionHandler(MissingWebhookException.class)
+  ResponseEntity<ProblemDetail> handleMissingWebhook(MissingWebhookException e) {
+    ProblemDetail body =
+        ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+    body.setTitle("Slack workspace has no incoming webhook");
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
   }
 
   private SlackWorkspace findOwnedOrThrow(long orgId, long workspaceId) {

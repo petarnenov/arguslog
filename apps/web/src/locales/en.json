@@ -358,7 +358,11 @@
     "revoked": "Revoked",
     "disconnect": "Disconnect",
     "disconnectTitle": "Disconnect Slack workspace?",
-    "disconnectBody": "{{team}} will stop responding to /arguslog commands. You can reinstall any time."
+    "disconnectBody": "{{team}} will stop responding to /arguslog commands. You can reinstall any time.",
+    "createAlertDestination": "Create alert destination",
+    "createAlertDestinationTip": "One-click: route Arguslog alert rules to {{channel}} in this workspace.",
+    "alertDestinationCreated": "Created alert destination \"{{name}}\". Wire it to an alert rule from the Alerts page.",
+    "noWebhookHint": "This workspace was installed without the incoming-webhook scope. Reinstall to enable one-click alerts."
   },
   "alertDestinations": {
     "title": "Alert destinations",

@@ -10,6 +10,11 @@ import java.util.UUID;
  * {@code xoxb-…} bot token in plaintext at this layer — the JDBC adapter handles the cipher
  * round-trip so domain code never sees the encrypted blob.
  *
+ * <p>{@code webhookUrl} / {@code webhookChannel} are the install's incoming-webhook (the
+ * post-here-to-deliver URL Slack hands back with the {@code incoming-webhook} scope). Both
+ * are nullable for rows installed before V37 and for reinstalls under a scope set that drops
+ * incoming-webhook.
+ *
  * <p>{@code deactivatedAt} is the tombstone marker for an uninstall — the row stays so we can
  * surface the install history in the audit log, but slash commands check for null on this
  * field before doing anything.
@@ -23,9 +28,15 @@ public record SlackWorkspace(
     Long defaultProjectId,
     UUID installedByUserId,
     Instant installedAt,
-    Instant deactivatedAt) {
+    Instant deactivatedAt,
+    String webhookUrl,
+    String webhookChannel) {
 
   public boolean isActive() {
     return deactivatedAt == null;
+  }
+
+  public boolean hasWebhook() {
+    return webhookUrl != null && !webhookUrl.isBlank();
   }
 }

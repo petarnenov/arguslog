@@ -65,6 +65,8 @@ class SlackCommandDispatcherTest {
           101L,
           null,
           Instant.parse("2026-05-01T00:00:00Z"),
+          null,
+          null,
           null);
   private static final Org ORG =
       new Org(1L, "acme", "Acme", "regular", Instant.parse("2026-05-01T00:00:00Z"));
@@ -315,7 +317,7 @@ class SlackCommandDispatcherTest {
         .thenReturn(
             Optional.of(
                 new SlackWorkspace(
-                    7L, "T123", "Acme", "xoxb", 1L, null, null, Instant.now(), null)));
+                    7L, "T123", "Acme", "xoxb", 1L, null, null, Instant.now(), null, null, null)));
     when(orgs.findById(1L)).thenReturn(Optional.of(ORG));
 
     SlackCommandResponse r = dispatcher.dispatch(payload("T123", "issues"));

@@ -95,7 +95,9 @@ class JdbcSlackWorkspaceRepositoryTest {
               String installToken,
               long orgId,
               Long defaultProjectId,
-              UUID installedByUserId) {
+              UUID installedByUserId,
+              String webhookUrl,
+              String webhookChannel) {
             return tx.execute(
                 s ->
                     raw.upsert(
@@ -104,7 +106,9 @@ class JdbcSlackWorkspaceRepositoryTest {
                         installToken,
                         orgId,
                         defaultProjectId,
-                        installedByUserId));
+                        installedByUserId,
+                        webhookUrl,
+                        webhookChannel));
           }
 
           @Override
@@ -144,7 +148,15 @@ class JdbcSlackWorkspaceRepositoryTest {
   @Test
   void upsertInsertsThenRoundTripsTheToken() {
     SlackWorkspace row =
-        writes.upsert("T123", "Acme Workspace", "xoxb-fake-token", 1L, 101L, null);
+        writes.upsert(
+            "T123",
+            "Acme Workspace",
+            "xoxb-fake-token",
+            1L,
+            101L,
+            null,
+            "https://hooks.slack.com/services/T/B/secret",
+            "#alerts");
 
     assertThat(row.id()).isPositive();
     assertThat(row.slackTeamId()).isEqualTo("T123");
@@ -152,16 +164,20 @@ class JdbcSlackWorkspaceRepositoryTest {
     assertThat(row.orgId()).isEqualTo(1L);
     assertThat(row.defaultProjectId()).isEqualTo(101L);
     assertThat(row.deactivatedAt()).isNull();
+    // Webhook URL cipher round-trips end-to-end, channel passes through plain.
+    assertThat(row.webhookUrl()).isEqualTo("https://hooks.slack.com/services/T/B/secret");
+    assertThat(row.webhookChannel()).isEqualTo("#alerts");
+    assertThat(row.hasWebhook()).isTrue();
   }
 
   @Test
   void upsertOnConflictRotatesTheTokenAndReactivates() {
     SlackWorkspace first =
-        writes.upsert("T123", "Acme", "xoxb-old", 1L, null, null);
+        writes.upsert("T123", "Acme", "xoxb-old", 1L, null, null, null, null);
     writes.deactivate(first.id());
 
     SlackWorkspace reinstall =
-        writes.upsert("T123", "Acme Renamed", "xoxb-new", 1L, 101L, null);
+        writes.upsert("T123", "Acme Renamed", "xoxb-new", 1L, 101L, null, null, null);
 
     assertThat(reinstall.id()).isEqualTo(first.id());
     assertThat(reinstall.slackTeamName()).isEqualTo("Acme Renamed");
@@ -172,7 +188,7 @@ class JdbcSlackWorkspaceRepositoryTest {
 
   @Test
   void findActiveByTeamIdMissesDeactivatedRows() {
-    SlackWorkspace row = writes.upsert("T123", "Acme", "tok", 1L, null, null);
+    SlackWorkspace row = writes.upsert("T123", "Acme", "tok", 1L, null, null, null, null);
     assertThat(reads.findActiveByTeamId("T123")).isPresent();
 
     writes.deactivate(row.id());
@@ -182,7 +198,7 @@ class JdbcSlackWorkspaceRepositoryTest {
 
   @Test
   void setDefaultProjectUpdatesTheRow() {
-    SlackWorkspace row = writes.upsert("T123", "Acme", "tok", 1L, null, null);
+    SlackWorkspace row = writes.upsert("T123", "Acme", "tok", 1L, null, null, null, null);
     assertThat(row.defaultProjectId()).isNull();
 
     SlackWorkspace updated = writes.setDefaultProject(row.id(), 102L);
@@ -195,8 +211,8 @@ class JdbcSlackWorkspaceRepositoryTest {
 
   @Test
   void listForOrgRespectsRlsAndIncludesDeactivatedRows() {
-    SlackWorkspace alive = writes.upsert("T1", "Alive", "tok1", 1L, null, null);
-    SlackWorkspace dead = writes.upsert("T2", "Dead", "tok2", 1L, null, null);
+    SlackWorkspace alive = writes.upsert("T1", "Alive", "tok1", 1L, null, null, null, null);
+    SlackWorkspace dead = writes.upsert("T2", "Dead", "tok2", 1L, null, null, null, null);
     writes.deactivate(dead.id());
 
     List<SlackWorkspace> rows = reads.listForOrg(1L);

@@ -134,6 +134,8 @@ class IntegrationsSlackControllerTest {
                     101L,
                     USER,
                     INSTALLED_AT,
+                    null,
+                    null,
                     null)));
 
     mvc.perform(get("/api/v1/orgs/1/integrations/slack/workspaces"))
@@ -193,7 +195,7 @@ class IntegrationsSlackControllerTest {
     when(projectRepository.findOrgIdForProject(202L)).thenReturn(OptionalLong.of(1L));
     when(slackWorkspaceWriteRepository.setDefaultProject(7L, 202L))
         .thenReturn(
-            new SlackWorkspace(7L, "T123", "Acme", "tok", 1L, 202L, USER, INSTALLED_AT, null));
+            new SlackWorkspace(7L, "T123", "Acme", "tok", 1L, 202L, USER, INSTALLED_AT, null, null, null));
 
     mvc.perform(
             patch("/api/v1/orgs/1/integrations/slack/workspaces/7")
@@ -211,7 +213,7 @@ class IntegrationsSlackControllerTest {
     when(slackWorkspaceRepository.listForOrg(1L)).thenReturn(List.of(workspace(7L, false)));
     when(slackWorkspaceWriteRepository.setDefaultProject(7L, null))
         .thenReturn(
-            new SlackWorkspace(7L, "T123", "Acme", "tok", 1L, null, USER, INSTALLED_AT, null));
+            new SlackWorkspace(7L, "T123", "Acme", "tok", 1L, null, USER, INSTALLED_AT, null, null, null));
 
     mvc.perform(
             patch("/api/v1/orgs/1/integrations/slack/workspaces/7")
@@ -264,6 +266,11 @@ class IntegrationsSlackControllerTest {
   }
 
   private static SlackWorkspace workspace(long id, boolean deactivated) {
+    return workspace(id, deactivated, null, null);
+  }
+
+  private static SlackWorkspace workspace(
+      long id, boolean deactivated, String webhookUrl, String webhookChannel) {
     return new SlackWorkspace(
         id,
         "T" + id,
@@ -273,6 +280,8 @@ class IntegrationsSlackControllerTest {
         101L,
         USER,
         INSTALLED_AT,
-        deactivated ? INSTALLED_AT.plusSeconds(60) : null);
+        deactivated ? INSTALLED_AT.plusSeconds(60) : null,
+        webhookUrl,
+        webhookChannel);
   }
 }

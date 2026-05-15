@@ -14,7 +14,7 @@ import {
   Text,
   Title,
 } from '@mantine/core';
-import { IconBrandSlack, IconCheck, IconTrash } from '@tabler/icons-react';
+import { IconBellPlus, IconBrandSlack, IconCheck, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +28,7 @@ import {
   useSlackWorkspaces,
 } from '../api/queries';
 import {
+  createSlackAlertDestination,
   deleteSlackWorkspace,
   setSlackDefaultProject,
   startSlackInstall,
@@ -101,6 +102,28 @@ export function SlackIntegrationsPage() {
       if (org) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.slackWorkspaces(org.id) });
       }
+    },
+    onError: (err: unknown) => {
+      setBanner({
+        kind: 'error',
+        message:
+          err instanceof ApiError
+            ? (err.problem.detail ?? err.problem.title ?? String(err))
+            : String(err),
+      });
+    },
+  });
+
+  const createDestinationMutation = useMutation({
+    mutationFn: async (workspaceId: number) => {
+      if (!org) throw new Error('org missing');
+      return createSlackAlertDestination(org.id, workspaceId);
+    },
+    onSuccess: (dest) => {
+      setBanner({
+        kind: 'success',
+        message: t('slackIntegrations.alertDestinationCreated', { name: dest.name }),
+      });
     },
     onError: (err: unknown) => {
       setBanner({
@@ -245,15 +268,35 @@ export function SlackIntegrationsPage() {
                   </Table.Td>
                   <Table.Td style={{ textAlign: 'right' }}>
                     {w.active && (
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        aria-label={t('slackIntegrations.disconnect')}
-                        data-testid={`slack-disconnect-${w.id}`}
-                        onClick={() => setPendingDelete(w)}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
+                      <Group gap="xs" justify="flex-end" wrap="nowrap">
+                        {w.hasWebhook && (
+                          <ActionIcon
+                            variant="subtle"
+                            color="blue"
+                            aria-label={t('slackIntegrations.createAlertDestination')}
+                            title={t('slackIntegrations.createAlertDestinationTip', {
+                              channel: w.webhookChannel ?? 'Slack',
+                            })}
+                            data-testid={`slack-create-destination-${w.id}`}
+                            loading={
+                              createDestinationMutation.isPending &&
+                              createDestinationMutation.variables === w.id
+                            }
+                            onClick={() => createDestinationMutation.mutate(w.id)}
+                          >
+                            <IconBellPlus size={16} />
+                          </ActionIcon>
+                        )}
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          aria-label={t('slackIntegrations.disconnect')}
+                          data-testid={`slack-disconnect-${w.id}`}
+                          onClick={() => setPendingDelete(w)}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
                     )}
                   </Table.Td>
                 </Table.Tr>

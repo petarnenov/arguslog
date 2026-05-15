@@ -15,6 +15,15 @@ export interface SlackWorkspace {
   installedAt: string;
   deactivatedAt: string | null;
   active: boolean;
+  webhookChannel: string | null;
+  hasWebhook: boolean;
+}
+
+export interface SlackAlertDestination {
+  id: number;
+  orgId: number;
+  kind: string;
+  name: string;
 }
 
 export function listSlackWorkspaces(orgId: number): Promise<SlackWorkspace[]> {
@@ -52,5 +61,24 @@ export interface SlackInstallStart {
 export function startSlackInstall(orgId: number): Promise<SlackInstallStart> {
   return apiFetch<SlackInstallStart>(
     `/api/v1/orgs/${orgId}/integrations/slack/oauth/install`,
+  );
+}
+
+/**
+ * Creates an Alert Destination of kind SLACK pre-filled with the workspace's captured
+ * incoming-webhook URL. Returns 422 if the workspace has no webhook (legacy row or installer
+ * skipped the channel selector); caller should hide the button via {@code hasWebhook}.
+ */
+export function createSlackAlertDestination(
+  orgId: number,
+  workspaceId: number,
+  name?: string,
+): Promise<SlackAlertDestination> {
+  return apiFetch<SlackAlertDestination>(
+    `/api/v1/orgs/${orgId}/integrations/slack/workspaces/${workspaceId}/alert-destination`,
+    {
+      method: 'POST',
+      body: JSON.stringify(name ? { name } : {}),
+    },
   );
 }
