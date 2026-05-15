@@ -572,12 +572,12 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
                 h={90}
                 data={stats.eventsByDay}
                 dataKey="day"
-                series={[{ name: 'count', color: 'teal.5', label: t('projects.events') }]}
-                curveType="monotone"
-                withDots={false}
+                series={[{ name: 'count', color: 'orange.6', label: t('projects.events') }]}
+                curveType="linear"
+                withDots
                 withYAxis={false}
-                strokeWidth={2}
-                fillOpacity={0.6}
+                strokeWidth={3}
+                fillOpacity={0.8}
                 xAxisProps={{
                   tickFormatter: formatShortDay,
                   interval: 'preserveStartEnd',
