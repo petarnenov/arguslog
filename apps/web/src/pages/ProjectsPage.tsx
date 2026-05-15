@@ -23,7 +23,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-import { AreaChart } from '@mantine/charts';
+import { LineChart } from '@mantine/charts';
 import { useForm } from '@mantine/form';
 import {
   IconArchive,
@@ -568,30 +568,35 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
               <Text size="xs" c="dimmed" mb={4}>
                 {t('projects.sparklineCaption')}
               </Text>
-              <AreaChart
-                h={90}
-                data={stats.eventsByDay}
-                dataKey="day"
-                series={[{ name: 'count', color: 'teal.5', label: t('projects.events') }]}
-                curveType="monotone"
-                withDots={false}
-                withYAxis={false}
-                withGradient={false}
-                strokeWidth={2}
-                gridAxis="none"
-                areaProps={{
-                  fill: 'var(--mantine-color-teal-5)',
-                  fillOpacity: 0.3,
-                  stroke: 'var(--mantine-color-teal-5)',
-                  strokeWidth: 2,
+              <Box
+                style={{
+                  // Soft teal halo behind the line — fakes the area-under-curve fill
+                  // we couldn't get out of @mantine/charts AreaChart on this data shape.
+                  // Gradient fades vertically so the bottom of the chart frames neatly
+                  // against the card background.
+                  background:
+                    'linear-gradient(180deg, rgba(20,184,166,0.18) 0%, rgba(20,184,166,0.04) 70%, transparent 100%)',
+                  borderRadius: 'var(--mantine-radius-sm)',
                 }}
-                xAxisProps={{
-                  tickFormatter: formatShortDay,
-                  interval: 'preserveStartEnd',
-                  minTickGap: 24,
-                }}
-                tooltipProps={{ labelFormatter: formatTooltipDay }}
-              />
+              >
+                <LineChart
+                  h={90}
+                  data={stats.eventsByDay}
+                  dataKey="day"
+                  series={[{ name: 'count', color: 'teal.5', label: t('projects.events') }]}
+                  curveType="monotone"
+                  withDots={false}
+                  withYAxis={false}
+                  strokeWidth={2}
+                  gridAxis="none"
+                  xAxisProps={{
+                    tickFormatter: formatShortDay,
+                    interval: 'preserveStartEnd',
+                    minTickGap: 24,
+                  }}
+                  tooltipProps={{ labelFormatter: formatTooltipDay }}
+                />
+              </Box>
             </Box>
           ) : (
             <Box mb="sm">
