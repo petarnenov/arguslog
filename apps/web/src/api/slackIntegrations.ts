@@ -1,4 +1,3 @@
-import { env } from '../env';
 import { apiFetch } from './client';
 
 /**
@@ -39,12 +38,19 @@ export function setSlackDefaultProject(
   });
 }
 
+export interface SlackInstallStart {
+  authorizeUrl: string;
+}
+
 /**
- * URL to navigate the browser to in order to start the OAuth install flow. Server-side this
- * 302s to Slack's authorize page with a signed state token bound to the current user + org.
- * Absolute against {@code VITE_API_BASE_URL} because this is a top-level browser redirect, not
- * an {@link apiFetch} call — relative paths would hit the dashboard origin and 404.
+ * Initiates a Slack OAuth install for the given org. The api returns Slack's authorize URL
+ * (with a server-signed state token bound to the current user + org); the caller then does a
+ * top-level navigation to that URL. We can't have the api itself 302 directly to Slack — the
+ * dashboard and api live on different origins, so a link-click navigation would lose the JWT
+ * and hit 401 before the controller could issue the redirect.
  */
-export function slackInstallUrl(orgId: number): string {
-  return `${env.VITE_API_BASE_URL}/api/v1/orgs/${orgId}/integrations/slack/oauth/install`;
+export function startSlackInstall(orgId: number): Promise<SlackInstallStart> {
+  return apiFetch<SlackInstallStart>(
+    `/api/v1/orgs/${orgId}/integrations/slack/oauth/install`,
+  );
 }

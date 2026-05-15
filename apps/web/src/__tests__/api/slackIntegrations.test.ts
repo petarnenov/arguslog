@@ -4,7 +4,7 @@ import {
   deleteSlackWorkspace,
   listSlackWorkspaces,
   setSlackDefaultProject,
-  slackInstallUrl,
+  startSlackInstall,
 } from '../../api/slackIntegrations';
 
 const originalFetch = globalThis.fetch;
@@ -52,9 +52,10 @@ describe('slackIntegrations api client', () => {
     });
   });
 
-  it('slackInstallUrl renders the absolute org-scoped install URL', () => {
-    const url = slackInstallUrl(42);
-    expect(url).toMatch(/^https?:\/\//);
-    expect(url).toContain('/api/v1/orgs/42/integrations/slack/oauth/install');
+  it('startSlackInstall GETs the install endpoint and returns the authorize URL', async () => {
+    const f = mockFetch({ authorizeUrl: 'https://slack.com/oauth/v2/authorize?state=xyz' });
+    const result = await startSlackInstall(42);
+    expect(f.mock.calls[0]?.[0]).toContain('/api/v1/orgs/42/integrations/slack/oauth/install');
+    expect(result.authorizeUrl).toBe('https://slack.com/oauth/v2/authorize?state=xyz');
   });
 });

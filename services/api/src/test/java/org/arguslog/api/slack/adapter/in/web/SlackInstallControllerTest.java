@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.UUID;
@@ -121,17 +122,20 @@ class SlackInstallControllerTest {
 
   @Test
   @WithMockUser(username = USER_UUID)
-  void installRedirectsToSlackAuthorizeWithFreshState() throws Exception {
+  void installReturnsAuthorizeUrlAsJson() throws Exception {
+    // The install endpoint returns JSON instead of a 302 so the dashboard can read it via a
+    // JWT-authenticated fetch and then do the top-level navigation to Slack itself — a direct
+    // 302 from a cross-origin link click would lose the Authorization header and hit 401.
     when(slackInstallStateCodec.encode(42L, USER)).thenReturn("opaque-state-token");
     when(slackOAuthService.buildAuthorizeUrl(
             "opaque-state-token", "http://localhost:8081/api/v1/slack/oauth/callback"))
         .thenReturn("https://slack.com/oauth/v2/authorize?state=opaque-state-token");
 
     mvc.perform(get("/api/v1/orgs/42/integrations/slack/oauth/install"))
-        .andExpect(status().isFound())
+        .andExpect(status().isOk())
         .andExpect(
-            header().string(
-                "Location", "https://slack.com/oauth/v2/authorize?state=opaque-state-token"));
+            jsonPath("$.authorizeUrl")
+                .value("https://slack.com/oauth/v2/authorize?state=opaque-state-token"));
   }
 
   @Test

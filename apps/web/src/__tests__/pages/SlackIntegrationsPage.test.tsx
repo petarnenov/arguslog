@@ -45,24 +45,52 @@ describe('SlackIntegrationsPage', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('shows the empty state with a connect button when no workspaces exist', async () => {
+  it('connect button GETs the install endpoint then redirects the browser to Slack', async () => {
+    const calls: { url: string }[] = [];
     globalThis.fetch = vi.fn(async (input) => {
       const url = typeof input === 'string' ? input : (input as Request).url;
+      calls.push({ url });
       if (url.endsWith('/api/v1/orgs')) return jsonResponse([ORG]);
+      if (url.endsWith('/api/v1/orgs/1/integrations/slack/oauth/install')) {
+        return jsonResponse({
+          authorizeUrl: 'https://slack.com/oauth/v2/authorize?state=opaque',
+        });
+      }
       return jsonResponse([]);
     }) as typeof fetch;
 
-    renderAt();
+    const assign = vi.fn();
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, assign },
+    });
 
-    await waitFor(() =>
-      expect(screen.getByText(/No Slack workspaces connected yet/i)).toBeInTheDocument(),
-    );
-    // Connect button must link directly to the install endpoint — clicking it triggers a
-    // top-level navigation, not an XHR, so the OAuth state cookie / CORS dance works.
-    const connect = screen.getByTestId('slack-connect-button');
-    const href = connect.getAttribute('href') ?? '';
-    expect(href).toMatch(/^https?:\/\//);
-    expect(href).toContain('/api/v1/orgs/1/integrations/slack/oauth/install');
+    try {
+      renderAt();
+
+      await waitFor(() =>
+        expect(screen.getByText(/No Slack workspaces connected yet/i)).toBeInTheDocument(),
+      );
+      await userEvent.click(screen.getByTestId('slack-connect-button'));
+
+      await waitFor(() =>
+        expect(assign).toHaveBeenCalledWith(
+          'https://slack.com/oauth/v2/authorize?state=opaque',
+        ),
+      );
+      // Sanity-check the install endpoint was actually hit (not just a stray cache).
+      expect(
+        calls.some((c) =>
+          c.url.endsWith('/api/v1/orgs/1/integrations/slack/oauth/install'),
+        ),
+      ).toBe(true);
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
   });
 
   it('renders workspaces and never leaks the install token in the DOM', async () => {

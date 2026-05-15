@@ -24,9 +24,12 @@ import org.springframework.web.bind.annotation.RestController;
  * Slack OAuth install flow. Two endpoints:
  *
  * <ol>
- *   <li>{@code GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install} — JWT-protected via
- *       OrgAccessGuard (matches {@code /api/v1/orgs/*&#47;**}). Builds a signed state token,
- *       302s the browser to Slack's authorize URL.
+ *   <li>{@code GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install} — JWT-protected.
+ *       Returns {@code 200 {authorizeUrl}} as JSON so the dashboard can navigate the browser
+ *       to Slack itself. We can't 302 directly because the dashboard and api live on different
+ *       origins (app.arguslog.org vs api.arguslog.org) — a top-level browser navigation to
+ *       this endpoint carries no {@code Authorization: Bearer} header and hits 401 before the
+ *       controller can build the redirect.
  *   <li>{@code GET /api/v1/slack/oauth/callback} — allow-listed under {@code /api/v1/slack/**}
  *       in SecurityConfig. The signed state IS the authentication; it carries the orgId +
  *       userId from the install step, so Slack callbacks for a different org can't sneak
@@ -59,15 +62,17 @@ public class SlackInstallController {
     this.workspaces = workspaces;
   }
 
+  public record InstallResponse(String authorizeUrl) {}
+
   @GetMapping(
       value = "/api/v1/orgs/{orgId}/integrations/slack/oauth/install",
-      produces = MediaType.TEXT_PLAIN_VALUE)
-  public ResponseEntity<String> install(@PathVariable long orgId) {
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<?> install(@PathVariable long orgId) {
     if (!props.configured()) return notConfigured();
     UUID userId = AuthActor.currentUserId();
     String state = stateCodec.encode(orgId, userId);
-    String redirectUrl = oauth.buildAuthorizeUrl(state, props.redirectUri());
-    return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(redirectUrl)).build();
+    String authorizeUrl = oauth.buildAuthorizeUrl(state, props.redirectUri());
+    return ResponseEntity.ok(new InstallResponse(authorizeUrl));
   }
 
   @GetMapping(value = "/api/v1/slack/oauth/callback", produces = MediaType.TEXT_PLAIN_VALUE)

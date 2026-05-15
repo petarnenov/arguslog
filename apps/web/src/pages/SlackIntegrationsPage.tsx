@@ -30,7 +30,7 @@ import {
 import {
   deleteSlackWorkspace,
   setSlackDefaultProject,
-  slackInstallUrl,
+  startSlackInstall,
   type SlackWorkspace,
 } from '../api/slackIntegrations';
 import { useReportSoftError } from '../lib/reportSoftError';
@@ -75,6 +75,22 @@ export function SlackIntegrationsPage() {
     // Intentionally only on mount; the dependency-list-includes-everything lint would loop us.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const startInstallMutation = useMutation({
+    mutationFn: async (orgId: number) => startSlackInstall(orgId),
+    onSuccess: (res) => {
+      window.location.assign(res.authorizeUrl);
+    },
+    onError: (err: unknown) => {
+      setBanner({
+        kind: 'error',
+        message:
+          err instanceof ApiError
+            ? (err.problem.detail ?? err.problem.title ?? String(err))
+            : String(err),
+      });
+    },
+  });
 
   const setDefaultProjectMutation = useMutation({
     mutationFn: async (args: { id: number; defaultProjectId: number | null }) => {
@@ -127,7 +143,6 @@ export function SlackIntegrationsPage() {
     );
   }
 
-  const installHref = slackInstallUrl(org.id);
   const projectOptions = (projectsQuery.data ?? []).map((p) => ({
     value: String(p.id),
     label: p.name,
@@ -138,8 +153,8 @@ export function SlackIntegrationsPage() {
       <Group justify="space-between">
         <Title order={3}>{t('slackIntegrations.title')}</Title>
         <Button
-          component="a"
-          href={installHref}
+          onClick={() => startInstallMutation.mutate(org.id)}
+          loading={startInstallMutation.isPending}
           leftSection={<IconBrandSlack size={16} />}
           data-testid="slack-connect-button"
         >
