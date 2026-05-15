@@ -383,4 +383,69 @@ Method: GET /api/v1/me`,
     queryParams: [],
     hasBody: false,
   },
+
+  list_slack_workspaces: {
+    name: 'list_slack_workspaces',
+    description: `List Slack workspaces installed against an org. Each row carries the team id,
+display name, default project id (nullable — workspaces without a default reject
+\`/arguslog issues|resolve|release\` slash commands), install timestamp, and an \`active\`
+flag (false = uninstalled but kept for audit).
+
+The bot install token is intentionally NOT in the response — it's server-side only and
+never leaves the API.
+
+Method: GET /api/v1/orgs/{orgId}/integrations/slack/workspaces
+
+Required: \`orgId\` (number from list_my_orgs). Example: \`{ "orgId": 42 }\``,
+    method: 'GET',
+    path: '/api/v1/orgs/{orgId}/integrations/slack/workspaces',
+    pathParams: [{ name: 'orgId', required: true, type: 'integer' }],
+    queryParams: [],
+    hasBody: false,
+  },
+
+  revoke_slack_workspace: {
+    name: 'revoke_slack_workspace',
+    description: `Disconnect a Slack workspace install. Marks the row as deactivated (kept for
+audit); slash commands from this team will no longer route. Idempotent — calling on an
+already-deactivated workspace returns 204 the same way. Reinstalling from the dashboard
+clears the tombstone.
+
+Method: DELETE /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}
+
+Required: \`orgId\`, \`id\` (workspace id from list_slack_workspaces).
+Example: \`{ "orgId": 42, "id": 7 }\``,
+    method: 'DELETE',
+    path: '/api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}',
+    pathParams: [
+      { name: 'orgId', required: true, type: 'integer' },
+      { name: 'id', required: true, type: 'integer' },
+    ],
+    queryParams: [],
+    hasBody: false,
+  },
+
+  set_slack_default_project: {
+    name: 'set_slack_default_project',
+    description: `Set or clear the default project for a Slack workspace install. The default
+project is what \`/arguslog issues\`, \`/arguslog resolve <id>\`, and \`/arguslog release\`
+operate against in the channel. The project MUST belong to the same org as the workspace —
+otherwise the API rejects with 400.
+
+Pass \`defaultProjectId: null\` to clear the default (slash commands will then reject with
+"no default project set").
+
+Method: PATCH /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}
+
+Required: \`orgId\`, \`id\`, \`body.defaultProjectId\` (number or null).
+Example: \`{ "orgId": 42, "id": 7, "body": { "defaultProjectId": 101 } }\``,
+    method: 'PATCH',
+    path: '/api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}',
+    pathParams: [
+      { name: 'orgId', required: true, type: 'integer' },
+      { name: 'id', required: true, type: 'integer' },
+    ],
+    queryParams: [],
+    hasBody: true,
+  },
 };
