@@ -1312,6 +1312,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
           format: 'date-time',
         },
+        pending: {
+          type: 'boolean',
+        },
       },
     },
     annotations: {
@@ -2188,6 +2191,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         addedAt: {
           type: 'string',
           format: 'date-time',
+        },
+        pending: {
+          type: 'boolean',
         },
       },
     },
