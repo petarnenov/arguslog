@@ -574,12 +574,14 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
                 data={stats.eventsByDay}
                 dataKey="day"
                 series={[{ name: 'count', color: 'green.6', label: t('projects.events') }]}
+                type="default"
                 curveType="monotone"
                 withDots={false}
                 withYAxis={false}
+                withGradient
                 gridAxis="none"
-                strokeWidth={1.5}
-                fillOpacity={0.25}
+                strokeWidth={2}
+                fillOpacity={0.55}
                 xAxisProps={{
                   tickFormatter: formatShortDay,
                   interval: 'preserveStartEnd',
