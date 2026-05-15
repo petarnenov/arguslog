@@ -23,7 +23,11 @@ paths = [
   '''packages/sdk-node/src/__tests__/.*''',
   '''java-sdk/src/test/.*''',
 ]
-# The django-todo demo hardcodes a Stripe key shaped like a real one
-# (sk_live_ABCDEFGHIJKLMNOP — literally A through P) to show how the
-# scrubber would treat it. Allowlisted to keep the scan clean; real
-# operators replace it with their own key from env at deploy time.
+# The django-todo demo hardcodes a placeholder shaped like a real
+# Stripe live-mode key (the prefix you would expect, followed by 16
+# uppercase ASCII letters) to show how the scrubber would treat it.
+# Allowlisted via the path glob above so gitleaks doesn't trip on
+# the demo file; real operators replace the placeholder with their
+# own key from env at deploy time. (The literal placeholder string
+# is intentionally not quoted here so this very config file doesn't
+# trigger the Stripe rule on the scanner that reads it.)
