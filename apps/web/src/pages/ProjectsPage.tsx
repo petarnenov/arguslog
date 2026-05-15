@@ -578,8 +578,13 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
                 withYAxis={false}
                 withGradient={false}
                 strokeWidth={2}
-                fillOpacity={0.35}
                 gridAxis="none"
+                areaProps={{
+                  fill: 'var(--mantine-color-teal-5)',
+                  fillOpacity: 0.3,
+                  stroke: 'var(--mantine-color-teal-5)',
+                  strokeWidth: 2,
+                }}
                 xAxisProps={{
                   tickFormatter: formatShortDay,
                   interval: 'preserveStartEnd',
