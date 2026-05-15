@@ -41,7 +41,8 @@ public class SlackBodyCachingFilter extends OncePerRequestFilter {
       HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws ServletException, IOException {
     if ("POST".equals(request.getMethod())
-        && request.getRequestURI().startsWith("/api/v1/slack/commands")) {
+        && (request.getRequestURI().startsWith("/api/v1/slack/commands")
+            || request.getRequestURI().startsWith("/api/v1/slack/interactivity"))) {
       chain.doFilter(new CachedBodyHttpServletRequest(request), response);
       return;
     }

@@ -40,6 +40,22 @@ class SlackBodyCachingFilterTest {
   }
 
   @Test
+  void wrapsSlackInteractivityPostsSoBodyIsReadableAfterParameterParsing() throws Exception {
+    MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/v1/slack/interactivity");
+    req.setContentType("application/x-www-form-urlencoded");
+    String body = "payload=%7B%22type%22%3A%22block_actions%22%7D";
+    req.setContent(body.getBytes(StandardCharsets.UTF_8));
+
+    CapturingChain chain = new CapturingChain();
+    filter.doFilter(req, new MockHttpServletResponse(), chain);
+
+    HttpServletRequest wrapped = (HttpServletRequest) chain.captured;
+    wrapped.getParameterMap();
+    String readBack = new String(wrapped.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+    assertThat(readBack).isEqualTo(body);
+  }
+
+  @Test
   void leavesNonSlackPostsAlone() throws Exception {
     MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/v1/issues");
     req.setContent("anything".getBytes(StandardCharsets.UTF_8));

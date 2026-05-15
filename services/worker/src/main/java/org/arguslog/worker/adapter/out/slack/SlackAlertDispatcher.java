@@ -3,6 +3,7 @@ package org.arguslog.worker.adapter.out.slack;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -60,7 +61,8 @@ public class SlackAlertDispatcher implements AlertDispatcher {
     String body;
     try {
       ObjectNode payload = mapper.createObjectNode();
-      payload.put("text", renderMessage(alert));
+      payload.put("text", renderMessage(alert)); // mrkdwn fallback for notification preview
+      payload.set("blocks", renderBlocks(alert));
       body = mapper.writeValueAsString(payload);
     } catch (JsonProcessingException e) {
       log.warn("could not encode slack payload: {}", e.getMessage());
@@ -99,6 +101,94 @@ public class SlackAlertDispatcher implements AlertDispatcher {
       log.warn("destination {} config is not valid JSON: {}", destination.id(), e.getMessage());
       return null;
     }
+  }
+
+  /**
+   * Block Kit message with action buttons. The action_id format is {@code <op>:<issueId>}; the
+   * api-side interactivity handler routes by op and resolves the org/project from the Slack
+   * team_id carried in the payload, so the button payload itself stays minimal.
+   */
+  private ArrayNode renderBlocks(Alert a) {
+    ArrayNode blocks = mapper.createArrayNode();
+    String url = issueUrl(a);
+    String header =
+        emojiFor(a.level())
+            + " *<"
+            + url
+            + "|"
+            + escape(a.issueTitle())
+            + ">*\n"
+            + a.level()
+            + " in *"
+            + a.projectSlug()
+            + "* · "
+            + a.occurrenceCount()
+            + "× · first seen "
+            + ISO.format(a.firstSeenAt())
+            + "\n_rule: "
+            + a.ruleName()
+            + "_";
+
+    ObjectNode section = mapper.createObjectNode();
+    section.put("type", "section");
+    ObjectNode text = mapper.createObjectNode();
+    text.put("type", "mrkdwn");
+    text.put("text", header);
+    section.set("text", text);
+    blocks.add(section);
+
+    ObjectNode actions = mapper.createObjectNode();
+    actions.put("type", "actions");
+    ArrayNode elements = mapper.createArrayNode();
+    elements.add(button("Resolve", "resolve:" + a.issueId(), "primary"));
+    elements.add(button("Ignore", "ignore:" + a.issueId(), null));
+    elements.add(linkButton("Open in Arguslog", url));
+    actions.set("elements", elements);
+    blocks.add(actions);
+
+    return blocks;
+  }
+
+  private ObjectNode button(String label, String actionId, String style) {
+    ObjectNode b = mapper.createObjectNode();
+    b.put("type", "button");
+    ObjectNode text = mapper.createObjectNode();
+    text.put("type", "plain_text");
+    text.put("text", label);
+    b.set("text", text);
+    b.put("action_id", actionId);
+    b.put("value", actionId);
+    if (style != null) b.put("style", style);
+    return b;
+  }
+
+  private ObjectNode linkButton(String label, String url) {
+    ObjectNode b = mapper.createObjectNode();
+    b.put("type", "button");
+    ObjectNode text = mapper.createObjectNode();
+    text.put("type", "plain_text");
+    text.put("text", label);
+    b.set("text", text);
+    b.put("url", url);
+    // Slack requires action_id on every button — even url-only ones — and rejects the message
+    // if two share it, so we suffix the issue id to keep it unique per alert.
+    b.put("action_id", "open:noop:" + System.nanoTime());
+    return b;
+  }
+
+  private String issueUrl(Alert a) {
+    return props.dashboardBaseUrl()
+        + "/orgs/"
+        + a.orgSlug()
+        + "/projects/"
+        + a.projectSlug()
+        + "/issues/"
+        + a.issueId();
+  }
+
+  private static String escape(String s) {
+    if (s == null) return "";
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
   }
 
   private String renderMessage(Alert a) {
