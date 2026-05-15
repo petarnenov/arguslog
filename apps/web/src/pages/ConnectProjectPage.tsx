@@ -162,26 +162,29 @@ export function ConnectProjectPage() {
     onError: (err) => setPatError(describeApiError(err)),
   });
 
-  // ─── Auto-provision: zero-step install on first visit ───────────────────────
-  // When the user lands on Connect for a brand-new project with no DSN and no prior
-  // quickstart PAT, mint both silently so the AI-agent prompt is already inlined with real
-  // secrets — no "Manual steps still owed" footnote from the agent. The ref guard makes this
-  // strictly one-shot per page mount so React StrictMode double-invocation can't fire the
-  // mutations twice.
+  // ─── Auto-provision: every page mount guarantees real DSN + PAT in the prompt ─────
+  // The magic-prompt invariant is "no placeholders, ever" (see feedback memory
+  // magic-prompt-inline-secrets). PAT plaintext is gone after navigation, so on every
+  // fresh mount where freshPat is null we mint a new one — even if a prior "Connect
+  // quickstart" PAT exists in /me/tokens. The user can revoke stale tokens at
+  // app.arguslog.org/me/tokens or via the delete_me_tokens MCP tool; we choose token
+  // churn over a broken paste-and-go UX. DSN is treated differently: existing active
+  // DSNs are reconstructed into the prompt (the SDK only needs the public part), so we
+  // only mint a new DSN when none exists. The ref guard keeps this strictly one-shot
+  // per mount under React StrictMode.
   const autoProvisionStartedRef = useRef(false);
   useEffect(() => {
     if (autoProvisionStartedRef.current) return;
     if (!dsnsQuery.data || !tokensQuery.data) return;
     if (orgsQuery.isLoading || projectsQuery.isLoading) return;
     if (!org || !project) return;
-    const hasAnyDsn = dsnsQuery.data.some((d) => d.active);
-    // Auto-provision only when this looks like a true first visit: no active DSN AND no
-    // prior quickstart PAT. If either side exists, we leave the user in control (Rotate CTA
-    // covers them) so we never accumulate junk tokens unintentionally.
-    if (hasAnyDsn || hasExistingQuickstartPat) return;
+    const hasAnyActiveDsn = dsnsQuery.data.some((d) => d.active);
+    const needDsn = !freshDsn && !hasAnyActiveDsn;
+    const needPat = !freshPat;
+    if (!needDsn && !needPat) return;
     autoProvisionStartedRef.current = true;
-    generateDsnMutation.mutate();
-    generatePatMutation.mutate(false);
+    if (needDsn) generateDsnMutation.mutate();
+    if (needPat) generatePatMutation.mutate(hasExistingQuickstartPat);
   }, [
     dsnsQuery.data,
     tokensQuery.data,
@@ -189,6 +192,8 @@ export function ConnectProjectPage() {
     projectsQuery.isLoading,
     org,
     project,
+    freshDsn,
+    freshPat,
     hasExistingQuickstartPat,
     generateDsnMutation,
     generatePatMutation,
@@ -198,9 +203,11 @@ export function ConnectProjectPage() {
     autoProvisionStartedRef.current &&
     (generateDsnMutation.isPending || generatePatMutation.isPending);
 
-  // Repeat visit: a quickstart PAT exists in the user's token list but plaintext is gone.
-  // Magic prompts will render `<GENERATE_PAT_FIRST>` until the user rotates.
-  const showRotateCta = hasExistingQuickstartPat && !freshPat;
+  // Rotate CTA stays visible as a power-user escape: even after auto-mint, the user may
+  // want yet another fresh PAT (e.g., the just-issued one was screenshot-leaked). Click →
+  // new PAT with a date-suffixed name; old ones stay valid until manually revoked from
+  // /me/tokens or via the delete_me_tokens MCP tool.
+  const showRotateCta = !isAutoProvisioning && hasExistingQuickstartPat;
 
   /**
    * Resolution order for the DSN string we paste into snippets:

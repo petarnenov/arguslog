@@ -148,24 +148,41 @@ describe('ConnectProjectPage — AI agents tab', () => {
     expect(screen.queryByTestId('connect-rotate-cta')).not.toBeInTheDocument();
   });
 
-  it('does NOT auto-provision when a Connect quickstart PAT already exists (return visit)', async () => {
+  it('auto-rotates the PAT on return visit (existing quickstart PAT in /me/tokens, plaintext gone)', async () => {
+    // Return-visit scenario: user already has a "Connect quickstart" PAT from a previous
+    // session, but plaintext is gone — fresh mount of Connect must still produce a paste-
+    // ready prompt with a real PAT inlined. We mint a *new* PAT (date-suffixed name); the
+    // old one stays valid until the user revokes it.
     const calls = installFetchMock({ existingTokens: [EXISTING_QUICKSTART_PAT] });
     renderAt();
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /paste-ready snippets/i })).toBeInTheDocument(),
+    await waitFor(
+      () => {
+        const patPost = calls.find(
+          (c) => c.method === 'POST' && c.url.endsWith('/api/v1/me/tokens'),
+        );
+        expect(patPost).toBeDefined();
+        // Date-suffixed name signals "rotation", since a prior quickstart PAT existed.
+        expect(patPost!.body).toMatch(/Connect quickstart — Web — \d{4}-\d{2}-\d{2}/);
+      },
+      { timeout: 3000 },
     );
-    // Give the page a tick to settle, then assert no POSTs happened.
-    await new Promise((r) => setTimeout(r, 50));
-    const posted = calls.filter((c) => c.method === 'POST');
-    expect(posted).toHaveLength(0);
-    // Rotate CTA is now visible.
+    // Rotate CTA remains visible afterwards as a power-user escape (force another rotation).
     expect(screen.getByTestId('connect-rotate-cta')).toBeInTheDocument();
   });
 
-  it('Rotate button mints a fresh PAT with a date-suffixed name', async () => {
+  it('Rotate button mints another fresh PAT with a date-suffixed name', async () => {
     const calls = installFetchMock({ existingTokens: [EXISTING_QUICKSTART_PAT] });
     renderAt();
-    await waitFor(() => expect(screen.getByTestId('connect-rotate-cta')).toBeInTheDocument());
+    // Wait for the auto-rotation to fire, then clear the call log so we can isolate the
+    // manual Rotate click that follows.
+    await waitFor(
+      () =>
+        expect(
+          calls.find((c) => c.method === 'POST' && c.url.endsWith('/api/v1/me/tokens')),
+        ).toBeDefined(),
+      { timeout: 3000 },
+    );
+    calls.length = 0;
     const user = userEvent.setup();
     await user.click(screen.getByTestId('connect-rotate-pat'));
     await waitFor(() => {
