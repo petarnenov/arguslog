@@ -23,7 +23,7 @@ PNPM           := pnpm
         self-host-test self-host-down \
         clean reset doctor
 
-PROD_SERVICES  := arguslog-api arguslog-ingest arguslog-worker arguslog-web arguslog-landing
+PROD_SERVICES  := arguslog-api arguslog-ingest arguslog-worker arguslog-web arguslog-landing arguslog-mcp
 
 ## ─── Top-level ─────────────────────────────────────────────────────────────
 
@@ -146,17 +146,23 @@ e2e: ## Run Playwright e2e suite
 
 ## ─── Production deploy ─────────────────────────────────────────────────────
 
-deploy-prod: ## Force fresh rebuild of all 5 prod app services in parallel, then check status
+deploy-prod: ## Force fresh rebuild of all 6 prod app services in parallel, then check status
 	@command -v railway >/dev/null || { echo "✗ railway CLI not installed (brew install railway)"; exit 1; }
+	@command -v git >/dev/null || { echo "✗ git not on PATH"; exit 1; }
 	@echo "▶ Switching to production environment..."
 	@railway environment production >/dev/null
-	@echo "▶ Triggering parallel railway up for: $(PROD_SERVICES)"
-	@# Each `railway up` is independent — Railway's builder runs them concurrently. We capture
-	@# pids and wait for all so the post-deploy status check sees the final state.
-	@pids=""; \
+	@SHA=$$(git rev-parse --short HEAD); \
+	echo "▶ Stamping GIT_SHA=$$SHA on every service (skip-deploys so the env var write doesn't bounce the container)..."; \
+	for svc in $(PROD_SERVICES); do \
+		railway variables --set "GIT_SHA=$$SHA" --service "$$svc" --environment production --skip-deploys >/dev/null; \
+	done; \
+	echo "▶ Triggering parallel railway up for: $(PROD_SERVICES)"; \
+	echo "   (railway up uploads local source and rebuilds the Docker image from scratch —"; \
+	echo "    NOT railway redeploy which would just bounce the cached image.)"; \
+	pids=""; \
 	for svc in $(PROD_SERVICES); do \
 		echo "  → $$svc"; \
-		railway up --service "$$svc" --ci > /tmp/argus-deploy-$$svc.log 2>&1 & \
+		railway up --service "$$svc" --environment production --ci --message "$$SHA" > /tmp/argus-deploy-$$svc.log 2>&1 & \
 		pids="$$pids $$!"; \
 	done; \
 	echo "▶ Waiting for all builds to complete..."; \
