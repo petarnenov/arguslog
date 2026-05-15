@@ -48,6 +48,7 @@ import { queryKeys, useMe, useMyOrgs, useProjects } from '../api/queries';
 import { BonusBanner } from '../components/BonusBanner';
 import { useAuth } from '../auth/useAuth';
 import { DevErrorMenu } from '../components/DevErrorMenu';
+import { ThemeMenuSection } from '../components/ThemeMenuSection';
 
 export function AppShellLayout() {
   const [opened, { toggle }] = useDisclosure();
@@ -173,6 +174,8 @@ export function AppShellLayout() {
                   <Menu.Item component={Link} to="/me/tokens" leftSection={<IconKey size={14} />}>
                     {t('nav.tokens')}
                   </Menu.Item>
+                  <ThemeMenuSection />
+                  <Menu.Divider />
                   <Menu.Item leftSection={<IconLogout size={14} />} onClick={() => void signOut()}>
                     {t('auth.logout')}
                   </Menu.Item>

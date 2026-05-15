@@ -18,6 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { LandingHeader } from '../components/Header';
 import rawIncidents from '../data/incidents.md?raw';
 import {
   overallStatus,
@@ -107,7 +108,8 @@ export function StatusPage() {
   );
 
   return (
-    <AppShell padding={0}>
+    <AppShell header={{ height: 64 }} padding={0}>
+      <LandingHeader />
       <AppShell.Main>
         <Container size="lg" py="xl">
           <Stack gap="xl">
@@ -229,7 +231,7 @@ function ServiceTile({ name, description, result }: TileProps) {
             width: 12,
             height: 12,
             borderRadius: '50%',
-            backgroundColor: `var(--mantine-color-${color}-6)`,
+            backgroundColor: `light-dark(var(--mantine-color-${color}-7), var(--mantine-color-${color}-5))`,
             flexShrink: 0,
           }}
         />

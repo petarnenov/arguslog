@@ -7,6 +7,12 @@
     "getStarted": "Get started",
     "github": "GitHub"
   },
+  "theme": {
+    "section": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "Auto"
+  },
   "hero": {
     "tagline": "MCP-first · open source · EVM + Solana aware",
     "title": "Less Dashboard, More Dialogue: Error Tracking, Designed for Agents",

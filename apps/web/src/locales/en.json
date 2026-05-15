@@ -17,6 +17,12 @@
     "tokens": "Personal access tokens",
     "logout": "Log out"
   },
+  "theme": {
+    "section": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "auto": "Auto"
+  },
   "admin": {
     "title": "Platform admin",
     "adminBadge": "Restricted",

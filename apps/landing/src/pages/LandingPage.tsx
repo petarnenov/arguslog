@@ -34,6 +34,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { listPlatforms } from '../api/platforms';
+import { LandingHeader } from '../components/Header';
 import { env } from '../env';
 
 const GITHUB_URL = 'https://github.com/petarnenov/arguslog';
@@ -62,7 +63,6 @@ function platformReadmeUrl(slug: string): string {
 }
 
 export function LandingPage() {
-  const { t } = useTranslation();
   const platformsQuery = useQuery({ queryKey: ['platforms'], queryFn: listPlatforms });
 
   const onboardingUrl = `${env.VITE_APP_BASE_URL}/onboarding`;
@@ -70,38 +70,7 @@ export function LandingPage() {
 
   return (
     <AppShell header={{ height: 64 }} padding={0}>
-      <AppShell.Header>
-        <Container size="lg" h="100%">
-          <Group h="100%" justify="space-between">
-            <Group gap="sm">
-              <img src="/arguslog.svg" alt="" width={28} height={28} />
-              <Title order={4} fw={700}>
-                {t('app.name')}
-              </Title>
-            </Group>
-            <Group gap="xs">
-              <Anchor
-                href={GITHUB_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                c="dimmed"
-                size="sm"
-              >
-                <Group gap={4}>
-                  <IconBrandGithub size={16} />
-                  {t('nav.github')}
-                </Group>
-              </Anchor>
-              <Button component="a" href={dashboardUrl} variant="subtle">
-                {t('nav.signIn')}
-              </Button>
-              <Button component="a" href={onboardingUrl}>
-                {t('nav.getStarted')}
-              </Button>
-            </Group>
-          </Group>
-        </Container>
-      </AppShell.Header>
+      <LandingHeader showCtas />
 
       <AppShell.Main>
         <Hero onboardingUrl={onboardingUrl} />
@@ -404,7 +373,11 @@ function McpSection() {
             </Text>
             <Code
               block
-              style={{ fontSize: 12, padding: 12, background: 'var(--mantine-color-dark-7)' }}
+              style={{
+                fontSize: 12,
+                padding: 12,
+                background: 'light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-7))',
+              }}
             >
               {configSnippet}
             </Code>

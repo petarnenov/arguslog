@@ -1,5 +1,5 @@
 import { ArguslogErrorBoundary, init as initArguslog } from '@arguslog/sdk-react';
-import { MantineProvider, createTheme } from '@mantine/core';
+import { MantineProvider, createTheme, localStorageColorSchemeManager } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useMemo, type ReactNode } from 'react';
@@ -12,6 +12,11 @@ const theme = createTheme({
   fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
   headings: { fontFamily: 'Inter, system-ui, sans-serif' },
 });
+
+// Shared key with apps/web so a future shared-domain cookie bridge can promote the choice
+// across origins. Today the two SPAs read independent localStorage entries because they live
+// on different origins (arguslog.org vs app.arguslog.org).
+const colorSchemeManager = localStorageColorSchemeManager({ key: 'arguslog-color-scheme' });
 
 export function Providers({ children }: { children: ReactNode }) {
   const queryClient = useMemo(
@@ -44,7 +49,11 @@ export function Providers({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <MantineProvider theme={theme} defaultColorScheme="auto">
+    <MantineProvider
+      theme={theme}
+      defaultColorScheme="auto"
+      colorSchemeManager={colorSchemeManager}
+    >
       <QueryClientProvider client={queryClient}>
         <ArguslogErrorBoundary fallback={<div role="alert">Something went wrong.</div>}>
           {children}
