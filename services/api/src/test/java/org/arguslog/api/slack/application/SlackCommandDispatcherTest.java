@@ -2,6 +2,7 @@ package org.arguslog.api.slack.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,13 +18,16 @@ import org.arguslog.api.application.IssuesByReleaseUseCase;
 import org.arguslog.api.application.ListIssuesUseCase;
 import org.arguslog.api.application.ListIssuesUseCase.Page;
 import org.arguslog.api.application.port.OrgWriteRepository;
+import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.domain.Issue;
 import org.arguslog.api.domain.Org;
+import org.arguslog.api.domain.Project;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.domain.Release;
 import org.arguslog.api.slack.adapter.in.web.dto.SlackCommandPayload;
 import org.arguslog.api.slack.adapter.in.web.dto.SlackCommandResponse;
 import org.arguslog.api.slack.application.port.SlackWorkspaceRepository;
+import org.arguslog.api.slack.application.port.SlackWorkspaceWriteRepository;
 import org.arguslog.api.slack.domain.SlackWorkspace;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +44,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class SlackCommandDispatcherTest {
 
   @Mock SlackWorkspaceRepository workspaces;
+  @Mock SlackWorkspaceWriteRepository workspaceWrites;
   @Mock OrgWriteRepository orgs;
+  @Mock ProjectWriteRepository projects;
   @Mock ListIssuesUseCase listIssues;
   @Mock GetIssueUseCase getIssue;
   @Mock IssueTriageUseCase triage;
@@ -68,7 +74,9 @@ class SlackCommandDispatcherTest {
     dispatcher =
         new SlackCommandDispatcher(
             workspaces,
+            workspaceWrites,
             orgs,
+            projects,
             listIssues,
             getIssue,
             triage,
@@ -208,6 +216,42 @@ class SlackCommandDispatcherTest {
     SlackCommandResponse r = dispatcher.dispatch(payload("T123", "release nope"));
     assertThat(r.text()).contains("not found");
     verify(issuesByRelease, never()).list(any(Long.class), any(Long.class));
+  }
+
+  @Test
+  void setProjectSwitchesDefaultProjectAndBroadcastsInChannel() {
+    primeWorkspace();
+    Project apiProject = new Project(202L, 1L, "api", "Api", "java", Instant.now());
+    when(projects.listForOrg(1L)).thenReturn(List.of(apiProject));
+
+    SlackCommandResponse r = dispatcher.dispatch(payload("T123", "set-project api"));
+
+    // Mutations broadcast to the channel — same posture as resolve.
+    assertThat(r.response_type()).isEqualTo("in_channel");
+    verify(workspaceWrites).setDefaultProject(7L, 202L);
+  }
+
+  @Test
+  void setProjectWithUnknownSlugReturnsFriendlyError() {
+    primeWorkspace();
+    when(projects.listForOrg(1L)).thenReturn(List.of());
+
+    SlackCommandResponse r = dispatcher.dispatch(payload("T123", "set-project nope"));
+
+    assertThat(r.response_type()).isEqualTo("ephemeral");
+    assertThat(r.text()).contains("not found");
+    verify(workspaceWrites, never()).setDefaultProject(anyLong(), any());
+  }
+
+  @Test
+  void setProjectWithMissingSlugShowsUsage() {
+    primeWorkspace();
+
+    SlackCommandResponse r = dispatcher.dispatch(payload("T123", "set-project"));
+
+    assertThat(r.response_type()).isEqualTo("ephemeral");
+    assertThat(r.text()).contains("Usage:");
+    verify(projects, never()).listForOrg(anyLong());
   }
 
   @Test

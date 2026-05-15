@@ -7,14 +7,17 @@ import org.arguslog.api.application.IssuesByReleaseUseCase;
 import org.arguslog.api.application.ListIssuesUseCase;
 import org.arguslog.api.application.ListIssuesUseCase.Query;
 import org.arguslog.api.application.port.OrgWriteRepository;
+import org.arguslog.api.application.port.ProjectWriteRepository;
 import org.arguslog.api.domain.Issue;
 import org.arguslog.api.domain.Org;
+import org.arguslog.api.domain.Project;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.domain.Release;
 import org.arguslog.api.security.OrgContext;
 import org.arguslog.api.slack.adapter.in.web.dto.SlackCommandPayload;
 import org.arguslog.api.slack.adapter.in.web.dto.SlackCommandResponse;
 import org.arguslog.api.slack.application.port.SlackWorkspaceRepository;
+import org.arguslog.api.slack.application.port.SlackWorkspaceWriteRepository;
 import org.arguslog.api.slack.domain.SlackWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +53,9 @@ public class SlackCommandDispatcher {
   private static final int ISSUE_LIST_LIMIT = 10;
 
   private final SlackWorkspaceRepository workspaces;
+  private final SlackWorkspaceWriteRepository workspaceWrites;
   private final OrgWriteRepository orgs;
+  private final ProjectWriteRepository projects;
   private final ListIssuesUseCase listIssues;
   private final GetIssueUseCase getIssue;
   private final IssueTriageUseCase triage;
@@ -60,7 +65,9 @@ public class SlackCommandDispatcher {
 
   public SlackCommandDispatcher(
       SlackWorkspaceRepository workspaces,
+      SlackWorkspaceWriteRepository workspaceWrites,
       OrgWriteRepository orgs,
+      ProjectWriteRepository projects,
       ListIssuesUseCase listIssues,
       GetIssueUseCase getIssue,
       IssueTriageUseCase triage,
@@ -68,7 +75,9 @@ public class SlackCommandDispatcher {
       IssuesByReleaseUseCase issuesByRelease,
       @Value("${arguslog.dashboard.base-url:http://localhost:5173}") String dashboardBaseUrl) {
     this.workspaces = workspaces;
+    this.workspaceWrites = workspaceWrites;
     this.orgs = orgs;
+    this.projects = projects;
     this.listIssues = listIssues;
     this.getIssue = getIssue;
     this.triage = triage;
@@ -104,6 +113,7 @@ public class SlackCommandDispatcher {
         case "issue" -> handleIssueDetail(workspace, org, parts);
         case "resolve" -> handleResolve(workspace, org, parts);
         case "release" -> handleRelease(workspace, org, parts);
+        case "set-project" -> handleSetProject(workspace, org, parts);
         default ->
             SlackCommandResponse.ephemeralText(
                 "Unknown subcommand `" + subcommand + "`. Try `/arguslog help`.");
@@ -192,6 +202,26 @@ public class SlackCommandDispatcher {
     return SlackCommandResponse.ephemeral(
         "Release " + version,
         blocks.releaseIssues(org.slug(), projectId, version, issuesList));
+  }
+
+  private SlackCommandResponse handleSetProject(
+      SlackWorkspace workspace, Org org, String[] parts) {
+    if (parts.length < 2 || parts[1].isBlank()) {
+      return SlackCommandResponse.ephemeralText(
+          "Usage: `/arguslog set-project <slug>` (find the slug in Dashboard → Projects).");
+    }
+    String slug = parts[1];
+    Optional<Project> hit =
+        projects.listForOrg(org.id()).stream().filter(p -> slug.equals(p.slug())).findFirst();
+    if (hit.isEmpty()) {
+      return SlackCommandResponse.ephemeralText(
+          "Project `" + slug + "` not found in " + org.slug() + ".");
+    }
+    workspaceWrites.setDefaultProject(workspace.id(), hit.get().id());
+    // In-channel so the rest of the team sees the change without having to ask.
+    return SlackCommandResponse.inChannel(
+        "Default project updated",
+        blocks.setProjectConfirmation(org.slug(), slug, hit.get().name()));
   }
 
   private static String[] splitText(String text) {

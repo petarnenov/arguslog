@@ -146,9 +146,23 @@ public final class SlackBlockBuilder {
             + "• `/arguslog issue <id>` — full detail card\n"
             + "• `/arguslog resolve <id>` — mark resolved (broadcasts to channel)\n"
             + "• `/arguslog release <version>` — issues first seen in this release\n"
-            + "• `/arguslog ping <projectId>` — fire a synthetic test event\n"
+            + "• `/arguslog set-project <slug>` — switch the workspace's default project\n"
             + "• `/arguslog help` — this card";
     return List.of(section(body));
+  }
+
+  public List<Map<String, Object>> setProjectConfirmation(
+      String orgSlug, String projectSlug, String projectName) {
+    String url = dashboardBaseUrl + "/orgs/" + orgSlug + "/projects";
+    return List.of(
+        section(
+            "🎯 Default project set to *<"
+                + url
+                + "|"
+                + escape(projectName)
+                + ">* (`"
+                + escape(projectSlug)
+                + "`). `/arguslog issues|resolve|release` will use this project from now on."));
   }
 
   // ── primitives ──────────────────────────────────────────────────────────
