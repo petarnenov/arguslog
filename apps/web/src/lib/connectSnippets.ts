@@ -125,8 +125,7 @@ export type AgentTarget =
   | 'codex'
   | 'copilot'
   | 'windsurf'
-  | 'continue'
-  | 'aider';
+  | 'continue';
 
 /** Per-agent MCP config file location + install hint shown in the magic prompt. */
 const AGENT_MCP_TARGETS: Record<AgentTarget, { name: string; configPath: string; note: string }> =
@@ -143,8 +142,8 @@ const AGENT_MCP_TARGETS: Record<AgentTarget, { name: string; configPath: string;
     },
     codex: {
       name: 'Codex',
-      configPath: '.mcp.json (project root) — same shape as Claude Code',
-      note: 'Codex CLI reads the same .mcp.json file Claude Code uses, so a single config covers both.',
+      configPath: '~/.codex/config.toml (user) — or .codex/config.toml (project, trusted)',
+      note: 'Codex uses TOML, not JSON. The CLI and the VS Code/IDE extension share the same config file.',
     },
     copilot: {
       name: 'GitHub Copilot',
@@ -154,17 +153,12 @@ const AGENT_MCP_TARGETS: Record<AgentTarget, { name: string; configPath: string;
     windsurf: {
       name: 'Windsurf',
       configPath: '~/.codeium/windsurf/mcp_config.json',
-      note: 'Windsurf (Codeium) keeps MCP config in its own Codeium folder — separate from Cursor.',
+      note: 'Windsurf (Codeium) uses `serverUrl` (not `url`) for HTTP-transport MCP servers and keeps config in its own Codeium folder, separate from Cursor.',
     },
     continue: {
       name: 'Continue',
-      configPath: '~/.continue/config.json (under experimental.modelContextProtocolServers)',
-      note: 'Continue 0.0.52+ supports Streamable HTTP; older versions fall back to stdio with `npx -y @arguslog/mcp-server`.',
-    },
-    aider: {
-      name: 'Aider',
-      configPath: '~/.aider.conf.yml (mcp-servers block)',
-      note: 'Aider is stdio-only — it runs `npx -y @arguslog/mcp-server` locally and receives the PAT via env var.',
+      configPath: '.continue/mcpServers/<name>.yaml (workspace YAML; one file per server)',
+      note: 'Continue 1.0+ reads each MCP server from its own YAML file under `.continue/mcpServers/`. The legacy `experimental.modelContextProtocolServers` array in `~/.continue/config.json` is deprecated.',
     },
   };
 
@@ -321,6 +315,7 @@ claude mcp add arguslog ${httpUrl} \\
 {
   "mcpServers": {
     "arguslog": {
+      "type": "http",
       "url": "${httpUrl}",
       "headers": {
         "Authorization": "Bearer ${pat}"${envBlock}
@@ -357,22 +352,21 @@ Restart Cursor (or click "Reload MCP" in Settings → MCP) so the server is pick
   }
 
   if (agent === 'codex') {
+    const apiUrlHeader = isSelfHosted ? `, "X-Arguslog-API-URL" = "${apiUrl}"` : '';
     return `## Step 3 — register the Arguslog MCP server
 
-Write \`${target.configPath}\` (create the file if missing):
+Codex stores MCP configuration in **TOML**, not JSON. Append the following block to \`${target.configPath}\` (create the file and the \`.codex/\` directory if missing — Codex auto-creates them on first run):
 
-\`\`\`json
-{
-  "mcpServers": {
-    "arguslog": {
-      "url": "${httpUrl}",
-      "headers": {
-        "Authorization": "Bearer ${pat}"${envBlock}
-      }
-    }
-  }
-}
+\`\`\`toml
+[mcp_servers.arguslog]
+url = "${httpUrl}"
+http_headers = { "Authorization" = "Bearer ${pat}"${apiUrlHeader} }
+enabled = true
+startup_timeout_sec = 10
+tool_timeout_sec = 60
 \`\`\`
+
+Restart Codex (or run \`codex mcp list\`) so the new server is registered.
 
 > ${target.note}`;
   }
@@ -398,12 +392,13 @@ GitHub Copilot has two surfaces that each read a different MCP config file. Writ
 }
 \`\`\`
 
-**B. Copilot CLI** — write \`.mcp.json\` at the repo root (same shape Claude Code / Codex use; Copilot CLI migrated to this file per https://gh.io/copilotcli-mcpmigrate):
+**B. Copilot CLI** — write the workspace config at \`.mcp.json\` (or for a user-wide install, \`~/.copilot/mcp-config.json\`). Copilot CLI migrated to this layout per https://gh.io/copilotcli-mcpmigrate:
 
 \`\`\`json
 {
   "mcpServers": {
     "arguslog": {
+      "type": "http",
       "url": "${httpUrl}",
       "headers": {
         "Authorization": "Bearer ${pat}"${envBlock}
@@ -421,13 +416,13 @@ Reload the VS Code window (Chat) and/or re-run \`gh copilot\` (CLI) so the new s
   if (agent === 'windsurf') {
     return `## Step 3 — register the Arguslog MCP server
 
-Write \`${target.configPath}\` (create the file and parent directories if missing):
+Write \`${target.configPath}\` (create the file and parent directories if missing). **Windsurf uses \`serverUrl\` (not \`url\`)** for HTTP-transport MCP servers:
 
 \`\`\`json
 {
   "mcpServers": {
     "arguslog": {
-      "url": "${httpUrl}",
+      "serverUrl": "${httpUrl}",
       "headers": {
         "Authorization": "Bearer ${pat}"${envBlock}
       }
@@ -436,76 +431,29 @@ Write \`${target.configPath}\` (create the file and parent directories if missin
 }
 \`\`\`
 
-Reload Windsurf so the new MCP server is registered.
+Reload Windsurf (or click "Refresh" in the MCP plugin panel) so the new server is registered.
 
 > ${target.note}`;
   }
 
-  if (agent === 'continue') {
-    return `## Step 3 — register the Arguslog MCP server
-
-Edit \`${target.configPath}\` and add an entry under \`experimental.modelContextProtocolServers\`:
-
-\`\`\`json
-{
-  "experimental": {
-    "modelContextProtocolServers": [
-      {
-        "name": "arguslog",
-        "transport": "http",
-        "url": "${httpUrl}",
-        "headers": {
-          "Authorization": "Bearer ${pat}"${envBlock}
-        }
-      }
-    ]
-  }
-}
-\`\`\`
-
-If the user's Continue is older than 0.0.52 (no HTTP MCP transport), fall back to stdio:
-
-\`\`\`json
-{
-  "experimental": {
-    "modelContextProtocolServers": [
-      {
-        "name": "arguslog",
-        "command": "npx",
-        "args": ["-y", "@arguslog/mcp-server"],
-        "env": {
-          "ARGUSLOG_PAT": "${pat}"${
-            isSelfHosted ? `,\n          "ARGUSLOG_API_URL": "${apiUrl}"` : ''
-          }
-        }
-      }
-    ]
-  }
-}
-\`\`\`
-
-Restart Continue so the new server is picked up.
-
-> ${target.note}`;
-  }
-
-  // aider — stdio-only; PAT lives in env var, hosted HTTP URL is ignored
+  // continue — YAML in .continue/mcpServers/<name>.yaml (1.0+ schema)
+  const apiUrlHeader = isSelfHosted ? `\n    X-Arguslog-API-URL: "${apiUrl}"` : '';
   return `## Step 3 — register the Arguslog MCP server
 
-Aider does not support Streamable HTTP MCP servers yet, so we run \`@arguslog/mcp-server\` locally over stdio. Edit \`${target.configPath}\` (create the file if missing) and add:
+Continue 1.0+ reads each MCP server from its own YAML file under \`.continue/mcpServers/\` in the workspace root (the legacy \`experimental.modelContextProtocolServers\` array in \`~/.continue/config.json\` is deprecated).
+
+Write \`.continue/mcpServers/arguslog.yaml\` (create the directory if missing):
 
 \`\`\`yaml
-mcp-servers:
-  arguslog:
-    command: npx
-    args:
-      - "-y"
-      - "@arguslog/mcp-server"
-    env:
-      ARGUSLOG_PAT: "${pat}"${isSelfHosted ? `\n      ARGUSLOG_API_URL: "${apiUrl}"` : ''}
+name: arguslog
+type: streamable-http
+url: ${httpUrl}
+requestOptions:
+  headers:
+    Authorization: "Bearer ${pat}"${apiUrlHeader}
 \`\`\`
 
-The PAT travels through the \`ARGUSLOG_PAT\` env var into the locally-spawned mcp-server process — same real token, different transport. Restart Aider so the new server is registered.
+Reload Continue (Command Palette → "Continue: Reload providers") so the new server is picked up.
 
 > ${target.note}`;
 }
@@ -618,17 +566,8 @@ export function buildSnippets(ctx: SnippetContext): ConnectSnippet[] {
       client: 'Continue',
       language: 'markdown',
       description:
-        'Paste into Continue chat (VS Code / JetBrains). It will install the SDK and update ~/.continue/config.json.',
+        'Paste into Continue chat (VS Code / JetBrains). It will install the SDK and drop a .continue/mcpServers/arguslog.yaml in the workspace.',
       code: buildAgentPrompt(ctx, 'continue'),
-    },
-    {
-      id: 'agent-aider',
-      group: 'agent',
-      client: 'Aider',
-      language: 'markdown',
-      description:
-        'Paste into the Aider CLI. Aider is stdio-only — instructions install @arguslog/mcp-server locally with the PAT in env.',
-      code: buildAgentPrompt(ctx, 'aider'),
     },
 
     // ─── SDK group ────────────────────────────────────────────────────────────

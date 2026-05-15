@@ -31,7 +31,7 @@
     "step3Title": "Paste into your agent",
     "step3Body": "The prompt detects your stack, installs the matching @arguslog SDK, drops init({ dsn }) in the right entry file, and registers the Arguslog MCP server.",
     "agentsLabel": "Works with",
-    "footnoteComingSoon": "Codeium, Tabnine, GitHub Copilot CLI — MCP support coming soon.",
+    "footnoteComingSoon": "Codeium and Tabnine (autocomplete-only — no MCP host) and Aider (not an MCP client; use the community aider-mcp-server to point Claude/Cursor at Aider instead) — coming when their MCP story lands.",
     "cta": "Start in 3 seconds"
   },
   "features": {

@@ -91,7 +91,6 @@ const AGENT_INSTALL_LIST = [
   'GitHub Copilot',
   'Windsurf',
   'Continue',
-  'Aider',
 ] as const;
 
 /**

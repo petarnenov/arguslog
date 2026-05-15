@@ -20,7 +20,7 @@ tool-call away through [`@arguslog/mcp-server`](packages/mcp-server).
    are auto-provisioned on first visit and inlined into every prompt — no
    manual "generate / copy" round-trip.
 4. Pick your AI coding agent and copy the magic prompt:
-   - **Claude Code · Cursor · Codex · GitHub Copilot Chat · Windsurf · Continue · Aider** are all supported.
+   - **Claude Code · Cursor · Codex · GitHub Copilot (Chat + CLI) · Windsurf · Continue** are all supported. Each prompt writes to the agent's canonical config (Claude Code/Copilot CLI `.mcp.json`, Cursor `.cursor/mcp.json`, Codex `~/.codex/config.toml`, Copilot Chat `.vscode/mcp.json`, Windsurf `~/.codeium/windsurf/mcp_config.json`, Continue `.continue/mcpServers/arguslog.yaml`).
 5. Paste into the agent. It detects your stack (`package.json` / `pyproject.toml`
    / `build.gradle`), installs `@arguslog/sdk-<platform>` at the pinned version
    from the platforms catalog, drops `init({ dsn })` in the right entry point,

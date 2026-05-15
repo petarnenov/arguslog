@@ -23,10 +23,11 @@ client and the MCP server, or if you're running against a self-hosted Arguslog i
 
 > **Even quicker**: open a project's **Connect** page on the dashboard. The DSN and a
 > `Connect quickstart` PAT are auto-provisioned on first visit, and the page renders a
-> paste-ready magic prompt for Claude Code / Cursor / Codex / GitHub Copilot / Windsurf /
-> Continue / Aider — the agent installs the SDK *and* registers this MCP server in a
-> single paste. The manual flow below stays useful for custom integrations and the rare
-> agent that doesn't take a prompt.
+> paste-ready magic prompt for Claude Code / Cursor / Codex / GitHub Copilot (Chat + CLI) /
+> Windsurf / Continue — the agent installs the SDK *and* registers this MCP server in a
+> single paste, with the correct schema for each agent's actual config format. The
+> manual flow below stays useful for custom integrations and the rare agent that doesn't
+> take a prompt.
 
 ### 1. Generate a PAT (manual flow)
 

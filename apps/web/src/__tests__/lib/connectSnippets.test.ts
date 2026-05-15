@@ -18,9 +18,9 @@ describe('buildSnippets', () => {
     const all = buildSnippets(baseCtx);
     const ids = all.map((s) => s.id);
 
-    // Agent: 7 (claude-code, cursor, codex, copilot, windsurf, continue, aider),
-    // SDK: 5, MCP: 4, CLI: 2.
-    expect(all.filter((s) => s.group === 'agent')).toHaveLength(7);
+    // Agent: 6 (claude-code, cursor, codex, copilot, windsurf, continue),
+    // SDK: 5, MCP: 4, CLI: 2. Aider dropped — Aider is not an MCP client.
+    expect(all.filter((s) => s.group === 'agent')).toHaveLength(6);
     expect(all.filter((s) => s.group === 'sdk')).toHaveLength(5);
     expect(all.filter((s) => s.group === 'mcp')).toHaveLength(4);
     expect(all.filter((s) => s.group === 'cli')).toHaveLength(2);
@@ -31,7 +31,6 @@ describe('buildSnippets', () => {
       'agent-copilot',
       'agent-windsurf',
       'agent-continue',
-      'agent-aider',
       'sdk-javascript',
       'sdk-react',
       'sdk-node',
@@ -123,7 +122,6 @@ describe('buildAgentPrompt', () => {
     'copilot',
     'windsurf',
     'continue',
-    'aider',
   ] as const;
 
   it('renders a self-describing brief for every supported agent', () => {
@@ -152,21 +150,46 @@ describe('buildAgentPrompt', () => {
     }
   });
 
-  it('uses hosted MCP URL for every HTTP-transport agent (not Aider)', () => {
-    for (const agent of ['claude-code', 'cursor', 'codex', 'copilot', 'windsurf', 'continue'] as const) {
+  it('uses hosted MCP URL for every agent (all six speak Streamable HTTP)', () => {
+    for (const agent of ALL_AGENTS) {
       const md = buildAgentPrompt(baseCtx, agent);
       expect(md).toContain('https://mcp.arguslog.org/mcp');
     }
   });
 
-  it('aider prompt uses stdio (npx) — hosted HTTP URL never appears, PAT goes through env var', () => {
-    const md = buildAgentPrompt(baseCtx, 'aider');
-    expect(md).toContain('npx');
-    expect(md).toContain('@arguslog/mcp-server');
-    expect(md).toContain('ARGUSLOG_PAT:');
-    expect(md).toContain(baseCtx.pat!);
-    // No hosted MCP URL — Aider can't speak it.
-    expect(md).not.toContain('https://mcp.arguslog.org/mcp');
+  it('per-agent schema matches the docs (regression guard for V3.1)', () => {
+    // Claude Code — explicit "type": "http" in JSON, even though the CLI command also works.
+    expect(buildAgentPrompt(baseCtx, 'claude-code')).toMatch(/"type":\s*"http"/);
+
+    // Codex — TOML, never Claude-style JSON. Block header [mcp_servers.arguslog] is the
+    // smoking gun for the correct schema.
+    const codex = buildAgentPrompt(baseCtx, 'codex');
+    expect(codex).toContain('[mcp_servers.arguslog]');
+    expect(codex).toContain('http_headers');
+    expect(codex).not.toMatch(/"mcpServers"\s*:/); // no JSON shape leaking in
+
+    // Windsurf — `serverUrl` (Codeium docs), NOT `url`.
+    const windsurf = buildAgentPrompt(baseCtx, 'windsurf');
+    expect(windsurf).toContain('"serverUrl"');
+    expect(windsurf).not.toMatch(/"url":\s*"https:\/\/mcp\.arguslog\.org/);
+
+    // Continue — workspace YAML (1.0+), not the deprecated experimental.* JSON. The
+    // prose mentions the deprecated path by name so the agent understands the migration,
+    // so we only assert the YAML schema is the one being emitted for the agent to write.
+    const cont = buildAgentPrompt(baseCtx, 'continue');
+    expect(cont).toContain('.continue/mcpServers/arguslog.yaml');
+    expect(cont).toContain('type: streamable-http');
+    // The actual server-config code block is YAML — no JSON `"experimental"` wrapper.
+    expect(cont).not.toMatch(/"experimental"\s*:/);
+
+    // Copilot — dual-path (Chat .vscode/mcp.json with `servers` + CLI .mcp.json with
+    // `mcpServers`). Both blocks must carry explicit "type": "http".
+    const copilot = buildAgentPrompt(baseCtx, 'copilot');
+    expect(copilot).toContain('.vscode/mcp.json');
+    expect(copilot).toContain('.mcp.json');
+    expect(copilot).toContain('~/.copilot/mcp-config.json');
+    // Two HTTP type declarations (one per file).
+    expect((copilot.match(/"type":\s*"http"/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
   it('does not treat git status as a required step (workspace may not be a git repo)', () => {
@@ -185,16 +208,12 @@ describe('buildAgentPrompt', () => {
     expect(buildAgentPrompt(baseCtx, 'claude-code')).toContain('.mcp.json');
     expect(buildAgentPrompt(baseCtx, 'claude-code')).toContain('claude mcp add arguslog');
     expect(buildAgentPrompt(baseCtx, 'cursor')).toContain('.cursor/mcp.json');
-    expect(buildAgentPrompt(baseCtx, 'codex')).toContain('.mcp.json');
-    // Copilot prompt covers BOTH Chat (.vscode/mcp.json) and the post-migration Copilot
-    // CLI (.mcp.json) so a single paste lands the server in whichever surface the user
-    // is actually running.
+    expect(buildAgentPrompt(baseCtx, 'codex')).toContain('~/.codex/config.toml');
     expect(buildAgentPrompt(baseCtx, 'copilot')).toContain('.vscode/mcp.json');
     expect(buildAgentPrompt(baseCtx, 'copilot')).toContain('.mcp.json');
     expect(buildAgentPrompt(baseCtx, 'copilot')).toContain('gh.io/copilotcli-mcpmigrate');
     expect(buildAgentPrompt(baseCtx, 'windsurf')).toContain('.codeium/windsurf/mcp_config.json');
-    expect(buildAgentPrompt(baseCtx, 'continue')).toContain('.continue/config.json');
-    expect(buildAgentPrompt(baseCtx, 'aider')).toContain('.aider.conf.yml');
+    expect(buildAgentPrompt(baseCtx, 'continue')).toContain('.continue/mcpServers/arguslog.yaml');
   });
 
   it('falls back to placeholders when DSN or PAT are missing', () => {

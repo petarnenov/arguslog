@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+### Fixed — MCP config schemas verified against current docs (May 2026)
+
+Direct WebFetch on each tool's MCP docs surfaced four schema bugs in the V3
+magic-prompt rollout. Each was the same class of mistake as the Copilot CLI
+migration that bit us — guessing the schema from memory instead of reading the
+docs. Fixed:
+
+- **Codex CLI**: switched from invalid Claude-Code-style `.mcp.json` to the
+  correct `~/.codex/config.toml` with `[mcp_servers.<name>]` TOML blocks. The
+  old JSON form was silently rejected by Codex.
+- **Windsurf**: the URL field is `serverUrl`, not `url` (per Codeium docs).
+- **Continue**: migrated the prompt from the deprecated
+  `experimental.modelContextProtocolServers` JSON array in
+  `~/.continue/config.json` to the current `.continue/mcpServers/<name>.yaml`
+  workspace files (Continue 1.0+ schema).
+- **Claude Code + Copilot CLI**: added explicit `"type": "http"` for
+  spec-compliance and forward-compatibility.
+- **Aider**: dropped from the magic-prompt list — Aider is not an MCP client;
+  the community `aider-mcp-server` project runs in the opposite direction
+  (turns Aider into a server for Claude/Cursor to consume). A user pasting our
+  Aider prompt would have silently no-op'd.
+
 ### Added — 3-second install for AI coding agents
 
 The Connect page on the dashboard now ships a paste-ready magic prompt for
