@@ -570,18 +570,14 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
               </Text>
               <AreaChart
                 h={90}
-                w="100%"
                 data={stats.eventsByDay}
                 dataKey="day"
-                series={[{ name: 'count', color: 'green.6', label: t('projects.events') }]}
-                type="default"
+                series={[{ name: 'count', color: 'teal.5', label: t('projects.events') }]}
                 curveType="monotone"
                 withDots={false}
                 withYAxis={false}
-                withGradient
-                gridAxis="none"
                 strokeWidth={2}
-                fillOpacity={0.55}
+                fillOpacity={0.6}
                 xAxisProps={{
                   tickFormatter: formatShortDay,
                   interval: 'preserveStartEnd',
