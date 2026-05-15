@@ -111,10 +111,17 @@ Open follow-ups (deferred — none block #5/#6 starting):
   are now clean apart from the attached `redis-volume`, `arguslog-keycloak-db-volume`,
   `postgres-volume-J1m2` (rollback), and `timescaledb-volume` (where applicable).
 - ~~**Stripe live keys.**~~ Obsolete — OSS conversion removed payments.
-- **R2 bucket** (`arguslog-attachments`, WEUR) is provisioned and wired to api + worker via
-  `R2_ENDPOINT` + `R2_ACCESS_KEY` + `R2_SECRET_KEY` + `R2_BUCKET` on both staging + production.
-  Same bucket serves both envs — fine for dogfood; consider a separate prod bucket if customer
-  data needs hard-isolation.
+- **R2 buckets — per-environment isolation** (separated 2026-05-15):
+  - **Production:** `arguslog-attachments` (WEUR). Wired to api + worker via
+    `R2_ENDPOINT` + `R2_ACCESS_KEY` + `R2_SECRET_KEY` + `R2_BUCKET`. Token unchanged from the
+    pre-isolation setup; still scoped to this bucket (was already so by Cloudflare default).
+  - **Staging:** `arguslog-staging-attachments` (WEUR). Different bucket + a **separate**
+    scoped R2 API token. Verified post-cutover: the staging token returns `AccessDenied` when
+    pointed at the production bucket — compromise of any staging service no longer reaches
+    production sourcemaps / attachments.
+  - **Endpoint** is account-level (`<account>.r2.cloudflarestorage.com`) and therefore
+    identical across both envs; only `R2_BUCKET` + the credentials differ. Rollback creds for
+    staging are at `/tmp/r2-rollback-staging.env` until the soak window closes.
 - **Resend SMTP** is wired into the Keycloak realm via the admin API (host=smtp.resend.com,
   port=465 SSL, from=noreply@arguslog.org). The `services/keycloak/realm/arguslog-realm.json`
   file still references the docker-compose `mailhog` host so local dev keeps working — prod
@@ -190,13 +197,11 @@ Wire shared values via Railway **Service Variables → Reference Variables** so 
 DATABASE_URL              = ${{Postgres.DATABASE_URL}}
 REDIS_URL                 = ${{Redis.REDIS_URL}}
 KEYCLOAK_ISSUER           = https://auth.arguslog.org/realms/arguslog
-R2_ENDPOINT               = (Cloudflare R2 endpoint URL)
-R2_ACCESS_KEY             = (from Cloudflare R2 console)
-R2_SECRET_KEY             = (from Cloudflare R2 console)
-R2_BUCKET                 = arguslog-attachments
-STRIPE_API_KEY            = (live or test depending on env)
-STRIPE_WEBHOOK_SECRET     = (signing secret for /api/v1/webhooks/stripe)
-STRIPE_PRICE_PRO          = (price_xxx for the Pro tier)
+R2_ENDPOINT               = (Cloudflare R2 endpoint URL — account-level, same in both envs)
+R2_ACCESS_KEY             = (per-env scoped R2 API token — DIFFERENT in staging vs prod)
+R2_SECRET_KEY             = (per-env scoped R2 API token — DIFFERENT in staging vs prod)
+R2_BUCKET                 = arguslog-attachments         # production
+                          # arguslog-staging-attachments  # staging
 DASHBOARD_BASE_URL        = https://app.arguslog.org
 RESEND_API_KEY            = (Resend API key)
 INGEST_PUBLIC_HOST        = https://ingest.arguslog.org
@@ -217,10 +222,11 @@ JAVA_TOOL_OPTIONS         = -XX:MaxRAMPercentage=75
 ```
 DATABASE_URL              = ${{Postgres.DATABASE_URL}}
 REDIS_URL                 = ${{Redis.REDIS_URL}}
-R2_ENDPOINT               = (same as api)
-R2_ACCESS_KEY             = (same as api)
-R2_SECRET_KEY             = (same as api)
-R2_BUCKET                 = arguslog-attachments
+R2_ENDPOINT               = (same as arguslog-api in this env)
+R2_ACCESS_KEY             = (same as arguslog-api in this env — per-env scoped token)
+R2_SECRET_KEY             = (same as arguslog-api in this env — per-env scoped token)
+R2_BUCKET                 = arguslog-attachments         # production
+                          # arguslog-staging-attachments  # staging
 TELEGRAM_BOT_TOKEN        = (Telegram bot token, optional)
 RESEND_API_KEY            = (Resend API key, optional)
 RESEND_FROM               = alerts@arguslog.org

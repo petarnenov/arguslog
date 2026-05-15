@@ -74,13 +74,11 @@ Nothing open. Every original item is shipped or obsolete.
 
 ## Open — operational
 
-| #   | Item                                                                                                              |
-| --- | ----------------------------------------------------------------------------------------------------------------- |
-| 1   | Re-enable `RETENTION_DRY_RUN=false` after one nightly cycle confirms the per-org delete count is sane.            |
-| 4   | Decide if production should use a separate R2 bucket from staging (currently `arguslog-attachments` serves both). |
+| #   | Item                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------ |
+| 1   | Re-enable `RETENTION_DRY_RUN=false` after one nightly cycle confirms the per-org delete count is sane. |
 
-Code anchors: item 1 — `services/worker/src/main/resources/application.yml:47` still defaults
-to `true`. Item 4 — `infra/railway/README.md` pins `R2_BUCKET=arguslog-attachments` for both envs.
+Code anchors: item 1 — `services/worker/src/main/resources/application.yml:47` still defaults to `true`.
 
 ### Operational — shipped
 
@@ -96,6 +94,13 @@ to `true`. Item 4 — `infra/railway/README.md` pins `R2_BUCKET=arguslog-attachm
   `infra/railway/README.md` document the dedicated backing store, both executed-steps tables
   (staging + production), and lessons learned (project-scoped service names, `source: null` on
   per-env instances, `railway ssh` TTY gotcha, GraphQL `tcpProxyCreate`/`Delete`).
+- ~~4~~ Per-environment R2 buckets — **done 2026-05-15**. Production keeps
+  `arguslog-attachments` (WEUR) with its existing token; staging moved to
+  `arguslog-staging-attachments` (WEUR) with a separately-scoped R2 API token. Cross-env
+  isolation verified: the staging token returns `AccessDenied` when pointed at the production
+  bucket. `arguslog-api` + `arguslog-worker` staging services redeployed clean against the new
+  bucket; rollback creds at `/tmp/r2-rollback-staging.env`. Doc + per-service Variables blocks
+  in `infra/railway/README.md` reflect the split.
 
 ### Operational — obsolete after OSS conversion
 
