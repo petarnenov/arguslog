@@ -179,9 +179,14 @@
       "title": "Paste-ready snippets",
       "hint": "Pick your stack and click Copy. Snippets fill in your DSN / PAT automatically; missing credentials show a placeholder so you can still copy the structure.",
       "group": {
+        "agent": "AI coding agents",
         "sdk": "SDKs",
         "mcp": "MCP clients",
         "cli": "CLI"
+      },
+      "agent": {
+        "hint": "Copy one prompt, paste into your coding agent. It detects the stack, installs the matching Arguslog SDK, wires init(), and registers the MCP server — single paste, ~3 seconds of user effort.",
+        "missingCredentials": "Generate a DSN and PAT above; both get inlined into the prompts so the agent can finish the integration in one pass."
       }
     }
   },

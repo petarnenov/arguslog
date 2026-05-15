@@ -336,13 +336,27 @@ export function ConnectProjectPage() {
           {t('connect.snippets.hint')}
         </Text>
 
-        <Tabs defaultValue="sdk" keepMounted={false}>
+        <Tabs defaultValue="agent" keepMounted={false}>
           <Tabs.List>
+            <Tabs.Tab value="agent">{t('connect.snippets.group.agent')}</Tabs.Tab>
             <Tabs.Tab value="sdk">{t('connect.snippets.group.sdk')}</Tabs.Tab>
             <Tabs.Tab value="mcp">{t('connect.snippets.group.mcp')}</Tabs.Tab>
             <Tabs.Tab value="cli">{t('connect.snippets.group.cli')}</Tabs.Tab>
           </Tabs.List>
 
+          <Tabs.Panel value="agent" pt="md">
+            <Stack gap="xs">
+              <Text size="sm" c="dimmed">
+                {t('connect.snippets.agent.hint')}
+              </Text>
+              {(!dsnString || !patString) && (
+                <Alert color="yellow" variant="light">
+                  {t('connect.snippets.agent.missingCredentials')}
+                </Alert>
+              )}
+              <SnippetSubTabs items={grouped.agent} />
+            </Stack>
+          </Tabs.Panel>
           <Tabs.Panel value="sdk" pt="md">
             <SnippetSubTabs items={grouped.sdk} />
           </Tabs.Panel>
@@ -417,6 +431,7 @@ function SnippetSubTabs({ items }: SnippetSubTabsProps) {
 
 function groupSnippets(all: ConnectSnippet[]): Record<SnippetGroup, ConnectSnippet[]> {
   return {
+    agent: all.filter((s) => s.group === 'agent'),
     sdk: all.filter((s) => s.group === 'sdk'),
     mcp: all.filter((s) => s.group === 'mcp'),
     cli: all.filter((s) => s.group === 'cli'),

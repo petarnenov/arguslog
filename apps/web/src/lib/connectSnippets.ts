@@ -11,7 +11,7 @@
  *     `<GENERATE_PAT_FIRST>` placeholder so the user can still copy the structure.
  */
 
-export type SnippetGroup = 'sdk' | 'mcp' | 'cli';
+export type SnippetGroup = 'agent' | 'sdk' | 'mcp' | 'cli';
 
 export interface ConnectSnippet {
   /** Stable id — used for tab keys, test selectors, copy-button telemetry. */
@@ -20,12 +20,131 @@ export interface ConnectSnippet {
   /** Display label for the tab. */
   client: string;
   /** Mantine `<Prism>` / `<Code>` language hint for syntax highlighting. */
-  language: 'tsx' | 'ts' | 'js' | 'python' | 'java' | 'json' | 'bash';
+  language: 'tsx' | 'ts' | 'js' | 'python' | 'java' | 'json' | 'bash' | 'markdown';
   /** One-line context shown above the code block. */
   description: string;
   /** The literal code to paste. */
   code: string;
 }
+
+/**
+ * Pinned, in-sync mirror of `R__platforms_catalog.sql`. The magic-prompt builder needs to inline
+ * exact `pkg@version` strings into the agent instructions so the LLM doesn't guess a stale or
+ * non-existent version. `connectSnippets.platforms.parity.test.ts` keeps this honest by reading
+ * the SQL migration and asserting (slug, pkg, version) match. `installCmd` codifies the
+ * canonical install incantation per ecosystem so the prompt is one-paste-installable.
+ */
+export const SDK_CATALOG = [
+  {
+    slug: 'javascript',
+    pkg: '@arguslog/sdk-browser',
+    version: '2.0.0',
+    installCmd: 'npm install @arguslog/sdk-browser@^2',
+    detect: 'package.json without a framework — vanilla HTML/JS or tooling-free bundler',
+    entryFile: 'src/main.js or the first script loaded by index.html',
+  },
+  {
+    slug: 'react',
+    pkg: '@arguslog/sdk-react',
+    version: '2.0.1',
+    installCmd: 'npm install @arguslog/sdk-react@^2',
+    detect: 'package.json contains "react"',
+    entryFile: 'src/main.tsx (Vite) or src/index.tsx (CRA)',
+  },
+  {
+    slug: 'angular',
+    pkg: '@arguslog/sdk-angular',
+    version: '2.0.0',
+    installCmd: 'npm install @arguslog/sdk-angular@^2',
+    detect: 'package.json contains "@angular/core"',
+    entryFile: 'src/app/app.config.ts (provideArguslog())',
+  },
+  {
+    slug: 'vue',
+    pkg: '@arguslog/sdk-vue',
+    version: '2.0.0',
+    installCmd: 'npm install @arguslog/sdk-vue@^2',
+    detect: 'package.json contains "vue" (>= 3.x)',
+    entryFile: 'src/main.ts (app.use(arguslogPlugin))',
+  },
+  {
+    slug: 'nextjs',
+    pkg: '@arguslog/sdk-nextjs',
+    version: '2.0.0',
+    installCmd: 'npm install @arguslog/sdk-nextjs@^2',
+    detect: 'package.json contains "next"',
+    entryFile: 'instrumentation.ts at repo root (Next 13+ instrumentation hook)',
+  },
+  {
+    slug: 'web3',
+    pkg: '@arguslog/sdk-web3',
+    version: '2.0.0',
+    installCmd: 'npm install @arguslog/sdk-web3@^2',
+    detect: 'package.json contains "viem", "ethers", or "@solana/web3.js"',
+    entryFile: 'wherever you currently init() the wallet client',
+  },
+  {
+    slug: 'react-native',
+    pkg: '@arguslog/sdk-react-native',
+    version: '2.0.0',
+    installCmd: 'npm install @arguslog/sdk-react-native@^2',
+    detect: 'package.json contains "react-native"',
+    entryFile: 'App.tsx (top of the file, above the root component)',
+  },
+  {
+    slug: 'node',
+    pkg: '@arguslog/sdk-node',
+    version: '2.0.0',
+    installCmd: 'npm install @arguslog/sdk-node@^2',
+    detect: 'package.json with no frontend framework (Express, Fastify, plain Node, workers)',
+    entryFile: 'the FIRST file your process loads (e.g., src/index.ts before any handler import)',
+  },
+  {
+    slug: 'java-spring',
+    pkg: 'org.arguslog:java-sdk',
+    version: '2.0.0',
+    installCmd:
+      'add to build.gradle (implementation "org.arguslog:java-sdk:2.0.0") or pom.xml dependency block',
+    detect: 'build.gradle / build.gradle.kts / pom.xml with Spring Boot starter',
+    entryFile: 'src/main/resources/application.yml (arguslog.dsn property)',
+  },
+  {
+    slug: 'python',
+    pkg: 'arguslog',
+    version: '2.0.0',
+    installCmd: 'pip install "arguslog>=2,<3"  (or uv add arguslog>=2)',
+    detect: 'pyproject.toml, requirements.txt, or setup.py',
+    entryFile:
+      'the application entry — Django wsgi.py / Flask app.py / FastAPI main.py / a worker boot script',
+  },
+] as const;
+
+export type AgentTarget = 'claude-code' | 'cursor' | 'codex' | 'copilot';
+
+/** Per-agent MCP config file location + install hint shown in the magic prompt. */
+const AGENT_MCP_TARGETS: Record<AgentTarget, { name: string; configPath: string; note: string }> =
+  {
+    'claude-code': {
+      name: 'Claude Code',
+      configPath: '.mcp.json (project root) — or use `claude mcp add`',
+      note: 'Project-level .mcp.json is checked into the repo and shared with teammates.',
+    },
+    cursor: {
+      name: 'Cursor',
+      configPath: '.cursor/mcp.json (workspace) — or ~/.cursor/mcp.json for user-wide',
+      note: 'Cursor 0.50+ supports Streamable HTTP MCP servers directly.',
+    },
+    codex: {
+      name: 'Codex',
+      configPath: '.mcp.json (project root) — same shape as Claude Code',
+      note: 'Codex CLI reads the same .mcp.json file Claude Code uses, so a single config covers both.',
+    },
+    copilot: {
+      name: 'GitHub Copilot Chat',
+      configPath: '.vscode/mcp.json (workspace)',
+      note: 'Requires the GitHub Copilot Chat extension with MCP support enabled in VS Code settings.',
+    },
+  };
 
 export interface SnippetContext {
   /** Project DSN (full `arguslog://...` form). Null if no active DSN exists yet. */
@@ -82,6 +201,219 @@ function v(value: string | null, placeholder: string): string {
   return value ?? placeholder;
 }
 
+// ─── Agent magic-prompt builder ────────────────────────────────────────────────
+// One pure function per markdown section so they compose, test, and read straight-through.
+// The resulting prompt is paste-ready into Claude Code / Cursor / Codex / Copilot Chat — the
+// agent reads it like an issue ticket and executes it. Stack detection runs at paste time on
+// the user's actual repo, so the SPA-side `Platform` attribution is irrelevant here.
+
+function agentRoleHeader(agent: AgentTarget): string {
+  const target = AGENT_MCP_TARGETS[agent];
+  return `# Integrate Arguslog (error tracking + MCP) into this project
+
+You are integrating **Arguslog** — open-source multi-tenant error tracking — into the user's project. Do all of the following in one pass, then report a summary of changed files and any manual steps the user still owes.
+
+**Target agent**: ${target.name}.`;
+}
+
+function agentDetectionInstructions(): string {
+  return `## Step 1 — detect the stack
+
+Read these files at the repo root (whichever exist) and decide which SDK applies. Match the FIRST rule that fits; bail to "node" only if a backend service has no framework signal.
+
+- \`package.json\` — inspect \`dependencies\` + \`devDependencies\`.
+- \`pyproject.toml\` / \`requirements.txt\` / \`setup.py\` — Python project.
+- \`build.gradle\` / \`build.gradle.kts\` / \`pom.xml\` — JVM project (Spring Boot if you see spring-boot-starter).
+
+If the repo is a monorepo (workspaces / pnpm-workspace.yaml / turbo.json), apply the detection per workspace and pick the right SDK for each.`;
+}
+
+function agentSdkInstallTable(): string {
+  const rows = SDK_CATALOG.map(
+    (p) =>
+      `| \`${p.slug}\` | ${p.detect} | \`${p.installCmd}\` | \`${p.pkg}@${p.version}\` | ${p.entryFile} |`,
+  ).join('\n');
+  return `## Step 2 — install the SDK and wire init()
+
+Pick the row matching your detection. Use the EXACT package + version listed below — the catalog is the single source of truth.
+
+| Slug | Detection signal | Install command | Pinned package | Where to inject init() |
+|---|---|---|---|---|
+${rows}
+
+For \`init({ dsn })\`, use the DSN provided at the bottom of this document. JS/TS SDKs share the same option shape:
+
+\`\`\`ts
+import { init } from '@arguslog/sdk-<slug>';
+init({ dsn: '<DSN>', environment: process.env.NODE_ENV });
+\`\`\`
+
+Python:
+
+\`\`\`python
+import arguslog
+arguslog.init(dsn="<DSN>", environment="production", install_excepthook=True)
+\`\`\`
+
+Java / Spring (application.yml):
+
+\`\`\`yaml
+arguslog:
+  dsn: "<DSN>"
+  environment: production
+\`\`\``;
+}
+
+function agentMcpInstructions(
+  agent: AgentTarget,
+  pat: string,
+  isSelfHosted: boolean,
+  apiUrl: string,
+): string {
+  const target = AGENT_MCP_TARGETS[agent];
+  const envBlock = isSelfHosted
+    ? `,\n        "ARGUSLOG_API_URL": "${apiUrl}"`
+    : '';
+  const httpUrl = isSelfHosted
+    ? '<self-hosted MCP URL — run `npx @arguslog/mcp-server@^2.3.1` locally and point this at it>'
+    : 'https://mcp.arguslog.org/mcp';
+
+  if (agent === 'claude-code') {
+    return `## Step 3 — register the Arguslog MCP server
+
+**Preferred (Claude Code CLI)** — run from the project root:
+
+\`\`\`bash
+claude mcp add arguslog ${httpUrl} \\
+  --transport http \\
+  --header "Authorization: Bearer ${pat}"
+\`\`\`
+
+**Fallback (file-based)** — write to \`${target.configPath}\`:
+
+\`\`\`json
+{
+  "mcpServers": {
+    "arguslog": {
+      "url": "${httpUrl}",
+      "headers": {
+        "Authorization": "Bearer ${pat}"${envBlock}
+      }
+    }
+  }
+}
+\`\`\`
+
+> ${target.note}`;
+  }
+
+  if (agent === 'cursor') {
+    return `## Step 3 — register the Arguslog MCP server
+
+Write \`${target.configPath}\` (create the file if missing):
+
+\`\`\`json
+{
+  "mcpServers": {
+    "arguslog": {
+      "url": "${httpUrl}",
+      "headers": {
+        "Authorization": "Bearer ${pat}"${envBlock}
+      }
+    }
+  }
+}
+\`\`\`
+
+Restart Cursor (or click "Reload MCP" in Settings → MCP) so the server is picked up.
+
+> ${target.note}`;
+  }
+
+  if (agent === 'codex') {
+    return `## Step 3 — register the Arguslog MCP server
+
+Write \`${target.configPath}\` (create the file if missing):
+
+\`\`\`json
+{
+  "mcpServers": {
+    "arguslog": {
+      "url": "${httpUrl}",
+      "headers": {
+        "Authorization": "Bearer ${pat}"${envBlock}
+      }
+    }
+  }
+}
+\`\`\`
+
+> ${target.note}`;
+  }
+
+  // copilot
+  return `## Step 3 — register the Arguslog MCP server
+
+Write \`${target.configPath}\`:
+
+\`\`\`json
+{
+  "servers": {
+    "arguslog": {
+      "type": "http",
+      "url": "${httpUrl}",
+      "headers": {
+        "Authorization": "Bearer ${pat}"${envBlock}
+      }
+    }
+  }
+}
+\`\`\`
+
+Reload the VS Code window so Copilot Chat picks up the new server.
+
+> ${target.note}`;
+}
+
+function agentVerifyStep(): string {
+  return `## Step 4 — verify
+
+1. Run the project's normal build/test command (\`npm run build\`, \`pnpm test\`, \`pytest -q\`, \`./gradlew build\` — pick what fits).
+2. Call the MCP server: invoke the \`list_projects\` Arguslog tool. A successful response means the PAT and MCP wiring work end-to-end.
+3. Trigger a synthetic error (throw + catch in JS, \`raise\` in Python) and confirm the event reaches the dashboard at https://app.arguslog.org.
+
+## Step 5 — report
+
+Summarise:
+- Which SDK you installed and where you wired init().
+- Which MCP config file you touched.
+- Any TODOs the user still owes (e.g., setting env vars in CI).
+- Run \`git status\` and list the changed files so the user can review before committing.`;
+}
+
+function agentCredentialsBlock(dsn: string, pat: string): string {
+  return `## Credentials (provided by the user)
+
+- **DSN** (for the SDK): \`${dsn}\`
+- **Personal Access Token** (for the MCP server): \`${pat}\`
+
+These are already inlined into the snippets above — no further substitution needed.`;
+}
+
+export function buildAgentPrompt(ctx: SnippetContext, agent: AgentTarget): string {
+  const dsn = v(ctx.dsn, DSN_PLACEHOLDER);
+  const pat = v(ctx.pat, PAT_PLACEHOLDER);
+  const isSelfHosted = ctx.apiUrl !== 'https://arguslog.org';
+  return [
+    agentRoleHeader(agent),
+    agentDetectionInstructions(),
+    agentSdkInstallTable(),
+    agentMcpInstructions(agent, pat, isSelfHosted, ctx.apiUrl),
+    agentVerifyStep(),
+    agentCredentialsBlock(dsn, pat),
+  ].join('\n\n');
+}
+
 export function buildSnippets(ctx: SnippetContext): ConnectSnippet[] {
   const dsn = v(ctx.dsn, DSN_PLACEHOLDER);
   const pat = v(ctx.pat, PAT_PLACEHOLDER);
@@ -89,6 +421,47 @@ export function buildSnippets(ctx: SnippetContext): ConnectSnippet[] {
   const isSelfHosted = apiUrl !== 'https://arguslog.org';
 
   return [
+    // ─── Agent group ──────────────────────────────────────────────────────────
+    // Magic-prompt entries. Each is a self-contained markdown brief the user pastes into the
+    // matching coding agent; the agent detects the stack, installs the SDK, wires init(), and
+    // registers the Arguslog MCP server — single paste, ~3 seconds of user effort.
+    {
+      id: 'agent-claude-code',
+      group: 'agent',
+      client: 'Claude Code',
+      language: 'markdown',
+      description:
+        'Paste into Claude Code. It will detect the stack, install the SDK, wire init(), and register the MCP server via `claude mcp add`.',
+      code: buildAgentPrompt(ctx, 'claude-code'),
+    },
+    {
+      id: 'agent-cursor',
+      group: 'agent',
+      client: 'Cursor',
+      language: 'markdown',
+      description:
+        'Paste into Cursor (Composer / chat). It will install the SDK and write the MCP entry to .cursor/mcp.json.',
+      code: buildAgentPrompt(ctx, 'cursor'),
+    },
+    {
+      id: 'agent-codex',
+      group: 'agent',
+      client: 'Codex',
+      language: 'markdown',
+      description:
+        'Paste into Codex CLI. It will install the SDK and write the MCP entry to .mcp.json (same shape as Claude Code).',
+      code: buildAgentPrompt(ctx, 'codex'),
+    },
+    {
+      id: 'agent-copilot',
+      group: 'agent',
+      client: 'GitHub Copilot',
+      language: 'markdown',
+      description:
+        'Paste into GitHub Copilot Chat (VS Code). It will install the SDK and write the MCP entry to .vscode/mcp.json.',
+      code: buildAgentPrompt(ctx, 'copilot'),
+    },
+
     // ─── SDK group ────────────────────────────────────────────────────────────
     {
       id: 'sdk-javascript',
