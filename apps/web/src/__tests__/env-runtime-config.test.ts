@@ -53,4 +53,56 @@ describe('env runtime-config resolution', () => {
     const { env } = await import('../env');
     expect(env.VITE_DOGFOOD_DSN).toBeUndefined();
   });
+
+  // jsdom's default hostname is `localhost`, so the dev-default path is exercised in every
+  // test above. These two pin the production-vs-dev branch explicitly — they re-stub
+  // window.location to simulate the app being served from a public hostname, then assert
+  // that the dev fallback refuses to silently lie.
+  describe('production-host fail-loud', () => {
+    const originalLocation = window.location;
+
+    afterEach(() => {
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        configurable: true,
+        writable: true,
+      });
+    });
+
+    function stubLocation(hostname: string): void {
+      Object.defineProperty(window, 'location', {
+        value: { hostname, protocol: 'https:' },
+        configurable: true,
+        writable: true,
+      });
+    }
+
+    it('throws at module load when served from a non-dev host without overrides', async () => {
+      stubLocation('app.arguslog.org');
+      window.__ARGUSLOG_CONFIG__ = {};
+      // The error fires inside zod's .default() when it evaluates the missing field.
+      // Importing env.ts is what triggers the parse — wrap in a rejecting expect.
+      await expect(import('../env')).rejects.toThrow(/ARGUSLOG_WEB_API_BASE_URL is required/);
+    });
+
+    it('does not throw when the runtime config supplies all required URLs on a public host', async () => {
+      stubLocation('app.arguslog.org');
+      window.__ARGUSLOG_CONFIG__ = {
+        apiBaseUrl: 'https://api.arguslog.org',
+        ingestBaseUrl: 'https://ingest.arguslog.org',
+        keycloakUrl: 'https://auth.arguslog.org',
+      };
+      const { env } = await import('../env');
+      expect(env.VITE_API_BASE_URL).toBe('https://api.arguslog.org');
+      expect(env.VITE_INGEST_BASE_URL).toBe('https://ingest.arguslog.org');
+      expect(env.VITE_KEYCLOAK_URL).toBe('https://auth.arguslog.org');
+    });
+
+    it('still allows LAN IPs as dev hosts (cross-device dev)', async () => {
+      stubLocation('192.168.0.186');
+      window.__ARGUSLOG_CONFIG__ = {};
+      const { env } = await import('../env');
+      expect(env.VITE_INGEST_BASE_URL).toBe('https://192.168.0.186:8080');
+    });
+  });
 });

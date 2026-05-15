@@ -1,18 +1,49 @@
 import { z } from 'zod';
 
 /**
- * Returns a development default URL that follows the host the page was loaded
- * from. So if `make dev` is launched on a laptop and a phone hits
- * `http://192.168.0.186:5173`, the bundle will fetch the api at
- * `http://192.168.0.186:8081` instead of `localhost:8081` (which would resolve
- * on the phone, not the dev box). Keeps zero-config local dev working AND
- * cross-device dev working without a per-machine `.env.local`.
+ * Returns a dev-mode default URL that follows the host the page was loaded from. Used so
+ * `make dev` works zero-config: laptop hits `http://localhost:5173` → bundle resolves the
+ * api at `http://localhost:8081`; phone on the LAN hits `http://192.168.0.186:5173` → bundle
+ * resolves the api at `http://192.168.0.186:8081`.
+ *
+ * <p><strong>Refuses to silently lie in production.</strong> If the page is served from a
+ * non-dev hostname (anything outside localhost / RFC1918 / loopback) AND no runtime or
+ * build-time override is set, this throws at module load. The previous "always return
+ * &lt;host&gt;:&lt;port&gt;" behavior shipped users a plausible-looking but unreachable URL
+ * (e.g. `https://app.arguslog.org:8080/api/9/events` — DNS resolves, port 8080 is closed
+ * over Cloudflare, browser reports a mystery `Failed to fetch`) — exactly the failure mode
+ * this guard prevents from sneaking past the operator.
  */
-function devDefault(port: number): string {
-  if (typeof window !== 'undefined' && window.location?.hostname) {
-    return `${window.location.protocol}//${window.location.hostname}:${port}`;
+function devDefault(envVarName: string, port: number): string {
+  if (typeof window === 'undefined' || !window.location?.hostname) {
+    return `http://localhost:${port}`;
   }
-  return `http://localhost:${port}`;
+  const host = window.location.hostname;
+  if (isDevHost(host)) {
+    return `${window.location.protocol}//${host}:${port}`;
+  }
+  throw new Error(
+    `${envVarName} is required in production but neither the runtime config ` +
+      `(ARGUSLOG_WEB_*) nor the build-time env (VITE_*) provided a value, and the page is ` +
+      `served from "${host}" — which doesn't look like a local-dev host. Self-hosters: set ` +
+      `the env var on your web container and restart it (the entrypoint re-renders ` +
+      `/srv/runtime-config.js at boot).`,
+  );
+}
+
+function isDevHost(host: string): boolean {
+  if (host === 'localhost' || host === '0.0.0.0' || host === '::1') return true;
+  if (host.startsWith('127.')) return true;
+  // RFC1918 private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16.
+  const parts = host.split('.').map((s) => Number(s));
+  if (parts.length !== 4 || parts.some((n) => Number.isNaN(n) || n < 0 || n > 255)) {
+    return false;
+  }
+  const [a, b] = parts as [number, number, number, number];
+  if (a === 10) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  return false;
 }
 
 /**
@@ -42,9 +73,20 @@ function resolve(
 }
 
 const envSchema = z.object({
-  VITE_API_BASE_URL: z.string().url().default(devDefault(8081)),
-  VITE_INGEST_BASE_URL: z.string().url().default(devDefault(8080)),
-  VITE_KEYCLOAK_URL: z.string().url().default(devDefault(8180)),
+  // .default(() => fn()) is the lazy form — fn() runs only when no value is provided.
+  // Critical so a misconfig throws only when there's truly no override, not every parse.
+  VITE_API_BASE_URL: z
+    .string()
+    .url()
+    .default(() => devDefault('ARGUSLOG_WEB_API_BASE_URL', 8081)),
+  VITE_INGEST_BASE_URL: z
+    .string()
+    .url()
+    .default(() => devDefault('ARGUSLOG_WEB_INGEST_BASE_URL', 8080)),
+  VITE_KEYCLOAK_URL: z
+    .string()
+    .url()
+    .default(() => devDefault('ARGUSLOG_WEB_KEYCLOAK_URL', 8180)),
   VITE_KEYCLOAK_REALM: z.string().default('arguslog'),
   VITE_KEYCLOAK_CLIENT_ID: z.string().default('arguslog-web'),
   VITE_DOGFOOD_DSN: z.string().optional(),
