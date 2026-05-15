@@ -64,7 +64,7 @@ describe('alerts api client', () => {
     await createAlertRule(9, {
       name: 'r',
       conditions: {},
-      actions: {},
+      actions: { destinationIds: [] },
       throttleSeconds: 60,
       enabled: true,
     });
@@ -73,7 +73,7 @@ describe('alerts api client', () => {
     await updateAlertRule(9, 3, {
       name: 'r',
       conditions: {},
-      actions: {},
+      actions: { destinationIds: [] },
       throttleSeconds: 60,
       enabled: true,
     });
