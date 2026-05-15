@@ -2200,6 +2200,120 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
+    name: 'delete_integrations_slack',
+    title: 'Delete integrations slack',
+    description:
+      'DELETE /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}\n\nMethod: DELETE /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}',
+    method: 'DELETE',
+    path: '/api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+      {
+        name: 'id',
+        required: true,
+        type: 'integer',
+        description: 'id (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      additionalProperties: true,
+      description: 'No response body — successful response is a 204 No Content or similar.',
+    },
+    annotations: {
+      title: 'DELETE /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}',
+      readOnlyHint: false,
+      idempotentHint: true,
+      destructiveHint: true,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'integrations_slack_patch',
+    title: 'Integrations slack patch',
+    description:
+      'PATCH /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}\n\nMethod: PATCH /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}',
+    method: 'PATCH',
+    path: '/api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+      {
+        name: 'id',
+        required: true,
+        type: 'integer',
+        description: 'id (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        defaultProjectId: {
+          type: 'integer',
+          format: 'int64',
+        },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'integer',
+          format: 'int64',
+        },
+        slackTeamId: {
+          type: 'string',
+        },
+        slackTeamName: {
+          type: 'string',
+        },
+        orgId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        defaultProjectId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        installedByUserId: {
+          type: 'string',
+          format: 'uuid',
+        },
+        installedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        deactivatedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        active: {
+          type: 'boolean',
+        },
+      },
+    },
+    annotations: {
+      title: 'PATCH /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}',
+      readOnlyHint: false,
+      idempotentHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
     name: 'slack_install_callback',
     title: 'Slack install callback',
     description: 'GET /api/v1/slack/oauth/callback\n\nMethod: GET /api/v1/slack/oauth/callback',
@@ -2442,6 +2556,44 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/platforms',
+      readOnlyHint: true,
+      idempotentHint: true,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'list_integrations_slack',
+    title: 'List integrations slack',
+    description:
+      'GET /api/v1/orgs/{orgId}/integrations/slack/workspaces\n\nMethod: GET /api/v1/orgs/{orgId}/integrations/slack/workspaces',
+    method: 'GET',
+    path: '/api/v1/orgs/{orgId}/integrations/slack/workspaces',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        result: {
+          type: 'array',
+          items: {
+            $ref: '#/components/schemas/SlackWorkspaceDto',
+          },
+        },
+      },
+      required: ['result'],
+    },
+    outputResultWrapped: true,
+    annotations: {
+      title: 'GET /api/v1/orgs/{orgId}/integrations/slack/workspaces',
       readOnlyHint: true,
       idempotentHint: true,
       destructiveHint: false,

@@ -115,6 +115,11 @@ public class JdbcSlackWorkspaceRepository
 
   @Override
   public void deactivate(long workspaceId) {
+    // Pin OrgContext for RLS so a caller in org A cannot UPDATE a row in org B by guessing an
+    // id. SlackInstallController's callback path doesn't hit this (it only upserts), so the
+    // OrgContext requirement is fine here — every legitimate caller (dashboard DELETE,
+    // future slash-command uninstall) runs inside an OrgAccessGuard-pinned context.
+    pinOrgContextForRls();
     jdbc.update(
         "UPDATE slack_workspaces SET deactivated_at = NOW() WHERE id = ? AND deactivated_at IS NULL",
         workspaceId);
@@ -122,6 +127,9 @@ public class JdbcSlackWorkspaceRepository
 
   @Override
   public SlackWorkspace setDefaultProject(long workspaceId, Long defaultProjectId) {
+    // Same RLS-pinning rationale as deactivate(). Returns null if RLS filters the row out;
+    // callers that need a "found" guarantee should listForOrg + verify before calling.
+    pinOrgContextForRls();
     return jdbc.queryForObject(
         """
         UPDATE slack_workspaces

@@ -1303,6 +1303,77 @@
         }
       }
     },
+    "/api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}" : {
+      "delete" : {
+        "tags" : [ "integrations-slack-controller" ],
+        "operationId" : "delete_4",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "integrations-slack-controller" ],
+        "operationId" : "patch",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PatchBody"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SlackWorkspaceDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/slack/oauth/callback" : {
       "get" : {
         "tags" : [ "slack-install-controller" ],
@@ -1516,6 +1587,36 @@
                   "type" : "array",
                   "items" : {
                     "$ref" : "#/components/schemas/PlatformResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{orgId}/integrations/slack/workspaces" : {
+      "get" : {
+        "tags" : [ "integrations-slack-controller" ],
+        "operationId" : "list_10",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SlackWorkspaceDto"
                   }
                 }
               }
@@ -1757,7 +1858,7 @@
     "/api/v1/projects/{projectId}/releases/{releaseId}/sourcemaps/{id}" : {
       "delete" : {
         "tags" : [ "source-map-artifact-controller" ],
-        "operationId" : "delete_4",
+        "operationId" : "delete_5",
         "parameters" : [ {
           "name" : "projectId",
           "in" : "path",
@@ -1821,7 +1922,7 @@
     "/api/v1/me/tokens/{id}" : {
       "delete" : {
         "tags" : [ "me-tokens-controller" ],
-        "operationId" : "delete_5",
+        "operationId" : "delete_6",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
@@ -2363,6 +2464,53 @@
         "properties" : {
           "role" : {
             "type" : "string"
+          }
+        }
+      },
+      "PatchBody" : {
+        "type" : "object",
+        "properties" : {
+          "defaultProjectId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "SlackWorkspaceDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "slackTeamId" : {
+            "type" : "string"
+          },
+          "slackTeamName" : {
+            "type" : "string"
+          },
+          "orgId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "defaultProjectId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "installedByUserId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "installedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "deactivatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "active" : {
+            "type" : "boolean"
           }
         }
       },
