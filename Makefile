@@ -21,7 +21,7 @@ PNPM           := pnpm
         build lint typecheck test python-test python-lint \
         deploy-prod deploy-status \
         self-host-test self-host-down \
-        clean reset doctor seed
+        clean reset doctor seed demo
 
 PROD_SERVICES  := arguslog-api arguslog-ingest arguslog-worker arguslog-web arguslog-landing arguslog-mcp
 
@@ -284,3 +284,26 @@ doctor: ## Verify required tools are installed; exit non-zero on misses with OS-
 
 seed: ## Seed a demo Keycloak user + org + project + 8-12 synthetic events. Run after `make` is up.
 	@bash scripts/seed-demo.sh
+
+demo: ## Full reset → fresh infra → start dev stack → auto-seed demo data
+	@$(MAKE) reset
+	@$(MAKE) fresh
+	@echo ""
+	@echo "▶ Demo seed will auto-run as soon as api becomes healthy."
+	@echo "  Seed output → /tmp/arguslog-seed.log (tail it from another terminal)."
+	@echo ""
+	@# Background watcher: polls api readiness up to ~4 minutes, runs seed once it
+	@# answers, exits. Inherits the parent shell's process group so a clean mprocs
+	@# 'q' lets it finish; Ctrl-C in the foreground kills the whole subtree.
+	@( \
+	  for i in $$(seq 1 120); do \
+	    if curl -fsS http://localhost:8081/actuator/health/readiness >/dev/null 2>&1; then \
+	      printf '[demo] api ready after %ds; running seed…\n' $$((i * 2)) > /tmp/arguslog-seed.log; \
+	      bash scripts/seed-demo.sh >> /tmp/arguslog-seed.log 2>&1 \
+	        || echo "[demo] seed failed — inspect /tmp/arguslog-seed.log" >> /tmp/arguslog-seed.log; \
+	      break; \
+	    fi; \
+	    sleep 2; \
+	  done; \
+	) &
+	@$(MAKE)
