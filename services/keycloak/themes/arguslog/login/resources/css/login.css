@@ -396,8 +396,108 @@ a:hover {
   color: var(--arguslog-primary-hover);
 }
 
-/* Social-login providers, if any are configured. */
-.kc-social-section,
-.zocial {
-  filter: brightness(0.9);
+/* Social-login providers — brand-conventional pattern (GitHub dark + Google light)
+ * so a glance distinguishes them. KC 26 renders each provider as a stable id-anchored
+ * <a id="social-${alias}"> with a FontAwesome icon. We restyle the container + give
+ * each provider its own brand surface, then keep the icon coloring via currentColor.
+ */
+.kc-social-section {
+  margin-top: 18px;
+}
+.kc-social-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  color: var(--arguslog-text-dim);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
+}
+.kc-social-section h2::before,
+.kc-social-section h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--arguslog-border);
+}
+.kc-social-section .kc-social-links,
+.kc-social-section ul.kc-social-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kc-social-section .kc-social-links li {
+  margin: 0;
+  padding: 0;
+}
+
+/* Shared shell — both buttons get the same layout / sizing / icon slot. */
+.kc-social-item {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 42px;
+  padding: 0 14px !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  font-size: 14px;
+  text-decoration: none !important;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+.kc-social-item .kc-social-provider-logo {
+  font-size: 18px;
+  line-height: 1;
+  width: 18px;
+  text-align: center;
+}
+.kc-social-item .kc-social-provider-name {
+  font-weight: 500;
+}
+
+/* GitHub — dark surface, white text + icon. */
+#social-github,
+a#social-github.kc-social-item {
+  background: #1f2328 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+#social-github:hover,
+a#social-github.kc-social-item:hover {
+  background: #2d333b !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+#social-github .kc-social-provider-logo,
+#social-github i.fa-github {
+  color: #ffffff !important;
+}
+
+/* Google — white surface, dark text. The FA `fa-google` glyph is single-color so we tint
+ * it Google blue (#4285F4) — closest to brand without swapping in a multi-color SVG.
+ * Border + shadow on hover follow Google's „Sign in with Google" button guidelines. */
+#social-google,
+a#social-google.kc-social-item {
+  background: #ffffff !important;
+  color: #1f1f1f !important;
+  border: 1px solid #dadce0 !important;
+}
+#social-google:hover,
+a#social-google.kc-social-item:hover {
+  background: #f8f9fa !important;
+  border-color: #c6c8cb !important;
+  color: #1f1f1f !important;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.15);
+}
+#social-google .kc-social-provider-logo,
+#social-google i.fa-google {
+  color: #4285f4 !important;
 }
