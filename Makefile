@@ -19,7 +19,7 @@ PNPM           := pnpm
         api ingest worker web build-sdks \
         install e2e-install e2e \
         build lint typecheck test python-test python-lint \
-        deploy-prod deploy-status \
+        deploy-prod deploy-status deploy-keycloak purge-keycloak-cache \
         self-host-test self-host-down \
         clean reset doctor seed demo
 
@@ -145,6 +145,46 @@ e2e: ## Run Playwright e2e suite
 	@$(PNPM) e2e
 
 ## ─── Production deploy ─────────────────────────────────────────────────────
+
+deploy-keycloak: ## Deploy arguslog-keycloak to prod + purge Cloudflare cache for auth.arguslog.org
+	@command -v railway >/dev/null || { echo "✗ railway CLI not installed (brew install railway)"; exit 1; }
+	@command -v git >/dev/null || { echo "✗ git not on PATH"; exit 1; }
+	@SHA=$$(git rev-parse --short HEAD); \
+	echo "▶ Stamping GIT_SHA=$$SHA on arguslog-keycloak..."; \
+	railway variables --set "GIT_SHA=$$SHA" --service arguslog-keycloak --environment production --skip-deploys >/dev/null; \
+	echo "▶ Building + deploying arguslog-keycloak (blocking until build completes)..."; \
+	railway up --service arguslog-keycloak --environment production --ci --message "$$SHA"
+	@echo "▶ KC deploy finished. Purging CDN cache so theme + IdP changes show up instantly..."
+	@$(MAKE) purge-keycloak-cache
+
+purge-keycloak-cache: ## Purge Cloudflare cache for auth.arguslog.org (theme/CSS updates)
+	@# KC's resource URL hash is build-time-stable for a given KC version, so CF serves the
+	@# same URL for 30 days across multiple deploys (default Cache-Control: max-age=2592000).
+	@# `KC_SPI_THEME_STATIC_MAX_AGE=3600` in the Dockerfile drops that to 1h as a safety net,
+	@# but explicit purge here is the instant-feedback path so a deployer sees their changes
+	@# immediately. Purge-by-hostname is free-tier-supported (unlike purge-by-URL-prefix).
+	@command -v curl >/dev/null || { echo "✗ curl required"; exit 1; }
+	@command -v jq >/dev/null   || { echo "✗ jq required"; exit 1; }
+	@# Load CLOUDFLARE_API_TOKEN + CLOUDFLARE_ZONE_ID from .env if not already in env.
+	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
+	if [ -z "$$CLOUDFLARE_API_TOKEN" ]; then \
+	  echo "✗ CLOUDFLARE_API_TOKEN unset (add to .env — see .env.example for setup)"; exit 1; \
+	fi; \
+	if [ -z "$$CLOUDFLARE_ZONE_ID" ]; then \
+	  echo "✗ CLOUDFLARE_ZONE_ID unset (add to .env — see .env.example for setup)"; exit 1; \
+	fi; \
+	echo "▶ Purging auth.arguslog.org from Cloudflare cache..."; \
+	response=$$(curl -sS -X POST \
+	  "https://api.cloudflare.com/client/v4/zones/$$CLOUDFLARE_ZONE_ID/purge_cache" \
+	  -H "Authorization: Bearer $$CLOUDFLARE_API_TOKEN" \
+	  -H "Content-Type: application/json" \
+	  --data '{"hosts": ["auth.arguslog.org"]}'); \
+	success=$$(printf '%s' "$$response" | jq -r '.success // false'); \
+	if [ "$$success" = "true" ]; then \
+	  echo "✓ Cache purged for auth.arguslog.org"; \
+	else \
+	  echo "✗ Purge failed:"; printf '%s\n' "$$response" | jq .; exit 1; \
+	fi
 
 deploy-prod: ## Force fresh rebuild of all 6 prod app services in parallel, then check status
 	@command -v railway >/dev/null || { echo "✗ railway CLI not installed (brew install railway)"; exit 1; }

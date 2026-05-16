@@ -72,6 +72,15 @@ ENV KC_PROXY_HEADERS=xforwarded
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
 
+# Theme static-resource Cache-Control max-age. Default is 2592000s (30 days) which is great
+# for performance but disastrous for theme updates: the resource URL hash (`/resources/{ver}/`)
+# is build-time-stable for a given KC version, so CDNs (Cloudflare in front of arguslog.org)
+# cache the SAME URL for 30 days across multiple deploys → users keep seeing the old CSS.
+# 3600s (1 hour) is a safety net: even if an operator skips the explicit `make
+# purge-keycloak-cache` step, every browser/CDN auto-refreshes within an hour. The Makefile
+# target stays the primary path for instant-feedback theme updates.
+ENV KC_SPI_THEME_STATIC_MAX_AGE=3600
+
 EXPOSE 8080
 
 # Entrypoint runs the IdP patcher in the background, then exec's kc.sh in the foreground so
