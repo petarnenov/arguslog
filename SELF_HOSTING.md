@@ -95,6 +95,27 @@ in Keycloak. Re-importing the realm (via `--import-realm` on subsequent
 boots) is a no-op once the realm exists, but if you ever wipe the Keycloak
 data volume you'll be back to the bootstrap password.
 
+### Dev-only `arguslog-seed` client — delete for production
+
+The realm template ships a third OIDC client `arguslog-seed` (public,
+Direct Access Grants enabled). It exists only to let `make seed` mint a
+local demo user via password grant without going through the browser flow.
+
+For self-hosted production, **delete this client after first boot**:
+
+```bash
+# Keycloak admin console → arguslog realm → Clients → arguslog-seed → Delete
+# Or via kcadm.sh inside the running container:
+docker exec arguslog-keycloak /opt/keycloak/bin/kcadm.sh config credentials \
+  --server http://localhost:8180 --realm master --user "$ARGUSLOG_INITIAL_ADMIN_EMAIL" --password "$ARGUSLOG_INITIAL_ADMIN_PASSWORD"
+docker exec arguslog-keycloak /opt/keycloak/bin/kcadm.sh delete clients/$(\
+  docker exec arguslog-keycloak /opt/keycloak/bin/kcadm.sh get clients -r arguslog -q clientId=arguslog-seed --fields id --format csv --noquotes | tail -n1) \
+  -r arguslog
+```
+
+The main browser-flow client `arguslog-web` keeps DAG **off**, which is the
+production-safe posture. The `arguslog-api` confidential client is unaffected.
+
 ## SMTP
 
 The realm template ships with `mailhog:1025` as the default SMTP relay so

@@ -135,29 +135,44 @@ all of them and prints the right `brew install` / `apt install` / `sdk install`
 command for each miss — re-run until it's all green, then `make`.
 
 `make` (the default goal) runs `docker compose up -d --wait` so JVM services
-see a healthy Postgres / Redis / Keycloak / MinIO from boot, then opens an
-mprocs TUI with one panel per process: `ingest` (`:8080`), `api` (`:8081`),
-`worker` (`:8082`), `web` (`:5173`), plus a manual `infra-logs` panel.
+see a healthy Postgres / Redis / Keycloak / MinIO (Keycloak 26.1) from boot,
+then opens an mprocs TUI with one panel per process: `ingest` (`:8080`),
+`api` (`:8081`), `worker` (`:8082`), `web` (`:5173`), plus a manual
+`infra-logs` panel.
 
-### Demo data (optional)
+### Demo data
 
-To start with a populated dashboard instead of empty state, **in a separate
-terminal** after `make` is up:
+`make demo` is the one-command "I just want to see Arguslog work" flow.
+It chains `reset → fresh → make → seed`:
 
 ```bash
-make seed
+make demo
+# in another terminal, optionally:
+tail -f /tmp/arguslog-seed.log    # watch the seed banner with login URL
 ```
 
-Creates a `demo@arguslog.local / demo` Keycloak user, a Demo Org + Demo App
-project, and 8-12 synthetic events spread across the last 14 days. Idempotent
-— re-running is safe.
+After mprocs starts, a background watcher polls the api; once healthy it
+runs the seed script which creates:
 
-> **First-time prerequisite**: `make seed` needs the `arguslog-seed` Keycloak
-> client (shipped in the realm template) and the default `admin / admin`
-> bootstrap admin credentials. If your local Keycloak state predates these
-> (you've been running the stack since before this commit), run
-> `make fresh && make` once to drop the Postgres volume and re-import the
-> realm. The seed script prints this hint if either dependency is missing.
+- a `demo@arguslog.local / demo` Keycloak user
+- a Demo Org + Demo App project
+- 8-12 synthetic events spread across the last 14 days (non-empty sparkline)
+
+Output goes to `/tmp/arguslog-seed.log` so it doesn't fight the TUI for the
+terminal. Sign in at <http://localhost:5173> with the demo credentials.
+
+If you already have the stack up and just want to seed (without resetting):
+
+```bash
+make seed                         # in another terminal alongside `make`
+```
+
+The seed is idempotent — re-runs short-circuit on existing user/org/project.
+
+> **Keycloak state migrations**: `make demo` (via `make reset`) wipes the
+> Postgres volume. If you only have `make seed` running into "invalid admin"
+> or "client not found" errors on an old stack, run `make fresh && make` once
+> to drop the volume and re-import the realm with the `arguslog-seed` client.
 
 ### Cross-device dev (phone on your LAN)
 
@@ -174,8 +189,10 @@ For browser-side crypto (DSN scrubber), Chrome needs the
 |                                            |                                                                 |
 | ------------------------------------------ | --------------------------------------------------------------- |
 | `make` / `make dev`                        | full stack (infra + JVM services + web) — `make` defaults to `dev` |
-| `make seed`                                | demo Keycloak user + org + project + synthetic events           |
+| `make demo`                                | one-shot: reset + fresh + dev stack + auto-seed (log: `/tmp/arguslog-seed.log`) |
+| `make seed`                                | demo Keycloak user + org + project + synthetic events (manual)  |
 | `make up` / `down`                         | infra only (compose up `--wait` / down)                         |
+| `make fresh`                               | drop infra volumes + re-pull images + bring infra back up       |
 | `make logs` / `ps`                         | tail / inspect infra                                            |
 | `make api`                                 | `arguslog-api` foreground (`:8081`)                             |
 | `make ingest`                              | `arguslog-ingest` foreground (`:8080`)                          |
@@ -184,7 +201,7 @@ For browser-side crypto (DSN scrubber), Chrome needs the
 | `make build`                               | Gradle + Turbo full build                                       |
 | `make lint` / `typecheck` / `test` / `e2e` | quality gates                                                   |
 | `make clean` / `reset`                     | drop build artifacts / nuke containers + volumes + node_modules |
-| `make doctor`                              | check prerequisites                                             |
+| `make doctor`                              | check prerequisites (OS-specific install hints on misses)       |
 | `make help`                                | list all targets                                                |
 
 ## Tests

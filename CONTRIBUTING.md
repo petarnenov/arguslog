@@ -10,7 +10,9 @@ git clone https://github.com/petarnenov/arguslog.git
 cd arguslog
 make doctor                   # verify prereqs; prints OS-specific install commands for any miss
 make                          # full stack + watch loops (alias for `make dev`)
-make seed                     # optional: demo user + org + sample events
+make seed                     # optional: demo user + org + sample events (in a second terminal)
+# or, for a completely fresh start with demo data auto-loaded:
+make demo                     # = reset + fresh + make + seed (seed runs in background, log: /tmp/arguslog-seed.log)
 ```
 
 See [README.md](README.md) for the make-targets table and individual
