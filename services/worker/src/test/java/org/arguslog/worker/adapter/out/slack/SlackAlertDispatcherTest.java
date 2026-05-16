@@ -12,6 +12,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import java.time.Duration;
 import java.time.Instant;
+import org.arguslog.worker.adapter.out.AlertsProperties;
 import org.arguslog.worker.domain.Alert;
 import org.arguslog.worker.domain.AlertDestination;
 import org.arguslog.worker.domain.AlertDestination.Kind;
@@ -47,7 +48,9 @@ class SlackAlertDispatcherTest {
     wm.start();
     dispatcher =
         new SlackAlertDispatcher(
-            new SlackProperties("https://arguslog.example", Duration.ofSeconds(2)), mapper);
+            new SlackProperties(Duration.ofSeconds(2)),
+            new AlertsProperties("https://arguslog.example"),
+            mapper);
   }
 
   @AfterEach
@@ -103,7 +106,9 @@ class SlackAlertDispatcherTest {
             .willReturn(aResponse().withStatus(200).withFixedDelay(5_000)));
     SlackAlertDispatcher fast =
         new SlackAlertDispatcher(
-            new SlackProperties("https://arguslog.example", Duration.ofMillis(150)), mapper);
+            new SlackProperties(Duration.ofMillis(150)),
+            new AlertsProperties("https://arguslog.example"),
+            mapper);
     fast.dispatch(alert, slackDestination("{\"webhookUrl\":\"" + wm.baseUrl() + HOOK_PATH + "\"}"));
     // Reaching this line is the assertion: dispatcher absorbed the timeout.
   }

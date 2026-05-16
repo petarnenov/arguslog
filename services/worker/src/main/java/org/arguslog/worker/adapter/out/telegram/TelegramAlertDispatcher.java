@@ -10,6 +10,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
+import org.arguslog.worker.adapter.out.AlertsProperties;
 import org.arguslog.worker.application.port.AlertDispatcher;
 import org.arguslog.worker.domain.Alert;
 import org.arguslog.worker.domain.AlertDestination;
@@ -28,18 +29,21 @@ import org.springframework.stereotype.Component;
  * persistent outbox in P3 we drop both. P3 #5 brings throttling, not retries.
  */
 @Component
-@EnableConfigurationProperties(TelegramProperties.class)
+@EnableConfigurationProperties({TelegramProperties.class, AlertsProperties.class})
 public class TelegramAlertDispatcher implements AlertDispatcher {
 
   private static final Logger log = LoggerFactory.getLogger(TelegramAlertDispatcher.class);
   private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_INSTANT;
 
   private final TelegramProperties props;
+  private final AlertsProperties alertsProps;
   private final ObjectMapper mapper;
   private final HttpClient http;
 
-  public TelegramAlertDispatcher(TelegramProperties props, ObjectMapper mapper) {
+  public TelegramAlertDispatcher(
+      TelegramProperties props, AlertsProperties alertsProps, ObjectMapper mapper) {
     this.props = props;
+    this.alertsProps = alertsProps;
     this.mapper = mapper;
     this.http = HttpClient.newBuilder().connectTimeout(props.timeout()).build();
     if (!props.configured()) {
@@ -122,7 +126,7 @@ public class TelegramAlertDispatcher implements AlertDispatcher {
     String emoji = emojiFor(a.level());
     // Numeric projectId — the dashboard issue route doesn't accept slugs.
     String url =
-        props.dashboardBaseUrl()
+        alertsProps.dashboardBaseUrl()
             + "/orgs/"
             + a.orgSlug()
             + "/projects/"

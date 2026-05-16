@@ -57,12 +57,17 @@ arguslog:
     access-key: ${R2_ACCESS_KEY:minioadmin}
     secret-key: ${R2_SECRET_KEY:minioadmin}
   alerts:
+    # Shared across every dispatcher (slack / email / telegram / webhook) — the public origin we
+    # point at when we render the „Open in Arguslog" deep-link inside an alert message. Each
+    # dispatcher used to own its own copy of this value but only the email path was actually
+    # bound here, so prod kept emitting localhost URLs in Slack/Telegram/Webhook payloads even
+    # though ALERTS_DASHBOARD_BASE_URL was set. See AlertsProperties.
+    dashboard-base-url: ${ALERTS_DASHBOARD_BASE_URL:http://localhost:5173}
     telegram:
       bot-token: ${TELEGRAM_BOT_TOKEN:}
     email:
       api-key: ${RESEND_API_KEY:}
       from: ${RESEND_FROM:alerts@arguslog.org}
-      dashboard-base-url: ${ALERTS_DASHBOARD_BASE_URL:http://localhost:5173}
 
 logging:
   level:

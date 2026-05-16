@@ -12,6 +12,7 @@ import java.net.http.HttpResponse;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import org.arguslog.worker.adapter.out.AlertsProperties;
 import org.arguslog.worker.application.port.AlertDispatcher;
 import org.arguslog.worker.domain.Alert;
 import org.arguslog.worker.domain.AlertDestination;
@@ -29,18 +30,21 @@ import org.springframework.stereotype.Component;
  * domain.
  */
 @Component
-@EnableConfigurationProperties(EmailProperties.class)
+@EnableConfigurationProperties({EmailProperties.class, AlertsProperties.class})
 public class ResendEmailDispatcher implements AlertDispatcher {
 
   private static final Logger log = LoggerFactory.getLogger(ResendEmailDispatcher.class);
   private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_INSTANT;
 
   private final EmailProperties props;
+  private final AlertsProperties alertsProps;
   private final ObjectMapper mapper;
   private final HttpClient http;
 
-  public ResendEmailDispatcher(EmailProperties props, ObjectMapper mapper) {
+  public ResendEmailDispatcher(
+      EmailProperties props, AlertsProperties alertsProps, ObjectMapper mapper) {
     this.props = props;
+    this.alertsProps = alertsProps;
     this.mapper = mapper;
     this.http = HttpClient.newBuilder().connectTimeout(props.timeout()).build();
     if (!props.configured()) {
@@ -140,7 +144,7 @@ public class ResendEmailDispatcher implements AlertDispatcher {
     // Number(rawProjectId) and bails on NaN). Using the slug here was sending users to an
     // "Invalid project" page.
     String url =
-        props.dashboardBaseUrl()
+        alertsProps.dashboardBaseUrl()
             + "/orgs/"
             + a.orgSlug()
             + "/projects/"

@@ -8,17 +8,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * @param botToken empty in dev means "telegram dispatch is a no-op" — we log a warn at boot instead
  *     of crashing the worker.
- * @param dashboardBaseUrl shown in messages so an on-call can click straight to the issue.
+ *     <p>The dashboard base url for the "Open in Arguslog" deep-link lives in the shared
+ *     {@link org.arguslog.worker.adapter.out.AlertsProperties}, not here.
  */
 @ConfigurationProperties(prefix = "arguslog.alerts.telegram")
-public record TelegramProperties(
-    String apiBaseUrl, String botToken, String dashboardBaseUrl, Duration timeout) {
+public record TelegramProperties(String apiBaseUrl, String botToken, Duration timeout) {
 
   public TelegramProperties {
     if (apiBaseUrl == null || apiBaseUrl.isBlank()) apiBaseUrl = "https://api.telegram.org";
-    if (dashboardBaseUrl == null || dashboardBaseUrl.isBlank()) {
-      dashboardBaseUrl = "http://localhost:5173";
-    }
     if (timeout == null) timeout = Duration.ofSeconds(5);
   }
 

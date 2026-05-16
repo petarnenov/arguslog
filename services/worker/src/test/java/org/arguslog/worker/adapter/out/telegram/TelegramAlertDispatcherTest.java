@@ -13,6 +13,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import java.time.Duration;
 import java.time.Instant;
+import org.arguslog.worker.adapter.out.AlertsProperties;
 import org.arguslog.worker.domain.Alert;
 import org.arguslog.worker.domain.AlertDestination;
 import org.arguslog.worker.domain.AlertDestination.Kind;
@@ -49,8 +50,8 @@ class TelegramAlertDispatcherTest {
     wm.start();
     dispatcher =
         new TelegramAlertDispatcher(
-            new TelegramProperties(
-                wm.baseUrl(), BOT_TOKEN, "https://arguslog.example", Duration.ofSeconds(2)),
+            new TelegramProperties(wm.baseUrl(), BOT_TOKEN, Duration.ofSeconds(2)),
+            new AlertsProperties("https://arguslog.example"),
             mapper);
   }
 
@@ -118,8 +119,8 @@ class TelegramAlertDispatcherTest {
             .willReturn(aResponse().withStatus(200).withFixedDelay(5_000)));
     TelegramAlertDispatcher fast =
         new TelegramAlertDispatcher(
-            new TelegramProperties(
-                wm.baseUrl(), BOT_TOKEN, "https://arguslog.example", Duration.ofMillis(150)),
+            new TelegramProperties(wm.baseUrl(), BOT_TOKEN, Duration.ofMillis(150)),
+            new AlertsProperties("https://arguslog.example"),
             mapper);
 
     fast.dispatch(alert, telegramDestination("{\"chatId\":\"-1\"}"));
@@ -131,8 +132,8 @@ class TelegramAlertDispatcherTest {
   void emptyBotTokenDropsTheMessage() {
     TelegramAlertDispatcher unconfigured =
         new TelegramAlertDispatcher(
-            new TelegramProperties(
-                wm.baseUrl(), "", "https://arguslog.example", Duration.ofSeconds(2)),
+            new TelegramProperties(wm.baseUrl(), "", Duration.ofSeconds(2)),
+            new AlertsProperties("https://arguslog.example"),
             mapper);
     unconfigured.dispatch(alert, telegramDestination("{\"chatId\":\"-1\"}"));
     wm.verify(0, postRequestedFor(urlPathEqualTo(SEND_PATH)));

@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import org.arguslog.worker.adapter.out.AlertsProperties;
 import org.arguslog.worker.application.port.AlertDispatcher;
 import org.arguslog.worker.domain.Alert;
 import org.arguslog.worker.domain.AlertDestination;
@@ -33,18 +34,21 @@ import org.springframework.stereotype.Component;
  * Body is a stable structured JSON envelope — no Markdown, since webhook receivers parse not read.
  */
 @Component
-@EnableConfigurationProperties(WebhookProperties.class)
+@EnableConfigurationProperties({WebhookProperties.class, AlertsProperties.class})
 public class WebhookAlertDispatcher implements AlertDispatcher {
 
   private static final Logger log = LoggerFactory.getLogger(WebhookAlertDispatcher.class);
   private static final String HMAC_ALG = "HmacSHA256";
 
   private final WebhookProperties props;
+  private final AlertsProperties alertsProps;
   private final ObjectMapper mapper;
   private final HttpClient http;
 
-  public WebhookAlertDispatcher(WebhookProperties props, ObjectMapper mapper) {
+  public WebhookAlertDispatcher(
+      WebhookProperties props, AlertsProperties alertsProps, ObjectMapper mapper) {
     this.props = props;
+    this.alertsProps = alertsProps;
     this.mapper = mapper;
     this.http = HttpClient.newBuilder().connectTimeout(props.timeout()).build();
   }
@@ -111,7 +115,7 @@ public class WebhookAlertDispatcher implements AlertDispatcher {
     alertNode.put(
         "url",
         // Numeric projectId — the dashboard issue route doesn't accept slugs.
-        props.dashboardBaseUrl()
+        alertsProps.dashboardBaseUrl()
             + "/orgs/"
             + a.orgSlug()
             + "/projects/"

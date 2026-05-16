@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.HexFormat;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import org.arguslog.worker.adapter.out.AlertsProperties;
 import org.arguslog.worker.domain.Alert;
 import org.arguslog.worker.domain.AlertDestination;
 import org.arguslog.worker.domain.AlertDestination.Kind;
@@ -51,7 +52,9 @@ class WebhookAlertDispatcherTest {
     wm.start();
     dispatcher =
         new WebhookAlertDispatcher(
-            new WebhookProperties("https://arguslog.example", Duration.ofSeconds(2)), mapper);
+            new WebhookProperties(Duration.ofSeconds(2)),
+            new AlertsProperties("https://arguslog.example"),
+            mapper);
   }
 
   @AfterEach

@@ -11,6 +11,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import org.arguslog.worker.adapter.out.AlertsProperties;
 import org.arguslog.worker.application.port.AlertDispatcher;
 import org.arguslog.worker.domain.Alert;
 import org.arguslog.worker.domain.AlertDestination;
@@ -26,18 +27,21 @@ import org.springframework.stereotype.Component;
  * rest of the dispatch pipeline.
  */
 @Component
-@EnableConfigurationProperties(SlackProperties.class)
+@EnableConfigurationProperties({SlackProperties.class, AlertsProperties.class})
 public class SlackAlertDispatcher implements AlertDispatcher {
 
   private static final Logger log = LoggerFactory.getLogger(SlackAlertDispatcher.class);
   private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_INSTANT;
 
   private final SlackProperties props;
+  private final AlertsProperties alertsProps;
   private final ObjectMapper mapper;
   private final HttpClient http;
 
-  public SlackAlertDispatcher(SlackProperties props, ObjectMapper mapper) {
+  public SlackAlertDispatcher(
+      SlackProperties props, AlertsProperties alertsProps, ObjectMapper mapper) {
     this.props = props;
+    this.alertsProps = alertsProps;
     this.mapper = mapper;
     this.http = HttpClient.newBuilder().connectTimeout(props.timeout()).build();
   }
@@ -179,7 +183,7 @@ public class SlackAlertDispatcher implements AlertDispatcher {
   private String issueUrl(Alert a) {
     // Numeric projectId — the dashboard issue route does Number(rawProjectId) and rejects NaN
     // (slug yields NaN → "Invalid project" banner).
-    return props.dashboardBaseUrl()
+    return alertsProps.dashboardBaseUrl()
         + "/orgs/"
         + a.orgSlug()
         + "/projects/"

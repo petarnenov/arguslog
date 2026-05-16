@@ -12,6 +12,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import java.time.Duration;
 import java.time.Instant;
+import org.arguslog.worker.adapter.out.AlertsProperties;
 import org.arguslog.worker.domain.Alert;
 import org.arguslog.worker.domain.AlertDestination;
 import org.arguslog.worker.domain.AlertDestination.Kind;
@@ -51,8 +52,8 @@ class ResendEmailDispatcherTest {
                 wm.baseUrl(),
                 "re_test_key",
                 "alerts@arguslog.example",
-                "https://arguslog.example",
                 Duration.ofSeconds(2)),
+            new AlertsProperties("https://arguslog.example"),
             mapper);
   }
 
@@ -141,8 +142,8 @@ class ResendEmailDispatcherTest {
                 wm.baseUrl(),
                 "",
                 "alerts@arguslog.example",
-                "https://arguslog.example",
                 Duration.ofSeconds(2)),
+            new AlertsProperties("https://arguslog.example"),
             mapper);
     unconfigured.dispatch(alert, emailDestination("{\"to\":\"ops@example.com\"}"));
     wm.verify(0, postRequestedFor(urlPathEqualTo(SEND_PATH)));
