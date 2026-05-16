@@ -332,6 +332,34 @@ export function IssueDetailPage() {
         </Grid.Col>
       </Grid>
 
+      <Card withBorder padding="md" data-testid="ai-analysis-card">
+        <Stack gap="xs">
+          <Group justify="space-between" align="baseline">
+            <Title order={4}>{t('issueDetail.aiAnalysisTitle')}</Title>
+            {issue.aiAnalysis && issue.aiAnalyzedAt && (
+              <Text size="xs" c="dimmed">
+                {issue.aiAnalysisModel ?? t('issueDetail.aiAnalysisUnknownModel')} ·{' '}
+                {formatter.format(new Date(issue.aiAnalyzedAt))}
+              </Text>
+            )}
+          </Group>
+          {issue.aiAnalysis ? (
+            // Render as preformatted text. The agent prompt produces markdown, but the web app
+            // intentionally ships no markdown renderer (no `react-markdown` dep — see
+            // apps/web/package.json). `whiteSpace: pre-wrap` keeps headings + bullet markers
+            // readable; a future enhancement can render markdown properly when there's clear
+            // UX demand.
+            <Text style={{ whiteSpace: 'pre-wrap' }} size="sm">
+              {issue.aiAnalysis}
+            </Text>
+          ) : (
+            <Text c="dimmed" size="sm">
+              {t('issueDetail.aiAnalysisEmpty')}
+            </Text>
+          )}
+        </Stack>
+      </Card>
+
       <Card withBorder padding="md">
         <Stack>
           <Group justify="space-between">

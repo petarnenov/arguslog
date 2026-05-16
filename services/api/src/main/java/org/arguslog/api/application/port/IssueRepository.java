@@ -56,4 +56,12 @@ public interface IssueRepository {
    * watchlist), and the dashboard renders all of them in a single card.
    */
   List<Issue> listIntroducedInRelease(long projectId, long releaseId, int limit);
+
+  /**
+   * Persists the auto-triage agent's analysis on an issue. Sets {@code ai_analysis},
+   * {@code ai_analysis_model}, and stamps {@code ai_analyzed_at = now()} in one UPDATE. Returns
+   * the refreshed row; empty if the (projectId, issueId) pair does not exist. The endpoint is
+   * idempotent — re-running with new content overwrites the prior analysis (no history yet).
+   */
+  Optional<Issue> updateAiAnalysis(long projectId, long issueId, String analysis, String model);
 }

@@ -110,6 +110,34 @@ Example: \`{ "projectId": 7, "issueId": 123, "body": { "status": "resolved" } }\
     hasBody: true,
   },
 
+  attach_ai_analysis: {
+    name: 'attach_ai_analysis',
+    description: `Write an auto-triage agent's root-cause hypothesis + suggested fix back onto an
+issue. The body is opaque markdown — it shows up in a dedicated "AI analysis" card on
+\`IssueDetailPage\`. Use this AFTER you've fetched the issue (\`get_issue\`) and at least one
+recent event (\`list_issue_events\`) and formed a concrete hypothesis. Do NOT use this to change
+status or assignee — that's a human's call; this endpoint is suggestion-only and explicitly
+free of any event-emit side effects, so it cannot re-trigger the alert rule that woke the
+agent up.
+
+Method: PATCH /api/v1/projects/{projectId}/issues/{issueId}/ai-analysis
+
+Required: \`projectId\`, \`issueId\`, \`body.analysis\` (markdown, max 32 KB), \`body.model\`
+(your model id — e.g. \`claude-opus-4-7\`).
+
+Example: \`{ "projectId": 7, "issueId": 123, "body": { "analysis": "**Likely cause**: NPE at\\n\\
+\`render\` (app.js:42) when \`user.profile\` is undefined. Add a null-check or default.",
+"model": "claude-opus-4-7" } }\``,
+    method: 'PATCH',
+    path: '/api/v1/projects/{projectId}/issues/{issueId}/ai-analysis',
+    pathParams: [
+      { name: 'projectId', required: true, type: 'integer' },
+      { name: 'issueId', required: true, type: 'integer' },
+    ],
+    queryParams: [],
+    hasBody: true,
+  },
+
   assign_issue: {
     name: 'assign_issue',
     description: `Assign an issue to an org member, or pass \`userId: null\` to unassign. The

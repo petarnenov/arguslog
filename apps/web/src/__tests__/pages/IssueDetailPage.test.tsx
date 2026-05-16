@@ -86,6 +86,42 @@ describe('IssueDetailPage', () => {
     expect(screen.getByText(/aaaaaaaa/i)).toBeInTheDocument();
   });
 
+  it('renders the AI analysis card with markdown body + model + timestamp when populated', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.includes('/events')) return jsonResponse(sampleEventsPage);
+      return jsonResponse({
+        ...sampleIssue,
+        aiAnalysis:
+          '**Likely cause**: NPE at render (app.js:42) when user.profile is undefined.\n\nAdd a null-check or default in renderProfile.',
+        aiAnalysisModel: 'claude-opus-4-7',
+        aiAnalyzedAt: '2026-05-05T12:00:00Z',
+      });
+    }) as typeof fetch;
+
+    renderAt('/orgs/acme/projects/101/issues/7');
+
+    await waitFor(() =>
+      expect(screen.getByTestId('ai-analysis-card')).toBeInTheDocument(),
+    );
+    const card = screen.getByTestId('ai-analysis-card');
+    expect(card).toHaveTextContent(/Likely cause/);
+    expect(card).toHaveTextContent(/NPE at render/);
+    expect(card).toHaveTextContent(/claude-opus-4-7/);
+  });
+
+  it('renders the AI analysis empty state when the field is null', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.includes('/events')) return jsonResponse(sampleEventsPage);
+      return jsonResponse({ ...sampleIssue, aiAnalysis: null });
+    }) as typeof fetch;
+
+    renderAt('/orgs/acme/projects/101/issues/7');
+
+    await waitFor(() => expect(screen.getByText(/No AI analysis yet/i)).toBeInTheDocument());
+  });
+
   it('shows an empty-events state when the api returns no events', async () => {
     globalThis.fetch = vi.fn(async (input) => {
       const url = typeof input === 'string' ? input : (input as Request).url;

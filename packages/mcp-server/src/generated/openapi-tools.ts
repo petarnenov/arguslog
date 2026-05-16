@@ -1758,6 +1758,16 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         firstSeenReleaseVersion: {
           type: 'string',
         },
+        aiAnalysis: {
+          type: 'string',
+        },
+        aiAnalysisModel: {
+          type: 'string',
+        },
+        aiAnalyzedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
       },
     },
     annotations: {
@@ -1847,6 +1857,16 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         },
         firstSeenReleaseVersion: {
           type: 'string',
+        },
+        aiAnalysis: {
+          type: 'string',
+        },
+        aiAnalysisModel: {
+          type: 'string',
+        },
+        aiAnalyzedAt: {
+          type: 'string',
+          format: 'date-time',
         },
       },
     },
@@ -1939,10 +1959,123 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         firstSeenReleaseVersion: {
           type: 'string',
         },
+        aiAnalysis: {
+          type: 'string',
+        },
+        aiAnalysisModel: {
+          type: 'string',
+        },
+        aiAnalyzedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
       },
     },
     annotations: {
       title: 'PATCH /api/v1/projects/{projectId}/issues/{issueId}/assignee',
+      readOnlyHint: false,
+      idempotentHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'issue_attach_ai_analysis',
+    title: 'Issue attach ai analysis',
+    description:
+      'PATCH /api/v1/projects/{projectId}/issues/{issueId}/ai-analysis\n\nMethod: PATCH /api/v1/projects/{projectId}/issues/{issueId}/ai-analysis',
+    method: 'PATCH',
+    path: '/api/v1/projects/{projectId}/issues/{issueId}/ai-analysis',
+    pathParams: [
+      {
+        name: 'projectId',
+        required: true,
+        type: 'integer',
+        description: 'projectId (integer) — required.',
+      },
+      {
+        name: 'issueId',
+        required: true,
+        type: 'integer',
+        description: 'issueId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        analysis: {
+          type: 'string',
+        },
+        model: {
+          type: 'string',
+        },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'integer',
+          format: 'int64',
+        },
+        projectId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        fingerprint: {
+          type: 'string',
+        },
+        status: {
+          type: 'string',
+        },
+        level: {
+          type: 'string',
+        },
+        title: {
+          type: 'string',
+        },
+        culprit: {
+          type: 'string',
+        },
+        firstSeenAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        lastSeenAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        occurrenceCount: {
+          type: 'integer',
+          format: 'int64',
+        },
+        assigneeUserId: {
+          type: 'string',
+          format: 'uuid',
+        },
+        firstSeenReleaseId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        firstSeenReleaseVersion: {
+          type: 'string',
+        },
+        aiAnalysis: {
+          type: 'string',
+        },
+        aiAnalysisModel: {
+          type: 'string',
+        },
+        aiAnalyzedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+      },
+    },
+    annotations: {
+      title: 'PATCH /api/v1/projects/{projectId}/issues/{issueId}/ai-analysis',
       readOnlyHint: false,
       idempotentHint: false,
       destructiveHint: false,
@@ -2079,6 +2212,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
           format: 'date-time',
         },
+        stats: {
+          $ref: '#/components/schemas/ProjectStats',
+        },
       },
     },
     annotations: {
@@ -2179,6 +2315,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         createdAt: {
           type: 'string',
           format: 'date-time',
+        },
+        stats: {
+          $ref: '#/components/schemas/ProjectStats',
         },
       },
     },

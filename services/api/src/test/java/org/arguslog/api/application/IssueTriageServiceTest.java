@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.arguslog.api.application.IssueTriageUseCase.InvalidAiAnalysisException;
 import org.arguslog.api.application.IssueTriageUseCase.InvalidAssigneeException;
 import org.arguslog.api.application.port.IssueRepository;
 import org.arguslog.api.application.port.MembershipRepository;
@@ -82,6 +83,45 @@ class IssueTriageServiceTest {
 
     assertThat(service.updateAssignee(ORG_ID, PROJECT_ID, ISSUE_ID, null)).contains(updated);
     verify(memberships, never()).userRoleInOrg(any(), anyLong());
+  }
+
+  @Test
+  void attachAiAnalysisDelegatesToRepo() {
+    Issue updated = sample(Issue.Status.UNRESOLVED, null);
+    when(issues.updateAiAnalysis(PROJECT_ID, ISSUE_ID, "**root cause**", "claude-opus-4-7"))
+        .thenReturn(Optional.of(updated));
+
+    assertThat(
+            service.attachAiAnalysis(
+                ORG_ID, PROJECT_ID, ISSUE_ID, "**root cause**", "claude-opus-4-7"))
+        .contains(updated);
+  }
+
+  @Test
+  void attachAiAnalysisRejectsBlankBody() {
+    assertThatThrownBy(
+            () -> service.attachAiAnalysis(ORG_ID, PROJECT_ID, ISSUE_ID, "   ", "claude-opus-4-7"))
+        .isInstanceOf(InvalidAiAnalysisException.class)
+        .hasMessageContaining("must not be empty");
+    verify(issues, never()).updateAiAnalysis(anyLong(), anyLong(), any(), any());
+  }
+
+  @Test
+  void attachAiAnalysisRejectsOversizedBody() {
+    String huge = "x".repeat(32 * 1024 + 1);
+    assertThatThrownBy(
+            () -> service.attachAiAnalysis(ORG_ID, PROJECT_ID, ISSUE_ID, huge, "claude-opus-4-7"))
+        .isInstanceOf(InvalidAiAnalysisException.class)
+        .hasMessageContaining("exceeds");
+    verify(issues, never()).updateAiAnalysis(anyLong(), anyLong(), any(), any());
+  }
+
+  @Test
+  void attachAiAnalysisRejectsBlankModel() {
+    assertThatThrownBy(
+            () -> service.attachAiAnalysis(ORG_ID, PROJECT_ID, ISSUE_ID, "analysis", ""))
+        .isInstanceOf(InvalidAiAnalysisException.class)
+        .hasMessageContaining("model");
   }
 
   private static Issue sample(Issue.Status status, UUID assignee) {

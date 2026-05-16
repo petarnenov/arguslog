@@ -18,7 +18,10 @@ public record IssueResponse(
     @JsonProperty("occurrenceCount") long occurrenceCount,
     @JsonProperty("assigneeUserId") UUID assigneeUserId,
     @JsonProperty("firstSeenReleaseId") Long firstSeenReleaseId,
-    @JsonProperty("firstSeenReleaseVersion") String firstSeenReleaseVersion) {
+    @JsonProperty("firstSeenReleaseVersion") String firstSeenReleaseVersion,
+    @JsonProperty("aiAnalysis") String aiAnalysis,
+    @JsonProperty("aiAnalysisModel") String aiAnalysisModel,
+    @JsonProperty("aiAnalyzedAt") Instant aiAnalyzedAt) {
 
   public static IssueResponse from(Issue issue) {
     return new IssueResponse(
@@ -34,6 +37,9 @@ public record IssueResponse(
         issue.occurrenceCount(),
         issue.assigneeUserId(),
         issue.firstSeenReleaseId(),
-        issue.firstSeenReleaseVersion());
+        issue.firstSeenReleaseVersion(),
+        issue.aiAnalysis(),
+        issue.aiAnalysisModel(),
+        issue.aiAnalyzedAt());
   }
 }

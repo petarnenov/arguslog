@@ -1135,6 +1135,51 @@
         }
       }
     },
+    "/api/v1/projects/{projectId}/issues/{issueId}/ai-analysis" : {
+      "patch" : {
+        "tags" : [ "issue-controller" ],
+        "operationId" : "attachAiAnalysis",
+        "parameters" : [ {
+          "name" : "projectId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "issueId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/IssueAiAnalysisRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IssueResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orgs/{orgId}" : {
       "delete" : {
         "tags" : [ "org-controller" ],
@@ -2629,6 +2674,16 @@
           },
           "firstSeenReleaseVersion" : {
             "type" : "string"
+          },
+          "aiAnalysis" : {
+            "type" : "string"
+          },
+          "aiAnalysisModel" : {
+            "type" : "string"
+          },
+          "aiAnalyzedAt" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       },
@@ -2638,6 +2693,17 @@
           "userId" : {
             "type" : "string",
             "format" : "uuid"
+          }
+        }
+      },
+      "IssueAiAnalysisRequest" : {
+        "type" : "object",
+        "properties" : {
+          "analysis" : {
+            "type" : "string"
+          },
+          "model" : {
+            "type" : "string"
           }
         }
       },

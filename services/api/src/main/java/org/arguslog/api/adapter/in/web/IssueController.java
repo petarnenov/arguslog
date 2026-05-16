@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.arguslog.api.adapter.in.web.dto.EventResponse;
+import org.arguslog.api.adapter.in.web.dto.IssueAiAnalysisRequest;
 import org.arguslog.api.adapter.in.web.dto.IssueAssigneeRequest;
 import org.arguslog.api.adapter.in.web.dto.IssueResponse;
 import org.arguslog.api.adapter.in.web.dto.IssueStatusRequest;
@@ -12,6 +13,7 @@ import org.arguslog.api.adapter.in.web.dto.PageResponse;
 import org.arguslog.api.application.CursorCodec.InvalidCursorException;
 import org.arguslog.api.application.GetIssueUseCase;
 import org.arguslog.api.application.IssueTriageUseCase;
+import org.arguslog.api.application.IssueTriageUseCase.InvalidAiAnalysisException;
 import org.arguslog.api.application.IssueTriageUseCase.InvalidAssigneeException;
 import org.arguslog.api.application.ListIssueEventsUseCase;
 import org.arguslog.api.application.ListIssuesUseCase;
@@ -152,6 +154,30 @@ public class IssueController {
         .orElseThrow(() -> AccessException.notFound(issueId));
   }
 
+  /**
+   * Auto-triage agent's write-back. The hosted Claude agent (Managed Agent or equivalent) is
+   * triggered by an Arguslog webhook alert, fetches the issue + recent events via MCP,
+   * generates a root-cause analysis, and PATCH-es the markdown body back here. Status and
+   * assignee are intentionally untouched — the human still owns the triage decision; this is a
+   * suggestion field only. PAT-driven callers need {@link PatScope#ISSUES_WRITE} (the agent's
+   * own PAT, scoped to one or more projects).
+   */
+  @PatchMapping(value = "/{issueId}/ai-analysis", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public IssueResponse attachAiAnalysis(
+      @PathVariable long projectId,
+      @PathVariable long issueId,
+      @RequestBody IssueAiAnalysisRequest body) {
+    PatScopeGuard.require(PatScope.ISSUES_WRITE);
+    if (body == null) {
+      throw new InvalidAiAnalysisException("request body required");
+    }
+    return triage
+        .attachAiAnalysis(
+            OrgContext.requireCurrent(), projectId, issueId, body.analysis(), body.model())
+        .map(IssueResponse::from)
+        .orElseThrow(() -> AccessException.notFound(issueId));
+  }
+
   private static Issue.Status parseRequiredStatus(String raw) {
     if (raw == null || raw.isBlank()) {
       throw new BadFilterException("status", "(empty)", "must be one of: unresolved, resolved, ignored");
@@ -219,6 +245,11 @@ public class IssueController {
   @ExceptionHandler(InvalidAssigneeException.class)
   ResponseEntity<ProblemDetail> handleInvalidAssignee(InvalidAssigneeException e) {
     return problem(400, "Invalid assignee", e.getMessage());
+  }
+
+  @ExceptionHandler(InvalidAiAnalysisException.class)
+  ResponseEntity<ProblemDetail> handleInvalidAiAnalysis(InvalidAiAnalysisException e) {
+    return problem(400, "Invalid AI analysis", e.getMessage());
   }
 
   private static ResponseEntity<ProblemDetail> problem(int status, String title, String detail) {

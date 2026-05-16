@@ -145,6 +145,12 @@ class IssueControllerTest extends AbstractControllerTest {
         .andExpect(jsonPath("$.title").value("Not found"));
   }
 
+  // PATCH /{issueId}/ai-analysis is covered at the service layer in
+  // IssueTriageServiceTest (the controller method is a thin wrapper that delegates to
+  // triage.attachAiAnalysis after a single body null-check). The same coverage gap exists for
+  // the older updateStatus / updateAssignee PATCH endpoints — they live entirely under the
+  // service tests, mirrored here intentionally.
+
   private static Issue sampleIssue(long id) {
     return new Issue(
         id,

@@ -38,7 +38,8 @@ public class JdbcIssueRepository implements IssueRepository {
       """
       SELECT i.id, i.project_id, i.fingerprint, i.status::text, i.level::text, i.title, i.culprit,
              i.first_seen_at, i.last_seen_at, i.occurrence_count, i.assignee_user_id,
-             i.first_seen_release_id, r.version AS first_seen_release_version
+             i.first_seen_release_id, r.version AS first_seen_release_version,
+             i.ai_analysis, i.ai_analysis_model, i.ai_analyzed_at
         FROM issues i
         LEFT JOIN releases r ON r.id = i.first_seen_release_id
        WHERE i.project_id = ?
@@ -57,7 +58,8 @@ public class JdbcIssueRepository implements IssueRepository {
       """
       SELECT i.id, i.project_id, i.fingerprint, i.status::text, i.level::text, i.title, i.culprit,
              i.first_seen_at, i.last_seen_at, i.occurrence_count, i.assignee_user_id,
-             i.first_seen_release_id, r.version AS first_seen_release_version
+             i.first_seen_release_id, r.version AS first_seen_release_version,
+             i.ai_analysis, i.ai_analysis_model, i.ai_analyzed_at
         FROM issues i
         LEFT JOIN releases r ON r.id = i.first_seen_release_id
        WHERE i.project_id = ? AND i.id = ?
@@ -190,6 +192,30 @@ public class JdbcIssueRepository implements IssueRepository {
     return findByProjectAndId(projectId, issueId);
   }
 
+  @Override
+  public Optional<Issue> updateAiAnalysis(
+      long projectId, long issueId, String analysis, String model) {
+    pinOrgContextForRls();
+    // Stamp all three columns in one UPDATE. ai_analyzed_at uses `now()` (UTC postgres clock)
+    // rather than a caller-supplied Instant so the timestamp is monotonically server-side and
+    // unfakeable by a malicious agent.
+    int rows =
+        jdbc.update(
+            """
+            UPDATE issues
+               SET ai_analysis        = ?,
+                   ai_analysis_model  = ?,
+                   ai_analyzed_at     = now()
+             WHERE project_id = ? AND id = ?
+            """,
+            analysis,
+            model,
+            projectId,
+            issueId);
+    if (rows == 0) return Optional.empty();
+    return findByProjectAndId(projectId, issueId);
+  }
+
   // V35's partial index `idx_issues_first_seen_release ON issues(first_seen_release_id, project_id)
   // WHERE first_seen_release_id IS NOT NULL` covers this exactly. Sort is (first_seen_at desc, id
   // desc) for stable newest-first; project_id is in the WHERE to keep multi-tenant safe (RLS would
@@ -198,7 +224,8 @@ public class JdbcIssueRepository implements IssueRepository {
       """
       SELECT i.id, i.project_id, i.fingerprint, i.status::text, i.level::text, i.title, i.culprit,
              i.first_seen_at, i.last_seen_at, i.occurrence_count, i.assignee_user_id,
-             i.first_seen_release_id, r.version AS first_seen_release_version
+             i.first_seen_release_id, r.version AS first_seen_release_version,
+             i.ai_analysis, i.ai_analysis_model, i.ai_analyzed_at
         FROM issues i
         LEFT JOIN releases r ON r.id = i.first_seen_release_id
        WHERE i.project_id = ? AND i.first_seen_release_id = ?
@@ -230,6 +257,8 @@ public class JdbcIssueRepository implements IssueRepository {
     UUID assignee = assigneeObj instanceof UUID u ? u : null;
     long releaseIdRaw = rs.getLong("first_seen_release_id");
     Long releaseId = rs.wasNull() ? null : releaseIdRaw;
+    java.sql.Timestamp analyzedAtTs = rs.getTimestamp("ai_analyzed_at");
+    java.time.Instant analyzedAt = analyzedAtTs == null ? null : analyzedAtTs.toInstant();
     return new Issue(
         rs.getLong("id"),
         rs.getLong("project_id"),
@@ -243,6 +272,9 @@ public class JdbcIssueRepository implements IssueRepository {
         rs.getLong("occurrence_count"),
         assignee,
         releaseId,
-        rs.getString("first_seen_release_version"));
+        rs.getString("first_seen_release_version"),
+        rs.getString("ai_analysis"),
+        rs.getString("ai_analysis_model"),
+        analyzedAt);
   }
 }

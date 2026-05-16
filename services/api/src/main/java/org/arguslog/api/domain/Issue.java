@@ -20,11 +20,16 @@ public record Issue(
     long occurrenceCount,
     UUID assigneeUserId,
     Long firstSeenReleaseId,
-    String firstSeenReleaseVersion) {
+    String firstSeenReleaseVersion,
+    String aiAnalysis,
+    String aiAnalysisModel,
+    Instant aiAnalyzedAt) {
 
   /**
    * Convenience constructor preserving older test/builder sites that don't set release
-   * attribution. Defaults the two new fields to {@code null}.
+   * attribution OR the auto-triage analysis fields. Defaults the trailing five fields to
+   * {@code null} — same posture as a freshly-ingested issue before either subsystem has
+   * touched it.
    */
   public Issue(
       long id,
@@ -50,6 +55,46 @@ public record Issue(
         lastSeenAt,
         occurrenceCount,
         assigneeUserId,
+        null,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  /**
+   * Convenience constructor for sites that DO know release attribution but predate the
+   * auto-triage AI analysis fields. Defaults the three AI fields to {@code null}.
+   */
+  public Issue(
+      long id,
+      long projectId,
+      String fingerprint,
+      Status status,
+      Level level,
+      String title,
+      String culprit,
+      Instant firstSeenAt,
+      Instant lastSeenAt,
+      long occurrenceCount,
+      UUID assigneeUserId,
+      Long firstSeenReleaseId,
+      String firstSeenReleaseVersion) {
+    this(
+        id,
+        projectId,
+        fingerprint,
+        status,
+        level,
+        title,
+        culprit,
+        firstSeenAt,
+        lastSeenAt,
+        occurrenceCount,
+        assigneeUserId,
+        firstSeenReleaseId,
+        firstSeenReleaseVersion,
+        null,
         null,
         null);
   }

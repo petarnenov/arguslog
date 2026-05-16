@@ -25,6 +25,16 @@ export interface Issue {
   firstSeenReleaseId: number | null;
   /** Human-readable version string for the release referenced by {@link firstSeenReleaseId}. */
   firstSeenReleaseVersion: string | null;
+  /**
+   * Auto-triage agent's markdown analysis, written via PATCH /ai-analysis when a hosted Claude
+   * agent fires off the new-error-event webhook. Suggestion-only — never affects status /
+   * assignee. Null until the first run.
+   */
+  aiAnalysis: string | null;
+  /** Self-reported model id of the agent that wrote {@link aiAnalysis}. Null in lockstep. */
+  aiAnalysisModel: string | null;
+  /** Server-stamped wall clock when the analysis was attached. Null in lockstep. */
+  aiAnalyzedAt: string | null;
 }
 
 export interface PageMeta {

@@ -99,6 +99,12 @@ class JdbcIssueRepositoryTest {
           public List<Issue> listIntroducedInRelease(long projectId, long releaseId, int limit) {
             return tx.execute(s -> raw.listIntroducedInRelease(projectId, releaseId, limit));
           }
+
+          @Override
+          public Optional<Issue> updateAiAnalysis(
+              long projectId, long issueId, String analysis, String model) {
+            return tx.execute(s -> raw.updateAiAnalysis(projectId, issueId, analysis, model));
+          }
         };
   }
 

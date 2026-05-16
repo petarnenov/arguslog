@@ -19,11 +19,34 @@ public interface IssueTriageUseCase {
    */
   Optional<Issue> updateAssignee(long orgId, long projectId, long issueId, UUID assigneeUserId);
 
+  /**
+   * Auto-triage agent's hook: write a freshly-generated root-cause analysis + suggested-fix
+   * blob back onto the issue. Body is opaque markdown; {@code model} is the agent's self-
+   * reported model id (e.g. {@code claude-opus-4-7}). Returns empty when the issue cannot be
+   * found.
+   *
+   * <p>Deliberately does NOT touch status or assignee — the human still owns the triage
+   * decision. The endpoint is also explicitly free of any event-emit side-effects, so a
+   * webhook alert rule firing on „new error event" can't infinite-loop on the agent's own
+   * write.
+   */
+  Optional<Issue> attachAiAnalysis(
+      long orgId, long projectId, long issueId, String analysis, String model);
+
   /** Thrown when the assignee target is not a member of the org owning the issue. */
   final class InvalidAssigneeException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
     public InvalidAssigneeException(String message) {
+      super(message);
+    }
+  }
+
+  /** Thrown when the AI analysis payload is missing / blank / oversized. */
+  final class InvalidAiAnalysisException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    public InvalidAiAnalysisException(String message) {
       super(message);
     }
   }

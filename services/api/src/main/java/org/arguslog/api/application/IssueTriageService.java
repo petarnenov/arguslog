@@ -43,4 +43,28 @@ public class IssueTriageService implements IssueTriageUseCase {
     }
     return issues.updateAssignee(projectId, issueId, assigneeUserId);
   }
+
+  /**
+   * Hard ceiling on the analysis body. 32 KB is generous for a triage paragraph + suggested
+   * fix; anything larger is almost certainly the agent dumping a full event payload back at
+   * us, which is wasteful and would bloat the issues row.
+   */
+  private static final int MAX_AI_ANALYSIS_BYTES = 32 * 1024;
+
+  @Override
+  @Transactional
+  public Optional<Issue> attachAiAnalysis(
+      long orgId, long projectId, long issueId, String analysis, String model) {
+    if (analysis == null || analysis.isBlank()) {
+      throw new InvalidAiAnalysisException("analysis body must not be empty");
+    }
+    if (analysis.length() > MAX_AI_ANALYSIS_BYTES) {
+      throw new InvalidAiAnalysisException(
+          "analysis body exceeds " + MAX_AI_ANALYSIS_BYTES + " characters");
+    }
+    if (model == null || model.isBlank()) {
+      throw new InvalidAiAnalysisException("model identifier must not be empty");
+    }
+    return issues.updateAiAnalysis(projectId, issueId, analysis, model);
+  }
 }
