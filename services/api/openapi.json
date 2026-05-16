@@ -1481,6 +1481,51 @@
         }
       }
     },
+    "/api/v1/orgs/{orgId}/alert-destinations/{id}/enabled" : {
+      "patch" : {
+        "tags" : [ "alert-destination-controller" ],
+        "operationId" : "setEnabled",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AlertDestinationEnabledRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AlertDestinationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/slack/oauth/callback" : {
       "get" : {
         "tags" : [ "slack-install-controller" ],
@@ -2252,6 +2297,9 @@
           "name" : {
             "type" : "string"
           },
+          "enabled" : {
+            "type" : "boolean"
+          },
           "createdAt" : {
             "type" : "string",
             "format" : "date-time"
@@ -2772,6 +2820,14 @@
             "type" : "string"
           },
           "hasWebhook" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "AlertDestinationEnabledRequest" : {
+        "type" : "object",
+        "properties" : {
+          "enabled" : {
             "type" : "boolean"
           }
         }

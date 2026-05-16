@@ -148,6 +148,71 @@ class AlertDestinationServiceTest {
     assertThat(service.delete(1L, 7L)).isTrue();
   }
 
+  @Test
+  void createsGithubIssueWithRequiredFields() {
+    ObjectNode config =
+        mapper
+            .createObjectNode()
+            .put("owner", "acme")
+            .put("repo", "web")
+            .put("token", "ghp_xxx");
+    when(writes.create(eq(1L), eq(DestinationKind.GITHUB_ISSUE), eq("triage"), anyString()))
+        .thenReturn(sample(DestinationKind.GITHUB_ISSUE, "triage"));
+
+    AlertDestination created = service.create(1L, DestinationKind.GITHUB_ISSUE, "triage", config);
+
+    assertThat(created.kind()).isEqualTo(DestinationKind.GITHUB_ISSUE);
+    verify(writes).create(eq(1L), eq(DestinationKind.GITHUB_ISSUE), eq("triage"), anyString());
+  }
+
+  @Test
+  void rejectsGithubIssueMissingOwner() {
+    ObjectNode config = mapper.createObjectNode().put("repo", "web").put("token", "ghp_xxx");
+    assertThatThrownBy(() -> service.create(1L, DestinationKind.GITHUB_ISSUE, "triage", config))
+        .isInstanceOf(InvalidDestinationConfigException.class)
+        .hasMessageContaining("owner");
+    verify(writes, never()).create(anyLong(), any(), any(), any());
+  }
+
+  @Test
+  void rejectsGithubIssueMissingRepo() {
+    ObjectNode config = mapper.createObjectNode().put("owner", "acme").put("token", "t");
+    assertThatThrownBy(() -> service.create(1L, DestinationKind.GITHUB_ISSUE, "triage", config))
+        .isInstanceOf(InvalidDestinationConfigException.class)
+        .hasMessageContaining("repo");
+  }
+
+  @Test
+  void rejectsGithubIssueMissingToken() {
+    ObjectNode config = mapper.createObjectNode().put("owner", "acme").put("repo", "web");
+    assertThatThrownBy(() -> service.create(1L, DestinationKind.GITHUB_ISSUE, "triage", config))
+        .isInstanceOf(InvalidDestinationConfigException.class)
+        .hasMessageContaining("token");
+  }
+
+  @Test
+  void rejectsGithubIssueWithMalformedLabels() {
+    ObjectNode config =
+        mapper
+            .createObjectNode()
+            .put("owner", "acme")
+            .put("repo", "web")
+            .put("token", "t")
+            .put("labels", "not-an-array");
+    assertThatThrownBy(() -> service.create(1L, DestinationKind.GITHUB_ISSUE, "triage", config))
+        .isInstanceOf(InvalidDestinationConfigException.class)
+        .hasMessageContaining("labels");
+  }
+
+  @Test
+  void setEnabledDelegatesToWrites() {
+    AlertDestination toggled = sample(DestinationKind.SLACK, "ops");
+    when(writes.setEnabled(1L, 7L, false)).thenReturn(Optional.of(toggled));
+
+    assertThat(service.setEnabled(1L, 7L, false)).contains(toggled);
+    verify(writes).setEnabled(1L, 7L, false);
+  }
+
   private static AlertDestination sample(DestinationKind kind, String name) {
     return new AlertDestination(7L, 1L, kind, name, "{}", Instant.parse("2026-05-05T12:00:00Z"));
   }

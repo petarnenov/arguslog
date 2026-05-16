@@ -90,6 +90,11 @@ class JdbcAlertDestinationRepositoryTest {
           }
 
           @Override
+          public Optional<AlertDestination> setEnabled(long orgId, long id, boolean enabled) {
+            return tx.execute(s -> raw.setEnabled(orgId, id, enabled));
+          }
+
+          @Override
           public boolean delete(long orgId, long id) {
             return Boolean.TRUE.equals(tx.execute(s -> raw.delete(orgId, id)));
           }

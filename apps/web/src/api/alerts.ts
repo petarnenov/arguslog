@@ -1,12 +1,18 @@
 import { apiFetch } from './client';
 
-export type DestinationKind = 'telegram' | 'email' | 'slack' | 'webhook';
+export type DestinationKind = 'telegram' | 'email' | 'slack' | 'webhook' | 'github_issue';
 
 export interface AlertDestination {
   id: number;
   orgId: number;
   kind: DestinationKind;
   name: string;
+  /**
+   * Generic on/off toggle (V40). Disabled destinations stay in the table but are skipped by the
+   * worker dispatcher, so the operator can pause a Slack-spam channel or freeze auto-triage
+   * without losing the encrypted config / token.
+   */
+  enabled: boolean;
   createdAt: string;
 }
 
@@ -64,6 +70,24 @@ export function updateAlertDestination(
 
 export function deleteAlertDestination(orgId: number, id: number): Promise<void> {
   return apiFetch<void>(`/api/v1/orgs/${orgId}/alert-destinations/${id}`, { method: 'DELETE' });
+}
+
+/**
+ * Flip the on/off toggle on a destination. Dedicated endpoint (not overloaded onto PUT) so the
+ * dashboard's pause switch doesn't have to re-supply the encrypted config blob it never sees.
+ */
+export function setAlertDestinationEnabled(
+  orgId: number,
+  id: number,
+  enabled: boolean,
+): Promise<AlertDestination> {
+  return apiFetch<AlertDestination>(
+    `/api/v1/orgs/${orgId}/alert-destinations/${id}/enabled`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ enabled }),
+    },
+  );
 }
 
 // ── rules ─────────────────────────────────────────────────────────────────

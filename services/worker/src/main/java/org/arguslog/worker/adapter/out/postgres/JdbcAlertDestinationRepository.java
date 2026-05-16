@@ -28,9 +28,10 @@ public class JdbcAlertDestinationRepository implements AlertDestinationRepositor
 
   private static final String SELECT_BY_IDS_SQL =
       """
-      SELECT id, org_id, kind::text AS kind_text, name, config_encrypted
+      SELECT id, org_id, kind::text AS kind_text, name, config_encrypted, enabled
         FROM alert_destinations
        WHERE id IN (:ids)
+         AND enabled
       """;
 
   private final NamedParameterJdbcTemplate jdbc;
@@ -70,7 +71,12 @@ public class JdbcAlertDestinationRepository implements AlertDestinationRepositor
           indexed.put(
               id,
               new AlertDestination(
-                  id, rs.getLong("org_id"), kind, rs.getString("name"), configJson));
+                  id,
+                  rs.getLong("org_id"),
+                  kind,
+                  rs.getString("name"),
+                  configJson,
+                  rs.getBoolean("enabled")));
         });
     // Preserve the input order so observers see deterministic dispatch ordering.
     List<AlertDestination> ordered = new java.util.ArrayList<>(ids.size());

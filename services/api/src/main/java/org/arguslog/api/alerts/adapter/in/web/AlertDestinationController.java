@@ -2,6 +2,7 @@ package org.arguslog.api.alerts.adapter.in.web;
 
 import java.net.URI;
 import java.util.List;
+import org.arguslog.api.alerts.adapter.in.web.dto.AlertDestinationEnabledRequest;
 import org.arguslog.api.alerts.adapter.in.web.dto.AlertDestinationRequest;
 import org.arguslog.api.alerts.adapter.in.web.dto.AlertDestinationResponse;
 import org.arguslog.api.alerts.application.AlertDestinationUseCase;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -71,6 +73,25 @@ public class AlertDestinationController {
         .orElseThrow(() -> AccessException.notFound(id));
   }
 
+  /**
+   * Generic on/off toggle for any destination kind. The dashboard's pause switch hits this; CI /
+   * tooling can flip auto-triage destinations off during a freeze window and back on after.
+   */
+  @PatchMapping(value = "/{id}/enabled", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public AlertDestinationResponse setEnabled(
+      @PathVariable long orgId,
+      @PathVariable long id,
+      @RequestBody AlertDestinationEnabledRequest body) {
+    PatScopeGuard.require(PatScope.ALERTS_WRITE);
+    if (body == null || body.enabled() == null) {
+      throw new InvalidDestinationConfigException("body must contain a boolean 'enabled' field");
+    }
+    return useCase
+        .setEnabled(orgId, id, body.enabled())
+        .map(AlertDestinationResponse::from)
+        .orElseThrow(() -> AccessException.notFound(id));
+  }
+
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(@PathVariable long orgId, @PathVariable long id) {
     PatScopeGuard.require(PatScope.ALERTS_WRITE);
@@ -85,7 +106,7 @@ public class AlertDestinationController {
       return DestinationKind.fromString(raw);
     } catch (IllegalArgumentException e) {
       throw new InvalidDestinationConfigException(
-          "kind must be one of: telegram, email, slack, webhook");
+          "kind must be one of: telegram, email, slack, webhook, github_issue");
     }
   }
 

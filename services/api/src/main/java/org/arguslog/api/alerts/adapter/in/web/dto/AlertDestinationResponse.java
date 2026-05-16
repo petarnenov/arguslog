@@ -14,10 +14,11 @@ public record AlertDestinationResponse(
     @JsonProperty("orgId") long orgId,
     String kind,
     String name,
+    boolean enabled,
     @JsonProperty("createdAt") Instant createdAt) {
 
   public static AlertDestinationResponse from(AlertDestination d) {
     return new AlertDestinationResponse(
-        d.id(), d.orgId(), d.kind().dbValue(), d.name(), d.createdAt());
+        d.id(), d.orgId(), d.kind().dbValue(), d.name(), d.enabled(), d.createdAt());
   }
 }

@@ -4,7 +4,8 @@ public enum DestinationKind {
   TELEGRAM,
   EMAIL,
   SLACK,
-  WEBHOOK;
+  WEBHOOK,
+  GITHUB_ISSUE;
 
   public String dbValue() {
     return name().toLowerCase();

@@ -16,6 +16,13 @@ public interface AlertDestinationUseCase {
 
   Optional<AlertDestination> update(long orgId, long id, String name, JsonNode config);
 
+  /**
+   * Flip the generic on/off toggle. Returns the refreshed row or empty if the destination doesn't
+   * exist under the org. Independent of {@link #update} so the dashboard's „pause" switch doesn't
+   * have to round-trip the encrypted config blob it never shows to the user.
+   */
+  Optional<AlertDestination> setEnabled(long orgId, long id, boolean enabled);
+
   boolean delete(long orgId, long id);
 
   /**

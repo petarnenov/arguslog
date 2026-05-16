@@ -471,6 +471,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         name: {
           type: 'string',
         },
+        enabled: {
+          type: 'boolean',
+        },
         createdAt: {
           type: 'string',
           format: 'date-time',
@@ -538,6 +541,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         },
         name: {
           type: 'string',
+        },
+        enabled: {
+          type: 'boolean',
         },
         createdAt: {
           type: 'string',
@@ -1495,6 +1501,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         },
         name: {
           type: 'string',
+        },
+        enabled: {
+          type: 'boolean',
         },
         createdAt: {
           type: 'string',
@@ -2543,6 +2552,71 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
     annotations: {
       title: 'PATCH /api/v1/orgs/{orgId}/integrations/slack/workspaces/{id}',
+      readOnlyHint: false,
+      idempotentHint: false,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'alert_destination_set_enabled',
+    title: 'Alert destination set enabled',
+    description:
+      'PATCH /api/v1/orgs/{orgId}/alert-destinations/{id}/enabled\n\nMethod: PATCH /api/v1/orgs/{orgId}/alert-destinations/{id}/enabled',
+    method: 'PATCH',
+    path: '/api/v1/orgs/{orgId}/alert-destinations/{id}/enabled',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+      {
+        name: 'id',
+        required: true,
+        type: 'integer',
+        description: 'id (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: true,
+    bodySchema: {
+      type: 'object',
+      properties: {
+        enabled: {
+          type: 'boolean',
+        },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'integer',
+          format: 'int64',
+        },
+        orgId: {
+          type: 'integer',
+          format: 'int64',
+        },
+        kind: {
+          type: 'string',
+        },
+        name: {
+          type: 'string',
+        },
+        enabled: {
+          type: 'boolean',
+        },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+      },
+    },
+    annotations: {
+      title: 'PATCH /api/v1/orgs/{orgId}/alert-destinations/{id}/enabled',
       readOnlyHint: false,
       idempotentHint: false,
       destructiveHint: false,

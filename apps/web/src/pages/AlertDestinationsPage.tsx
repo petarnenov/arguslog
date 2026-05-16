@@ -11,6 +11,7 @@ import {
   PasswordInput,
   Select,
   Stack,
+  Switch,
   Table,
   TagsInput,
   Text,
@@ -29,6 +30,7 @@ import {
   createAlertDestination,
   deleteAlertDestination,
   type DestinationKind,
+  setAlertDestinationEnabled,
   updateAlertDestination,
 } from '../api/alerts';
 import { ApiError } from '../api/client';
@@ -40,6 +42,7 @@ const KIND_OPTIONS: { value: DestinationKind; label: string }[] = [
   { value: 'email', label: 'Email' },
   { value: 'slack', label: 'Slack' },
   { value: 'webhook', label: 'Webhook' },
+  { value: 'github_issue', label: 'GitHub Issue (auto-triage)' },
 ];
 
 interface DraftValues {
@@ -56,6 +59,12 @@ interface DraftValues {
   // Webhook (generic)
   webhookUrl: string;
   webhookSecret: string;
+  // GitHub Issue (auto-triage)
+  githubOwner: string;
+  githubRepo: string;
+  githubToken: string;
+  githubAssignee: string;
+  githubLabels: string[];
 }
 
 const EMPTY_DRAFT: DraftValues = {
@@ -67,6 +76,11 @@ const EMPTY_DRAFT: DraftValues = {
   slackWebhookUrl: '',
   webhookUrl: '',
   webhookSecret: '',
+  githubOwner: '',
+  githubRepo: '',
+  githubToken: '',
+  githubAssignee: '',
+  githubLabels: [],
 };
 
 /**
@@ -112,6 +126,26 @@ function buildConfigPayload(
       if (!url) return { config: null, error: 'Webhook URL is required.' };
       const config: Record<string, unknown> = { url };
       if (secret) config.secret = secret;
+      return { config, error: null };
+    }
+    case 'github_issue': {
+      const owner = values.githubOwner.trim();
+      const repo = values.githubRepo.trim();
+      const token = values.githubToken.trim();
+      const assignee = values.githubAssignee.trim();
+      const labels = values.githubLabels.map((s) => s.trim()).filter((s) => s.length > 0);
+      if (isEditMode && !owner && !repo && !token && !assignee && labels.length === 0) {
+        return { config: null, error: null };
+      }
+      if (!owner || !repo || !token) {
+        return {
+          config: null,
+          error: 'GitHub Issue needs owner, repo, and a fine-grained PAT (or leave all blank to keep current).',
+        };
+      }
+      const config: Record<string, unknown> = { owner, repo, token };
+      if (assignee) config.assignee = assignee;
+      if (labels.length > 0) config.labels = labels;
       return { config, error: null };
     }
   }
@@ -209,6 +243,18 @@ export function AlertDestinationsPage() {
     },
   });
 
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, enabled }: { id: number; enabled: boolean }) => {
+      if (!org) throw new Error('org missing');
+      return setAlertDestinationEnabled(org.id, id, enabled);
+    },
+    onSuccess: async () => {
+      if (org) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.alertDestinations(org.id) });
+      }
+    },
+  });
+
   if (orgsQuery.isLoading) {
     return (
       <Center mih={200}>
@@ -250,6 +296,7 @@ export function AlertDestinationsPage() {
               <Table.Tr>
                 <Table.Th>{t('alertDestinations.colName')}</Table.Th>
                 <Table.Th>{t('alertDestinations.colKind')}</Table.Th>
+                <Table.Th style={{ width: 110 }}>{t('alertDestinations.colEnabled')}</Table.Th>
                 <Table.Th style={{ width: 110, textAlign: 'right' }}>
                   {t('alertDestinations.colActions')}
                 </Table.Th>
@@ -261,6 +308,22 @@ export function AlertDestinationsPage() {
                   <Table.Td>{d.name}</Table.Td>
                   <Table.Td>
                     <Badge variant="light">{d.kind}</Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Switch
+                      checked={d.enabled}
+                      onChange={(event) =>
+                        toggleMutation.mutate({
+                          id: d.id,
+                          enabled: event.currentTarget.checked,
+                        })
+                      }
+                      aria-label={t('alertDestinations.toggleAria', { name: d.name })}
+                      disabled={
+                        toggleMutation.isPending &&
+                        toggleMutation.variables?.id === d.id
+                      }
+                    />
                   </Table.Td>
                   <Table.Td style={{ textAlign: 'right' }}>
                     <Group gap="xs" justify="flex-end">
@@ -384,6 +447,52 @@ export function AlertDestinationsPage() {
                   }
                   placeholder={isEditMode ? '••••••••' : t('alertDestinations.webhookSecretPlaceholder')}
                   {...form.getInputProps('webhookSecret')}
+                  disabled={saveMutation.isPending}
+                />
+              </>
+            )}
+
+            {form.values.kind === 'github_issue' && (
+              <>
+                <TextInput
+                  label={t('alertDestinations.githubOwner')}
+                  description={t('alertDestinations.githubOwnerHint')}
+                  placeholder="acme"
+                  {...form.getInputProps('githubOwner')}
+                  disabled={saveMutation.isPending}
+                />
+                <TextInput
+                  label={t('alertDestinations.githubRepo')}
+                  description={t('alertDestinations.githubRepoHint')}
+                  placeholder="web"
+                  {...form.getInputProps('githubRepo')}
+                  disabled={saveMutation.isPending}
+                />
+                <PasswordInput
+                  label={t('alertDestinations.githubToken')}
+                  description={
+                    isEditMode
+                      ? t('alertDestinations.secretEditHint')
+                      : t('alertDestinations.githubTokenHint')
+                  }
+                  placeholder={isEditMode ? '••••••••' : 'github_pat_…'}
+                  {...form.getInputProps('githubToken')}
+                  disabled={saveMutation.isPending}
+                />
+                <TextInput
+                  label={t('alertDestinations.githubAssignee')}
+                  description={t('alertDestinations.githubAssigneeHint')}
+                  placeholder="copilot-swe-agent"
+                  {...form.getInputProps('githubAssignee')}
+                  disabled={saveMutation.isPending}
+                />
+                <TagsInput
+                  label={t('alertDestinations.githubLabels')}
+                  description={t('alertDestinations.githubLabelsHint')}
+                  placeholder="arguslog-auto-triage"
+                  value={form.values.githubLabels}
+                  onChange={(v) => form.setFieldValue('githubLabels', v)}
+                  splitChars={[',', ' ', ';']}
                   disabled={saveMutation.isPending}
                 />
               </>

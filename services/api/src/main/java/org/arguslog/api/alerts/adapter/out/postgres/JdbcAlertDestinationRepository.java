@@ -43,7 +43,7 @@ public class JdbcAlertDestinationRepository
                 INSERT INTO alert_destinations (org_id, kind, name, config_encrypted)
                      VALUES (?, ?::destination_kind, ?, ?)
                 ON CONFLICT (org_id, name) DO NOTHING
-                  RETURNING id, org_id, kind::text, name, config_encrypted, created_at
+                  RETURNING id, org_id, kind::text, name, config_encrypted, enabled, created_at
                 """,
             rs -> rs.next() ? mapRow(rs, 0) : null,
             orgId,
@@ -62,7 +62,7 @@ public class JdbcAlertDestinationRepository
     pinOrgContextForRls();
     return jdbc.query(
         """
-            SELECT id, org_id, kind::text, name, config_encrypted, created_at
+            SELECT id, org_id, kind::text, name, config_encrypted, enabled, created_at
               FROM alert_destinations
              WHERE org_id = ?
              ORDER BY created_at DESC, id DESC
@@ -78,7 +78,7 @@ public class JdbcAlertDestinationRepository
       return Optional.ofNullable(
           jdbc.queryForObject(
               """
-                  SELECT id, org_id, kind::text, name, config_encrypted, created_at
+                  SELECT id, org_id, kind::text, name, config_encrypted, enabled, created_at
                     FROM alert_destinations
                    WHERE org_id = ? AND id = ?
                   """,
@@ -110,6 +110,19 @@ public class JdbcAlertDestinationRepository
   }
 
   @Override
+  public Optional<AlertDestination> setEnabled(long orgId, long id, boolean enabled) {
+    pinOrgContextForRls();
+    int updated =
+        jdbc.update(
+            "UPDATE alert_destinations SET enabled = ? WHERE org_id = ? AND id = ?",
+            enabled,
+            orgId,
+            id);
+    if (updated == 0) return Optional.empty();
+    return find(orgId, id);
+  }
+
+  @Override
   public boolean delete(long orgId, long id) {
     pinOrgContextForRls();
     return jdbc.update("DELETE FROM alert_destinations WHERE org_id = ? AND id = ?", orgId, id) > 0;
@@ -130,6 +143,7 @@ public class JdbcAlertDestinationRepository
         DestinationKind.fromString(rs.getString("kind")),
         rs.getString("name"),
         configJson,
+        rs.getBoolean("enabled"),
         rs.getTimestamp("created_at").toInstant());
   }
 }

@@ -1,129 +1,136 @@
-# Auto-triage — Arguslog alerts → hosted Claude agent → AI analysis
+# Auto-triage — Arguslog alerts → GitHub Issue → Copilot PR
 
-When a new error event fires, Arguslog can POST a webhook to a hosted Claude agent. The
-agent fetches the issue + recent event payloads via MCP, hypothesises a root cause, and
-attaches the markdown back to the issue via `attach_ai_analysis`. The dashboard renders the
-analysis in a dedicated card on `IssueDetailPage`.
+When a new error event fires, Arguslog creates a GitHub Issue in your repo and assigns it
+to GitHub Copilot's coding agent (`copilot-swe-agent`). Copilot picks the issue up
+automatically, reads the stack trace + breadcrumbs out of the issue body, greps the repo,
+and opens a *draft* PR with the smallest plausible fix. The PR shows up in your normal
+review queue.
 
-This loop is suggestion-only. The agent never touches status or assignee — a human still
-owns the triage decision.
+Zero workflow files. Zero `ANTHROPIC_API_KEY`. The operator's existing Copilot
+subscription is the entire runtime.
 
 ## Architecture
 
 ```
-┌──────────────┐  new error  ┌──────────────┐  webhook POST  ┌──────────────────┐
-│ ingest       │ ──────────► │ worker rule  │ ─────────────► │ Claude Managed   │
-│ pipeline     │             │ engine       │                │ Agent (or equiv) │
-└──────────────┘             └──────────────┘                └────────┬─────────┘
-                                                                      │
-                                                            MCP calls │ (mcp.arguslog.org)
-                                                                      ▼
-                                                              ┌──────────────┐
-                                                              │ Arguslog API │
-                                                              │ - get_issue  │
-                                                              │ - list_issue │
-                                                              │   _events    │
-                                                              │ - attach_ai_ │
-                                                              │   analysis   │
-                                                              └──────────────┘
+┌──────────────┐  new error  ┌──────────────┐  POST /issues  ┌──────────────────┐
+│ ingest       │ ──────────► │ worker rule  │ ─────────────► │ GitHub API       │
+│ pipeline     │             │ engine       │                │ creates issue +  │
+└──────────────┘             └──────────────┘                │ assigns Copilot  │
+                                                              └────────┬─────────┘
+                                                                       │ Copilot
+                                                                       │ coding agent
+                                                                       ▼
+                                                              ┌──────────────────┐
+                                                              │ Draft PR against │
+                                                              │ `main` with the  │
+                                                              │ proposed fix     │
+                                                              └──────────────────┘
 ```
+
+## Prereqs
+
+- **GitHub Copilot subscription**: Pro+ or Enterprise with the **Copilot coding agent**
+  enabled. Free / individual Pro don't include the agent.
+- **The target repository**: Settings → Code & automation → Copilot → confirm the coding
+  agent is on. Your default branch (usually `main`) should be the PR target.
+- **A fine-grained GitHub PAT** scoped to that *one* repository with:
+  - `Contents: read` (Copilot reads code to make its diff; Arguslog itself doesn't, but
+    the PAT covers the agent path too)
+  - `Issues: write` (Arguslog creates the issue + assigns the agent)
+  - `Pull requests: read` (for the future PR-link write-back webhook)
+  - Set a short expiration if your security policy requires; rotate via the dashboard's
+    edit modal when it expires.
+
+> **Why fine-grained, not classic PAT**: classic PATs are org-wide superkeys. Scoping to a
+> single repo is the principle-of-least-privilege posture and keeps the blast radius of a
+> leaked token to the one repo Arguslog auto-triages.
 
 ## Setup
 
-### 1. Create an agent PAT
+### 1. Create the Arguslog destination
 
-`User menu → Personal access tokens → New token` on the dashboard. Scope it to
-`issues:read` and `issues:write` (the agent needs to read events + write the analysis
-back). Note the token — shown once.
+In the dashboard: **Settings → Alerts → Destinations → New**, pick kind
+**„GitHub Issue (auto-triage)"**, fill in:
 
-### 2. Provision a hosted Claude agent
+| Field | Value |
+|---|---|
+| Name | Anything memorable (e.g. „auto-triage → acme/web") |
+| Owner | GitHub username / org (e.g. `acme`) |
+| Repo | Repository name only (e.g. `web`) |
+| Fine-grained PAT | The token from the prereqs section |
+| Assignee | Leave blank for the default `copilot-swe-agent` |
+| Labels | Leave blank for the default `arguslog-auto-triage` |
 
-Use Anthropic's Managed Agents (or any equivalent host that exposes an HTTPS invoke URL +
-auth header). The agent needs:
-
-- **MCP connection**: `https://mcp.arguslog.org` with `Authorization: Bearer <PAT>` from
-  step 1.
-- **Prompt**: the template below, verbatim.
-- **Trigger**: HTTPS POST webhook. Take note of the invoke URL + the auth header the host
-  expects (usually a per-agent secret).
-
-### 3. Prompt template
-
-```
-You are an Arguslog auto-triage agent. You will receive a JSON payload describing a freshly-fired
-alert: { issueId, projectId, level, occurrenceCount, url, ... }.
-
-Your job, end-to-end:
-1. Call `get_issue` with the projectId + issueId from the payload.
-2. Call `list_issue_events` (page size 3) to read recent event payloads — stack frames,
-   breadcrumbs, request/user contexts.
-3. Write a short root-cause hypothesis (1–3 paragraphs, markdown) and a suggested next step or
-   fix. Be concrete; reference file paths and frame numbers from the stack when possible. If the
-   data is insufficient to form a hypothesis, say so plainly — don't invent.
-4. Call `attach_ai_analysis` with your markdown body and `model: <your model id>`.
-
-You MUST NOT change issue status or assignee. The human owns the triage decision. The analysis
-you attach is a suggestion, not an action.
-```
-
-### 4. Wire the webhook in Arguslog
-
-On the project's `Settings → Alerts → Destinations` page:
-
-1. **New destination** → type `Webhook` → URL = your agent's invoke URL → optional
-   `Authorization` header from step 2.
-2. **New alert rule** → fires on `new error event` (or whichever condition matches your
-   auto-triage policy) → action = the destination from step 1.
-
-Or, programmatically (matches the API-first / MCP-first design rule):
+Or via API:
 
 ```bash
-# Create the webhook destination
 curl -X POST "$ARGUSLOG/api/v1/orgs/$ORG_ID/alert-destinations" \
   -H "Authorization: Bearer $PAT" -H 'Content-Type: application/json' \
   -d '{
-    "name": "Auto-triage agent",
-    "kind": "webhook",
-    "config": { "url": "https://agent.example/invoke", "secret": "shared-hmac-secret" }
-  }'
-
-# Wire an alert rule on the project
-curl -X POST "$ARGUSLOG/api/v1/projects/$PROJECT_ID/alert-rules" \
-  -H "Authorization: Bearer $PAT" -H 'Content-Type: application/json' \
-  -d '{
-    "name": "Auto-triage on new error",
-    "condition": { "type": "new_issue", "level": "error" },
-    "destinationIds": [42]
+    "kind": "github_issue",
+    "name": "auto-triage → acme/web",
+    "config": {
+      "owner": "acme",
+      "repo": "web",
+      "token": "github_pat_…"
+    }
   }'
 ```
 
-### 5. Verify
+### 2. Wire an alert rule
 
-Trigger a synthetic event from the Connect-Project wizard (the SDK generates an
-`ArguslogConnectivityProbe` event). Within a few seconds:
+Pick a project, **Settings → Alerts → Rules → New**:
 
-1. The webhook POSTs the alert payload to the agent.
-2. The agent calls back via MCP.
-3. The dashboard's `IssueDetailPage` shows the new AI analysis card.
+- **Condition**: „new error event" (or a tighter level filter — e.g. only `error|fatal`)
+- **Action → Destination**: the destination from step 1.
+- **Throttle**: a few minutes if the same error storm could fire many alerts in a row.
+  Each fire creates a new GitHub Issue.
+
+### 3. Verify
+
+Send a synthetic event from the Connect-Project wizard (the SDK emits an
+`ArguslogConnectivityProbe` exception).
+
+Within ~30 s:
+- A new GitHub Issue appears in your repo, titled `[Arguslog] error in <project>:
+  <error title>`, with the markdown body containing the stack trace + recent
+  breadcrumbs + a link to the Arguslog issue.
+
+Within a few minutes (Copilot's pickup queue is GitHub-side, not Arguslog-side):
+- A draft PR from `copilot-swe-agent` shows up referencing the issue with `Closes #N`.
+
+## Pausing auto-triage
+
+Every destination — `github_issue` included — has a generic **enabled** toggle. Flip it
+off in **Settings → Alerts → Destinations** during a freeze window or noisy storm; the
+encrypted PAT stays on file, the worker dispatcher just skips disabled destinations.
+Flip it back on after.
 
 ## Loop guard
 
-The alert rule fires on **new error event**. `attach_ai_analysis` writes to the issue but
-does NOT create an event — it cannot re-trigger the same rule, so the agent can't infinite-
-loop on its own output. A unit test (`IssueTriageServiceTest`) asserts this contract.
+- `attach_ai_analysis` (v1's write-back endpoint, shipped in `a349a21`) doesn't emit
+  events — it can't re-trigger the alert rule that woke the agent up.
+- The PR being opened by Copilot does NOT trigger Arguslog. Arguslog ingests runtime
+  errors, not git events. Net effect: there's no agent → CI → agent cycle to worry about.
 
-## Costs and rate-limiting
+## Costs
 
-Each agent invocation is an LLM token bill. For v1, cost guard is the operator's
-responsibility — set a sensible per-rule throttle on the destination, or use the agent host's
-own budget controls. A per-project cap inside Arguslog is a future addition.
+- **Arguslog side**: free. The dispatcher is a single HTTP POST per fired rule.
+- **GitHub Copilot side**: billed against your existing Copilot subscription. Use a tight
+  alert-rule condition (level + occurrence threshold) and a sensible throttle if your
+  Copilot quota is finite.
 
-## What the agent canNOT do (deliberately)
+## What's NOT in this version
 
-- Change issue status (resolve / ignore / reopen). Suggestion-only.
-- Change assignee. Same reason.
-- Comment on Slack / Linear / GitHub. Single canonical place for the analysis: the
-  `IssueDetailPage` card.
-
-If a future workflow wants the agent to write back to Slack threads or open external
-tickets, that's a separate MCP tool plus webhook-config affordance. Out of scope for v1.
+- **PR-link write-back into Arguslog's `aiAnalysis` field**. Today the PR description
+  references the GitHub issue, and the GitHub issue's body references the Arguslog
+  issue — the chain is navigable both ways. Wiring the PR URL automatically into the
+  Arguslog issue card requires the operator to set up a separate `pull_request: opened`
+  GitHub webhook → Arguslog endpoint that parses the PR body for the Arguslog issue link
+  and PATCH-es `attach_ai_analysis`. Future iteration.
+- **GitLab equivalent**. The architecture is identical: a `gitlab_issue` destination kind
+  hitting `https://gitlab.com/api/v4/projects/:id/issues` with `assignee_ids: [<duo-bot>]`.
+  Add when there's demand.
+- **GitHub Actions + `anthropics/claude-code-action` path**. Considered and dropped — it
+  cost the operator a workflow file and an `ANTHROPIC_API_KEY` secret with no offsetting
+  benefit. The Copilot path is simpler.

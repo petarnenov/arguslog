@@ -16,6 +16,12 @@ public interface AlertDestinationWriteRepository {
   /** Returns the updated row, or empty if it didn't exist under this org. */
   Optional<AlertDestination> update(long orgId, long id, String name, String configJson);
 
+  /**
+   * Flips just the {@code enabled} column. Returns the refreshed row or empty when the
+   * destination doesn't exist under this org.
+   */
+  Optional<AlertDestination> setEnabled(long orgId, long id, boolean enabled);
+
   /** Returns true if a row was actually deleted. */
   boolean delete(long orgId, long id);
 }

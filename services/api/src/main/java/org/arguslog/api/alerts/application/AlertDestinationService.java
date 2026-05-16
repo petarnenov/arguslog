@@ -69,6 +69,12 @@ public class AlertDestinationService implements AlertDestinationUseCase {
 
   @Override
   @Transactional
+  public Optional<AlertDestination> setEnabled(long orgId, long id, boolean enabled) {
+    return writes.setEnabled(orgId, id, enabled);
+  }
+
+  @Override
+  @Transactional
   public boolean delete(long orgId, long id) {
     return writes.delete(orgId, id);
   }
@@ -90,6 +96,27 @@ public class AlertDestinationService implements AlertDestinationUseCase {
       }
       case SLACK -> requireString(config, "webhookUrl", kind);
       case WEBHOOK -> requireString(config, "url", kind);
+      case GITHUB_ISSUE -> {
+        requireString(config, "owner", kind);
+        requireString(config, "repo", kind);
+        requireString(config, "token", kind);
+        // `assignee` and `labels` are optional. The worker dispatcher applies sensible defaults
+        // (`copilot-swe-agent` + `["arguslog-auto-triage"]`) when they're missing. If the
+        // operator DID set them, sanity-check the shape so we catch typos at create time, not
+        // at dispatch time.
+        JsonNode assignee = config.get("assignee");
+        if (assignee != null && !assignee.isNull()) {
+          if (!assignee.isTextual() || assignee.asText().isBlank()) {
+            throw new InvalidDestinationConfigException(
+                kind.dbValue() + ".assignee must be a non-empty string when provided");
+          }
+        }
+        JsonNode labels = config.get("labels");
+        if (labels != null && !labels.isNull() && !labels.isArray()) {
+          throw new InvalidDestinationConfigException(
+              kind.dbValue() + ".labels must be an array of strings when provided");
+        }
+      }
     }
   }
 

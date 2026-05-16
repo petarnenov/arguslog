@@ -8,4 +8,26 @@ import java.time.Instant;
  * it from the response.
  */
 public record AlertDestination(
-    long id, long orgId, DestinationKind kind, String name, String configJson, Instant createdAt) {}
+    long id,
+    long orgId,
+    DestinationKind kind,
+    String name,
+    String configJson,
+    boolean enabled,
+    Instant createdAt) {
+
+  /**
+   * Backfill constructor for older test/builder sites that predate the {@code enabled} toggle
+   * (V40). Defaults to {@code enabled = true} — same posture as a freshly-created destination
+   * straight off the DB default.
+   */
+  public AlertDestination(
+      long id,
+      long orgId,
+      DestinationKind kind,
+      String name,
+      String configJson,
+      Instant createdAt) {
+    this(id, orgId, kind, name, configJson, true, createdAt);
+  }
+}
