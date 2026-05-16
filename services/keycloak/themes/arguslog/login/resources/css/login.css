@@ -501,3 +501,24 @@ a#social-google.kc-social-item:hover {
 #social-google i.fa-google {
   color: #4285f4 !important;
 }
+
+/* GitLab — white surface + Tanuki-orange icon, mirroring Google's „neutral bg + branded
+ * icon" layout. Keeps the visual cluster of „light buttons with brand-colored glyphs" so
+ * GitHub (dark) stands apart and the two OIDC/OpenID providers read as a pair. */
+#social-gitlab,
+a#social-gitlab.kc-social-item {
+  background: #ffffff !important;
+  color: #1f1f1f !important;
+  border: 1px solid #dadce0 !important;
+}
+#social-gitlab:hover,
+a#social-gitlab.kc-social-item:hover {
+  background: #f8f9fa !important;
+  border-color: #c6c8cb !important;
+  color: #1f1f1f !important;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.15);
+}
+#social-gitlab .kc-social-provider-logo,
+#social-gitlab i.fa-gitlab {
+  color: #fc6d26 !important; /* GitLab Tanuki orange */
+}

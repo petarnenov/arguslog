@@ -116,20 +116,21 @@ docker exec arguslog-keycloak /opt/keycloak/bin/kcadm.sh delete clients/$(\
 The main browser-flow client `arguslog-web` keeps DAG **off**, which is the
 production-safe posture. The `arguslog-api` confidential client is unaffected.
 
-## Social login (GitHub / Google)
+## Social login (GitHub / Google / GitLab)
 
-The realm template ships with two identity providers defined — `github` and
-`google`. Both are stripped from the imported realm if their OAuth
-credentials are blank, so a vanilla self-host boots with email/password
-only. To enable either, register an OAuth app upstream and set four env
-vars on the `arguslog-keycloak` container.
+The realm template ships with three identity providers defined — `github`,
+`google`, and `gitlab`. Each is stripped from the imported realm if its
+OAuth credentials are blank, so a vanilla self-host boots with
+email/password only. To enable any of them, register an OAuth app upstream
+and set the corresponding two env vars on the `arguslog-keycloak` container.
 
 ### Register the OAuth apps
 
 | Provider | Where | Notes |
 | --- | --- | --- |
-| GitHub | <https://github.com/settings/developers> → **New OAuth App** | Set Homepage URL = your dashboard origin; Authorization callback URL = the row from the table below. |
-| Google | <https://console.cloud.google.com/apis/credentials> → **Create Credentials → OAuth client ID** (Web application) | Add the same callback URL under "Authorized redirect URIs". |
+| GitHub | <https://github.com/settings/developers> → **New OAuth App** | One callback URL per app — register a **separate OAuth App per environment** if you run multiple (local + staging + prod). Set Homepage URL = your dashboard origin; Authorization callback URL = the row from the table below. |
+| Google | <https://console.cloud.google.com/apis/credentials> → **Create Credentials → OAuth client ID** (Web application) | Supports multiple Authorized redirect URIs — **one app covers every environment**. |
+| GitLab | <https://gitlab.com/-/user_settings/applications> → **Add new application** | Confidential = yes; scopes = `openid`, `email`, `profile`, `read_user`. Supports multiple Redirect URIs — **one app covers every environment**. |
 
 ### Callback URLs
 
@@ -138,9 +139,9 @@ across providers:
 
 | Environment | URL |
 | --- | --- |
-| Local dev | `http://localhost:8180/realms/arguslog/broker/{github\|google}/endpoint` |
-| Staging | `https://arguslog-keycloak-staging.up.railway.app/realms/arguslog/broker/{github\|google}/endpoint` |
-| Production | `https://auth.arguslog.org/realms/arguslog/broker/{github\|google}/endpoint` |
+| Local dev | `http://localhost:8180/realms/arguslog/broker/{github\|google\|gitlab}/endpoint` |
+| Staging | `https://arguslog-keycloak-staging.up.railway.app/realms/arguslog/broker/{github\|google\|gitlab}/endpoint` |
+| Production | `https://auth.arguslog.org/realms/arguslog/broker/{github\|google\|gitlab}/endpoint` |
 
 ### Env vars on the Keycloak container
 
@@ -149,6 +150,8 @@ GITHUB_CLIENT_ID
 GITHUB_CLIENT_SECRET
 GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET
+GITLAB_CLIENT_ID
+GITLAB_CLIENT_SECRET
 ```
 
 For local dev, drop these into `.env.local` (gitignored) and re-run
@@ -164,20 +167,20 @@ start.
 
 ### Auto-link by email
 
-Both providers are configured with `trustEmail: true` and a custom
+All three providers are configured with `trustEmail: true` and a custom
 `auto-link` first-broker-login flow (`idp-create-user-if-unique`
-ALTERNATIVE `idp-auto-link`). When a GitHub user logs in for the first
-time with an email that already has a password account, Keycloak silently
-links the two — no consent screen, no duplicate user. The api side
-(`JwtUserSyncInterceptor`) is email-first, so it converges on the same
-dashboard user regardless of which IdP minted the JWT.
+ALTERNATIVE `idp-auto-link`). When a GitHub/Google/GitLab user logs in
+for the first time with an email that already has a password account,
+Keycloak silently links the two — no consent screen, no duplicate user.
+The api side (`JwtUserSyncInterceptor`) is email-first, so it converges
+on the same dashboard user regardless of which IdP minted the JWT.
 
 > **Security note**: `trustEmail` accepts the IdP's `email_verified`
-> claim at face value. GitHub and Google both verify ownership before
-> setting that flag, so this is safe for those two providers. Be careful
-> adding generic OIDC / SAML providers with the same `trustEmail: true`
-> setting — an IdP that lies could take over an existing email-keyed
-> account.
+> claim at face value. GitHub, Google, and GitLab all verify ownership
+> before setting that flag, so this is safe for these three providers.
+> Be careful adding generic OIDC / SAML providers with the same
+> `trustEmail: true` setting — an IdP that lies could take over an
+> existing email-keyed account.
 
 ## SMTP
 

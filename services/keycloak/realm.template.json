@@ -109,6 +109,21 @@
         "syncMode": "IMPORT",
         "defaultScope": "openid email profile"
       }
+    },
+    {
+      "alias": "gitlab",
+      "providerId": "gitlab",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "auto-link",
+      "config": {
+        "clientId": "__GITLAB_CLIENT_ID__",
+        "clientSecret": "__GITLAB_CLIENT_SECRET__",
+        "syncMode": "IMPORT",
+        "defaultScope": "openid email profile read_user"
+      }
     }
   ],
   "authenticationFlows": [

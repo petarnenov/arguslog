@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Post-boot Keycloak Admin-API patcher for social-login identity providers.
 #
-# Runs from the Dockerfile entrypoint AFTER kc.sh start brings the server up. Reads four env
-# vars (GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET) and
-# upserts or deletes the matching IdP via /opt/keycloak/bin/kcadm.sh.
+# Runs from the Dockerfile entrypoint AFTER kc.sh start brings the server up. Reads six env
+# vars (GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
+# GITLAB_CLIENT_ID, GITLAB_CLIENT_SECRET) and upserts or deletes the matching IdP via
+# /opt/keycloak/bin/kcadm.sh.
 #
 # Why kcadm.sh and not curl+jq: Keycloak 26.x dropped the UBI-minimal base in favor of a
 # slimmer image that ships no package manager (no microdnf, no dnf). We can't install
@@ -143,7 +144,12 @@ upsert_idp "google" "google" \
   "${GOOGLE_CLIENT_ID:-}" "${GOOGLE_CLIENT_SECRET:-}" \
   "openid email profile"
 
-github_state="disabled"; google_state="disabled"
+upsert_idp "gitlab" "gitlab" \
+  "${GITLAB_CLIENT_ID:-}" "${GITLAB_CLIENT_SECRET:-}" \
+  "openid email profile read_user"
+
+github_state="disabled"; google_state="disabled"; gitlab_state="disabled"
 [ -n "${GITHUB_CLIENT_ID:-}" ] && [ -n "${GITHUB_CLIENT_SECRET:-}" ] && github_state="enabled"
 [ -n "${GOOGLE_CLIENT_ID:-}" ] && [ -n "${GOOGLE_CLIENT_SECRET:-}" ] && google_state="enabled"
-log "idps: github=${github_state} google=${google_state}"
+[ -n "${GITLAB_CLIENT_ID:-}" ] && [ -n "${GITLAB_CLIENT_SECRET:-}" ] && gitlab_state="enabled"
+log "idps: github=${github_state} google=${google_state} gitlab=${gitlab_state}"

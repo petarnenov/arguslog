@@ -134,9 +134,9 @@ Prereqs are Docker, JDK 21, Node ≥22, pnpm, mprocs, jq. `make doctor` checks
 all of them and prints the right `brew install` / `apt install` / `sdk install`
 command for each miss — re-run until it's all green, then `make`.
 
-Optional: set `GITHUB_CLIENT_ID` / `GOOGLE_CLIENT_ID` (and matching
-`*_SECRET`s) in `.env.local` to enable social-login buttons on the
-Keycloak sign-in page. See [SELF_HOSTING.md](SELF_HOSTING.md#social-login-github--google)
+Optional: set `GITHUB_CLIENT_ID` / `GOOGLE_CLIENT_ID` / `GITLAB_CLIENT_ID`
+(and matching `*_SECRET`s) in `.env.local` to enable social-login buttons
+on the Keycloak sign-in page. See [SELF_HOSTING.md](SELF_HOSTING.md#social-login-github--google--gitlab)
 for the OAuth-app registration steps + per-env callback URLs.
 
 `make` (the default goal) runs `docker compose up -d --wait` so JVM services

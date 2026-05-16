@@ -9,6 +9,8 @@
 #   __GITHUB_CLIENT_SECRET__  ← $GITHUB_CLIENT_SECRET (default: empty → IdP stripped)
 #   __GOOGLE_CLIENT_ID__      ← $GOOGLE_CLIENT_ID     (default: empty → IdP stripped)
 #   __GOOGLE_CLIENT_SECRET__  ← $GOOGLE_CLIENT_SECRET (default: empty → IdP stripped)
+#   __GITLAB_CLIENT_ID__      ← $GITLAB_CLIENT_ID     (default: empty → IdP stripped)
+#   __GITLAB_CLIENT_SECRET__  ← $GITLAB_CLIENT_SECRET (default: empty → IdP stripped)
 #
 # If an IdP's clientId comes through empty, the rendered file post-processes the
 # identityProviders array to drop that entry — Keycloak otherwise renders a broken-looking
@@ -32,6 +34,8 @@ GITHUB_CLIENT_ID="${GITHUB_CLIENT_ID:-}"
 GITHUB_CLIENT_SECRET="${GITHUB_CLIENT_SECRET:-}"
 GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}"
 GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}"
+GITLAB_CLIENT_ID="${GITLAB_CLIENT_ID:-}"
+GITLAB_CLIENT_SECRET="${GITLAB_CLIENT_SECRET:-}"
 
 mkdir -p "$(dirname "$OUTPUT")"
 
@@ -43,6 +47,8 @@ sed \
   -e "s|__GITHUB_CLIENT_SECRET__|${GITHUB_CLIENT_SECRET}|g" \
   -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
   -e "s|__GOOGLE_CLIENT_SECRET__|${GOOGLE_CLIENT_SECRET}|g" \
+  -e "s|__GITLAB_CLIENT_ID__|${GITLAB_CLIENT_ID}|g" \
+  -e "s|__GITLAB_CLIENT_SECRET__|${GITLAB_CLIENT_SECRET}|g" \
   "$TEMPLATE" > "$OUTPUT"
 
 # Drop any identityProviders entry whose clientId came through empty — they would otherwise
@@ -59,7 +65,9 @@ fi
 # Surface IdP state in the render log so the operator knows what landed in the realm.
 github_state="disabled"
 google_state="disabled"
+gitlab_state="disabled"
 [ -n "$GITHUB_CLIENT_ID" ] && [ -n "$GITHUB_CLIENT_SECRET" ] && github_state="enabled"
 [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && google_state="enabled"
+[ -n "$GITLAB_CLIENT_ID" ] && [ -n "$GITLAB_CLIENT_SECRET" ] && gitlab_state="enabled"
 
-echo "✓ Rendered Keycloak realm with DEV_HOST=${DEV_HOST}, github=${github_state}, google=${google_state} -> $OUTPUT"
+echo "✓ Rendered Keycloak realm with DEV_HOST=${DEV_HOST}, github=${github_state}, google=${google_state}, gitlab=${gitlab_state} -> $OUTPUT"
