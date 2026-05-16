@@ -49,6 +49,13 @@ RUN /opt/keycloak/bin/kc.sh build
 FROM quay.io/keycloak/keycloak:26.1 AS runtime
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 
+# Social-login (GitHub / Google) IdP patcher — runs from the entrypoint AFTER kc.sh starts.
+# Realm imports only happen on first boot; this script is the authoritative way to keep
+# long-running prod realms in sync with the env-var-supplied OAuth credentials. See
+# SELF_HOSTING.md for the env-var contract.
+COPY --chown=1000:0 services/keycloak/configure-idps.sh /opt/keycloak/configure-idps.sh
+COPY --chown=1000:0 services/keycloak/entrypoint.sh     /opt/keycloak/entrypoint.sh
+
 # Spring Boot's resource server fetches JWKS from KC_HOSTNAME's well-known endpoint, so this
 # value matters: set it to the public auth subdomain in production. Staging may run on the
 # Railway-issued hostname instead.
@@ -61,7 +68,6 @@ ENV KC_METRICS_ENABLED=true
 
 EXPOSE 8080
 
-# `start --optimized` skips the build pass (already done above) and trusts the bundled
-# providers; --import-realm reads any *.json in /opt/keycloak/data/import/ on first boot
-# and is a no-op if the realm already exists.
-ENTRYPOINT ["sh", "-c", "exec /opt/keycloak/bin/kc.sh start --optimized --import-realm"]
+# Entrypoint runs the IdP patcher in the background, then exec's kc.sh in the foreground so
+# SIGTERM from `docker stop` / Railway shutdown propagates directly to Keycloak.
+ENTRYPOINT ["/opt/keycloak/entrypoint.sh"]

@@ -116,6 +116,69 @@ docker exec arguslog-keycloak /opt/keycloak/bin/kcadm.sh delete clients/$(\
 The main browser-flow client `arguslog-web` keeps DAG **off**, which is the
 production-safe posture. The `arguslog-api` confidential client is unaffected.
 
+## Social login (GitHub / Google)
+
+The realm template ships with two identity providers defined — `github` and
+`google`. Both are stripped from the imported realm if their OAuth
+credentials are blank, so a vanilla self-host boots with email/password
+only. To enable either, register an OAuth app upstream and set four env
+vars on the `arguslog-keycloak` container.
+
+### Register the OAuth apps
+
+| Provider | Where | Notes |
+| --- | --- | --- |
+| GitHub | <https://github.com/settings/developers> → **New OAuth App** | Set Homepage URL = your dashboard origin; Authorization callback URL = the row from the table below. |
+| Google | <https://console.cloud.google.com/apis/credentials> → **Create Credentials → OAuth client ID** (Web application) | Add the same callback URL under "Authorized redirect URIs". |
+
+### Callback URLs
+
+Substitute your environment's Keycloak hostname; the path is identical
+across providers:
+
+| Environment | URL |
+| --- | --- |
+| Local dev | `http://localhost:8180/realms/arguslog/broker/{github\|google}/endpoint` |
+| Staging | `https://arguslog-keycloak-staging.up.railway.app/realms/arguslog/broker/{github\|google}/endpoint` |
+| Production | `https://auth.arguslog.org/realms/arguslog/broker/{github\|google}/endpoint` |
+
+### Env vars on the Keycloak container
+
+```
+GITHUB_CLIENT_ID
+GITHUB_CLIENT_SECRET
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+```
+
+For local dev, drop these into `.env.local` (gitignored) and re-run
+`make fresh && make` — the render script substitutes them into the realm
+file before Keycloak's first-boot import.
+
+For staging / production, set them on the `arguslog-keycloak` service in
+Railway. A post-boot patcher (`services/keycloak/configure-idps.sh`,
+wired into the Dockerfile entrypoint) reads the env vars and `PUT`s the
+matching IdP via the Admin API. The realm template stays free of any
+real secrets — the patcher is idempotent and re-runs on every container
+start.
+
+### Auto-link by email
+
+Both providers are configured with `trustEmail: true` and a custom
+`auto-link` first-broker-login flow (`idp-create-user-if-unique`
+ALTERNATIVE `idp-auto-link`). When a GitHub user logs in for the first
+time with an email that already has a password account, Keycloak silently
+links the two — no consent screen, no duplicate user. The api side
+(`JwtUserSyncInterceptor`) is email-first, so it converges on the same
+dashboard user regardless of which IdP minted the JWT.
+
+> **Security note**: `trustEmail` accepts the IdP's `email_verified`
+> claim at face value. GitHub and Google both verify ownership before
+> setting that flag, so this is safe for those two providers. Be careful
+> adding generic OIDC / SAML providers with the same `trustEmail: true`
+> setting — an IdP that lies could take over an existing email-keyed
+> account.
+
 ## SMTP
 
 The realm template ships with `mailhog:1025` as the default SMTP relay so

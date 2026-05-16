@@ -77,5 +77,62 @@
       }
     ]
   },
-  "defaultRoles": ["arguslog:user"]
+  "defaultRoles": ["arguslog:user"],
+  "identityProviders": [
+    {
+      "alias": "github",
+      "providerId": "github",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "auto-link",
+      "config": {
+        "clientId": "__GITHUB_CLIENT_ID__",
+        "clientSecret": "__GITHUB_CLIENT_SECRET__",
+        "syncMode": "IMPORT",
+        "defaultScope": "user:email read:user"
+      }
+    },
+    {
+      "alias": "google",
+      "providerId": "google",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "auto-link",
+      "config": {
+        "clientId": "__GOOGLE_CLIENT_ID__",
+        "clientSecret": "__GOOGLE_CLIENT_SECRET__",
+        "syncMode": "IMPORT",
+        "defaultScope": "openid email profile"
+      }
+    }
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "auto-link",
+      "description": "First-broker-login flow that silently links a fresh IdP login to an existing email-matched user — no consent screen.",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "idp-create-user-if-unique",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "idp-auto-link",
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ]
 }
