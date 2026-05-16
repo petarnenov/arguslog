@@ -152,6 +152,13 @@ Creates a `demo@arguslog.local / demo` Keycloak user, a Demo Org + Demo App
 project, and 8-12 synthetic events spread across the last 14 days. Idempotent
 — re-running is safe.
 
+> **First-time prerequisite**: `make seed` needs the `arguslog-seed` Keycloak
+> client (shipped in the realm template) and the default `admin / admin`
+> bootstrap admin credentials. If your local Keycloak state predates these
+> (you've been running the stack since before this commit), run
+> `make fresh && make` once to drop the Postgres volume and re-import the
+> realm. The seed script prints this hint if either dependency is missing.
+
 ### Cross-device dev (phone on your LAN)
 
 ```bash

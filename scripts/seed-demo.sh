@@ -19,7 +19,9 @@ INGEST_URL="${INGEST_URL:-http://localhost:8080}"
 DASHBOARD_URL="${DASHBOARD_URL:-http://localhost:5173}"
 
 REALM="${REALM:-arguslog}"
-CLIENT_ID="${CLIENT_ID:-arguslog-web}"
+# Dedicated dev-only client with Direct Access Grants enabled (see realm.template.json).
+# The main `arguslog-web` client keeps DAG off for production safety.
+CLIENT_ID="${CLIENT_ID:-arguslog-seed}"
 KC_ADMIN_USER="${KC_ADMIN_USER:-admin}"
 KC_ADMIN_PASS="${KC_ADMIN_PASS:-admin}"
 
@@ -60,15 +62,26 @@ done
 
 # ── 2. keycloak admin token ──────────────────────────────────────────────
 step "Authenticating against Keycloak ($KEYCLOAK_URL)"
-KC_ADMIN_TOKEN="$(curl -fsS -X POST \
+KC_ADMIN_TOKEN_RAW="$(curl -sS -X POST \
   "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d "username=${KC_ADMIN_USER}" \
   -d "password=${KC_ADMIN_PASS}" \
   -d 'grant_type=password' \
-  -d 'client_id=admin-cli' \
-  | jq -r '.access_token')" || die "Could not get Keycloak admin token. Is Keycloak up at $KEYCLOAK_URL?"
-[ -n "$KC_ADMIN_TOKEN" ] && [ "$KC_ADMIN_TOKEN" != "null" ] || die "Empty admin token response."
+  -d 'client_id=admin-cli')"
+KC_ADMIN_TOKEN="$(printf '%s' "$KC_ADMIN_TOKEN_RAW" | jq -r '.access_token // empty')"
+if [ -z "$KC_ADMIN_TOKEN" ] || [ "$KC_ADMIN_TOKEN" = "null" ]; then
+  printf '\nResponse: %s\n\n' "$KC_ADMIN_TOKEN_RAW" >&2
+  echo "Keycloak admin auth (${KC_ADMIN_USER}/${KC_ADMIN_PASS}) failed. Likely causes:" >&2
+  echo "  • Postgres volume predates the KC_BOOTSTRAP_ADMIN_* env vars in docker-compose," >&2
+  echo "    so the bootstrap admin was never created at first boot." >&2
+  echo "  • Your local KC admin password was changed via the UI." >&2
+  echo "" >&2
+  echo "Fixes:" >&2
+  echo "  1) Run 'make fresh && make' to wipe Keycloak state and recreate admin/admin." >&2
+  echo "  2) Or export KC_ADMIN_USER=<u> KC_ADMIN_PASS=<p> before re-running this." >&2
+  die "Cannot continue without admin token."
+fi
 ok "admin token acquired"
 
 # ── 3. ensure demo user exists ───────────────────────────────────────────
@@ -113,8 +126,16 @@ USER_TOKEN_RESPONSE="$(curl -sS -X POST \
   -d 'grant_type=password')"
 USER_TOKEN="$(printf '%s' "$USER_TOKEN_RESPONSE" | jq -r '.access_token // empty')"
 if [ -z "$USER_TOKEN" ] || [ "$USER_TOKEN" = "null" ]; then
-  printf 'Response: %s\n' "$USER_TOKEN_RESPONSE" >&2
-  die "Could not get user token — Direct Access Grants may be disabled for client '${CLIENT_ID}'."
+  printf '\nResponse: %s\n\n' "$USER_TOKEN_RESPONSE" >&2
+  echo "Could not get a user token through client '${CLIENT_ID}'." >&2
+  echo "" >&2
+  echo "Most likely: your imported Keycloak realm predates the dev-only" >&2
+  echo "'arguslog-seed' client (added to realm.template.json). The running KC" >&2
+  echo "is still on the old realm — realm imports only happen on first boot." >&2
+  echo "" >&2
+  echo "Fix: run 'make fresh && make' to drop the Postgres volume and re-import" >&2
+  echo "      the realm with the new seed client." >&2
+  die "Cannot continue without user token."
 fi
 ok "user token acquired"
 

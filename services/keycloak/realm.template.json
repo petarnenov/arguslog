@@ -53,6 +53,16 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "bearerOnly": true
+    },
+    {
+      "_comment": "Dev-only client for `make seed`. Direct Access Grants (password) is intentionally enabled here so the seed script can mint a user token without going through the browser flow. Production self-hosters can safely delete this client — it only matters for local bootstrap; the main `arguslog-web` flow stays DAG-disabled.",
+      "clientId": "arguslog-seed",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": []
     }
   ],
   "roles": {
