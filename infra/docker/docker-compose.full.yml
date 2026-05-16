@@ -41,7 +41,7 @@ services:
       retries: 10
 
   keycloak:
-    image: quay.io/keycloak/keycloak:25.0
+    image: quay.io/keycloak/keycloak:26.1
     container_name: arguslog-keycloak
     command:
       - start-dev
