@@ -41,8 +41,14 @@ services:
       - --hostname-strict=false
       - --health-enabled=true
     environment:
+      # Keycloak 25.0.6 doesn't reliably create the bootstrap admin from
+      # KC_BOOTSTRAP_ADMIN_* alone (the kc.sh bootstrap-admin subcommand only
+      # landed in KC 26+). Ship the legacy KEYCLOAK_ADMIN* pair too so the
+      # master-realm admin exists after first boot in dev.
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HTTP_PORT: '8180'
     ports:
       - '8180:8180'
