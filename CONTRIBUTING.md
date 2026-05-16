@@ -8,9 +8,9 @@ has to pass, and the conventions to make review fast.
 ```bash
 git clone https://github.com/petarnenov/arguslog.git
 cd arguslog
-make doctor                   # verify docker / pnpm / Java 21 / mprocs
-pnpm install
-make dev                      # full stack + watch loops
+make doctor                   # verify prereqs; prints OS-specific install commands for any miss
+make                          # full stack + watch loops (alias for `make dev`)
+make seed                     # optional: demo user + org + sample events
 ```
 
 See [README.md](README.md) for the make-targets table and individual

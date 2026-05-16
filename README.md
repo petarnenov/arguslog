@@ -125,22 +125,49 @@ The full stack — infra + 3× Spring Boot services + web — runs from a single
 command via [`mprocs`](https://github.com/pvolok/mprocs):
 
 ```bash
-brew install mprocs           # one-time
-pnpm install                  # one-time
-make doctor                   # verify prerequisites (docker, pnpm, java, mprocs)
-make dev                      # bring up everything
+git clone https://github.com/petarnenov/arguslog.git && cd arguslog
+make doctor                   # verify prerequisites; prints OS-specific install commands for anything missing
+make                          # bring up everything (alias for `make dev`)
 ```
 
-`make dev` first runs `docker compose up -d --wait` so JVM services see a
-healthy Postgres / Redis / Keycloak / MinIO from boot, then opens an mprocs
-TUI with one panel per process: `ingest` (`:8080`), `api` (`:8081`),
+Prereqs are Docker, JDK 21, Node ≥22, pnpm, mprocs, jq. `make doctor` checks
+all of them and prints the right `brew install` / `apt install` / `sdk install`
+command for each miss — re-run until it's all green, then `make`.
+
+`make` (the default goal) runs `docker compose up -d --wait` so JVM services
+see a healthy Postgres / Redis / Keycloak / MinIO from boot, then opens an
+mprocs TUI with one panel per process: `ingest` (`:8080`), `api` (`:8081`),
 `worker` (`:8082`), `web` (`:5173`), plus a manual `infra-logs` panel.
+
+### Demo data (optional)
+
+To start with a populated dashboard instead of empty state, **in a separate
+terminal** after `make` is up:
+
+```bash
+make seed
+```
+
+Creates a `demo@arguslog.local / demo` Keycloak user, a Demo Org + Demo App
+project, and 8-12 synthetic events spread across the last 14 days. Idempotent
+— re-running is safe.
+
+### Cross-device dev (phone on your LAN)
+
+```bash
+DEV_HOST=192.168.0.42 make    # substitute your LAN IP
+```
+
+The Keycloak realm is re-rendered with that host as a valid redirect URI.
+For browser-side crypto (DSN scrubber), Chrome needs the
+`unsafely-treat-insecure-origin-as-secure=http://192.168.0.42:5173` flag.
 
 ### Make targets
 
 |                                            |                                                                 |
 | ------------------------------------------ | --------------------------------------------------------------- |
-| `make dev`                                 | full stack (infra + JVM services + web)                         |
+| `make` / `make dev`                        | full stack (infra + JVM services + web) — `make` defaults to `dev` |
+| `make seed`                                | demo Keycloak user + org + project + synthetic events           |
 | `make up` / `down`                         | infra only (compose up `--wait` / down)                         |
 | `make logs` / `ps`                         | tail / inspect infra                                            |
 | `make api`                                 | `arguslog-api` foreground (`:8081`)                             |

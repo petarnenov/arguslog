@@ -13,7 +13,7 @@ COMPOSE        := docker compose -f $(COMPOSE_FILE)
 GRADLE         := ./gradlew --console=plain
 PNPM           := pnpm
 
-.DEFAULT_GOAL  := help
+.DEFAULT_GOAL  := dev
 
 .PHONY: help dev up down stop restart fresh logs ps \
         api ingest worker web build-sdks \
@@ -21,7 +21,7 @@ PNPM           := pnpm
         build lint typecheck test python-test python-lint \
         deploy-prod deploy-status \
         self-host-test self-host-down \
-        clean reset doctor
+        clean reset doctor seed
 
 PROD_SERVICES  := arguslog-api arguslog-ingest arguslog-worker arguslog-web arguslog-landing arguslog-mcp
 
@@ -279,10 +279,8 @@ reset: ## Nuke everything: containers, volumes, build artifacts, node_modules
 	@$(GRADLE) clean || true
 	@find . -type d \( -name "node_modules" -o -name ".turbo" -o -name "build" -o -name "dist" \) -prune -exec rm -rf {} + 2>/dev/null || true
 
-doctor: ## Verify required tools are installed
-	@echo "Checking dev prerequisites..."
-	@command -v docker  >/dev/null && echo "  ✓ docker"  || echo "  ✗ docker (install Docker Desktop)"
-	@command -v pnpm    >/dev/null && echo "  ✓ pnpm"    || echo "  ✗ pnpm (corepack enable && corepack prepare pnpm@9.10.0 --activate)"
-	@command -v mprocs  >/dev/null && echo "  ✓ mprocs"  || echo "  ✗ mprocs (brew install mprocs)"
-	@command -v java    >/dev/null && echo "  ✓ java"    || echo "  ✗ java (install JDK 21)"
-	@test -x ./gradlew              && echo "  ✓ gradlew" || echo "  ✗ gradlew missing"
+doctor: ## Verify required tools are installed; exit non-zero on misses with OS-specific install commands
+	@bash scripts/doctor.sh
+
+seed: ## Seed a demo Keycloak user + org + project + 8-12 synthetic events. Run after `make` is up.
+	@bash scripts/seed-demo.sh
