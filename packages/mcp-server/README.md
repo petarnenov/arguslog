@@ -251,6 +251,48 @@ If you self-host with `ARGUSLOG_API_URL` pointing at a private Arguslog instance
 same model applies — the PAT you issue from your dashboard is bound to your API. The
 MCP server is just a tool-shaped view of an API the user can already call directly.
 
+## Browser-safe contract (`@arguslog/mcp-server/contract`)
+
+If you're building a browser extension, a Vite/Webpack web app, or anything else that
+needs the same tool catalog + types this server uses *without* dragging in the MCP
+server's Node-only transport, import from the `/contract` subpath:
+
+```ts
+import {
+  CURATED_TOOLS,
+  OPENAPI_TOOLS,
+  WORKFLOWS,
+  PACKAGE_VERSION,
+  type OpenApiTool,
+  type McpToolDefinition,
+} from '@arguslog/mcp-server/contract';
+```
+
+What ships through `/contract`:
+
+- **Types** — `OpenApiTool`, `OpenApiToolParam`, `ToolAnnotations`, `McpToolDefinition`.
+  Compile-time only, zero runtime cost.
+- **Tool catalog** — `OPENAPI_TOOLS` (the full auto-generated list — 63+ tools) and
+  `CURATED_TOOLS` (the hand-curated, LLM-friendly subset). Plain data; both safe to
+  `JSON.stringify` / `structuredClone`.
+- **Workflows** — `WORKFLOWS` (canned prompt recipes — triage_loop, release_postmortem,
+  regression_check, investigate_issue).
+- **Identity** — `PACKAGE_NAME` and `PACKAGE_VERSION`, synced from this package's
+  `package.json` by the codegen pipeline.
+
+What's NOT in `/contract` (deliberately):
+
+- `@modelcontextprotocol/sdk/server/*` transports — server-only.
+- The `executeTool` / `buildToolResult` runtime — reads `process.env`.
+- `node:crypto` HMAC helpers from the HTTP transport.
+
+The main `@arguslog/mcp-server` entry is the **CLI server**; importing it in a browser
+bundle is unsupported and will likely fail at build time (Node-only externals).
+
+A CI test (`contract-browser-safety.test.ts`) scans the emitted `dist/contract.js` for
+any Node-only requires and fails the build if a drift slips in. The contract surface
+follows semver — additions are minor bumps, removals are majors.
+
 ## Configuration
 
 | Env var                     | Required         | Default                    | Description                                                                                                                                                                                    |
