@@ -49,6 +49,18 @@ RUN /opt/keycloak/bin/kc.sh build
 FROM quay.io/keycloak/keycloak:26.1 AS runtime
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 
+# configure-idps.sh needs `curl` (Admin-API HTTP calls) + `jq` (JSON parsing of the admin
+# token response and body construction for PUT/POST). The Keycloak 26.1 base image
+# (UBI 9 minimal) ships neither, so the entrypoint's IdP-patcher would die on require_tool
+# curl and silently leave the realm without any social providers. --allowerasing lets curl
+# replace UBI-minimal's curl-minimal if present; --setopt=install_weak_deps=0 keeps the
+# layer lean.
+USER root
+RUN microdnf install -y --setopt=install_weak_deps=0 --allowerasing curl jq \
+ && microdnf clean all \
+ && rm -rf /var/cache/yum /var/cache/dnf
+USER 1000
+
 # Social-login (GitHub / Google) IdP patcher — runs from the entrypoint AFTER kc.sh starts.
 # Realm imports only happen on first boot; this script is the authoritative way to keep
 # long-running prod realms in sync with the env-var-supplied OAuth credentials. See
