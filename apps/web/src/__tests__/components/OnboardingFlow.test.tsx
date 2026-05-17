@@ -124,4 +124,29 @@ describe.each(WORKFLOW_FIRST_SLUGS)('OnboardingFlow — %s', (slug) => {
     const result = screen.getByTestId('onboarding-verify-result');
     expect(result).toHaveTextContent('Event 12345678');
   });
+
+  // Regression: the prior onChange handler read `e.currentTarget.checked` inside a
+  // setState updater closure that ran during the next render flush — by which time
+  // the input had been re-mounted (the parent re-renders on every `eventReceived`
+  // flip) and `currentTarget` was null. Double-click toggling crashed with
+  // "Cannot read properties of null (reading 'checked')". Use userEvent (real DOM
+  // events) — fireEvent.change synthesises a complete event and would NOT have
+  // surfaced the original bug.
+  it('toggles a checklist item twice without throwing (regression for null currentTarget)', async () => {
+    const user = userEvent.setup();
+    const entry = SDK_CATALOG.find((e) => e.slug === slug)!;
+    const checklist = 'extras' in entry ? entry.extras?.verificationChecklist : undefined;
+    const firstItem = checklist?.[0];
+    if (!firstItem) return;
+
+    renderFlow(slug);
+    const labelMatcher = new RegExp(firstItem.label.replace(/[`*[\]()]/g, '.').slice(0, 30), 'i');
+    const checkbox = screen.getByRole('checkbox', { name: labelMatcher });
+
+    expect(checkbox).not.toBeChecked();
+    await user.click(checkbox);
+    expect(checkbox).toBeChecked();
+    await user.click(checkbox);
+    expect(checkbox).not.toBeChecked();
+  });
 });

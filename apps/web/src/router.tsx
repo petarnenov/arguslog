@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { RequireAuth } from './auth/RequireAuth';
+import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { AppShellLayout } from './layouts/AppShellLayout';
 import { AdminPage } from './pages/AdminPage';
 import { AlertDestinationsPage } from './pages/AlertDestinationsPage';
@@ -20,15 +21,25 @@ import { ReleaseDetailPage } from './pages/ReleaseDetailPage';
 import { ReleasesPage } from './pages/ReleasesPage';
 import { SlackIntegrationsPage } from './pages/SlackIntegrationsPage';
 
+// Every route gets `ErrorBoundary: RouteErrorBoundary` so React Router's default error
+// UI never wins — our component renders the fallback AND fires `captureException` so the
+// crash actually lands in Arguslog. The outer `<ArguslogErrorBoundary>` in providers.tsx
+// stays as the catch-all for errors thrown OUTSIDE the router (Mantine, query-client
+// setup, etc.).
 export const router = createBrowserRouter([
-  { path: '/', element: <Navigate to="/orgs" replace /> },
-  { path: '/auth/callback', element: <AuthCallbackPage /> },
+  { path: '/', element: <Navigate to="/orgs" replace />, ErrorBoundary: RouteErrorBoundary },
+  {
+    path: '/auth/callback',
+    element: <AuthCallbackPage />,
+    ErrorBoundary: RouteErrorBoundary,
+  },
   {
     element: (
       <RequireAuth>
         <AppShellLayout />
       </RequireAuth>
     ),
+    ErrorBoundary: RouteErrorBoundary,
     children: [
       { path: '/onboarding', element: <OnboardingPage /> },
       { path: '/orgs', element: <OrgsLandingPage /> },
@@ -72,5 +83,5 @@ export const router = createBrowserRouter([
       { path: '/admin', element: <AdminPage /> },
     ],
   },
-  { path: '*', element: <NotFoundPage /> },
+  { path: '*', element: <NotFoundPage />, ErrorBoundary: RouteErrorBoundary },
 ]);

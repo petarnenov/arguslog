@@ -51,9 +51,15 @@ export function PostInstallChecklist({ items, eventReceived, autoTickOnEventId =
               size="sm"
               label={item.label}
               checked={!!checked[item.id]}
-              onChange={(e) =>
-                setChecked((prev) => ({ ...prev, [item.id]: e.currentTarget.checked }))
-              }
+              // Read `checked` synchronously BEFORE scheduling the state update. React's
+              // updater closure runs later (during the next render flush) — by then the
+              // input may have been re-mounted (the parent OnboardingFlow re-renders on
+              // every `eventReceived` flip) and `e.currentTarget` would be null, throwing
+              // `Cannot read properties of null (reading 'checked')` on the second click.
+              onChange={(e) => {
+                const next = e.currentTarget.checked;
+                setChecked((prev) => ({ ...prev, [item.id]: next }));
+              }}
               data-testid={`checklist-item-${item.id}`}
             />
           ))}

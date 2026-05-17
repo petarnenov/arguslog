@@ -49,6 +49,36 @@ Store. The remaining publish blockers are the operator-owned creative
 deliverables (screenshots, promo tiles, listing copy) documented in
 `store-assets/README.md`.
 
+### Fixed — Connect-screen crash + route-level errors now reach Arguslog
+
+Two bugs surfaced during dogfood testing of the new Connect flow:
+
+**1. Verification-checklist crash on repeat clicks.** The `onChange` handler in
+`PostInstallChecklist` read `e.currentTarget.checked` inside a `setState`
+updater closure. The updater runs later (next render flush); by then the parent
+`OnboardingFlow` had re-rendered (on every `eventReceived` flip) and the input
+was re-mounted, so `e.currentTarget` was null on the second click. Fixed by
+capturing the value synchronously inside the handler before scheduling state.
+Parametrized regression test (over all 5 workflow-first SDK slugs) uses real
+DOM events via `userEvent.click` to catch the null-currentTarget class of bug.
+
+**2. React Router was eating every in-app crash.** The web app initialises
+Arguslog in `providers.tsx` and wraps the children in `<ArguslogErrorBoundary>`
+— but that boundary lives OUTSIDE the `<RouterProvider>`. React Router catches
+every error thrown inside a route, renders its default dev-only fallback
+("💿 Hey developer 👋 …"), and never re-throws. Result: every in-app crash in
+prod was invisible to Arguslog — we couldn't observe our own dashboard.
+
+New `apps/web/src/components/RouteErrorBoundary.tsx` plugs the gap: a
+React-Router-native component that reads the error via `useRouteError()`, calls
+`captureException` with a `boundary: 'react-router'` tag, and renders a Mantine
+Alert fallback with the error message + stack + reload/home actions. Wired as
+`ErrorBoundary` on every route in `router.tsx`. 4xx route responses (intentional
+nav outcomes) skip capture; real Errors and 5xx responses always flow through.
+
+The outer `<ArguslogErrorBoundary>` in `providers.tsx` stays as the catch-all
+for non-route errors (Mantine setup, query-client init, etc.).
+
 ### Changed — Cross-SDK docs sync + onboarding rework umbrella
 
 Phase 5 — the cross-cutting wrap-up of the multi-phase rework that brought every
