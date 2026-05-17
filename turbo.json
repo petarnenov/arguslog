@@ -9,6 +9,7 @@
       "inputs": ["src/**", "public/**", "package.json", "tsconfig.json", "vite.config.ts", "wxt.config.ts"]
     },
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },
