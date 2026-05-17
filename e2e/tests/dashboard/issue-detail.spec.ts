@@ -12,11 +12,12 @@ test.describe('issue detail', () => {
     const issues = new IssuesPage(authedPage);
     await issues.goto(seededDsn.project.orgSlug, seededDsn.project.id);
 
-    // Open the first issue we see.
+    // Cold-start ingest + worker materialisation can take 5–15s on staging — wait
+    // generously rather than reload-spam.
     await authedPage
       .getByText(/E2EFixtureError/i)
       .first()
-      .waitFor({ timeout: 30_000 });
+      .waitFor({ timeout: 90_000 });
     await authedPage
       .getByText(/E2EFixtureError/i)
       .first()
@@ -25,7 +26,7 @@ test.describe('issue detail', () => {
 
     const detail = new IssueDetailPage(authedPage);
     // The error message + class should appear in the detail body.
-    await expect(authedPage.getByText(/E2EFixtureError/i)).toBeVisible();
+    await expect(authedPage.getByText(/E2EFixtureError/i)).toBeVisible({ timeout: 15_000 });
 
     // Resolve flow: button visible → click → status flips. If the test environment
     // doesn't render the button (RBAC strip, etc.) we tolerate skip.

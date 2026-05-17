@@ -9,18 +9,12 @@ test.describe('issues list', () => {
     const issues = new IssuesPage(authedPage);
     await issues.goto(seededDsn.project.orgSlug, seededDsn.project.id);
 
-    // Ingest → fingerprint → issue creation runs through the worker. Cold-start
-    // worker + first DB write can take ~5-15s on staging; we poll-reload the page
-    // so a stale react-query cache doesn't hide the freshly-materialised row.
-    await expect
-      .poll(
-        async () => {
-          await authedPage.reload();
-          return authedPage.getByText(/E2EFixtureError|e2e issues happy path/i).isVisible();
-        },
-        { timeout: 60_000, intervals: [3_000, 5_000, 5_000, 10_000] },
-      )
-      .toBe(true);
+    // Ingest → fingerprint → issue creation runs through the worker; first-write
+    // cold-start can be 5–15s on staging. One generous wait beats reload-spam,
+    // which would force fresh useMyOrgs/useProjects fetches every cycle.
+    await expect(authedPage.getByText(/E2EFixtureError|e2e issues happy path/i)).toBeVisible({
+      timeout: 90_000,
+    });
   });
 
   test('opening an issue row navigates to the detail page', async ({ authedPage, seededDsn }) => {
@@ -28,16 +22,7 @@ test.describe('issues list', () => {
     const issues = new IssuesPage(authedPage);
     await issues.goto(seededDsn.project.orgSlug, seededDsn.project.id);
 
-    await expect
-      .poll(
-        async () => {
-          await authedPage.reload();
-          return authedPage.getByText(/click-through/i).isVisible();
-        },
-        { timeout: 60_000, intervals: [3_000, 5_000, 5_000, 10_000] },
-      )
-      .toBe(true);
-
+    await expect(authedPage.getByText(/click-through/i)).toBeVisible({ timeout: 90_000 });
     await authedPage
       .getByText(/click-through/i)
       .first()
