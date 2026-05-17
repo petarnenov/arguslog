@@ -39,7 +39,14 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
 import { type Dsn } from '../api/keys';
-import { archiveProject, createProject, renameProject, type Project } from '../api/projects';
+import {
+  archiveProject,
+  createProject,
+  type CreateProjectInput,
+  type GitProvider,
+  type Project,
+  updateProject,
+} from '../api/projects';
 import { queryKeys, useMyOrgs, usePlatforms, useProjects } from '../api/queries';
 import { platformVisuals } from '../lib/platformVisuals';
 import { formatRelativeTime } from '../lib/relativeTime';
@@ -85,23 +92,62 @@ export function ProjectsPage() {
   const [archiveError, setArchiveError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dsnSuccess, setDsnSuccess] = useState<DsnSuccess | null>(null);
-  const [renameTarget, setRenameTarget] = useState<Project | null>(null);
-  const [renameValue, setRenameValue] = useState('');
-  const [renameError, setRenameError] = useState<string | null>(null);
+  const [editTarget, setEditTarget] = useState<Project | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  /** Provider value when the dropdown is set to "None". '' is the wire shape the server treats as cleared. */
+  const NO_PROVIDER = '' as const;
 
   const form = useForm({
-    initialValues: { name: '', platform: 'javascript' },
+    initialValues: {
+      name: '',
+      platform: 'javascript',
+      gitProvider: NO_PROVIDER as '' | GitProvider,
+      gitRepo: '',
+    },
     validate: {
       name: (v) => (v.trim().length < 2 ? t('onboarding.errorProjectName') : null),
+      gitRepo: (v, values) =>
+        // Provider picked but repo blank — surface a hint before the server 400s
+        values.gitProvider && v.trim() === ''
+          ? t('projects.gitRepoLabel')
+          : null,
+    },
+  });
+
+  const editForm = useForm({
+    initialValues: {
+      name: '',
+      gitProvider: NO_PROVIDER as '' | GitProvider,
+      gitRepo: '',
+    },
+    validate: {
+      name: (v) => (v.trim().length < 2 ? t('onboarding.errorProjectName') : null),
+      gitRepo: (v, values) =>
+        values.gitProvider && v.trim() === '' ? t('projects.gitRepoLabel') : null,
     },
   });
 
   const mutation = useMutation({
-    mutationFn: async (values: { name: string; platform: string }): Promise<DsnSuccess> => {
+    mutationFn: async (values: {
+      name: string;
+      platform: string;
+      gitProvider: '' | GitProvider;
+      gitRepo: string;
+    }): Promise<DsnSuccess> => {
       if (!org) throw new Error('org missing');
+      const body: CreateProjectInput = {
+        name: values.name,
+        platform: values.platform,
+      };
+      const repoTrimmed = values.gitRepo.trim();
+      if (values.gitProvider && repoTrimmed) {
+        body.gitProvider = values.gitProvider;
+        body.gitRepo = repoTrimmed;
+      }
       // Server mints the first DSN inline (GH #26) — no chained POST that used to leave
       // orphan projects when the second call failed or the tab was closed mid-flow.
-      return createProject(org.id, values);
+      return createProject(org.id, body);
     },
     onSuccess: async (result) => {
       if (org) {
@@ -136,29 +182,65 @@ export function ProjectsPage() {
     },
   });
 
-  const renameMutation = useMutation({
-    mutationFn: () => {
-      if (!org || !renameTarget) throw new Error('rename target missing');
-      return renameProject(org.id, renameTarget.id, renameValue.trim());
+  const editMutation = useMutation({
+    mutationFn: async (values: {
+      name: string;
+      gitProvider: '' | GitProvider;
+      gitRepo: string;
+    }) => {
+      if (!org || !editTarget) throw new Error('edit target missing');
+      // Diff against current state: only send fields the user actually changed. This keeps the
+      // PATCH idempotent and avoids accidentally clearing a Git link when the user only
+      // renamed the project (and vice versa).
+      const body: {
+        name?: string | null;
+        gitProvider?: string | null;
+        gitRepo?: string | null;
+      } = {};
+      const trimmedName = values.name.trim();
+      if (trimmedName !== editTarget.name) {
+        body.name = trimmedName;
+      }
+      const currentProvider = editTarget.gitProvider ?? NO_PROVIDER;
+      const currentRepo = editTarget.gitRepo ?? '';
+      const nextProvider = values.gitProvider;
+      const nextRepo = values.gitRepo.trim();
+      if (nextProvider !== currentProvider || nextRepo !== currentRepo) {
+        // Empty pair signals "clear"; set pair signals "link". The wire shape always sends
+        // BOTH fields together so the server can validate the pair as a unit.
+        body.gitProvider = nextProvider;
+        body.gitRepo = nextRepo;
+      }
+      return updateProject(org.id, editTarget.id, body);
     },
     onSuccess: async () => {
       if (org) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.projects(org.id) });
       }
-      setRenameTarget(null);
-      setRenameValue('');
-      setRenameError(null);
+      setEditTarget(null);
+      editForm.reset();
+      setEditError(null);
     },
     onError: (err: unknown) => {
-      setRenameError(describeApiError(err));
+      setEditError(describeApiError(err));
     },
   });
 
-  const trimmedRename = renameValue.trim();
-  const canRename =
-    Boolean(renameTarget) &&
-    trimmedRename.length >= 2 &&
-    trimmedRename !== (renameTarget?.name ?? '');
+  const editTrimmedName = editForm.values.name.trim();
+  const editTrimmedRepo = editForm.values.gitRepo.trim();
+  const editNameChanged =
+    editTarget != null && editTrimmedName !== editTarget.name && editTrimmedName.length >= 2;
+  const editGitChanged =
+    editTarget != null &&
+    (editForm.values.gitProvider !== (editTarget.gitProvider ?? NO_PROVIDER) ||
+      editTrimmedRepo !== (editTarget.gitRepo ?? ''));
+  const editGitValid =
+    !editForm.values.gitProvider || editTrimmedRepo.length > 0;
+  const canSaveEdit =
+    Boolean(editTarget) &&
+    editTrimmedName.length >= 2 &&
+    editGitValid &&
+    (editNameChanged || editGitChanged);
 
   const closeDsnModal = () => {
     setDsnSuccess(null);
@@ -234,10 +316,14 @@ export function ProjectsPage() {
                 setArchiveError(null);
                 setArchiveTarget(target);
               }}
-              onRename={(target) => {
-                setRenameError(null);
-                setRenameValue(target.name);
-                setRenameTarget(target);
+              onEdit={(target) => {
+                setEditError(null);
+                editForm.setValues({
+                  name: target.name,
+                  gitProvider: (target.gitProvider ?? NO_PROVIDER) as '' | GitProvider,
+                  gitRepo: target.gitRepo ?? '',
+                });
+                setEditTarget(target);
               }}
             />
           ))}
@@ -245,49 +331,95 @@ export function ProjectsPage() {
       )}
 
       <Modal
-        opened={renameTarget !== null}
+        opened={editTarget !== null}
         onClose={() => {
-          if (!renameMutation.isPending) {
-            setRenameTarget(null);
-            setRenameValue('');
-            setRenameError(null);
+          if (!editMutation.isPending) {
+            setEditTarget(null);
+            editForm.reset();
+            setEditError(null);
           }
         }}
-        title={t('projects.renameTitle', { name: renameTarget?.name ?? '' })}
+        title={t('projects.editTitle', { name: editTarget?.name ?? '' })}
         size="md"
       >
-        <Stack>
-          <TextInput
-            label={t('projects.renameLabel')}
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.currentTarget.value)}
-            disabled={renameMutation.isPending}
-            data-autofocus
-            data-testid="project-rename-input"
-          />
-          {renameError ? (
-            <Alert color="red" variant="light">
-              {renameError}
-            </Alert>
-          ) : null}
-          <Group justify="flex-end">
-            <Button
-              variant="default"
-              onClick={() => setRenameTarget(null)}
-              disabled={renameMutation.isPending}
-            >
-              {t('projects.renameCancel')}
-            </Button>
-            <Button
-              loading={renameMutation.isPending}
-              disabled={!canRename}
-              onClick={() => renameMutation.mutate()}
-              data-testid="project-rename-submit"
-            >
-              {t('projects.renameConfirm')}
-            </Button>
-          </Group>
-        </Stack>
+        <form
+          onSubmit={editForm.onSubmit((values) => editMutation.mutate(values))}
+          data-testid="project-edit-form"
+        >
+          <Stack>
+            <TextInput
+              label={t('projects.nameLabel')}
+              {...editForm.getInputProps('name')}
+              disabled={editMutation.isPending}
+              data-autofocus
+              data-testid="project-rename-input"
+            />
+
+            <Divider label={t('projects.gitDivider')} labelPosition="left" />
+            <Text size="xs" c="dimmed">
+              {t('projects.gitHint')}
+            </Text>
+            <Group grow align="flex-start">
+              <Select
+                label={t('projects.gitProviderLabel')}
+                placeholder={t('projects.gitProviderPlaceholder')}
+                data={[
+                  { value: 'github', label: t('projects.gitProviderGithub') },
+                  { value: 'gitlab', label: t('projects.gitProviderGitlab') },
+                ]}
+                clearable
+                value={editForm.values.gitProvider || null}
+                onChange={(value) => {
+                  editForm.setFieldValue(
+                    'gitProvider',
+                    (value ?? NO_PROVIDER) as '' | GitProvider,
+                  );
+                  // Clearing the provider also clears the repo so the pair stays consistent.
+                  if (!value) editForm.setFieldValue('gitRepo', '');
+                }}
+                disabled={editMutation.isPending}
+                data-testid="project-edit-git-provider"
+              />
+              <TextInput
+                label={t('projects.gitRepoLabel')}
+                placeholder={t('projects.gitRepoPlaceholder')}
+                description={
+                  editForm.values.gitProvider === 'gitlab'
+                    ? t('projects.gitRepoHelpGitlab')
+                    : editForm.values.gitProvider === 'github'
+                      ? t('projects.gitRepoHelpGithub')
+                      : undefined
+                }
+                {...editForm.getInputProps('gitRepo')}
+                disabled={editMutation.isPending || !editForm.values.gitProvider}
+                data-testid="project-edit-git-repo"
+              />
+            </Group>
+
+            {editError ? (
+              <Alert color="red" variant="light">
+                {editError}
+              </Alert>
+            ) : null}
+            <Group justify="flex-end">
+              <Button
+                variant="default"
+                onClick={() => setEditTarget(null)}
+                disabled={editMutation.isPending}
+              >
+                {t('projects.renameCancel')}
+              </Button>
+              <Button
+                type="submit"
+                loading={editMutation.isPending}
+                disabled={!canSaveEdit}
+                data-testid="project-rename-submit"
+              >
+                {t('projects.renameConfirm')}
+              </Button>
+            </Group>
+          </Stack>
+        </form>
       </Modal>
 
       <Modal
@@ -348,6 +480,44 @@ export function ProjectsPage() {
               {...form.getInputProps('platform')}
               disabled={mutation.isPending || platformsQuery.isLoading}
             />
+
+            <Divider label={t('projects.gitDivider')} labelPosition="left" />
+            <Text size="xs" c="dimmed">
+              {t('projects.gitHint')}
+            </Text>
+            <Group grow align="flex-start">
+              <Select
+                label={t('projects.gitProviderLabel')}
+                placeholder={t('projects.gitProviderPlaceholder')}
+                data={[
+                  { value: 'github', label: t('projects.gitProviderGithub') },
+                  { value: 'gitlab', label: t('projects.gitProviderGitlab') },
+                ]}
+                clearable
+                value={form.values.gitProvider || null}
+                onChange={(value) => {
+                  form.setFieldValue('gitProvider', (value ?? NO_PROVIDER) as '' | GitProvider);
+                  if (!value) form.setFieldValue('gitRepo', '');
+                }}
+                disabled={mutation.isPending}
+                data-testid="project-create-git-provider"
+              />
+              <TextInput
+                label={t('projects.gitRepoLabel')}
+                placeholder={t('projects.gitRepoPlaceholder')}
+                description={
+                  form.values.gitProvider === 'gitlab'
+                    ? t('projects.gitRepoHelpGitlab')
+                    : form.values.gitProvider === 'github'
+                      ? t('projects.gitRepoHelpGithub')
+                      : undefined
+                }
+                {...form.getInputProps('gitRepo')}
+                disabled={mutation.isPending || !form.values.gitProvider}
+                data-testid="project-create-git-repo"
+              />
+            </Group>
+
             {error ? (
               <Alert color="red" variant="light">
                 {error}
@@ -405,7 +575,7 @@ interface ProjectCardProps {
   project: Project;
   orgSlug: string;
   onArchive: (project: Project) => void;
-  onRename: (project: Project) => void;
+  onEdit: (project: Project) => void;
 }
 
 function unresolvedColor(n: number): string {
@@ -415,7 +585,7 @@ function unresolvedColor(n: number): string {
   return 'red';
 }
 
-function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps) {
+function ProjectCard({ project, orgSlug, onArchive, onEdit }: ProjectCardProps) {
   const { t, i18n } = useTranslation();
   const visuals = platformVisuals(project.platform);
   const PlatformIcon = visuals.Icon;
@@ -514,11 +684,11 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
               </Menu.Item>
               <Menu.Item
                 leftSection={<IconPencil size={14} />}
-                onClick={() => onRename(project)}
-                aria-label={t('projects.renameAria', { name: project.name })}
+                onClick={() => onEdit(project)}
+                aria-label={t('projects.editAria', { name: project.name })}
                 data-testid={`project-rename-${project.slug}`}
               >
-                {t('projects.renameAction')}
+                {t('projects.editAction')}
               </Menu.Item>
               <Menu.Divider />
               <Menu.Item

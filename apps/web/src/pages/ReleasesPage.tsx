@@ -9,6 +9,7 @@ import {
   Group,
   Loader,
   Modal,
+  Select,
   Stack,
   Table,
   Text,
@@ -19,12 +20,12 @@ import {
 import { useForm } from '@mantine/form';
 import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
-import { queryKeys, useMyOrgs, useReleases } from '../api/queries';
+import { queryKeys, useGitBranches, useMyOrgs, useProjects, useReleases } from '../api/queries';
 import { createRelease, deleteRelease, type Release, updateRelease } from '../api/releases';
 import { useReportSoftError } from '../lib/reportSoftError';
 
@@ -66,6 +67,11 @@ export function ReleasesPage() {
   const orgsQuery = useMyOrgs();
   const org = orgsQuery.data?.find((o) => o.slug === orgSlug);
   const releasesQuery = useReleases(projectId);
+  const projectsQuery = useProjects(org?.id);
+  const project = useMemo(
+    () => projectsQuery.data?.find((p) => p.id === projectId),
+    [projectsQuery.data, projectId],
+  );
 
   useReportSoftError(
     Boolean(orgsQuery.data && !org && orgSlug),
@@ -73,6 +79,19 @@ export function ReleasesPage() {
   );
 
   const [editing, setEditing] = useState<Release | 'new' | null>(null);
+  /**
+   * Manual override: when the branches API errors (rate-limit, not-found) or the user
+   * explicitly clicks "type manually", we hide the Select and show the original TextInput so
+   * the form is never blocked by a flaky upstream. Reset on modal close.
+   */
+  const [manualGitRef, setManualGitRef] = useState(false);
+
+  const hasGitRepo = Boolean(project?.gitProvider && project?.gitRepo);
+  // Only hit the branches endpoint when the modal is open AND the project has a repo — otherwise
+  // it's a guaranteed 422 and just wastes the unauth budget.
+  const branchesQuery = useGitBranches(org?.id, projectId, {
+    enabled: editing !== null && hasGitRepo,
+  });
   const [confirmDelete, setConfirmDelete] = useState<Release | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,6 +113,7 @@ export function ReleasesPage() {
 
   function openCreate() {
     setError(null);
+    setManualGitRef(false);
     form.setValues({
       version: '',
       releasedAtLocal: '',
@@ -107,6 +127,10 @@ export function ReleasesPage() {
 
   function openEdit(r: Release) {
     setError(null);
+    // Editing an existing release: if the saved ref isn't a branch name we'd find in the
+    // dropdown (could be a tag, a deleted branch, a SHA-as-ref), the dropdown silently keeps
+    // an "unknown" selection. Start in manual mode for edits so the user sees what's stored.
+    setManualGitRef(true);
     form.setValues({
       version: r.version,
       releasedAtLocal: isoToLocalInput(r.releasedAt),
@@ -120,6 +144,7 @@ export function ReleasesPage() {
 
   function close() {
     setEditing(null);
+    setManualGitRef(false);
     form.reset();
     setError(null);
   }
@@ -296,22 +321,64 @@ export function ReleasesPage() {
               disabled={saveMutation.isPending}
               data-testid="release-released-at"
             />
-            <Group grow>
-              <TextInput
-                label={t('releases.gitRefLabel')}
-                placeholder="main"
-                {...form.getInputProps('gitRef')}
-                disabled={saveMutation.isPending}
-                data-testid="release-git-ref"
-              />
-              <TextInput
-                label={t('releases.gitShaLabel')}
-                placeholder="abcdef1"
-                {...form.getInputProps('gitSha')}
-                disabled={saveMutation.isPending}
-                data-testid="release-git-sha"
-              />
-            </Group>
+            <Stack gap="xs">
+              {hasGitRepo && !manualGitRef ? (
+                <GitRefBranchPicker
+                  provider={project!.gitProvider!}
+                  repo={project!.gitRepo!}
+                  branches={branchesQuery.data}
+                  isLoading={branchesQuery.isLoading}
+                  isError={branchesQuery.isError}
+                  errorMessage={
+                    branchesQuery.error instanceof ApiError
+                      ? (branchesQuery.error.problem.detail ??
+                        branchesQuery.error.problem.title)
+                      : null
+                  }
+                  value={form.values.gitRef}
+                  onChange={(name, sha) => {
+                    form.setFieldValue('gitRef', name);
+                    if (sha) form.setFieldValue('gitSha', sha);
+                  }}
+                  onFallback={() => setManualGitRef(true)}
+                  disabled={saveMutation.isPending}
+                />
+              ) : (
+                <Group grow>
+                  <TextInput
+                    label={t('releases.gitRefLabel')}
+                    placeholder={t('releases.gitRefManualPlaceholder')}
+                    {...form.getInputProps('gitRef')}
+                    disabled={saveMutation.isPending}
+                    data-testid="release-git-ref"
+                  />
+                  <TextInput
+                    label={t('releases.gitShaLabel')}
+                    placeholder="abcdef1"
+                    {...form.getInputProps('gitSha')}
+                    disabled={saveMutation.isPending}
+                    data-testid="release-git-sha"
+                  />
+                </Group>
+              )}
+              {hasGitRepo && !manualGitRef ? (
+                <Group grow>
+                  <TextInput
+                    label={t('releases.gitShaLabel')}
+                    placeholder="abcdef1"
+                    description={form.values.gitSha ? t('releases.gitShaAutoFilled') : undefined}
+                    {...form.getInputProps('gitSha')}
+                    disabled={saveMutation.isPending}
+                    data-testid="release-git-sha"
+                  />
+                </Group>
+              ) : null}
+              {!hasGitRepo ? (
+                <Text size="xs" c="dimmed">
+                  {t('releases.gitRefHintNoRepo')}
+                </Text>
+              ) : null}
+            </Stack>
             <TextInput
               label={t('releases.deployStageLabel')}
               description={t('releases.deployStageHint')}
@@ -369,6 +436,116 @@ export function ReleasesPage() {
           </Group>
         </Stack>
       </Modal>
+    </Stack>
+  );
+}
+
+interface GitRefBranchPickerProps {
+  provider: 'github' | 'gitlab';
+  repo: string;
+  branches: { name: string; sha: string }[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  errorMessage: string | null;
+  value: string;
+  /** Called with the picked branch's name + its head SHA so the form can auto-fill both. */
+  onChange: (name: string, sha: string | null) => void;
+  /** Switches the parent into manual-text-input mode (gives up on the dropdown). */
+  onFallback: () => void;
+  disabled: boolean;
+}
+
+/**
+ * Branch select with three states: loading, error (drops to a fallback button that flips the
+ * parent into manual mode), and ready (Mantine Select). Lives at the bottom of the file because
+ * it's local to ReleasesPage and small enough not to warrant a separate module.
+ */
+function GitRefBranchPicker({
+  provider,
+  repo,
+  branches,
+  isLoading,
+  isError,
+  errorMessage,
+  value,
+  onChange,
+  onFallback,
+  disabled,
+}: GitRefBranchPickerProps) {
+  const { t } = useTranslation();
+  const providerLabel = provider === 'github' ? 'GitHub' : 'GitLab';
+
+  if (isLoading) {
+    return (
+      <Group gap="xs" align="center">
+        <Loader size="xs" />
+        <Text size="sm" c="dimmed" data-testid="release-git-ref-loading">
+          {t('releases.gitRefLoadingBranches', { provider: providerLabel })}
+        </Text>
+      </Group>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Alert color="yellow" variant="light" data-testid="release-git-ref-error">
+        <Stack gap="xs">
+          <Text size="sm">
+            {errorMessage ?? t('releases.gitRefBranchesError', { provider: providerLabel })}
+          </Text>
+          <Group>
+            <Button size="xs" variant="light" onClick={onFallback}>
+              {t('releases.gitRefManualFallback')}
+            </Button>
+          </Group>
+        </Stack>
+      </Alert>
+    );
+  }
+
+  if (!branches || branches.length === 0) {
+    return (
+      <Alert color="gray" variant="light">
+        <Stack gap="xs">
+          <Text size="sm">{t('releases.gitRefBranchesEmpty')}</Text>
+          <Group>
+            <Button size="xs" variant="light" onClick={onFallback}>
+              {t('releases.gitRefManualFallback')}
+            </Button>
+          </Group>
+        </Stack>
+      </Alert>
+    );
+  }
+
+  const data = branches.map((b) => ({ value: b.name, label: b.name }));
+
+  return (
+    <Stack gap={4}>
+      <Select
+        label={t('releases.gitRefLabel')}
+        placeholder={t('releases.gitRefBranchPlaceholder')}
+        description={t('releases.gitRefHintWithRepo', { provider: providerLabel, repo })}
+        data={data}
+        value={value || null}
+        onChange={(picked) => {
+          if (!picked) {
+            onChange('', null);
+            return;
+          }
+          const found = branches.find((b) => b.name === picked);
+          onChange(picked, found?.sha ?? null);
+        }}
+        searchable
+        clearable
+        disabled={disabled}
+        data-testid="release-git-ref-select"
+      />
+      <Group justify="flex-end">
+        <Button size="compact-xs" variant="subtle" onClick={onFallback} disabled={disabled}>
+          {t('releases.gitRefManualFallback')}
+        </Button>
+      </Group>
     </Stack>
   );
 }

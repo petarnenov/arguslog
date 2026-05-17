@@ -1240,6 +1240,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         platform: {
           type: 'string',
         },
+        githubRepo: {
+          type: 'string',
+        },
       },
     },
     outputSchema: {
@@ -2217,6 +2220,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         platform: {
           type: 'string',
         },
+        githubRepo: {
+          type: 'string',
+        },
         createdAt: {
           type: 'string',
           format: 'date-time',
@@ -2271,8 +2277,8 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'project_rename',
-    title: 'Project rename',
+    name: 'update_project',
+    title: 'Update project',
     description:
       'PATCH /api/v1/orgs/{orgId}/projects/{projectId}\n\nMethod: PATCH /api/v1/orgs/{orgId}/projects/{projectId}',
     method: 'PATCH',
@@ -2299,6 +2305,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         name: {
           type: 'string',
         },
+        githubRepo: {
+          type: 'string',
+        },
       },
     },
     outputSchema: {
@@ -2319,6 +2328,9 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
           type: 'string',
         },
         platform: {
+          type: 'string',
+        },
+        githubRepo: {
           type: 'string',
         },
         createdAt: {
@@ -2866,6 +2878,50 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     outputResultWrapped: true,
     annotations: {
       title: 'GET /api/v1/platforms',
+      readOnlyHint: true,
+      idempotentHint: true,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: 'project_list_github_branches',
+    title: 'Project list github branches',
+    description:
+      'GET /api/v1/orgs/{orgId}/projects/{projectId}/github/branches\n\nMethod: GET /api/v1/orgs/{orgId}/projects/{projectId}/github/branches',
+    method: 'GET',
+    path: '/api/v1/orgs/{orgId}/projects/{projectId}/github/branches',
+    pathParams: [
+      {
+        name: 'orgId',
+        required: true,
+        type: 'integer',
+        description: 'orgId (integer) — required.',
+      },
+      {
+        name: 'projectId',
+        required: true,
+        type: 'integer',
+        description: 'projectId (integer) — required.',
+      },
+    ],
+    queryParams: [],
+    hasBody: false,
+    outputSchema: {
+      type: 'object',
+      properties: {
+        result: {
+          type: 'array',
+          items: {
+            $ref: '#/components/schemas/GithubBranchResponse',
+          },
+        },
+      },
+      required: ['result'],
+    },
+    outputResultWrapped: true,
+    annotations: {
+      title: 'GET /api/v1/orgs/{orgId}/projects/{projectId}/github/branches',
       readOnlyHint: true,
       idempotentHint: true,
       destructiveHint: false,

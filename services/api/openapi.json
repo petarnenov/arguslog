@@ -1297,7 +1297,7 @@
       },
       "patch" : {
         "tags" : [ "project-controller" ],
-        "operationId" : "rename_1",
+        "operationId" : "update_3",
         "parameters" : [ {
           "name" : "orgId",
           "in" : "path",
@@ -1739,6 +1739,44 @@
                   "type" : "array",
                   "items" : {
                     "$ref" : "#/components/schemas/PlatformResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orgs/{orgId}/projects/{projectId}/git/branches" : {
+      "get" : {
+        "tags" : [ "project-controller" ],
+        "operationId" : "listGitBranches",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "projectId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/GitBranchResponse"
                   }
                 }
               }
@@ -2451,6 +2489,12 @@
           },
           "platform" : {
             "type" : "string"
+          },
+          "gitProvider" : {
+            "type" : "string"
+          },
+          "gitRepo" : {
+            "type" : "string"
           }
         }
       },
@@ -2496,6 +2540,12 @@
             "type" : "string"
           },
           "platform" : {
+            "type" : "string"
+          },
+          "gitProvider" : {
+            "type" : "string"
+          },
+          "gitRepo" : {
             "type" : "string"
           },
           "createdAt" : {
@@ -2760,6 +2810,12 @@
         "properties" : {
           "name" : {
             "type" : "string"
+          },
+          "gitProvider" : {
+            "type" : "string"
+          },
+          "gitRepo" : {
+            "type" : "string"
           }
         }
       },
@@ -2928,6 +2984,17 @@
             "type" : "string"
           },
           "sdkVersion" : {
+            "type" : "string"
+          }
+        }
+      },
+      "GitBranchResponse" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "sha" : {
             "type" : "string"
           }
         }

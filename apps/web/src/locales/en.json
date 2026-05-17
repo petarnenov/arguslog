@@ -159,7 +159,21 @@
     "events": "events",
     "noEvents": "Awaiting first event",
     "lastEventAgo": "Last event {{relative}}",
-    "lastEventNever": "No events yet"
+    "lastEventNever": "No events yet",
+    "editTitle": "Edit \"{{name}}\"",
+    "editAction": "Edit project",
+    "editAria": "Edit {{name}}",
+    "nameLabel": "Display name",
+    "gitDivider": "Git repository (optional)",
+    "gitHint": "Link a public repo so the \"Create release\" form can fill Git ref + SHA from a branch dropdown. Public repos only.",
+    "gitProviderLabel": "Provider",
+    "gitProviderPlaceholder": "None",
+    "gitProviderGithub": "GitHub",
+    "gitProviderGitlab": "GitLab",
+    "gitRepoLabel": "Repository",
+    "gitRepoPlaceholder": "owner/repo or full URL",
+    "gitRepoHelpGithub": "Example: acme/widgets — paste a full URL and we'll strip the host.",
+    "gitRepoHelpGitlab": "Example: group/project or group/sub/project — paste a full URL and we'll strip the host."
   },
   "connect": {
     "title": "Connect",
@@ -500,7 +514,16 @@
     "deleteBody": "Source-map artifacts uploaded against this release will be removed too. R2 blobs stay until the next maintenance sweep.",
     "deleteConfirm": "Delete release",
     "errorVersion": "Version is required",
-    "empty": "No releases yet — create one to start attributing issues to deploy versions."
+    "empty": "No releases yet — create one to start attributing issues to deploy versions.",
+    "gitRefBranchPlaceholder": "Pick a branch",
+    "gitRefManualPlaceholder": "main",
+    "gitRefManualFallback": "Type a branch name manually",
+    "gitRefLoadingBranches": "Loading branches from {{provider}}…",
+    "gitRefBranchesError": "Couldn't load branches from {{provider}} — type the ref manually below.",
+    "gitRefBranchesEmpty": "No branches returned — type the ref manually below.",
+    "gitRefHintWithRepo": "Pick a branch on {{provider}} ({{repo}}) — Git SHA auto-fills.",
+    "gitRefHintNoRepo": "Link a Git repo in Project settings to enable the branch dropdown.",
+    "gitShaAutoFilled": "Auto-filled from selected branch."
   },
   "releaseDetail": {
     "notFound": "Release not found.",

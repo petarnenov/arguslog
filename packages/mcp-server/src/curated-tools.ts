@@ -213,7 +213,17 @@ Method: POST /api/v1/orgs/{orgId}/projects
 Required: \`orgId\`, \`body.name\` (2-100 chars), \`body.platform\` (one of: javascript, react,
 vue, angular, nextjs, react-native, node, java-spring, python).
 
+Optional Git link: \`body.gitProvider\` (\`"github"\` or \`"gitlab"\`) + \`body.gitRepo\`
+(canonical \`owner/repo\` for GitHub, or \`group/project\` / \`group/sub/project\` for GitLab).
+When set, the "Create release" form populates a branch dropdown and auto-fills Git SHA from
+the chosen branch. Public repos only — self-hosted / private support is a separate feature.
+The api also accepts paste shapes (full URLs, SSH clone strings, \`.git\` suffix) — when the
+\`gitRepo\` field is a URL, \`gitProvider\` is auto-detected from the host (and validated to
+match the hint if both are supplied).
+
 Example: \`{ "orgId": 42, "body": { "name": "Marketing Web", "platform": "react" } }\`
+Example with GitHub link: \`{ "orgId": 42, "body": { "name": "Web", "platform": "react", "gitProvider": "github", "gitRepo": "acme/web" } }\`
+Example with GitLab nested group: \`{ "orgId": 42, "body": { "name": "API", "platform": "java-spring", "gitProvider": "gitlab", "gitRepo": "acme/backend/api" } }\`
 Response shape: \`{ project: {...}, dsn: { dsn: "arguslog://...", dsnPublic, ... } }\``,
     method: 'POST',
     path: '/api/v1/orgs/{orgId}/projects',
@@ -244,11 +254,44 @@ Example: \`{ "orgId": 42, "body": { "name": "Acme Renamed" } }\``,
     description: `Rename a project's display name. Slug/DSN/URL is preserved so existing SDK config
 keeps working. Caller must be owner or admin of the org.
 
+Thin wrapper around \`update_project\` — prefer \`update_project\` if you also want to set the
+Git repo link in the same call.
+
 Method: PATCH /api/v1/orgs/{orgId}/projects/{projectId}
 
 Required: \`orgId\`, \`projectId\`, \`body.name\` (2-100 chars after trimming).
 
 Example: \`{ "orgId": 42, "projectId": 7, "body": { "name": "Marketing Web (v2)" } }\``,
+    method: 'PATCH',
+    path: '/api/v1/orgs/{orgId}/projects/{projectId}',
+    pathParams: [
+      { name: 'orgId', required: true, type: 'integer' },
+      { name: 'projectId', required: true, type: 'integer' },
+    ],
+    queryParams: [],
+    hasBody: true,
+  },
+
+  update_project: {
+    name: 'update_project',
+    description: `Partial update of a project: change the display name and/or the Git repo link.
+Each field is optional — omit (or pass null) to leave unchanged. Slug/DSN/URL is preserved so
+existing SDK config keeps working. Caller must be owner or admin of the org.
+
+Git link: pass \`gitProvider\` (\`"github"\` | \`"gitlab"\`) + \`gitRepo\` together to set or
+update. To clear, pass both as empty strings (\`""\`). \`gitRepo\` accepts canonical
+\`owner/repo\` (GitHub) / \`group/project\` or nested \`group/sub/project\` (GitLab), plus
+common paste shapes (full URLs, SSH clone strings, \`.git\` suffix); the api normalizes
+before storing. Public repos only.
+
+Method: PATCH /api/v1/orgs/{orgId}/projects/{projectId}
+
+Required: \`orgId\`, \`projectId\`. At least one of \`body.name\` / \`body.gitProvider\`+\`body.gitRepo\`.
+
+Example (rename only): \`{ "orgId": 42, "projectId": 7, "body": { "name": "Web (v2)" } }\`
+Example (link GitHub): \`{ "orgId": 42, "projectId": 7, "body": { "gitProvider": "github", "gitRepo": "acme/web" } }\`
+Example (link GitLab): \`{ "orgId": 42, "projectId": 7, "body": { "gitProvider": "gitlab", "gitRepo": "acme/backend/api" } }\`
+Example (clear link): \`{ "orgId": 42, "projectId": 7, "body": { "gitProvider": "", "gitRepo": "" } }\``,
     method: 'PATCH',
     path: '/api/v1/orgs/{orgId}/projects/{projectId}',
     pathParams: [

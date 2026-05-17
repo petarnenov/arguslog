@@ -1,12 +1,16 @@
 package org.arguslog.api.adapter.in.web;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.arguslog.api.adapter.in.web.dto.GitBranchResponse;
 import org.arguslog.api.adapter.in.web.dto.ProjectCreateResponse;
 import org.arguslog.api.adapter.in.web.dto.ProjectRenameRequest;
 import org.arguslog.api.adapter.in.web.dto.ProjectRequest;
 import org.arguslog.api.adapter.in.web.dto.ProjectResponse;
+import org.arguslog.api.adapter.out.git.GitPublicClient;
+import org.arguslog.api.adapter.out.git.GitPublicClient.BranchListResult;
 import org.arguslog.api.application.DsnUseCase;
 import org.arguslog.api.application.ProjectUseCase;
 import org.arguslog.api.application.ProjectUseCase.DuplicateProjectException;
@@ -15,6 +19,7 @@ import org.arguslog.api.application.ProjectUseCase.ProjectAccessDeniedException;
 import org.arguslog.api.auth.PatScopeGuard;
 import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.domain.Dsn;
+import org.arguslog.api.domain.GitProvider;
 import org.arguslog.api.domain.Project;
 import org.arguslog.api.security.AccessException;
 import org.arguslog.api.security.AuthActor;
@@ -41,14 +46,17 @@ public class ProjectController {
 
   private final ProjectUseCase useCase;
   private final DsnUseCase dsnUseCase;
+  private final GitPublicClient git;
   private final String ingestHost;
 
   public ProjectController(
       ProjectUseCase useCase,
       DsnUseCase dsnUseCase,
+      GitPublicClient git,
       @Value("${arguslog.ingest.public-host:http://localhost:8080}") String ingestHost) {
     this.useCase = useCase;
     this.dsnUseCase = dsnUseCase;
+    this.git = git;
     this.ingestHost = ingestHost;
   }
 
@@ -73,7 +81,9 @@ public class ProjectController {
   public ResponseEntity<ProjectCreateResponse> create(
       @PathVariable long orgId, @RequestBody ProjectRequest body) {
     PatScopeGuard.require(PatScope.PROJECTS_WRITE);
-    Project createdProject = useCase.create(orgId, body.name(), body.platform());
+    GitProvider provider = parseProvider(body.gitProvider());
+    Project createdProject =
+        useCase.create(orgId, body.name(), body.platform(), provider, body.gitRepo());
     Dsn createdDsn = dsnUseCase.create(createdProject.id());
     return ResponseEntity.created(URI.create(String.valueOf(createdProject.id())))
         .body(ProjectCreateResponse.from(createdProject, createdDsn, ingestHost));
@@ -87,18 +97,134 @@ public class ProjectController {
         .orElseThrow(() -> AccessException.notFound(projectId));
   }
 
-  /** Renames a project's display name. Slug is preserved. Owner/admin only. */
+  /**
+   * Partial update: changes the display name and/or the Git repo link. Each field is optional —
+   * a {@code null} JSON value means "leave unchanged"; sending {@code gitProvider} and
+   * {@code gitRepo} both as empty strings clears the link. Slug is preserved. Owner/admin only.
+   */
   @PatchMapping(value = "/{projectId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ProjectResponse rename(
+  public ProjectResponse update(
       @PathVariable long orgId,
       @PathVariable long projectId,
       @RequestBody ProjectRenameRequest body) {
     PatScopeGuard.require(PatScope.PROJECTS_WRITE);
     UUID actorId = AuthActor.currentUserId();
-    return useCase
-        .rename(actorId, orgId, projectId, body.name())
-        .map(ProjectResponse::from)
-        .orElseThrow(() -> AccessException.notFound(projectId));
+    Project current = null;
+    if (body.name() != null) {
+      current =
+          useCase
+              .rename(actorId, orgId, projectId, body.name())
+              .orElseThrow(() -> AccessException.notFound(projectId));
+    }
+    // Either field present means "the caller wants to touch the Git link" — empty strings on
+    // both clear it; valid pair sets it. Mixing one set with the other null is rejected in the
+    // service layer with a 400.
+    if (body.gitProvider() != null || body.gitRepo() != null) {
+      GitProvider provider = parseProvider(body.gitProvider());
+      current =
+          useCase
+              .updateGitRepo(actorId, orgId, projectId, provider, body.gitRepo())
+              .orElseThrow(() -> AccessException.notFound(projectId));
+    }
+    if (current == null) {
+      // No-op PATCH (all fields null): return the current state rather than 400 so clients can
+      // use this endpoint as a fetch-and-touch without special-casing empty bodies.
+      current = useCase.get(orgId, projectId).orElseThrow(() -> AccessException.notFound(projectId));
+    }
+    return ProjectResponse.from(current);
+  }
+
+  /**
+   * Proxies the configured Git provider's public branches API for this project. Used by the
+   * "Create release" modal to populate a branch dropdown and auto-fill the head SHA on select.
+   * Returns 422 if the project has no Git repo configured; 404 if the provider reports the repo
+   * as missing (private or typo); 429 if we (or the user behind the same IP) blew the
+   * unauthenticated rate budget; 502 for any other upstream / transport failure.
+   *
+   * <p>No auth is sent — public repos only. Self-hosted / private-repo support is a separate
+   * feature; the wire shape here stays the same so the UI can grow into it without changes.
+   */
+  @GetMapping("/{projectId}/git/branches")
+  public List<GitBranchResponse> listGitBranches(
+      @PathVariable long orgId, @PathVariable long projectId) {
+    PatScopeGuard.require(PatScope.PROJECTS_READ);
+    Project project =
+        useCase.get(orgId, projectId).orElseThrow(() -> AccessException.notFound(projectId));
+    GitProvider provider = project.gitProvider();
+    String repo = project.gitRepo();
+    if (provider == null || repo == null || repo.isBlank()) {
+      throw new GitRepoMissingException(
+          "This project has no Git repository configured. Set one in Project settings.");
+    }
+    BranchListResult result = git.listBranches(provider, repo);
+    if (result instanceof BranchListResult.Ok ok) {
+      return ok.branches().stream()
+          .map(b -> new GitBranchResponse(b.name(), b.sha()))
+          .toList();
+    }
+    if (result instanceof BranchListResult.NotFound) {
+      throw new GitRepoNotFoundException(
+          provider.dbValue()
+              + " couldn't find repository \""
+              + repo
+              + "\". Public repos only — private repos are not yet supported.");
+    }
+    if (result instanceof BranchListResult.RateLimited rl) {
+      throw new GitRateLimitedException(provider, rl.resetAt());
+    }
+    if (result instanceof BranchListResult.TransportError te) {
+      throw new GitUpstreamException(provider, te.message());
+    }
+    // Defensive: sealed switch covers all cases, but keep compile happy.
+    throw new GitUpstreamException(provider, "unknown_result");
+  }
+
+  /** Thrown when the caller hits the branches endpoint but no Git repo is configured. */
+  static final class GitRepoMissingException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    GitRepoMissingException(String message) {
+      super(message);
+    }
+  }
+
+  /** Thrown when the provider returns 404 — repo is private or doesn't exist. */
+  static final class GitRepoNotFoundException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    GitRepoNotFoundException(String message) {
+      super(message);
+    }
+  }
+
+  /** Thrown when the provider rate-limits the unauthenticated request. */
+  static final class GitRateLimitedException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+    private final GitProvider provider;
+    private final Instant resetAt;
+
+    GitRateLimitedException(GitProvider provider, Instant resetAt) {
+      super(provider.dbValue() + " rate limit exhausted; try again at " + resetAt);
+      this.provider = provider;
+      this.resetAt = resetAt;
+    }
+
+    GitProvider provider() {
+      return provider;
+    }
+
+    Instant resetAt() {
+      return resetAt;
+    }
+  }
+
+  /** Catch-all for upstream transport/HTTP failures. */
+  static final class GitUpstreamException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
+    GitUpstreamException(GitProvider provider, String detail) {
+      super(provider.dbValue() + " upstream error: " + detail);
+    }
   }
 
   /**
@@ -114,6 +240,19 @@ public class ProjectController {
       throw AccessException.notFound(projectId);
     }
     return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Parses the wire-level {@code gitProvider} string. Empty string is treated as {@code null}
+   * (no provider — caller is clearing). Any other unknown value is rejected with a 400.
+   */
+  private static GitProvider parseProvider(String raw) {
+    if (raw == null || raw.isBlank()) return null;
+    return GitProvider.fromDbValue(raw.trim())
+        .orElseThrow(
+            () ->
+                new InvalidProjectException(
+                    "gitProvider must be one of: github, gitlab — got: " + raw));
   }
 
   @ExceptionHandler(InvalidProjectException.class)
@@ -154,6 +293,50 @@ public class ProjectController {
     body.setTitle("Project cap exceeded");
     body.setType(URI.create("https://arguslog.org/problems/project-cap-exceeded"));
     return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(GitRepoMissingException.class)
+  ResponseEntity<ProblemDetail> handleGitRepoMissing(GitRepoMissingException e) {
+    ProblemDetail body =
+        ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+    body.setTitle("Git repository not configured");
+    body.setType(URI.create("https://arguslog.org/problems/git-repo-missing"));
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(GitRepoNotFoundException.class)
+  ResponseEntity<ProblemDetail> handleGitRepoNotFound(GitRepoNotFoundException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());
+    body.setTitle("Git repository not found");
+    body.setType(URI.create("https://arguslog.org/problems/git-repo-not-found"));
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(GitRateLimitedException.class)
+  ResponseEntity<ProblemDetail> handleGitRateLimited(GitRateLimitedException e) {
+    ProblemDetail body =
+        ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, e.getMessage());
+    body.setTitle("Git provider rate limited");
+    body.setType(URI.create("https://arguslog.org/problems/git-rate-limited"));
+    body.setProperty("provider", e.provider().dbValue());
+    body.setProperty("resetAt", e.resetAt().toString());
+    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(body);
+  }
+
+  @ExceptionHandler(GitUpstreamException.class)
+  ResponseEntity<ProblemDetail> handleGitUpstream(GitUpstreamException e) {
+    ProblemDetail body = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, e.getMessage());
+    body.setTitle("Git upstream error");
+    body.setType(URI.create("https://arguslog.org/problems/git-upstream"));
+    return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(body);
   }

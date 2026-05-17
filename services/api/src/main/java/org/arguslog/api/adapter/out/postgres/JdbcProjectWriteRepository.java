@@ -15,6 +15,7 @@ import org.arguslog.api.application.ProjectUseCase.DuplicateProjectException;
 import org.arguslog.api.application.dto.ProjectStats;
 import org.arguslog.api.application.dto.ProjectStats.DailyEventBucket;
 import org.arguslog.api.application.port.ProjectWriteRepository;
+import org.arguslog.api.domain.GitProvider;
 import org.arguslog.api.domain.Project;
 import org.arguslog.api.security.OrgContext;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -31,14 +32,22 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
   }
 
   @Override
-  public Project create(long orgId, String slug, String name, String platform) {
+  public Project create(
+      long orgId,
+      String slug,
+      String name,
+      String platform,
+      GitProvider gitProvider,
+      String gitRepo) {
     pinOrg();
     // ON CONFLICT DO NOTHING avoids tx-poisoning under @Transactional and lets us surface a
     // domain-level duplicate exception (mapped to 409 by the controller) instead of a 500.
+    String providerDb = gitProvider == null ? null : gitProvider.dbValue();
     Project inserted =
         jdbc.query(
             """
-            INSERT INTO projects (org_id, slug, name, platform) VALUES (?, ?, ?, ?)
+            INSERT INTO projects (org_id, slug, name, platform, git_provider, git_repo)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT (org_id, slug) DO NOTHING
             RETURNING id, created_at
             """,
@@ -50,12 +59,16 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
                   slug,
                   name,
                   platform,
-                  rs.getTimestamp("created_at").toInstant());
+                  rs.getTimestamp("created_at").toInstant(),
+                  gitProvider,
+                  gitRepo);
             },
             orgId,
             slug,
             name,
-            platform);
+            platform,
+            providerDb,
+            gitRepo);
     if (inserted == null) {
       throw new DuplicateProjectException(
           "A project with this name already exists in the organization. Please choose a different name.");
@@ -70,7 +83,7 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
     // the partial index idx_projects_org_live keeps this index-only.
     return jdbc.query(
         """
-            SELECT id, org_id, slug, name, platform, created_at
+            SELECT id, org_id, slug, name, platform, created_at, git_provider, git_repo
               FROM projects
              WHERE org_id = ? AND archived_at IS NULL
              ORDER BY slug ASC
@@ -82,7 +95,9 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
                 rs.getString("slug"),
                 rs.getString("name"),
                 rs.getString("platform"),
-                rs.getTimestamp("created_at").toInstant()),
+                rs.getTimestamp("created_at").toInstant(),
+                GitProvider.fromDbValue(rs.getString("git_provider")).orElse(null),
+                rs.getString("git_repo")),
         orgId);
   }
 
@@ -118,6 +133,26 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
   }
 
   @Override
+  public Optional<Project> updateGitRepo(
+      long orgId, long projectId, GitProvider provider, String repo) {
+    pinOrg();
+    String providerDb = provider == null ? null : provider.dbValue();
+    int updated =
+        jdbc.update(
+            """
+            UPDATE projects
+               SET git_provider = ?, git_repo = ?
+             WHERE org_id = ? AND id = ? AND archived_at IS NULL
+            """,
+            providerDb,
+            repo,
+            orgId,
+            projectId);
+    if (updated == 0) return Optional.empty();
+    return find(orgId, projectId);
+  }
+
+  @Override
   public Optional<Project> find(long orgId, long projectId) {
     pinOrg();
     // Treat archived projects as "not found" for application-level lookups so a
@@ -127,7 +162,7 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
       Project project =
           jdbc.queryForObject(
               """
-              SELECT id, org_id, slug, name, platform, created_at
+              SELECT id, org_id, slug, name, platform, created_at, git_provider, git_repo
                 FROM projects
                WHERE org_id = ? AND id = ? AND archived_at IS NULL
               """,
@@ -138,7 +173,9 @@ public class JdbcProjectWriteRepository implements ProjectWriteRepository {
                       rs.getString("slug"),
                       rs.getString("name"),
                       rs.getString("platform"),
-                      rs.getTimestamp("created_at").toInstant()),
+                      rs.getTimestamp("created_at").toInstant(),
+                      GitProvider.fromDbValue(rs.getString("git_provider")).orElse(null),
+                      rs.getString("git_repo")),
               orgId,
               projectId);
       return Optional.ofNullable(project);

@@ -14,7 +14,7 @@ import { listDsns } from './keys';
 import { listOrgMembers } from './members';
 import { listMyOrgs } from './orgs';
 import { listPlatforms } from './platforms';
-import { listProjects } from './projects';
+import { listGitBranches, listProjects } from './projects';
 import { getRelease, listIssuesIntroducedInRelease, listReleases } from './releases';
 import { listSlackWorkspaces } from './slackIntegrations';
 import { listSourceMaps } from './sourcemaps';
@@ -46,6 +46,8 @@ export const queryKeys = {
     ['admin', 'orgs', q, offset, limit] as const,
   adminAudit: (offset: number, limit: number) => ['admin', 'audit', offset, limit] as const,
   slackWorkspaces: (orgId: number) => ['slack-workspaces', orgId] as const,
+  gitBranches: (orgId: number, projectId: number) =>
+    ['git-branches', orgId, projectId] as const,
 };
 
 export function useSlackWorkspaces(orgId: number | undefined, options: { enabled?: boolean } = {}) {
@@ -72,6 +74,35 @@ export function useProjects(orgId: number | undefined, options: { enabled?: bool
     queryFn: () => listProjects(orgId as number),
     enabled: (options.enabled ?? true) && orgId != null,
     staleTime: 30_000,
+  });
+}
+
+/**
+ * Branch dropdown source for the "Create release" form. Disabled by default — callers should
+ * pass `enabled: true` only when the project actually has a Git repo configured (otherwise the
+ * server returns 422 and we'd waste a request per modal open). Short staleTime keeps recent
+ * branch creations visible without spamming the unauthenticated rate budget.
+ */
+export function useGitBranches(
+  orgId: number | undefined,
+  projectId: number | undefined,
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.gitBranches(orgId ?? -1, projectId ?? -1),
+    queryFn: () => listGitBranches(orgId as number, projectId as number),
+    enabled: (options.enabled ?? true) && orgId != null && projectId != null,
+    staleTime: 30_000,
+    // Don't retry on 4xx — those are deterministic (missing repo, rate limit) and the user
+    // needs to act, not wait. 5xx may be transient; one retry is plenty.
+    retry: (failureCount, err) => {
+      const status =
+        typeof err === 'object' && err !== null && 'problem' in err
+          ? ((err as { problem: { status?: number } }).problem.status ?? 0)
+          : 0;
+      if (status >= 400 && status < 500) return false;
+      return failureCount < 1;
+    },
   });
 }
 
