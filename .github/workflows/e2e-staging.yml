@@ -43,9 +43,13 @@ jobs:
     permissions:
       contents: read
     env:
-      ARGUSLOG_E2E_BASE_URL: https://app.arguslog.org
+      # Real staging URLs (per `railway variables --service arguslog-web --environment staging`).
+      # `app.arguslog.org` and `arguslog.org` are PROD — never point E2E at them.
+      # Note: deploy-staging.yml only deploys api/ingest/worker/web. Landing is prod-only,
+      # so landing specs default to the prod URL (read-only, no mutations).
+      ARGUSLOG_E2E_BASE_URL: https://arguslog-web-staging.up.railway.app
       ARGUSLOG_E2E_LANDING_URL: https://arguslog.org
-      ARGUSLOG_E2E_API_URL: https://arguslog.org
+      ARGUSLOG_E2E_API_URL: https://arguslog-api-staging.up.railway.app
       ARGUSLOG_E2E_KEYCLOAK_URL: https://arguslog-keycloak-staging.up.railway.app
       ARGUSLOG_E2E_KEYCLOAK_REALM: arguslog
       ARGUSLOG_E2E_DASHBOARD_CLIENT_ID: arguslog-web

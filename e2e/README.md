@@ -1,9 +1,22 @@
 # @arguslog/e2e
 
-End-to-end Playwright suite for the Arguslog dashboard (`app.arguslog.org`) and landing
-page (`arguslog.org`). Runs against live staging on every merge to `main` via
-`.github/workflows/e2e-staging.yml`; can also run locally against `make demo` or any
-self-hosted Arguslog stack.
+End-to-end Playwright suite for the Arguslog dashboard and landing page. Runs against
+live **staging** on every merge to `main` via `.github/workflows/e2e-staging.yml`; can
+also run locally against `make demo` or any self-hosted Arguslog stack.
+
+**URLs (per `railway variables --service arguslog-web --environment staging`):**
+
+| Surface             | URL                                                |
+| ------------------- | -------------------------------------------------- |
+| Dashboard (staging) | `https://arguslog-web-staging.up.railway.app`      |
+| API (staging)       | `https://arguslog-api-staging.up.railway.app`      |
+| Keycloak (staging)  | `https://arguslog-keycloak-staging.up.railway.app` |
+| Landing             | `https://arguslog.org` (prod — see note below)     |
+
+`app.arguslog.org` is **prod** — E2E never targets it. Landing isn't deployed to
+staging at all (`deploy-staging.yml` only covers `api/ingest/worker/web`), so the
+landing specs read-only against prod. They make no mutations and don't depend on
+any test user, so this is safe.
 
 ---
 
@@ -79,8 +92,11 @@ grant. The PAT-owner IS the E2E test user.
 
 ### Mint the PAT
 
-Sign in to staging (https://app.arguslog.org) as whoever you want the E2E test user
-to be (any regular account — does not need platform-admin). Mint a PAT named
+Sign in to **staging** (`https://arguslog-web-staging.up.railway.app/me/tokens`) as
+whoever you want the E2E test user to be — staging Keycloak is a separate realm from
+prod, so you may need to create an account there first via the standard sign-up flow.
+
+Any regular account is fine — does not need platform-admin. Mint a PAT named
 `e2e-runner-permanent` with these scopes:
 
 - `orgs:read`, `orgs:write`
@@ -138,15 +154,15 @@ cascade deletes everything scoped under the org.
 until someone cleans it manually. Quick sweep against staging:
 
 ```bash
-# Lists e2e-* orgs older than 1h that are stale
+# Lists e2e-* orgs older than 1h that are stale (staging API).
 curl -sH "Authorization: Bearer $ARGUSLOG_E2E_RUNNER_PAT" \
-  https://arguslog.org/api/v1/orgs \
+  https://arguslog-api-staging.up.railway.app/api/v1/orgs \
   | jq -r '.[] | select(.slug | startswith("e2e-")) | select(.createdAt < (now - 3600 | strftime("%Y-%m-%dT%H:%M:%SZ"))) | .id'
 
 # Delete them
 for id in $(...command above...); do
   curl -X DELETE -H "Authorization: Bearer $ARGUSLOG_E2E_RUNNER_PAT" \
-    "https://arguslog.org/api/v1/orgs/${id}"
+    "https://arguslog-api-staging.up.railway.app/api/v1/orgs/${id}"
 done
 ```
 
