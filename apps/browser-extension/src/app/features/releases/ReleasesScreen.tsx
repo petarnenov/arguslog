@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { getConnectionStatus } from '../../../shared/domain/connection';
 import { createRelease, getRelease, listReleases } from '../../../shared/domain/releases';
 import { ConfirmDialog } from '../../../shared/ui/components/ConfirmDialog';
+import { DashboardLink } from '../../../shared/ui/components/DashboardLink';
 import {
   Badge,
   Button,
@@ -13,11 +14,16 @@ import {
   Page,
   Textarea,
 } from '../../../shared/ui/components/primitives';
+import { buildReleaseUrl, getDashboardBaseUrl } from '../../../shared/utils/dashboard-url';
 
 export function ReleasesScreen() {
   const queryClient = useQueryClient();
   const statusQuery = useQuery({ queryKey: ['connection-status'], queryFn: getConnectionStatus });
   const projectId = statusQuery.data?.workspaceSelection.projectId;
+  const orgSlug = statusQuery.data?.workspaceSelection.orgSlug;
+  const dashboardBase = statusQuery.data
+    ? getDashboardBaseUrl(statusQuery.data.settings.endpoint)
+    : undefined;
 
   const [selectedReleaseId, setSelectedReleaseId] = useState<number | undefined>();
   const [form, setForm] = useState({ version: '', environment: '', commit: '' });
@@ -124,7 +130,14 @@ export function ReleasesScreen() {
                       {release.gitSha ?? release.gitRef ?? 'No git metadata'}
                     </p>
                   </div>
-                  <Badge>{release.deployStage ?? 'release'}</Badge>
+                  <div className="flex items-center gap-1">
+                    <Badge>{release.deployStage ?? 'release'}</Badge>
+                    {dashboardBase && orgSlug && projectId ? (
+                      <DashboardLink
+                        href={buildReleaseUrl(dashboardBase, orgSlug, projectId, release.version)}
+                      />
+                    ) : null}
+                  </div>
                 </div>
               </button>
             ))}

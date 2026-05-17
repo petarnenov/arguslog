@@ -1,19 +1,6 @@
 import browser from 'webextension-polyfill';
 
-function parseArgusContext(url: URL) {
-  const match = /^\/org\/([^/]+)\/project\/(\d+)(?:\/issues\/(\d+))?/.exec(url.pathname);
-  if (!match) {
-    return undefined;
-  }
-
-  return {
-    orgSlug: match[1],
-    projectId: Number(match[2]),
-    issueId: match[3] ? Number(match[3]) : undefined,
-    sourceTabUrl: url.toString(),
-    capturedAt: new Date().toISOString(),
-  };
-}
+import { parseArgusContext } from '../shared/utils/parse-page-context';
 
 export default defineContentScript({
   matches: ['https://*.arguslog.org/*'],

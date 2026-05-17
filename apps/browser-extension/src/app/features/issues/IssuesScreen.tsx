@@ -11,6 +11,7 @@ import {
 } from '../../../shared/domain/issues';
 import { listMembers } from '../../../shared/domain/workspace';
 import { ConfirmDialog } from '../../../shared/ui/components/ConfirmDialog';
+import { DashboardLink } from '../../../shared/ui/components/DashboardLink';
 import {
   Badge,
   Button,
@@ -21,6 +22,7 @@ import {
   Select,
   Textarea,
 } from '../../../shared/ui/components/primitives';
+import { buildIssueUrl, getDashboardBaseUrl } from '../../../shared/utils/dashboard-url';
 import { copyText } from '../../../shared/utils/export';
 
 export function IssuesScreen() {
@@ -28,6 +30,10 @@ export function IssuesScreen() {
   const statusQuery = useQuery({ queryKey: ['connection-status'], queryFn: getConnectionStatus });
   const projectId = statusQuery.data?.workspaceSelection.projectId;
   const orgId = statusQuery.data?.workspaceSelection.orgId;
+  const orgSlug = statusQuery.data?.workspaceSelection.orgSlug;
+  const dashboardBase = statusQuery.data
+    ? getDashboardBaseUrl(statusQuery.data.settings.endpoint)
+    : undefined;
 
   const [filters, setFilters] = useState({ status: 'unresolved', level: '', q: '' });
   const [selectedIssueId, setSelectedIssueId] = useState<number | undefined>(
@@ -177,7 +183,14 @@ export function IssuesScreen() {
                     <p className="mt-1 text-sm text-slate-400">{issue.culprit ?? 'No culprit'}</p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <Badge>{issue.level ?? 'n/a'}</Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge>{issue.level ?? 'n/a'}</Badge>
+                      {dashboardBase && orgSlug && projectId ? (
+                        <DashboardLink
+                          href={buildIssueUrl(dashboardBase, orgSlug, projectId, issue.id)}
+                        />
+                      ) : null}
+                    </div>
                     <span className="text-xs text-slate-500">{issue.status ?? 'unknown'}</span>
                   </div>
                 </div>

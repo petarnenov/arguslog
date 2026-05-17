@@ -22,7 +22,20 @@ import {
   type AccountSummary,
   type CapabilitySnapshot,
 } from '../../shared/validation/models';
+import { recordConnectionError, recordConnectionSuccess } from '../auth/pat-vault';
 import { appendDiagnosticLog } from '../diagnostics/log-buffer';
+
+/**
+ * Error codes that signal connection/auth health (vs. e.g. a 404 from a missing issue,
+ * which is a tool-level error, not a connection one). Only these flip the
+ * ConnectionHealthBadge to 🔴 — the rest stays in the diagnostic log.
+ */
+const CONNECTION_LEVEL_ERROR_CODES = new Set([
+  'INVALID_PAT',
+  'INSUFFICIENT_SCOPE',
+  'THROTTLED',
+  'SERVER_UNAVAILABLE',
+]);
 
 interface TransportConfig {
   endpoint: string;
@@ -163,6 +176,9 @@ async function withClient<T>(
       durationMs: Date.now() - startedAt,
       outcome: 'ok',
     });
+    // Stamp the success-side of the connection-health badge. Best-effort — a storage hiccup
+    // shouldn't fail the actual MCP result the caller asked for.
+    await recordConnectionSuccess().catch(() => undefined);
     return result;
   } catch (error) {
     const appError = mapTransportError(error);
@@ -174,6 +190,12 @@ async function withClient<T>(
       errorBucket: appError.bucket,
       meta: appError.details,
     });
+    // Only connection-class errors flip the health badge — tool-level 404s etc. stay in
+    // the diagnostic log without polluting the operator-visible connection state. The
+    // `bucket` is the AppError's discriminator (the type's union tag).
+    if (CONNECTION_LEVEL_ERROR_CODES.has(appError.bucket)) {
+      await recordConnectionError(appError).catch(() => undefined);
+    }
     throw appError;
   } finally {
     await transport.close().catch(() => undefined);

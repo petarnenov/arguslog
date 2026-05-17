@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill';
 
+import { type AppError } from '../../shared/types/errors';
 import {
   type AccountSummary,
   type AuthSession,
@@ -150,4 +151,39 @@ export async function getAuthSession(): Promise<AuthSession | undefined> {
 export async function clearPat(): Promise<void> {
   await browser.storage.local.remove([PERSISTENT_PAT_KEY, AUTH_SESSION_KEY]);
   await browser.storage.session.remove(SESSION_PAT_KEY);
+}
+
+// ── connection-health writers ─────────────────────────────────────────────
+// Mutate the existing `AUTH_SESSION_KEY` blob in-place rather than creating a new storage
+// key — keeps the shape downstream readers expect (ConnectionStatus.authSession). If no
+// auth session exists yet (e.g. first call before savePat), we skip — there's nothing to
+// attach health to, and the ConnectionHealthBadge renders the ⚪ "not connected" state
+// from the absence of `lastConnectedAt` + `lastAuthError`.
+
+async function patchAuthSession(patch: Partial<AuthSession>): Promise<void> {
+  const session = await getAuthSession();
+  if (!session) return;
+  const next = AuthSessionSchema.parse({ ...session, ...patch });
+  await browser.storage.local.set({ [AUTH_SESSION_KEY]: next });
+}
+
+export async function recordConnectionSuccess(): Promise<void> {
+  await patchAuthSession({
+    lastConnectedAt: new Date().toISOString(),
+    lastAuthError: null,
+  });
+}
+
+export async function recordConnectionError(error: AppError): Promise<void> {
+  await patchAuthSession({
+    lastAuthError: {
+      // AppError uses `bucket` for the discriminator (INVALID_PAT / INSUFFICIENT_SCOPE /
+      // …); we surface it as `code` in the connection-health snapshot for symmetry with
+      // typical „error code" UI vocabulary.
+      code: error.bucket,
+      httpStatus: error.status,
+      message: error.message,
+      occurredAt: new Date().toISOString(),
+    },
+  });
 }

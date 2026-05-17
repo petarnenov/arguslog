@@ -20,10 +20,32 @@ export const AccountSummarySchema = z.object({
   tier: z.string().optional(),
 });
 
+/**
+ * Connection-health snapshot persisted alongside the auth session under
+ * `AUTH_SESSION_KEY` (pat-vault.ts). Two fields, both optional:
+ *
+ * - `lastConnectedAt` — ISO timestamp of the most recent successful MCP call. Written
+ *   by `recordConnectionSuccess()` from the transport's `withClient()` happy path.
+ * - `lastAuthError` — the most recent auth-class error mapped by `mapTransportError()`
+ *   (INVALID_PAT / INSUFFICIENT_SCOPE / THROTTLED / SERVER_UNAVAILABLE). Cleared on the
+ *   next successful call so the ConnectionHealthBadge doesn't keep red after recovery.
+ *
+ * Non-auth errors (404 from a missing issue, etc.) deliberately don't touch these — they
+ * belong in the diagnostic log, not the connection-health view.
+ */
+export const ConnectionErrorSnapshotSchema = z.object({
+  code: z.string(),
+  httpStatus: z.number().int().optional(),
+  message: z.string(),
+  occurredAt: z.string(),
+});
+
 export const AuthSessionSchema = z.object({
   patPresent: z.boolean(),
   persistenceMode: PersistenceModeSchema,
   accountSummary: AccountSummarySchema.optional(),
+  lastConnectedAt: z.string().optional(),
+  lastAuthError: ConnectionErrorSnapshotSchema.nullable().optional(),
 });
 
 export const CapabilitySnapshotSchema = z.object({
@@ -52,6 +74,12 @@ export const PageContextSchema = z.object({
   orgSlug: z.string().optional(),
   projectId: z.number().int().optional(),
   issueId: z.number().int().optional(),
+  /**
+   * Captured from the release-detail route `/orgs/{slug}/projects/{id}/releases/{version}`.
+   * Operator-typed identifier — usually `v1.2.3` / `2026.05.17` / a git short SHA. Stored
+   * as a string verbatim; never coerced to Number.
+   */
+  releaseVersion: z.string().optional(),
   sourceTabUrl: z.string().optional(),
   capturedAt: z.string(),
 });
@@ -95,6 +123,7 @@ export const BackgroundEnvelopeSchema = z.union([
 export type ExtensionSettings = z.infer<typeof ExtensionSettingsSchema>;
 export type AccountSummary = z.infer<typeof AccountSummarySchema>;
 export type AuthSession = z.infer<typeof AuthSessionSchema>;
+export type ConnectionErrorSnapshot = z.infer<typeof ConnectionErrorSnapshotSchema>;
 export type CapabilitySnapshot = z.infer<typeof CapabilitySnapshotSchema>;
 export type WorkspaceSelection = z.infer<typeof WorkspaceSelectionSchema>;
 export type PageContext = z.infer<typeof PageContextSchema>;
