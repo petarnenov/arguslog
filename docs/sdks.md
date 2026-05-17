@@ -45,121 +45,286 @@ window.addEventListener('error', (e) => captureException(e.error));
 
 ## React
 
+The recommended shape is a 3-file env-driven installer. Keep the DSN out of app
+code via `.env.local` (Vite) and let a named installer module mount Arguslog at
+boot — no-op when DSN is missing for safe local-dev.
+
 ```bash
 pnpm add @arguslog/sdk-react
 ```
 
-```tsx
-import { ArguslogErrorBoundary, init } from '@arguslog/sdk-react';
+```bash
+# .env.local
+VITE_ARGUSLOG_DSN=arguslog://<key>@<host>/api/<projectId>
+VITE_APP_RELEASE=1.0.0
+```
 
-init({ dsn: import.meta.env.VITE_ARGUSLOG_DSN });
-
-export function App() {
-  return (
-    <ArguslogErrorBoundary fallback={<p>Something broke.</p>}>
-      <Routes />
-    </ArguslogErrorBoundary>
-  );
+```ts
+// src/arguslog.ts
+import { init } from '@arguslog/sdk-react';
+let installed = false;
+export function installArguslog(): void {
+  if (installed) return;
+  const dsn = import.meta.env.VITE_ARGUSLOG_DSN;
+  if (!dsn) return;
+  init({
+    dsn,
+    environment: import.meta.env.MODE,
+    release: import.meta.env.VITE_APP_RELEASE,
+    integrations: ['globalHandlers', 'autoBreadcrumbs'],
+  });
+  installed = true;
 }
 ```
 
+```tsx
+// src/main.tsx
+import { createRoot } from 'react-dom/client';
+import { ArguslogErrorBoundary } from '@arguslog/sdk-react';
+import App from './App';
+import { installArguslog } from './arguslog';
+
+installArguslog();
+createRoot(document.getElementById('root')!).render(
+  <ArguslogErrorBoundary fallback={<p>Something broke.</p>}>
+    <App />
+  </ArguslogErrorBoundary>,
+);
+```
+
+For Webpack / CRA, swap `import.meta.env.VITE_*` for `process.env.REACT_APP_*`
+and define them via `DefinePlugin` — see the SDK README for the exact wiring.
+
 ## Next.js
+
+Dual-runtime: the server boots via `instrumentation.ts`, the client via
+`app/layout.tsx`. Both halves read env vars and no-op cleanly when DSN is
+missing.
 
 ```bash
 pnpm add @arguslog/sdk-nextjs
 ```
 
+```bash
+# .env.local — both flavours so server + client read the same project
+NEXT_PUBLIC_ARGUSLOG_DSN=arguslog://<key>@<host>/api/<projectId>
+ARGUSLOG_DSN=arguslog://<key>@<host>/api/<projectId>
+NEXT_PUBLIC_APP_RELEASE=1.0.0
+```
+
 ```ts
 // instrumentation.ts
-import type { Instrumentation } from 'next';
-
 export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { init } = await import('@arguslog/sdk-nextjs/server');
-    init({ dsn: process.env.ARGUSLOG_DSN!, integrations: ['processHandlers'] });
-  }
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+  const dsn = process.env.ARGUSLOG_DSN;
+  if (!dsn) return;
+  const { init } = await import('@arguslog/sdk-nextjs/server');
+  init({
+    dsn,
+    environment: process.env.NODE_ENV,
+    release: process.env.NEXT_PUBLIC_APP_RELEASE,
+    integrations: ['processHandlers', 'http'],
+  });
 }
+export { onRequestError } from '@arguslog/sdk-nextjs/server';
+```
 
-export const onRequestError: Instrumentation.onRequestError = async (err, request, context) => {
-  const { onRequestError } = await import('@arguslog/sdk-nextjs/server');
-  return onRequestError(err, request, context);
-};
+```ts
+// app/arguslog.client.ts
+'use client';
+import { init } from '@arguslog/sdk-nextjs/client';
+let installed = false;
+export function installArguslog(): void {
+  if (installed) return;
+  const dsn = process.env.NEXT_PUBLIC_ARGUSLOG_DSN;
+  if (!dsn) return;
+  init({
+    dsn,
+    environment: process.env.NODE_ENV,
+    release: process.env.NEXT_PUBLIC_APP_RELEASE,
+    integrations: ['globalHandlers', 'autoBreadcrumbs'],
+  });
+  installed = true;
+}
+```
+
+```tsx
+// app/layout.tsx
+import { ArguslogErrorBoundary } from '@arguslog/sdk-nextjs/client';
+import { installArguslog } from './arguslog.client';
+installArguslog();
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        <ArguslogErrorBoundary fallback={<p>Something went wrong.</p>}>
+          {children}
+        </ArguslogErrorBoundary>
+      </body>
+    </html>
+  );
+}
 ```
 
 ## Angular
+
+Angular's stock pattern is `environment.ts` files swapped by the build via
+`fileReplacements` in `angular.json`. The provider is conditionally registered
+so local dev with empty DSN boots silently — no `@ngx-env/builder` dep needed.
 
 ```bash
 pnpm add @arguslog/sdk-angular
 ```
 
 ```ts
-// main.ts
-import { bootstrapApplication } from '@angular/platform-browser';
-import { provideArguslog } from '@arguslog/sdk-angular';
-import { AppComponent } from './app/app.component';
-
-bootstrapApplication(AppComponent, {
-  providers: [
-    provideArguslog({
-      dsn: 'arguslog://<key>@<host>/api/<projectId>',
-      integrations: ['globalHandlers'],
-    }),
-  ],
-});
+// src/environments/environment.ts
+export const environment = {
+  production: false,
+  arguslogDsn: '',
+  arguslogRelease: '',
+};
 ```
 
-`provideArguslog` registers an `ErrorHandler` that auto-captures
-uncaught Angular errors. NgModule consumers can use
-`ArguslogModule.forRoot(options)` instead.
+```ts
+// src/environments/environment.production.ts
+export const environment = {
+  production: true,
+  arguslogDsn: 'arguslog://<key>@<host>/api/<projectId>',
+  arguslogRelease: '1.0.0',
+};
+```
+
+```ts
+// src/app/app.config.ts
+import { ApplicationConfig } from '@angular/core';
+import { provideArguslog } from '@arguslog/sdk-angular';
+import { environment } from '../environments/environment';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    ...(environment.arguslogDsn
+      ? [
+          provideArguslog({
+            dsn: environment.arguslogDsn,
+            environment: environment.production ? 'production' : 'development',
+            release: environment.arguslogRelease,
+            integrations: ['globalHandlers', 'autoBreadcrumbs'],
+          }),
+        ]
+      : []),
+  ],
+};
+```
+
+`provideArguslog` registers an `ErrorHandler` that auto-captures uncaught Angular
+errors. NgModule consumers can use `ArguslogModule.forRoot(options)` instead.
 
 ## Vue 3
+
+The recommended shape is a 3-file env-driven installer that no-ops when DSN is
+missing — safe for local dev without keys. The installer is also Pinia / Nuxt
+friendly: just call it from your existing bootstrap module.
 
 ```bash
 pnpm add @arguslog/sdk-vue
 ```
 
-```ts
-// main.ts
-import { createApp } from 'vue';
-import { createArguslog } from '@arguslog/sdk-vue';
-import App from './App.vue';
-
-createApp(App)
-  .use(
-    createArguslog({
-      dsn: 'arguslog://<key>@<host>/api/<projectId>',
-      integrations: ['globalHandlers'],
-    }),
-  )
-  .mount('#app');
+```bash
+# .env.local
+VITE_ARGUSLOG_DSN=arguslog://<key>@<host>/api/<projectId>
+VITE_APP_RELEASE=1.0.0
 ```
 
-`createArguslog()` runs `init()`, replaces `app.config.errorHandler`
-with a chain that forwards uncaught component errors to
-`captureException`, and provides an `ArguslogService` for the
-`useArguslog()` composable. Wrap subtrees in
-`<ArguslogErrorBoundary fallback="…">` to catch render and lifecycle
-errors locally.
+```ts
+// src/arguslog.ts
+import type { App as VueApp } from 'vue';
+import { createArguslog } from '@arguslog/sdk-vue';
+
+export function installArguslog(app: VueApp): void {
+  const dsn = import.meta.env.VITE_ARGUSLOG_DSN;
+  if (!dsn) return;
+  app.use(
+    createArguslog({
+      dsn,
+      environment: import.meta.env.MODE,
+      release: import.meta.env.VITE_APP_RELEASE,
+      integrations: ['globalHandlers', 'autoBreadcrumbs'],
+    }),
+  );
+}
+```
+
+```ts
+// src/main.ts
+import { createApp } from 'vue';
+import App from './App.vue';
+import { installArguslog } from './arguslog';
+
+const app = createApp(App);
+installArguslog(app);
+app.mount('#app');
+```
+
+`createArguslog()` runs `init()`, replaces `app.config.errorHandler` with a chain
+that forwards uncaught component errors to `captureException`, and provides an
+`ArguslogService` for the `useArguslog()` composable. Wrap subtrees in
+`<ArguslogErrorBoundary :fallback="errorFallback">` (required prop — render fn or
+VNode) to catch render and lifecycle errors locally.
 
 ## React Native
+
+Expo is the primary target — `EXPO_PUBLIC_*` env vars are picked up at build time
+without extra babel config. Bare RN works the same way via `react-native-config`
+(just swap the env reader).
 
 ```bash
 pnpm add @arguslog/sdk-react-native
 ```
 
-```tsx
-import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react-native';
+```bash
+# .env
+EXPO_PUBLIC_ARGUSLOG_DSN=arguslog://<key>@<host>/api/<projectId>
+EXPO_PUBLIC_APP_RELEASE=1.4.0
+```
 
-init({ dsn: '<DSN>', integrations: ['globalHandlers'] });
+```ts
+// src/arguslog.ts
+import { init } from '@arguslog/sdk-react-native';
+let installed = false;
+export function installArguslog(): void {
+  if (installed) return;
+  const dsn = process.env.EXPO_PUBLIC_ARGUSLOG_DSN;
+  if (!dsn) return;
+  init({
+    dsn,
+    environment: __DEV__ ? 'development' : 'production',
+    release: process.env.EXPO_PUBLIC_APP_RELEASE,
+    integrations: ['globalHandlers'],
+  });
+  installed = true;
+}
+```
+
+```tsx
+// App.tsx
+import { ArguslogErrorBoundary } from '@arguslog/sdk-react-native';
+import { installArguslog } from './src/arguslog';
+import { CrashScreen } from './src/components/CrashScreen';
+import { RootNavigator } from './src/RootNavigator';
+
+installArguslog();
 
 export default function App() {
   return (
-    <ArguslogErrorBoundary fallback={<Text>Crashed</Text>}>
-      <Root />
+    <ArguslogErrorBoundary fallback={<CrashScreen />}>
+      <RootNavigator />
     </ArguslogErrorBoundary>
   );
 }
 ```
+
+Verify on a **physical device** at least once — simulators / emulators don't
+exercise the native crash path the same way real hardware does.
 
 ## Node.js
 

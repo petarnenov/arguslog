@@ -49,6 +49,42 @@ Store. The remaining publish blockers are the operator-owned creative
 deliverables (screenshots, promo tiles, listing copy) documented in
 `store-assets/README.md`.
 
+### Changed — Cross-SDK docs sync + onboarding rework umbrella
+
+Phase 5 — the cross-cutting wrap-up of the multi-phase rework that brought every
+active JS SDK (Vue, React, Next.js, Angular, React Native) onto the same
+env-driven installer + workflow-first Connect flow + post-install verification
+checklist + recommended-architecture telemetry-service pattern.
+
+`docs/sdks.md` synced: every active JS SDK section rewritten to lead with the
+env-driven shape used by the dashboard (Vite/Expo `EXPO_PUBLIC_*` / Next.js
+`NEXT_PUBLIC_*` + `ARGUSLOG_DSN` / Angular `environment.ts`). Inline-init forms
+preserved as single-file alternatives. Browser / Node / Python / Java / Web3
+sections unchanged — their conventions were already correct.
+
+**The full per-phase shape that landed:**
+
+- Phase 1 — React + extracted the generic `<OnboardingFlow>` (data-driven from
+  `SDK_CATALOG[slug]`). Vue refactored to use it.
+- Phase 2 — Next.js 4-file dual-runtime install (`instrumentation.ts` + client
+  installer + layout) with both `NEXT_PUBLIC_*` and bare `ARGUSLOG_DSN` env vars.
+- Phase 3 — Angular `environment.ts` + `environment.production.ts` swap + spread
+  guard on `provideArguslog`.
+- Phase 4 — React Native + Expo `EXPO_PUBLIC_*` env, bare-RN alternative via
+  `react-native-config`.
+- Phase 5 — docs sync (this entry) + CHANGELOG umbrella.
+
+The cross-SDK integrity test (`connectSnippets.cross-sdk-integrity.test.ts`)
+parametrizes over every catalog entry shipping `initFiles[]`, so any SDK-export
+drift in any of the five fails CI loudly. Component test
+(`OnboardingFlow.test.tsx`) parametrizes the same way, asserting step counts +
+DSN inlining + verify-button delegation + checklist auto-tick on ping success.
+
+ConnectProjectPage's `workflowFirstSlugs` array is the single switch that opts
+each catalog entry into the workflow-first flow — adding the next framework
+(e.g. SvelteKit when the SDK ships) becomes "catalog entry + slug in the
+array" with no per-SDK component work.
+
 ### Changed — React Native Connect onboarding ships the Expo env-driven installer
 
 Phase 4 of the cross-SDK onboarding rework — the last per-SDK phase. The
