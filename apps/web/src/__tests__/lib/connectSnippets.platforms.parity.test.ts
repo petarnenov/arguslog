@@ -31,8 +31,7 @@ interface SqlRow {
  */
 function parseSqlRows(): SqlRow[] {
   const sql = readFileSync(MIGRATION, 'utf8');
-  const rowPattern =
-    /\(\s*'([^']+)'\s*,\s*'[^']*'\s*,\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*\d+\s*\)/g;
+  const rowPattern = /\(\s*'([^']+)'\s*,\s*'[^']*'\s*,\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*\d+\s*\)/g;
   const rows: SqlRow[] = [];
   let match: RegExpExecArray | null;
   while ((match = rowPattern.exec(sql)) !== null) {

@@ -221,7 +221,11 @@ export function IssueDetailPage() {
       <Stack gap="xs">
         <Group gap="sm" justify="space-between" align="flex-start">
           <Group gap="sm">
-            <Badge color={STATUS_COLOR[issue.status]} variant="light" data-testid="issue-status-badge">
+            <Badge
+              color={STATUS_COLOR[issue.status]}
+              variant="light"
+              data-testid="issue-status-badge"
+            >
               {t(`issues.status.${issue.status}`)}
             </Badge>
             <Badge color={LEVEL_COLOR[issue.level]}>{t(`issues.level.${issue.level}`)}</Badge>
@@ -296,12 +300,7 @@ export function IssueDetailPage() {
               </Text>
               <Text>{formatter.format(new Date(issue.firstSeenAt))}</Text>
               {issue.firstSeenReleaseVersion && (
-                <Badge
-                  variant="light"
-                  color="grape"
-                  mt={4}
-                  data-testid="first-seen-release-badge"
-                >
+                <Badge variant="light" color="grape" mt={4} data-testid="first-seen-release-badge">
                   {t('issueDetail.firstSeenInRelease', {
                     version: issue.firstSeenReleaseVersion,
                   })}
@@ -544,7 +543,9 @@ function AssigneeChip({ assigneeUserId, members, loading, onChange }: AssigneeCh
               key={m.userId}
               onClick={() => onChange(m.userId)}
               leftSection={
-                m.userId === assigneeUserId ? <IconCheck size={14} /> : (
+                m.userId === assigneeUserId ? (
+                  <IconCheck size={14} />
+                ) : (
                   <span style={{ width: 14, display: 'inline-block' }} />
                 )
               }

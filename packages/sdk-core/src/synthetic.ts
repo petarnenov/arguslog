@@ -32,8 +32,7 @@ export interface BuildSyntheticEventOptions {
 export function buildSyntheticEvent(opts: BuildSyntheticEventOptions = {}): EventPayload {
   const now = opts.now ?? Date.now;
   const newId = opts.newId ?? (() => crypto.randomUUID());
-  const message =
-    opts.message ?? 'Synthetic connectivity test — verifying SDK → ingest wire path.';
+  const message = opts.message ?? 'Synthetic connectivity test — verifying SDK → ingest wire path.';
   const source = opts.source ?? 'arguslog/test';
 
   return {

@@ -87,9 +87,9 @@ describe('tool dispatch', () => {
     const client = ArguslogClient.fromEnv();
     // projectId is declared integer; passing a string should be caught locally — no fetch
     // call should happen.
-    await expect(
-      executeTool(client, 'list_issues', { projectId: 'not-a-number' }),
-    ).rejects.toThrow(/projectId expected integer, got string/);
+    await expect(executeTool(client, 'list_issues', { projectId: 'not-a-number' })).rejects.toThrow(
+      /projectId expected integer, got string/,
+    );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

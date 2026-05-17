@@ -1,12 +1,27 @@
-import { getCapabilitySnapshot, setCapabilitySnapshot, clearCapabilitySnapshot } from '../../shared/storage/capability-cache';
+import {
+  getCapabilitySnapshot,
+  setCapabilitySnapshot,
+  clearCapabilitySnapshot,
+} from '../../shared/storage/capability-cache';
 import { getSettings, updateSettings } from '../../shared/storage/settings-store';
-import { getPageContext, getWorkspaceSelection, setPageContext, setWorkspaceSelection } from '../../shared/storage/workspace-store';
+import {
+  getPageContext,
+  getWorkspaceSelection,
+  setPageContext,
+  setWorkspaceSelection,
+} from '../../shared/storage/workspace-store';
 import { createAppError } from '../../shared/types/errors';
 import { BackgroundRequestSchema } from '../../shared/types/messages';
 import { BackgroundEnvelopeSchema, type ExtensionSettings } from '../../shared/validation/models';
 import { clearPat, getAuthSession, getPat, savePat } from '../auth/pat-vault';
 import { createDiagnosticBundle } from '../diagnostics/log-buffer';
-import { callTool, connectAndSnapshot, getPrompt, listPrompts, listTools } from '../transport/mcp-transport';
+import {
+  callTool,
+  connectAndSnapshot,
+  getPrompt,
+  listPrompts,
+  listTools,
+} from '../transport/mcp-transport';
 
 async function requirePat(): Promise<string> {
   const pat = await getPat();
@@ -24,7 +39,10 @@ function fail(error: unknown) {
   const parsed =
     typeof error === 'object' && error && 'bucket' in error
       ? error
-      : createAppError('SERVER_UNAVAILABLE', error instanceof Error ? error.message : String(error));
+      : createAppError(
+          'SERVER_UNAVAILABLE',
+          error instanceof Error ? error.message : String(error),
+        );
 
   return BackgroundEnvelopeSchema.parse({ ok: false, error: parsed });
 }
@@ -65,11 +83,10 @@ export async function handleBackgroundRequest(rawMessage: unknown): Promise<unkn
         const workspaceSelection = await getWorkspaceSelection();
         return ok({
           settings,
-          authSession:
-            authSession ?? {
-              patPresent: false,
-              persistenceMode: settings.persistenceMode,
-            },
+          authSession: authSession ?? {
+            patPresent: false,
+            persistenceMode: settings.persistenceMode,
+          },
           capabilitySnapshot,
           pageContext,
           workspaceSelection,
@@ -150,11 +167,10 @@ export async function handleBackgroundRequest(rawMessage: unknown): Promise<unkn
         await setPageContext(message.payload);
         return ok(message.payload);
       case 'diagnostics/export': {
-        const authSession =
-          (await getAuthSession()) ?? {
-            patPresent: false,
-            persistenceMode: settings.persistenceMode,
-          };
+        const authSession = (await getAuthSession()) ?? {
+          patPresent: false,
+          persistenceMode: settings.persistenceMode,
+        };
         const snapshot = await getCapabilitySnapshot();
         const bundle = createDiagnosticBundle({
           settings,

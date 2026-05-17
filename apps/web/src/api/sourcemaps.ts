@@ -23,10 +23,7 @@ export interface CreateSourceMapUploadRequest {
   sizeBytes: number;
 }
 
-export function listSourceMaps(
-  projectId: number,
-  releaseId: number,
-): Promise<SourceMapArtifact[]> {
+export function listSourceMaps(projectId: number, releaseId: number): Promise<SourceMapArtifact[]> {
   return apiFetch<SourceMapArtifact[]>(
     `/api/v1/projects/${projectId}/releases/${releaseId}/sourcemaps`,
   );
@@ -86,7 +83,9 @@ export function uploadFileToPresignedUrl(
         if (onProgress) onProgress(file.size, file.size);
         resolve();
       } else {
-        reject(new Error(`Upload failed: HTTP ${xhr.status} — ${xhr.responseText || xhr.statusText}`));
+        reject(
+          new Error(`Upload failed: HTTP ${xhr.status} — ${xhr.responseText || xhr.statusText}`),
+        );
       }
     };
     xhr.onerror = () => reject(new Error('Network error during upload'));

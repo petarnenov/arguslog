@@ -374,48 +374,41 @@ arguslog.init(
   },
 ] as const;
 
-export type AgentTarget =
-  | 'claude-code'
-  | 'cursor'
-  | 'codex'
-  | 'copilot'
-  | 'windsurf'
-  | 'continue';
+export type AgentTarget = 'claude-code' | 'cursor' | 'codex' | 'copilot' | 'windsurf' | 'continue';
 
 /** Per-agent MCP config file location + install hint shown in the magic prompt. */
-const AGENT_MCP_TARGETS: Record<AgentTarget, { name: string; configPath: string; note: string }> =
-  {
-    'claude-code': {
-      name: 'Claude Code',
-      configPath: '.mcp.json (project root) — or use `claude mcp add`',
-      note: 'Project-level .mcp.json is checked into the repo and shared with teammates.',
-    },
-    cursor: {
-      name: 'Cursor',
-      configPath: '.cursor/mcp.json (workspace) — or ~/.cursor/mcp.json for user-wide',
-      note: 'Cursor 0.50+ supports Streamable HTTP MCP servers directly.',
-    },
-    codex: {
-      name: 'Codex',
-      configPath: '~/.codex/config.toml (user) — or .codex/config.toml (project, trusted)',
-      note: 'Codex uses TOML, not JSON. The CLI and the VS Code/IDE extension share the same config file.',
-    },
-    copilot: {
-      name: 'GitHub Copilot',
-      configPath: '.vscode/mcp.json (Copilot Chat in VS Code) AND .mcp.json (Copilot CLI)',
-      note: 'GitHub Copilot CLI migrated from .vscode/mcp.json to .mcp.json (https://gh.io/copilotcli-mcpmigrate); the prompt writes both so the same install works for the VS Code extension and the gh CLI.',
-    },
-    windsurf: {
-      name: 'Windsurf',
-      configPath: '~/.codeium/windsurf/mcp_config.json',
-      note: 'Windsurf (Codeium) uses `serverUrl` (not `url`) for HTTP-transport MCP servers and keeps config in its own Codeium folder, separate from Cursor.',
-    },
-    continue: {
-      name: 'Continue',
-      configPath: '.continue/mcpServers/<name>.yaml (workspace YAML; one file per server)',
-      note: 'Continue 1.0+ reads each MCP server from its own YAML file under `.continue/mcpServers/`. The legacy `experimental.modelContextProtocolServers` array in `~/.continue/config.json` is deprecated.',
-    },
-  };
+const AGENT_MCP_TARGETS: Record<AgentTarget, { name: string; configPath: string; note: string }> = {
+  'claude-code': {
+    name: 'Claude Code',
+    configPath: '.mcp.json (project root) — or use `claude mcp add`',
+    note: 'Project-level .mcp.json is checked into the repo and shared with teammates.',
+  },
+  cursor: {
+    name: 'Cursor',
+    configPath: '.cursor/mcp.json (workspace) — or ~/.cursor/mcp.json for user-wide',
+    note: 'Cursor 0.50+ supports Streamable HTTP MCP servers directly.',
+  },
+  codex: {
+    name: 'Codex',
+    configPath: '~/.codex/config.toml (user) — or .codex/config.toml (project, trusted)',
+    note: 'Codex uses TOML, not JSON. The CLI and the VS Code/IDE extension share the same config file.',
+  },
+  copilot: {
+    name: 'GitHub Copilot',
+    configPath: '.vscode/mcp.json (Copilot Chat in VS Code) AND .mcp.json (Copilot CLI)',
+    note: 'GitHub Copilot CLI migrated from .vscode/mcp.json to .mcp.json (https://gh.io/copilotcli-mcpmigrate); the prompt writes both so the same install works for the VS Code extension and the gh CLI.',
+  },
+  windsurf: {
+    name: 'Windsurf',
+    configPath: '~/.codeium/windsurf/mcp_config.json',
+    note: 'Windsurf (Codeium) uses `serverUrl` (not `url`) for HTTP-transport MCP servers and keeps config in its own Codeium folder, separate from Cursor.',
+  },
+  continue: {
+    name: 'Continue',
+    configPath: '.continue/mcpServers/<name>.yaml (workspace YAML; one file per server)',
+    note: 'Continue 1.0+ reads each MCP server from its own YAML file under `.continue/mcpServers/`. The legacy `experimental.modelContextProtocolServers` array in `~/.continue/config.json` is deprecated.',
+  },
+};
 
 export interface SnippetContext {
   /** Project DSN (full `arguslog://...` form). Null if no active DSN exists yet. */
@@ -545,9 +538,7 @@ function agentMcpInstructions(
   apiUrl: string,
 ): string {
   const target = AGENT_MCP_TARGETS[agent];
-  const envBlock = isSelfHosted
-    ? `,\n        "ARGUSLOG_API_URL": "${apiUrl}"`
-    : '';
+  const envBlock = isSelfHosted ? `,\n        "ARGUSLOG_API_URL": "${apiUrl}"` : '';
   const httpUrl = isSelfHosted
     ? '<self-hosted MCP URL — run `npx @arguslog/mcp-server@^2.3.1` locally and point this at it>'
     : 'https://mcp.arguslog.org/mcp';
@@ -882,7 +873,8 @@ createRoot(document.getElementById('root')!).render(
       group: 'sdk',
       client: 'Node.js',
       language: 'ts',
-      description: 'Server-side capture. Express / Fastify / plain Node — global handlers included.',
+      description:
+        'Server-side capture. Express / Fastify / plain Node — global handlers included.',
       code: `import { init, captureException } from '@arguslog/sdk-node';
 
 init({
@@ -898,7 +890,8 @@ process.on('unhandledRejection', (err) => captureException(err));`,
       group: 'sdk',
       client: 'Python',
       language: 'python',
-      description: 'Zero-dependency Python SDK. Works with Django, Flask, FastAPI, scripts, workers.',
+      description:
+        'Zero-dependency Python SDK. Works with Django, Flask, FastAPI, scripts, workers.',
       code: `import arguslog
 
 arguslog.init(
@@ -976,7 +969,8 @@ arguslog:
       group: 'mcp',
       client: 'Continue',
       language: 'json',
-      description: 'Edit ~/.continue/config.json — add the entry under experimental.modelContextProtocolServers.',
+      description:
+        'Edit ~/.continue/config.json — add the entry under experimental.modelContextProtocolServers.',
       code: `{
   "experimental": {
     "modelContextProtocolServers": [

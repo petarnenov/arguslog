@@ -13,7 +13,13 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core';
-import { IconActivity, IconAlertTriangle, IconCheck, IconHistory, IconX } from '@tabler/icons-react';
+import {
+  IconActivity,
+  IconAlertTriangle,
+  IconCheck,
+  IconHistory,
+  IconX,
+} from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -150,15 +156,19 @@ export function StatusPage() {
               ) : (
                 <Stack gap="xs">
                   {SERVICES.map((s) => {
-                    const result =
-                      probe.data?.find((r) => r.id === s.id) ?? {
-                        id: s.id,
-                        status: 'unknown' as ServiceStatus,
-                        latencyMs: null,
-                        checkedAt: new Date().toISOString(),
-                      };
+                    const result = probe.data?.find((r) => r.id === s.id) ?? {
+                      id: s.id,
+                      status: 'unknown' as ServiceStatus,
+                      latencyMs: null,
+                      checkedAt: new Date().toISOString(),
+                    };
                     return (
-                      <ServiceTile key={s.id} name={s.name} description={s.description} result={result} />
+                      <ServiceTile
+                        key={s.id}
+                        name={s.name}
+                        description={s.description}
+                        result={result}
+                      />
                     );
                   })}
                 </Stack>

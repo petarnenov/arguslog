@@ -17,7 +17,11 @@ import {
   type McpToolDefinition,
 } from '../../shared/mcp/protocol';
 import { createAppError, type AppError } from '../../shared/types/errors';
-import { AccountSummarySchema, type AccountSummary, type CapabilitySnapshot } from '../../shared/validation/models';
+import {
+  AccountSummarySchema,
+  type AccountSummary,
+  type CapabilitySnapshot,
+} from '../../shared/validation/models';
 import { appendDiagnosticLog } from '../diagnostics/log-buffer';
 
 interface TransportConfig {
@@ -139,12 +143,15 @@ async function withClient<T>(
       },
     },
   });
-  const client = new Client({
-    name: 'arguslog-browser-extension',
-    version: '0.1.0',
-  }, {
-    jsonSchemaValidator,
-  });
+  const client = new Client(
+    {
+      name: 'arguslog-browser-extension',
+      version: '0.1.0',
+    },
+    {
+      jsonSchemaValidator,
+    },
+  );
 
   try {
     // The SDK transport types are compiled without exactOptionalPropertyTypes and need a narrow cast here.
@@ -173,10 +180,7 @@ async function withClient<T>(
   }
 }
 
-async function withReadRetry<T>(
-  op: string,
-  fn: () => Promise<T>,
-): Promise<T> {
+async function withReadRetry<T>(op: string, fn: () => Promise<T>): Promise<T> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       return await fn();
@@ -243,9 +247,7 @@ export async function getPrompt(
         await client.getPrompt({ name, arguments: args }),
       );
       const text = response.messages[0]?.content.text ?? '';
-      return response.description
-        ? { description: response.description, text }
-        : { text };
+      return response.description ? { description: response.description, text } : { text };
     }),
   );
 }

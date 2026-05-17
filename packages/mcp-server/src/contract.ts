@@ -31,11 +31,7 @@
 // Compile-time-only — `export type` is erased to nothing in the emitted JS, so even
 // though `tools.ts` contains a `process.env` read inside its runtime functions, that
 // runtime code is never reached through this barrel.
-export type {
-  OpenApiTool,
-  OpenApiToolParam,
-  ToolAnnotations,
-} from './generated/openapi-tools';
+export type { OpenApiTool, OpenApiToolParam, ToolAnnotations } from './generated/openapi-tools';
 export type { McpToolDefinition } from './tools';
 
 // ── Plain-data constants ──────────────────────────────────────────────────

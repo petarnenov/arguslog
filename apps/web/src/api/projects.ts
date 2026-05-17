@@ -48,11 +48,7 @@ export function createProject(
 }
 
 /** Owner/admin only. Renames display name; slug stays so DSN URLs remain valid. */
-export function renameProject(
-  orgId: number,
-  projectId: number,
-  name: string,
-): Promise<Project> {
+export function renameProject(orgId: number, projectId: number, name: string): Promise<Project> {
   return apiFetch<Project>(`/api/v1/orgs/${orgId}/projects/${projectId}`, {
     method: 'PATCH',
     body: JSON.stringify({ name }),

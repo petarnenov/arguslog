@@ -81,13 +81,10 @@ export function setAlertDestinationEnabled(
   id: number,
   enabled: boolean,
 ): Promise<AlertDestination> {
-  return apiFetch<AlertDestination>(
-    `/api/v1/orgs/${orgId}/alert-destinations/${id}/enabled`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify({ enabled }),
-    },
-  );
+  return apiFetch<AlertDestination>(`/api/v1/orgs/${orgId}/alert-destinations/${id}/enabled`, {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
+  });
 }
 
 // ── rules ─────────────────────────────────────────────────────────────────

@@ -17,9 +17,7 @@ export async function getSettings(): Promise<ExtensionSettings> {
   return parsed.success ? parsed.data : DEFAULT_SETTINGS;
 }
 
-export async function updateSettings(
-  next: Partial<ExtensionSettings>,
-): Promise<ExtensionSettings> {
+export async function updateSettings(next: Partial<ExtensionSettings>): Promise<ExtensionSettings> {
   const merged = ExtensionSettingsSchema.parse({
     ...(await getSettings()),
     ...next,

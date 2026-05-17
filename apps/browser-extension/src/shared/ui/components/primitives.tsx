@@ -7,7 +7,9 @@ import type {
   TextareaHTMLAttributes,
 } from 'react';
 
-export function Page(props: PropsWithChildren<{ title: string; subtitle?: string; actions?: ReactNode }>) {
+export function Page(
+  props: PropsWithChildren<{ title: string; subtitle?: string; actions?: ReactNode }>,
+) {
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -22,7 +24,9 @@ export function Page(props: PropsWithChildren<{ title: string; subtitle?: string
   );
 }
 
-export function Card(props: PropsWithChildren<{ className?: string; title?: string; actions?: ReactNode }>) {
+export function Card(
+  props: PropsWithChildren<{ className?: string; title?: string; actions?: ReactNode }>,
+) {
   return (
     <section
       className={clsx(
@@ -32,7 +36,11 @@ export function Card(props: PropsWithChildren<{ className?: string; title?: stri
     >
       {props.title || props.actions ? (
         <div className="mb-3 flex items-center justify-between gap-3">
-          {props.title ? <h2 className="text-sm font-semibold text-white">{props.title}</h2> : <span />}
+          {props.title ? (
+            <h2 className="text-sm font-semibold text-white">{props.title}</h2>
+          ) : (
+            <span />
+          )}
           {props.actions}
         </div>
       ) : null}
@@ -75,7 +83,11 @@ export function Button(
 }
 
 export function Label(props: PropsWithChildren) {
-  return <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-300">{props.children}</label>;
+  return (
+    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-300">
+      {props.children}
+    </label>
+  );
 }
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
@@ -124,7 +136,9 @@ export function Field(props: PropsWithChildren<{ label: string; description?: st
   );
 }
 
-export function Badge(props: PropsWithChildren<{ tone?: 'default' | 'success' | 'warn' | 'danger' }>) {
+export function Badge(
+  props: PropsWithChildren<{ tone?: 'default' | 'success' | 'warn' | 'danger' }>,
+) {
   const tone = props.tone ?? 'default';
   return (
     <span

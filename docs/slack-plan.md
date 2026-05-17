@@ -2,7 +2,7 @@
 
 > Goal: a user installs the Arguslog Slack app into their workspace through the
 > dashboard, picks a default project, and can run `/arguslog issues|issue|
-> resolve|release|set-project` from any channel. Workspace state is managed
+resolve|release|set-project` from any channel. Workspace state is managed
 > from a Settings → Integrations → Slack page.
 >
 > Definition of done:
@@ -18,14 +18,14 @@
 
 ## Milestone tracker
 
-| #   | Phase | Milestone                                                                                                                                                              | Status      | Commit      |
-| --- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----------- |
-| 1   | 1+2   | `V36__slack_workspaces.sql` schema + RLS + `SlackWorkspace` domain + JDBC repo (read + write) + `SlackSigningVerifier` + SecurityConfig allowlist for `/api/v1/slack/**`. | ✅ done     | `64fb2ae`   |
-| 2   | 3     | `POST /api/v1/slack/commands` — `SlackController` + `SlackCommandDispatcher` (help / issues / issue / resolve / release) + `SlackBlockBuilder` + DTOs.                  | ✅ done     | `794c586`   |
-| 3   | 4     | **OAuth install flow.** `SlackOAuthService` (state JWT + token exchange) + `SlackInstallController` (`GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install`, `GET /api/v1/slack/oauth/callback`). Wires `upsert()`. | ✅ done     | `1c63d1f`   |
-| 4   | 5     | **Dashboard REST API.** `IntegrationsSlackController` under `/api/v1/orgs/{orgId}/integrations/slack/workspaces` (`GET` list, `DELETE /{id}`, `PATCH /{id}` defaultProjectId). `SlackWorkspaceDto` excludes `install_token`. | ✅ done     | `3f237ea`   |
-| 5   | 6     | **Dashboard UI.** `SlackIntegrationsPage` under `/orgs/{orgSlug}/settings/integrations/slack` — list / connect / disconnect / pick default project. Sidebar link.       | ✅ done     | `9e43bfa`   |
-| 6   | 7     | **`/arguslog set-project <slug>` subcommand.** Extends dispatcher switch + help text. Calls `setDefaultProject`.                                                       | ✅ done     | `204a52f`   |
+| #   | Phase | Milestone                                                                                                                                                                                                                    | Status  | Commit    |
+| --- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------- |
+| 1   | 1+2   | `V36__slack_workspaces.sql` schema + RLS + `SlackWorkspace` domain + JDBC repo (read + write) + `SlackSigningVerifier` + SecurityConfig allowlist for `/api/v1/slack/**`.                                                    | ✅ done | `64fb2ae` |
+| 2   | 3     | `POST /api/v1/slack/commands` — `SlackController` + `SlackCommandDispatcher` (help / issues / issue / resolve / release) + `SlackBlockBuilder` + DTOs.                                                                       | ✅ done | `794c586` |
+| 3   | 4     | **OAuth install flow.** `SlackOAuthService` (state JWT + token exchange) + `SlackInstallController` (`GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install`, `GET /api/v1/slack/oauth/callback`). Wires `upsert()`.     | ✅ done | `1c63d1f` |
+| 4   | 5     | **Dashboard REST API.** `IntegrationsSlackController` under `/api/v1/orgs/{orgId}/integrations/slack/workspaces` (`GET` list, `DELETE /{id}`, `PATCH /{id}` defaultProjectId). `SlackWorkspaceDto` excludes `install_token`. | ✅ done | `3f237ea` |
+| 5   | 6     | **Dashboard UI.** `SlackIntegrationsPage` under `/orgs/{orgSlug}/settings/integrations/slack` — list / connect / disconnect / pick default project. Sidebar link.                                                            | ✅ done | `9e43bfa` |
+| 6   | 7     | **`/arguslog set-project <slug>` subcommand.** Extends dispatcher switch + help text. Calls `setDefaultProject`.                                                                                                             | ✅ done | `204a52f` |
 
 ## Phase 4 — OAuth install flow (point A)
 
@@ -155,8 +155,8 @@ returns "workspace not connected".
 
 ## Out of scope (carry-forward)
 
-| Letter | Item                                                                                              | Why deferred                                                                            |
-| ------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| E      | `/arguslog ping` subcommand                                                                       | Requires synthetic event builder + HTTP ingest client; cleanest to do after SDK stabilises. |
-| ~~F~~  | ~~MCP curated wrapper for workspace management~~ — `list_slack_workspaces` / `revoke_slack_workspace` / `set_slack_default_project` shipped in curated-tools.ts; install/callback stay auto-generated only (redirect-based, not useful as MCP tools). | Done.                                                                                   |
-| G      | `app_uninstalled` Slack Events API handler                                                        | Users can disconnect from dashboard; auto-deactivate on Slack-side uninstall is polish. |
+| Letter | Item                                                                                                                                                                                                                                                  | Why deferred                                                                                |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| E      | `/arguslog ping` subcommand                                                                                                                                                                                                                           | Requires synthetic event builder + HTTP ingest client; cleanest to do after SDK stabilises. |
+| ~~F~~  | ~~MCP curated wrapper for workspace management~~ — `list_slack_workspaces` / `revoke_slack_workspace` / `set_slack_default_project` shipped in curated-tools.ts; install/callback stay auto-generated only (redirect-based, not useful as MCP tools). | Done.                                                                                       |
+| G      | `app_uninstalled` Slack Events API handler                                                                                                                                                                                                            | Users can disconnect from dashboard; auto-deactivate on Slack-side uninstall is polish.     |

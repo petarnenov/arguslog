@@ -16,9 +16,7 @@ export async function listMyOrgs() {
 }
 
 export async function listProjects(orgId: number) {
-  return z
-    .array(ProjectSummarySchema)
-    .parse(await callRawTool('list_projects', { orgId }));
+  return z.array(ProjectSummarySchema).parse(await callRawTool('list_projects', { orgId }));
 }
 
 export async function listMembers(orgId: number) {
@@ -33,7 +31,9 @@ export async function getWorkspaceSelection() {
   return sendBackgroundRequest({ type: 'workspace/get' }, WorkspaceSelectionSchema);
 }
 
-export async function updateWorkspaceSelection(selection: z.infer<typeof WorkspaceSelectionSchema>) {
+export async function updateWorkspaceSelection(
+  selection: z.infer<typeof WorkspaceSelectionSchema>,
+) {
   return sendBackgroundRequest(
     {
       type: 'workspace/set',

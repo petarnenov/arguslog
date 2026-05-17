@@ -158,7 +158,12 @@ function AgentInstallSection({ onboardingUrl }: { onboardingUrl: string }) {
           </Stack>
 
           <Group justify="center">
-            <Button component="a" href={onboardingUrl} size="md" rightSection={<IconBolt size={16} />}>
+            <Button
+              component="a"
+              href={onboardingUrl}
+              size="md"
+              rightSection={<IconBolt size={16} />}
+            >
               {t('agentInstall.cta')}
             </Button>
           </Group>
@@ -296,7 +301,8 @@ function Platforms({
                   textDecoration: 'none',
                   color: 'inherit',
                   cursor: 'pointer',
-                  transition: 'transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease',
+                  transition:
+                    'transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-2px)';
@@ -490,7 +496,6 @@ function McpSection() {
     </Box>
   );
 }
-
 
 function FooterSection({ dashboardUrl }: { dashboardUrl: string }) {
   const { t } = useTranslation();

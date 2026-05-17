@@ -1,10 +1,7 @@
 import { z } from 'zod';
 
 import { sendBackgroundRequest } from '../utils/messaging';
-import {
-  ConnectionStatusSchema,
-  ExtensionSettingsSchema,
-} from '../validation/models';
+import { ConnectionStatusSchema, ExtensionSettingsSchema } from '../validation/models';
 
 const ConnectResponseSchema = z.object({
   settings: ExtensionSettingsSchema,
@@ -42,9 +39,7 @@ export async function getSettings() {
   return sendBackgroundRequest({ type: 'settings/get' }, ExtensionSettingsSchema);
 }
 
-export async function updateSettings(
-  next: Partial<z.infer<typeof ExtensionSettingsSchema>>,
-) {
+export async function updateSettings(next: Partial<z.infer<typeof ExtensionSettingsSchema>>) {
   return sendBackgroundRequest(
     {
       type: 'settings/update',

@@ -4,7 +4,15 @@ import { useMemo, useState } from 'react';
 import { getConnectionStatus } from '../../../shared/domain/connection';
 import { createRelease, getRelease, listReleases } from '../../../shared/domain/releases';
 import { ConfirmDialog } from '../../../shared/ui/components/ConfirmDialog';
-import { Badge, Button, Card, EmptyState, Input, Page, Textarea } from '../../../shared/ui/components/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  Page,
+  Textarea,
+} from '../../../shared/ui/components/primitives';
 
 export function ReleasesScreen() {
   const queryClient = useQueryClient();
@@ -53,23 +61,33 @@ export function ReleasesScreen() {
   if (!projectId) {
     return (
       <Page title="Releases" subtitle="Select a project in Workspace first.">
-        <EmptyState title="No project selected" description="Release inspection and creation are project-scoped." />
+        <EmptyState
+          title="No project selected"
+          description="Release inspection and creation are project-scoped."
+        />
       </Page>
     );
   }
 
   return (
-    <Page title="Releases" subtitle={`List, inspect, and create releases for project ${projectId}.`}>
+    <Page
+      title="Releases"
+      subtitle={`List, inspect, and create releases for project ${projectId}.`}
+    >
       <Card title="Create release">
         <div className="grid gap-3 md:grid-cols-3">
           <Input
             value={form.version}
-            onChange={(event) => setForm((current) => ({ ...current, version: event.target.value }))}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, version: event.target.value }))
+            }
             placeholder="Version"
           />
           <Input
             value={form.environment}
-            onChange={(event) => setForm((current) => ({ ...current, environment: event.target.value }))}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, environment: event.target.value }))
+            }
             placeholder="Environment"
           />
           <Input
@@ -102,19 +120,30 @@ export function ReleasesScreen() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-medium text-white">{release.version}</p>
-                    <p className="text-sm text-slate-400">{release.gitSha ?? release.gitRef ?? 'No git metadata'}</p>
+                    <p className="text-sm text-slate-400">
+                      {release.gitSha ?? release.gitRef ?? 'No git metadata'}
+                    </p>
                   </div>
                   <Badge>{release.deployStage ?? 'release'}</Badge>
                 </div>
               </button>
             ))}
             {!releasesQuery.data?.length ? (
-              <EmptyState title="No releases found" description="Create the first release or wait for one to be registered." />
+              <EmptyState
+                title="No releases found"
+                description="Create the first release or wait for one to be registered."
+              />
             ) : null}
           </div>
         </Card>
 
-        <Card title={releaseDetailQuery.data ? `Release ${releaseDetailQuery.data.version}` : 'Release detail'}>
+        <Card
+          title={
+            releaseDetailQuery.data
+              ? `Release ${releaseDetailQuery.data.version}`
+              : 'Release detail'
+          }
+        >
           {releaseDetailQuery.data ? (
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
@@ -124,7 +153,10 @@ export function ReleasesScreen() {
               <Textarea readOnly rows={16} value={detailJson} />
             </div>
           ) : (
-            <EmptyState title="No release selected" description="Pick a release to inspect the full server payload." />
+            <EmptyState
+              title="No release selected"
+              description="Pick a release to inspect the full server payload."
+            />
           )}
         </Card>
       </div>

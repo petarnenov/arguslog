@@ -2,10 +2,25 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { getConnectionStatus } from '../../../shared/domain/connection';
-import { assignIssue, getIssue, listIssueEvents, listIssues, triageIssue } from '../../../shared/domain/issues';
+import {
+  assignIssue,
+  getIssue,
+  listIssueEvents,
+  listIssues,
+  triageIssue,
+} from '../../../shared/domain/issues';
 import { listMembers } from '../../../shared/domain/workspace';
 import { ConfirmDialog } from '../../../shared/ui/components/ConfirmDialog';
-import { Badge, Button, Card, EmptyState, Input, Page, Select, Textarea } from '../../../shared/ui/components/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  Page,
+  Select,
+  Textarea,
+} from '../../../shared/ui/components/primitives';
 import { copyText } from '../../../shared/utils/export';
 
 export function IssuesScreen() {
@@ -18,7 +33,9 @@ export function IssuesScreen() {
   const [selectedIssueId, setSelectedIssueId] = useState<number | undefined>(
     statusQuery.data?.workspaceSelection.issueId,
   );
-  const [triageStatus, setTriageStatus] = useState<'unresolved' | 'resolved' | 'ignored'>('resolved');
+  const [triageStatus, setTriageStatus] = useState<'unresolved' | 'resolved' | 'ignored'>(
+    'resolved',
+  );
   const [assigneeId, setAssigneeId] = useState<string>('');
   const [confirmAction, setConfirmAction] = useState<'triage' | 'assign' | undefined>();
 
@@ -95,7 +112,10 @@ export function IssuesScreen() {
   if (!projectId) {
     return (
       <Page title="Issues" subtitle="Select a project from Workspace first.">
-        <EmptyState title="No project selected" description="Issue browsing and triage depend on the active project context." />
+        <EmptyState
+          title="No project selected"
+          description="Issue browsing and triage depend on the active project context."
+        />
       </Page>
     );
   }
@@ -104,12 +124,22 @@ export function IssuesScreen() {
     <Page title="Issues" subtitle={`Browse, inspect, and mutate issues for project ${projectId}.`}>
       <Card title="Filters">
         <div className="grid gap-3 md:grid-cols-3">
-          <Select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}>
+          <Select
+            value={filters.status}
+            onChange={(event) =>
+              setFilters((current) => ({ ...current, status: event.target.value }))
+            }
+          >
             <option value="unresolved">Unresolved</option>
             <option value="resolved">Resolved</option>
             <option value="ignored">Ignored</option>
           </Select>
-          <Select value={filters.level} onChange={(event) => setFilters((current) => ({ ...current, level: event.target.value }))}>
+          <Select
+            value={filters.level}
+            onChange={(event) =>
+              setFilters((current) => ({ ...current, level: event.target.value }))
+            }
+          >
             <option value="">All levels</option>
             <option value="fatal">Fatal</option>
             <option value="error">Error</option>
@@ -117,7 +147,11 @@ export function IssuesScreen() {
             <option value="info">Info</option>
             <option value="debug">Debug</option>
           </Select>
-          <Input value={filters.q} onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))} placeholder="Search title or culprit" />
+          <Input
+            value={filters.q}
+            onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))}
+            placeholder="Search title or culprit"
+          />
         </div>
       </Card>
 
@@ -137,7 +171,9 @@ export function IssuesScreen() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-medium text-white">#{issue.id} · {issue.title}</p>
+                    <p className="font-medium text-white">
+                      #{issue.id} · {issue.title}
+                    </p>
                     <p className="mt-1 text-sm text-slate-400">{issue.culprit ?? 'No culprit'}</p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -148,7 +184,10 @@ export function IssuesScreen() {
               </button>
             ))}
             {!issuesQuery.data?.length ? (
-              <EmptyState title="No issues found" description="Adjust filters or wait for new issue traffic." />
+              <EmptyState
+                title="No issues found"
+                description="Adjust filters or wait for new issue traffic."
+              />
             ) : null}
           </div>
         </Card>
@@ -172,8 +211,19 @@ export function IssuesScreen() {
 
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label htmlFor="triage-status" className="text-xs uppercase tracking-wide text-slate-400">Triage status</label>
-                  <Select id="triage-status" value={triageStatus} onChange={(event) => setTriageStatus(event.target.value as 'unresolved' | 'resolved' | 'ignored')}>
+                  <label
+                    htmlFor="triage-status"
+                    className="text-xs uppercase tracking-wide text-slate-400"
+                  >
+                    Triage status
+                  </label>
+                  <Select
+                    id="triage-status"
+                    value={triageStatus}
+                    onChange={(event) =>
+                      setTriageStatus(event.target.value as 'unresolved' | 'resolved' | 'ignored')
+                    }
+                  >
                     <option value="resolved">Resolved</option>
                     <option value="ignored">Ignored</option>
                     <option value="unresolved">Unresolved</option>
@@ -184,8 +234,17 @@ export function IssuesScreen() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="issue-assignee" className="text-xs uppercase tracking-wide text-slate-400">Assign to member</label>
-                  <Select id="issue-assignee" value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)}>
+                  <label
+                    htmlFor="issue-assignee"
+                    className="text-xs uppercase tracking-wide text-slate-400"
+                  >
+                    Assign to member
+                  </label>
+                  <Select
+                    id="issue-assignee"
+                    value={assigneeId}
+                    onChange={(event) => setAssigneeId(event.target.value)}
+                  >
                     <option value="">Unassign</option>
                     {membersQuery.data?.map((member) => (
                       <option key={member.userId ?? member.email} value={member.userId ?? ''}>
@@ -201,16 +260,26 @@ export function IssuesScreen() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-wide text-slate-400">Recent event payload</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-400">
+                    Recent event payload
+                  </p>
                   <Button variant="ghost" onClick={() => copyText(latestEventText)}>
                     Copy JSON
                   </Button>
                 </div>
-                <Textarea aria-label="Recent event payload" readOnly rows={14} value={latestEventText} />
+                <Textarea
+                  aria-label="Recent event payload"
+                  readOnly
+                  rows={14}
+                  value={latestEventText}
+                />
               </div>
             </div>
           ) : (
-            <EmptyState title="No issue selected" description="Pick an issue from the list to inspect details and recent events." />
+            <EmptyState
+              title="No issue selected"
+              description="Pick an issue from the list to inspect details and recent events."
+            />
           )}
         </Card>
       </div>

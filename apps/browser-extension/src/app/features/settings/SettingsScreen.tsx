@@ -36,14 +36,19 @@ export function SettingsScreen() {
   }
 
   return (
-    <Page title="Settings" subtitle="PAT storage, endpoint overrides, diagnostics export, and connection reset.">
+    <Page
+      title="Settings"
+      subtitle="PAT storage, endpoint overrides, diagnostics export, and connection reset."
+    >
       <ConnectionForm />
 
       <Card title="Display">
         <Field label="Theme">
           <Select
             value={data?.settings.theme ?? 'system'}
-            onChange={(event) => updateMutation.mutate({ theme: event.target.value as 'system' | 'dark' | 'light' })}
+            onChange={(event) =>
+              updateMutation.mutate({ theme: event.target.value as 'system' | 'dark' | 'light' })
+            }
           >
             <option value="system">System</option>
             <option value="dark">Dark</option>
@@ -72,10 +77,7 @@ export function SettingsScreen() {
           <Button variant="danger" onClick={() => setTriggerWhiteScreen(true)}>
             Trigger white-screen test
           </Button>
-          <Button
-            variant="danger"
-            onClick={() => disconnectMutation.mutate()}
-          >
+          <Button variant="danger" onClick={() => disconnectMutation.mutate()}>
             Disconnect
           </Button>
         </div>

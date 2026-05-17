@@ -37,13 +37,13 @@ In Cloudflare → R2:
 
 Repo → **Settings → Secrets and variables → Actions → New repository secret**. Five secrets:
 
-| Secret              | Value                                                            |
-| ------------------- | ---------------------------------------------------------------- |
-| `PROD_DATABASE_URL` | libpq URL for production Postgres (`postgres://user:pass@host/db`) |
-| `R2_BACKUP_ENDPOINT`| `https://<account>.r2.cloudflarestorage.com`                     |
-| `R2_BACKUP_BUCKET`  | `arguslog-backups` (or whatever you named the bucket above)      |
-| `R2_BACKUP_KEY_ID`  | R2 access key ID for the bucket-scoped token                     |
-| `R2_BACKUP_SECRET`  | R2 secret access key for the bucket-scoped token                 |
+| Secret               | Value                                                              |
+| -------------------- | ------------------------------------------------------------------ |
+| `PROD_DATABASE_URL`  | libpq URL for production Postgres (`postgres://user:pass@host/db`) |
+| `R2_BACKUP_ENDPOINT` | `https://<account>.r2.cloudflarestorage.com`                       |
+| `R2_BACKUP_BUCKET`   | `arguslog-backups` (or whatever you named the bucket above)        |
+| `R2_BACKUP_KEY_ID`   | R2 access key ID for the bucket-scoped token                       |
+| `R2_BACKUP_SECRET`   | R2 secret access key for the bucket-scoped token                   |
 
 > **Why a libpq URL and not the existing Railway-style `jdbc:postgresql://`?** Because
 > `pg_dump` uses libpq, not JDBC. Convert by stripping `jdbc:` prefix and folding credentials
@@ -116,7 +116,7 @@ to take over from the broken one. Steps:
 - **TimescaleDB hypertables** (`events`) are dumped by pg_dump like regular tables. Restore
   re-creates them as plain tables; TimescaleDB metadata won't follow. If we ever need to
   retain hypertable chunk policies across a restore, switch to `pg_dump --format=directory
-  -j` + `pg_restore` plus TimescaleDB's `timescaledb-backup` extension. Not needed for MVP
+-j` + `pg_restore` plus TimescaleDB's `timescaledb-backup` extension. Not needed for MVP
   scale.
 - **Schema-only debugging**: pass `pg_restore --schema-only` if you only want the DDL.
 - **Selective restore**: `pg_restore --table=issues` works because we use custom format.

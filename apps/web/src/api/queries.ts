@@ -32,14 +32,12 @@ export const queryKeys = {
   orgMembers: (orgId: number) => ['org-members', orgId] as const,
   platforms: () => ['platforms'] as const,
   releases: (projectId: number) => ['releases', projectId] as const,
-  release: (projectId: number, releaseId: number) =>
-    ['release', projectId, releaseId] as const,
+  release: (projectId: number, releaseId: number) => ['release', projectId, releaseId] as const,
   sourceMaps: (projectId: number, releaseId: number) =>
     ['sourcemaps', projectId, releaseId] as const,
   releaseIssues: (projectId: number, releaseId: number) =>
     ['release-issues', projectId, releaseId] as const,
-  dsns: (projectId: number, includeRevoked = false) =>
-    ['dsns', projectId, includeRevoked] as const,
+  dsns: (projectId: number, includeRevoked = false) => ['dsns', projectId, includeRevoked] as const,
   me: () => ['me'] as const,
   adminStats: () => ['admin', 'stats'] as const,
   adminUsers: (q: string, offset: number, limit: number) =>

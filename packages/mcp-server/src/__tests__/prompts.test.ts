@@ -96,8 +96,8 @@ describe('getMcpPrompt', () => {
 
   it('throws a missing-arg error when a required argument is omitted', () => {
     expect(() => getMcpPrompt('arguslog_triage_loop', {})).toThrow(/projectId/);
-    expect(() =>
-      getMcpPrompt('arguslog_release_postmortem', { projectId: '1' }),
-    ).toThrow(/version/);
+    expect(() => getMcpPrompt('arguslog_release_postmortem', { projectId: '1' })).toThrow(
+      /version/,
+    );
   });
 });

@@ -2,7 +2,11 @@ export async function copyText(value: string): Promise<void> {
   await navigator.clipboard.writeText(value);
 }
 
-export function downloadFile(filename: string, content: string, mimeType = 'application/json'): void {
+export function downloadFile(
+  filename: string,
+  content: string,
+  mimeType = 'application/json',
+): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');

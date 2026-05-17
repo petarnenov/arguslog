@@ -192,23 +192,23 @@ For browser-side crypto (DSN scrubber), Chrome needs the
 
 ### Make targets
 
-|                                            |                                                                 |
-| ------------------------------------------ | --------------------------------------------------------------- |
-| `make` / `make dev`                        | full stack (infra + JVM services + web) — `make` defaults to `dev` |
+|                                            |                                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------------- |
+| `make` / `make dev`                        | full stack (infra + JVM services + web) — `make` defaults to `dev`              |
 | `make demo`                                | one-shot: reset + fresh + dev stack + auto-seed (log: `/tmp/arguslog-seed.log`) |
-| `make seed`                                | demo Keycloak user + org + project + synthetic events (manual)  |
-| `make up` / `down`                         | infra only (compose up `--wait` / down)                         |
-| `make fresh`                               | drop infra volumes + re-pull images + bring infra back up       |
-| `make logs` / `ps`                         | tail / inspect infra                                            |
-| `make api`                                 | `arguslog-api` foreground (`:8081`)                             |
-| `make ingest`                              | `arguslog-ingest` foreground (`:8080`)                          |
-| `make worker`                              | `arguslog-worker` foreground (`:8082`)                          |
-| `make web`                                 | Vite dev server (`:5173`)                                       |
-| `make build`                               | Gradle + Turbo full build                                       |
-| `make lint` / `typecheck` / `test` / `e2e` | quality gates                                                   |
-| `make clean` / `reset`                     | drop build artifacts / nuke containers + volumes + node_modules |
-| `make doctor`                              | check prerequisites (OS-specific install hints on misses)       |
-| `make help`                                | list all targets                                                |
+| `make seed`                                | demo Keycloak user + org + project + synthetic events (manual)                  |
+| `make up` / `down`                         | infra only (compose up `--wait` / down)                                         |
+| `make fresh`                               | drop infra volumes + re-pull images + bring infra back up                       |
+| `make logs` / `ps`                         | tail / inspect infra                                                            |
+| `make api`                                 | `arguslog-api` foreground (`:8081`)                                             |
+| `make ingest`                              | `arguslog-ingest` foreground (`:8080`)                                          |
+| `make worker`                              | `arguslog-worker` foreground (`:8082`)                                          |
+| `make web`                                 | Vite dev server (`:5173`)                                                       |
+| `make build`                               | Gradle + Turbo full build                                                       |
+| `make lint` / `typecheck` / `test` / `e2e` | quality gates                                                                   |
+| `make clean` / `reset`                     | drop build artifacts / nuke containers + volumes + node_modules                 |
+| `make doctor`                              | check prerequisites (OS-specific install hints on misses)                       |
+| `make help`                                | list all targets                                                                |
 
 ## Tests
 

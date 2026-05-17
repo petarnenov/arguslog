@@ -5,11 +5,24 @@ import type { ReactElement } from 'react';
 
 import { callRawTool, listCatalogTools } from '../../../shared/domain/catalog';
 import { ConfirmDialog } from '../../../shared/ui/components/ConfirmDialog';
-import { Badge, Button, Card, EmptyState, Input, Page, Select, Textarea } from '../../../shared/ui/components/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  Page,
+  Select,
+  Textarea,
+} from '../../../shared/ui/components/primitives';
 
 type JsonSchema = Record<string, unknown>;
 
-function setNestedValue(target: Record<string, unknown>, path: string[], value: unknown): Record<string, unknown> {
+function setNestedValue(
+  target: Record<string, unknown>,
+  path: string[],
+  value: unknown,
+): Record<string, unknown> {
   if (path.length === 0) return target;
   const [head, ...rest] = path;
   if (!head) return target;
@@ -18,7 +31,7 @@ function setNestedValue(target: Record<string, unknown>, path: string[], value: 
     [head]:
       rest.length === 0
         ? value
-        : setNestedValue(((target[head] as Record<string, unknown> | undefined) ?? {}), rest, value),
+        : setNestedValue((target[head] as Record<string, unknown> | undefined) ?? {}, rest, value),
   };
 }
 
@@ -66,7 +79,9 @@ function renderFields(
 
     return (
       <div key={path.join('.')} className="space-y-1">
-        <label htmlFor={fieldId} className="text-xs uppercase tracking-wide text-slate-400">{path.join('.')}</label>
+        <label htmlFor={fieldId} className="text-xs uppercase tracking-wide text-slate-400">
+          {path.join('.')}
+        </label>
         {property.enum ? (
           <Select
             id={fieldId}
@@ -124,7 +139,10 @@ export function ToolsScreen() {
   });
 
   return (
-    <Page title="Advanced tools" subtitle="Generic schema-driven runner for any tool returned by tools/list.">
+    <Page
+      title="Advanced tools"
+      subtitle="Generic schema-driven runner for any tool returned by tools/list."
+    >
       <div className="grid gap-4 lg:grid-cols-[0.8fr,1.2fr]">
         <Card title="Tool catalog">
           <div className="space-y-2">
@@ -147,8 +165,16 @@ export function ToolsScreen() {
                     <p className="font-medium text-white">{tool.title ?? tool.name}</p>
                     <p className="mt-1 text-sm text-slate-400">{tool.description}</p>
                   </div>
-                  <Badge tone={MUTATING_TOOLS.includes(tool.name as (typeof MUTATING_TOOLS)[number]) ? 'danger' : 'success'}>
-                    {MUTATING_TOOLS.includes(tool.name as (typeof MUTATING_TOOLS)[number]) ? 'write' : 'read'}
+                  <Badge
+                    tone={
+                      MUTATING_TOOLS.includes(tool.name as (typeof MUTATING_TOOLS)[number])
+                        ? 'danger'
+                        : 'success'
+                    }
+                  >
+                    {MUTATING_TOOLS.includes(tool.name as (typeof MUTATING_TOOLS)[number])
+                      ? 'write'
+                      : 'read'}
                   </Badge>
                 </div>
               </button>
@@ -162,7 +188,9 @@ export function ToolsScreen() {
             selectedTool ? (
               <Button
                 onClick={() => {
-                  if (MUTATING_TOOLS.includes(selectedTool.name as (typeof MUTATING_TOOLS)[number])) {
+                  if (
+                    MUTATING_TOOLS.includes(selectedTool.name as (typeof MUTATING_TOOLS)[number])
+                  ) {
                     setConfirmOpen(true);
                     return;
                   }
@@ -176,9 +204,18 @@ export function ToolsScreen() {
         >
           {selectedTool ? (
             <div className="space-y-4">
-              <div className="space-y-3">{renderFields(selectedTool.inputSchema, formData, (path, value) => setFormData((current) => setNestedValue(current, path, value)))}</div>
+              <div className="space-y-3">
+                {renderFields(selectedTool.inputSchema, formData, (path, value) =>
+                  setFormData((current) => setNestedValue(current, path, value)),
+                )}
+              </div>
               <div>
-                <label htmlFor="tool-result" className="text-xs uppercase tracking-wide text-slate-400">Result</label>
+                <label
+                  htmlFor="tool-result"
+                  className="text-xs uppercase tracking-wide text-slate-400"
+                >
+                  Result
+                </label>
                 <Textarea
                   id="tool-result"
                   readOnly
@@ -189,7 +226,10 @@ export function ToolsScreen() {
               </div>
             </div>
           ) : (
-            <EmptyState title="No tool selected" description="Choose a tool from the catalog to generate an input form." />
+            <EmptyState
+              title="No tool selected"
+              description="Choose a tool from the catalog to generate an input form."
+            />
           )}
         </Card>
       </div>

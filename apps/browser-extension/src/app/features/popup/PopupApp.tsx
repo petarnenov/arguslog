@@ -2,7 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import browser from 'webextension-polyfill';
 
 import { disconnect, getConnectionStatus, openSidePanel } from '../../../shared/domain/connection';
-import { Badge, Button, Card, EmptyState, InlineError } from '../../../shared/ui/components/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  InlineError,
+} from '../../../shared/ui/components/primitives';
 import { getAccountLabel } from '../../../shared/utils/account';
 
 function getErrorMessage(error: unknown): string | undefined {
@@ -50,19 +56,22 @@ export function PopupApp() {
     <div className="w-96 space-y-4 p-4">
       <Card title="Connection status">
         <div className="space-y-3 text-sm text-slate-300">
-          <p className="font-medium text-white">{getAccountLabel(statusQuery.data.authSession.accountSummary)}</p>
+          <p className="font-medium text-white">
+            {getAccountLabel(statusQuery.data.authSession.accountSummary)}
+          </p>
           <div className="flex flex-wrap gap-2">
             <Badge>{statusQuery.data.capabilitySnapshot?.toolNames.length ?? 0} tools</Badge>
             <Badge>{statusQuery.data.capabilitySnapshot?.promptIds.length ?? 0} prompts</Badge>
           </div>
-          <p>
-            Selected project: {statusQuery.data.workspaceSelection.projectId ?? 'n/a'}
-          </p>
+          <p>Selected project: {statusQuery.data.workspaceSelection.projectId ?? 'n/a'}</p>
         </div>
       </Card>
 
       <div className="grid gap-2">
-        <Button disabled={openSidePanelMutation.isPending} onClick={() => openSidePanelMutation.mutate()}>
+        <Button
+          disabled={openSidePanelMutation.isPending}
+          onClick={() => openSidePanelMutation.mutate()}
+        >
           {openSidePanelMutation.isPending ? 'Opening…' : 'Open side panel'}
         </Button>
         <InlineError message={getErrorMessage(openSidePanelMutation.error)} />

@@ -141,7 +141,7 @@ async function runPing(rest: readonly string[], options: RunOptions): Promise<Co
   const { flags } = parseFlags(rest);
   const projectId = parseProjectId(flags.project);
   if (projectId === null) {
-    return usageError("ping: --project <id> is required (numeric).");
+    return usageError('ping: --project <id> is required (numeric).');
   }
   const ingestUrlOverride = process.env.ARGUSLOG_INGEST_URL?.trim() || undefined;
   return withConfig(options, async (config) => {
@@ -312,7 +312,7 @@ async function runReleasesDelete(
   }
   if (flags.yes === undefined && flags.y === undefined) {
     return usageError(
-      "releases delete: pass --yes to confirm (this drops the release and all attached source maps).",
+      'releases delete: pass --yes to confirm (this drops the release and all attached source maps).',
     );
   }
 

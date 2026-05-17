@@ -77,7 +77,7 @@ interface MockCall {
 }
 
 function installFetchMock(
-  opts: { existingTokens?: typeof EXISTING_QUICKSTART_PAT[] } = {},
+  opts: { existingTokens?: (typeof EXISTING_QUICKSTART_PAT)[] } = {},
 ): MockCall[] {
   const calls: MockCall[] = [];
   const existingTokens = opts.existingTokens ?? [];
@@ -92,9 +92,11 @@ function installFetchMock(
     if (url.endsWith('/api/v1/orgs') && method === 'GET') return jsonResponse([ORG]);
     if (url.endsWith('/api/v1/orgs/1/projects') && method === 'GET') return jsonResponse([PROJECT]);
     if (url.endsWith('/api/v1/projects/9/keys') && method === 'GET') return jsonResponse([]);
-    if (url.endsWith('/api/v1/projects/9/keys') && method === 'POST') return jsonResponse(MINTED_DSN, 201);
+    if (url.endsWith('/api/v1/projects/9/keys') && method === 'POST')
+      return jsonResponse(MINTED_DSN, 201);
     if (url.endsWith('/api/v1/me/tokens') && method === 'GET') return jsonResponse(existingTokens);
-    if (url.endsWith('/api/v1/me/tokens') && method === 'POST') return jsonResponse(MINTED_PAT, 201);
+    if (url.endsWith('/api/v1/me/tokens') && method === 'POST')
+      return jsonResponse(MINTED_PAT, 201);
     return jsonResponse([]);
   }) as typeof fetch;
   return calls;
@@ -157,9 +159,7 @@ describe('ConnectProjectPage — AI agents tab', () => {
       { timeout: 3000 },
     );
     // Sent body for the PAT should NOT carry the rotation timestamp suffix yet.
-    const patPost = calls.find(
-      (c) => c.method === 'POST' && c.url.endsWith('/api/v1/me/tokens'),
-    );
+    const patPost = calls.find((c) => c.method === 'POST' && c.url.endsWith('/api/v1/me/tokens'));
     expect(patPost!.body).toContain('"name":"Connect quickstart — Web"');
     expect(patPost!.body).not.toMatch(/Connect quickstart — Web — \d{4}-\d{2}-\d{2}/);
     // Rotate CTA is hidden (this is the first visit).
@@ -204,9 +204,7 @@ describe('ConnectProjectPage — AI agents tab', () => {
     const user = userEvent.setup();
     await user.click(screen.getByTestId('connect-rotate-pat'));
     await waitFor(() => {
-      const patPost = calls.find(
-        (c) => c.method === 'POST' && c.url.endsWith('/api/v1/me/tokens'),
-      );
+      const patPost = calls.find((c) => c.method === 'POST' && c.url.endsWith('/api/v1/me/tokens'));
       expect(patPost).toBeDefined();
       expect(patPost!.body).toMatch(/Connect quickstart — Web — \d{4}-\d{2}-\d{2}/);
     });

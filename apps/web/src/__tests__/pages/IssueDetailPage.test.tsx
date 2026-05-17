@@ -101,9 +101,7 @@ describe('IssueDetailPage', () => {
 
     renderAt('/orgs/acme/projects/101/issues/7');
 
-    await waitFor(() =>
-      expect(screen.getByTestId('ai-analysis-card')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByTestId('ai-analysis-card')).toBeInTheDocument());
     const card = screen.getByTestId('ai-analysis-card');
     expect(card).toHaveTextContent(/Likely cause/);
     expect(card).toHaveTextContent(/NPE at render/);

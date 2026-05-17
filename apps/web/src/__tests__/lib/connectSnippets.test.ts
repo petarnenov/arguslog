@@ -145,14 +145,7 @@ describe('buildSnippets', () => {
 });
 
 describe('buildAgentPrompt', () => {
-  const ALL_AGENTS = [
-    'claude-code',
-    'cursor',
-    'codex',
-    'copilot',
-    'windsurf',
-    'continue',
-  ] as const;
+  const ALL_AGENTS = ['claude-code', 'cursor', 'codex', 'copilot', 'windsurf', 'continue'] as const;
 
   it('renders a self-describing brief for every supported agent', () => {
     for (const agent of ALL_AGENTS) {
@@ -240,8 +233,9 @@ describe('buildAgentPrompt', () => {
 
     // Browser-family SDKs default to globalHandlers + autoBreadcrumbs.
     const browserIntegrations = "integrations: ['globalHandlers', 'autoBreadcrumbs']";
-    expect(md.match(new RegExp(browserIntegrations.replace(/[[\]]/g, '\\$&'), 'g'))?.length ?? 0)
-      .toBeGreaterThanOrEqual(5); // javascript, react, angular, vue, nextjs (client), web3
+    expect(
+      md.match(new RegExp(browserIntegrations.replace(/[[\]]/g, '\\$&'), 'g'))?.length ?? 0,
+    ).toBeGreaterThanOrEqual(5); // javascript, react, angular, vue, nextjs (client), web3
 
     // Server SDKs use processHandlers + http.
     expect(md).toContain("integrations: ['processHandlers', 'http']");
@@ -252,10 +246,10 @@ describe('buildAgentPrompt', () => {
     // Framework wraps for each UI SDK.
     expect(md).toContain('<ArguslogErrorBoundary fallback={<p>Something went wrong.</p>}>');
     expect(md).toContain('<ArguslogErrorBoundary fallback={<CrashScreen />}>'); // RN variant
-    expect(md).toContain('provideArguslog(');                                    // Angular
-    expect(md).toContain('app.use(arguslogPlugin');                              // Vue
-    expect(md).toContain('instrumentation.ts');                                  // Next.js server
-    expect(md).toContain('onRequestError');                                      // Next.js error hook
+    expect(md).toContain('provideArguslog('); // Angular
+    expect(md).toContain('app.use(arguslogPlugin'); // Vue
+    expect(md).toContain('instrumentation.ts'); // Next.js server
+    expect(md).toContain('onRequestError'); // Next.js error hook
 
     // Server-side wiring.
     expect(md).toContain("process.on('unhandledRejection'");
@@ -294,10 +288,7 @@ describe('buildAgentPrompt', () => {
   });
 
   it('emits a self-hosted MCP URL hint when apiUrl is not arguslog.org', () => {
-    const md = buildAgentPrompt(
-      { ...baseCtx, apiUrl: 'https://arguslog.acme.internal' },
-      'cursor',
-    );
+    const md = buildAgentPrompt({ ...baseCtx, apiUrl: 'https://arguslog.acme.internal' }, 'cursor');
     expect(md).toContain('ARGUSLOG_API_URL');
     expect(md).toContain('arguslog.acme.internal');
     // Hosted URL should NOT be inlined when self-hosted — the prompt instructs the agent to

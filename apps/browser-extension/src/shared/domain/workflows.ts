@@ -26,7 +26,10 @@ function issueLine(issue: IssueSummary): string {
   return `#${issue.id} · ${issue.title} · ${issue.level ?? 'unknown'} · ${issue.status ?? 'unknown'}`;
 }
 
-export async function runInvestigateIssueWorkflow(projectId: number, issueId: number): Promise<WorkflowResult> {
+export async function runInvestigateIssueWorkflow(
+  projectId: number,
+  issueId: number,
+): Promise<WorkflowResult> {
   const issue = await getIssue(projectId, issueId);
   const events = await listIssueEvents(projectId, issueId, 5);
   const latestEvent = events[0];
@@ -101,13 +104,15 @@ export async function runReleasePostmortemWorkflow(
   const releases = await listReleases(projectId);
   const release = findRelease(releases, version);
   const issues = await listIssues({ projectId, firstSeenReleaseId: release.id, limit: 25 });
-  const detail = await Promise.all(issues.slice(0, 10).map((issue) => getIssue(projectId, issue.id)));
-  const grouped = detail.reduce<Record<string, IssueDetail[]>>((acc, issue) => {
+  const detail: IssueDetail[] = await Promise.all(
+    issues.slice(0, 10).map((issue) => getIssue(projectId, issue.id)),
+  );
+  const grouped: Record<string, IssueDetail[]> = {};
+  for (const issue of detail) {
     const frame = topFrame(issue);
-    acc[frame] ??= [];
-    acc[frame].push(issue);
-    return acc;
-  }, {});
+    grouped[frame] ??= [];
+    grouped[frame].push(issue);
+  }
 
   const markdown = `# Postmortem — ${version}
 
@@ -130,7 +135,10 @@ ${Object.entries(grouped)
   };
 }
 
-export async function runTriageLoopWorkflow(projectId: number, batchSize: number): Promise<WorkflowResult> {
+export async function runTriageLoopWorkflow(
+  projectId: number,
+  batchSize: number,
+): Promise<WorkflowResult> {
   const issues = await listIssues({
     projectId,
     status: 'unresolved',

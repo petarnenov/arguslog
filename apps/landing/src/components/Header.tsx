@@ -13,11 +13,7 @@ const GITHUB_URL = 'https://github.com/petarnenov/arguslog';
  * page can flip the scheme without opening the dashboard. CTA buttons render only when an
  * `onboardingUrl` is supplied — the status page passes neither and gets a leaner header.
  */
-export function LandingHeader({
-  showCtas = false,
-}: {
-  showCtas?: boolean;
-}) {
+export function LandingHeader({ showCtas = false }: { showCtas?: boolean }) {
   const { t } = useTranslation();
   const onboardingUrl = `${env.VITE_APP_BASE_URL}/onboarding`;
   const dashboardUrl = env.VITE_APP_BASE_URL;

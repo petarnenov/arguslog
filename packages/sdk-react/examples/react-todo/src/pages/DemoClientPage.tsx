@@ -19,17 +19,14 @@ export function DemoClientPage() {
     <div>
       <h1>Client introspection</h1>
       <p>
-        Two read-only helpers expose what the SDK currently looks like.{' '}
-        <code>getClient()</code> returns the active <code>ArguslogClient</code> (or
-        <code> undefined </code> if <code>init</code> wasn't called).{' '}
-        <code>parseDsn(dsn)</code> validates a DSN string and breaks it into its components without
-        any side-effect.
+        Two read-only helpers expose what the SDK currently looks like. <code>getClient()</code>{' '}
+        returns the active <code>ArguslogClient</code> (or
+        <code> undefined </code> if <code>init</code> wasn't called). <code>parseDsn(dsn)</code>{' '}
+        validates a DSN string and breaks it into its components without any side-effect.
       </p>
 
       <h3>useArguslog().isInitialized()</h3>
-      <pre>
-        {JSON.stringify({ isInitialized: arguslog.isInitialized() }, null, 2)}
-      </pre>
+      <pre>{JSON.stringify({ isInitialized: arguslog.isInitialized() }, null, 2)}</pre>
 
       <h3>getClient() identity</h3>
       <pre>

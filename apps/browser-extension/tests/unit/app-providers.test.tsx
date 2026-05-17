@@ -47,10 +47,10 @@ vi.mock('@arguslog/sdk-react', async () => {
 });
 
 class ThrowOnRender extends Component<{ message: string }> {
- override render(): ReactNode {
-   throw new Error(this.props.message);
-   return null;
- }
+  override render(): ReactNode {
+    throw new Error(this.props.message);
+    return null;
+  }
 }
 
 describe('AppProviders', () => {

@@ -21,12 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router';
 
 import { ApiError } from '../api/client';
-import {
-  queryKeys,
-  useMyOrgs,
-  useProjects,
-  useSlackWorkspaces,
-} from '../api/queries';
+import { queryKeys, useMyOrgs, useProjects, useSlackWorkspaces } from '../api/queries';
 import {
   createSlackAlertDestination,
   deleteSlackWorkspace,
@@ -48,9 +43,7 @@ export function SlackIntegrationsPage() {
   const projectsQuery = useProjects(org?.id);
 
   const [pendingDelete, setPendingDelete] = useState<SlackWorkspace | null>(null);
-  const [banner, setBanner] = useState<
-    { kind: 'success' | 'error'; message: string } | null
-  >(null);
+  const [banner, setBanner] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
 
   useReportSoftError(
     Boolean(orgsQuery.data && !org && orgSlug),
@@ -63,7 +56,10 @@ export function SlackIntegrationsPage() {
     const installed = searchParams.get('installed');
     const error = searchParams.get('error');
     if (installed) {
-      setBanner({ kind: 'success', message: t('slackIntegrations.connected', { team: installed }) });
+      setBanner({
+        kind: 'success',
+        message: t('slackIntegrations.connected', { team: installed }),
+      });
       const next = new URLSearchParams(searchParams);
       next.delete('installed');
       setSearchParams(next, { replace: true });

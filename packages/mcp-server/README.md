@@ -24,7 +24,7 @@ client and the MCP server, or if you're running against a self-hosted Arguslog i
 > **Even quicker**: open a project's **Connect** page on the dashboard. The DSN and a
 > `Connect quickstart` PAT are auto-provisioned on first visit, and the page renders a
 > paste-ready magic prompt for Claude Code / Cursor / Codex / GitHub Copilot (Chat + CLI) /
-> Windsurf / Continue — the agent installs the SDK *and* registers this MCP server in a
+> Windsurf / Continue — the agent installs the SDK _and_ registers this MCP server in a
 > single paste, with the correct schema for each agent's actual config format. The
 > manual flow below stays useful for custom integrations and the rare agent that doesn't
 > take a prompt.
@@ -173,12 +173,12 @@ In addition to the per-endpoint tools, this server exposes four canned workflows
 debugging loop, calling the tools above with the right arguments and waiting for user
 confirmation before any mutation.
 
-| Workflow | Required args | Mutating? |
-| -------- | ------------- | --------- |
-| `arguslog_triage_loop`        | `projectId` (+ optional `batchSize`)        | Yes — `triage_issue` / `assign_issue` after user OK |
-| `arguslog_release_postmortem` | `projectId`, `version`                      | **No** — read-only |
-| `arguslog_regression_check`   | `projectId`, `currentVersion`, `previousVersion` | Only on explicit "apply" |
-| `arguslog_investigate_issue`  | `projectId`, `issueId`                      | Only on explicit user confirmation |
+| Workflow                      | Required args                                    | Mutating?                                           |
+| ----------------------------- | ------------------------------------------------ | --------------------------------------------------- |
+| `arguslog_triage_loop`        | `projectId` (+ optional `batchSize`)             | Yes — `triage_issue` / `assign_issue` after user OK |
+| `arguslog_release_postmortem` | `projectId`, `version`                           | **No** — read-only                                  |
+| `arguslog_regression_check`   | `projectId`, `currentVersion`, `previousVersion` | Only on explicit "apply"                            |
+| `arguslog_investigate_issue`  | `projectId`, `issueId`                           | Only on explicit user confirmation                  |
 
 Invoke via JSON-RPC:
 
@@ -207,18 +207,18 @@ verbatim for agents that don't yet support MCP prompts (Aider et al.) — copy-p
 Every endpoint in `/api/v1/...` is callable. The high-leverage ones have curated
 descriptions and example payloads in their tool docstring:
 
-| Group       | Examples                                                                |
-| ----------- | ----------------------------------------------------------------------- |
-| Orgs        | list mine, create, delete, usage, members                               |
-| Projects    | list, create, archive, DSN keys CRUD                                    |
-| Issues      | list with filters, get, list events, change status                      |
-| Releases    | list, create, attach source-map artifacts, delete                       |
+| Group       | Examples                                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Orgs        | list mine, create, delete, usage, members                                                                                                                                            |
+| Projects    | list, create, archive, DSN keys CRUD                                                                                                                                                 |
+| Issues      | list with filters, get, list events, change status                                                                                                                                   |
+| Releases    | list, create, attach source-map artifacts, delete                                                                                                                                    |
 | Alerts      | rules CRUD with **typed conditions DSL** (`level.in`, `firstSeenWindow`, `occurrenceThreshold`, `tag.{key,in}` — all AND-ed), destinations CRUD (Telegram / Slack / email / webhook) |
-| Slack       | `list_slack_workspaces`, `revoke_slack_workspace`, `set_slack_default_project` — manage Slack-app installs against an org |
-| Billing     | plan catalog, usage snapshot, **user-level checkout / portal / crypto** |
-| Admin       | platform stats, user / org tables, **per-user + per-org bonus grants**  |
-| Me          | who am I + **billing state (plan, renew, bonus, grace)**, PATs          |
-| Web3 events | the rich event payload shape from `@arguslog/sdk-web3` flows through    |
+| Slack       | `list_slack_workspaces`, `revoke_slack_workspace`, `set_slack_default_project` — manage Slack-app installs against an org                                                            |
+| Billing     | plan catalog, usage snapshot, **user-level checkout / portal / crypto**                                                                                                              |
+| Admin       | platform stats, user / org tables, **per-user + per-org bonus grants**                                                                                                               |
+| Me          | who am I + **billing state (plan, renew, bonus, grace)**, PATs                                                                                                                       |
+| Web3 events | the rich event payload shape from `@arguslog/sdk-web3` flows through                                                                                                                 |
 
 PAT scopes are enforced server-side, so a read-only PAT can call read tools but writes
 return `403`. The MCP server surfaces those problem responses verbatim so the agent can
@@ -254,7 +254,7 @@ MCP server is just a tool-shaped view of an API the user can already call direct
 ## Browser-safe contract (`@arguslog/mcp-server/contract`)
 
 If you're building a browser extension, a Vite/Webpack web app, or anything else that
-needs the same tool catalog + types this server uses *without* dragging in the MCP
+needs the same tool catalog + types this server uses _without_ dragging in the MCP
 server's Node-only transport, import from the `/contract` subpath:
 
 ```ts

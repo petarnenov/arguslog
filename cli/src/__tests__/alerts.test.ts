@@ -141,10 +141,9 @@ describe('alerts create', () => {
   });
 
   it('requires --destination so the rule has somewhere to fire', async () => {
-    const result = await run(
-      ['alerts', 'create', '--project', '101', '--name', 'smoke'],
-      { loadConfig: () => FAKE_CONFIG },
-    );
+    const result = await run(['alerts', 'create', '--project', '101', '--name', 'smoke'], {
+      loadConfig: () => FAKE_CONFIG,
+    });
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('--destination');
   });
@@ -209,10 +208,9 @@ describe('alerts update', () => {
       return jsonResponse(fullRule({ name: 'renamed' }));
     }) as typeof fetch;
 
-    const result = await run(
-      ['alerts', 'update', '7', '--project', '101', '--name', 'renamed'],
-      { loadConfig: () => FAKE_CONFIG },
-    );
+    const result = await run(['alerts', 'update', '7', '--project', '101', '--name', 'renamed'], {
+      loadConfig: () => FAKE_CONFIG,
+    });
 
     expect(result.exitCode).toBe(0);
     const put = captured.find((c) => c.init?.method === 'PUT')!;

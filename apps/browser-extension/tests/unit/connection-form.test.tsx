@@ -90,7 +90,9 @@ describe('ConnectionForm', () => {
     renderForm();
 
     await waitFor(() =>
-      expect(screen.getByPlaceholderText('https://mcp.arguslog.org/mcp')).toHaveValue('https://staging.arguslog.org/mcp'),
+      expect(screen.getByPlaceholderText('https://mcp.arguslog.org/mcp')).toHaveValue(
+        'https://staging.arguslog.org/mcp',
+      ),
     );
     expect(screen.getByRole('combobox')).toHaveValue('session');
     expect(screen.getByRole('checkbox', { name: 'Enable debug diagnostics' })).toBeChecked();

@@ -5,10 +5,5 @@ export function getAccountLabel(accountSummary: AccountSummary | undefined): str
     return 'Disconnected';
   }
 
-  return (
-    accountSummary.displayName ??
-    accountSummary.email ??
-    accountSummary.userId ??
-    'Connected'
-  );
+  return accountSummary.displayName ?? accountSummary.email ?? accountSummary.userId ?? 'Connected';
 }

@@ -1,7 +1,4 @@
-import {
-  CreateReleaseInputSchema,
-  ReleaseSummarySchema,
-} from '@arguslog/mcp-server/contract';
+import { CreateReleaseInputSchema, ReleaseSummarySchema } from '@arguslog/mcp-server/contract';
 import { z } from 'zod';
 
 import { callRawTool } from './catalog';

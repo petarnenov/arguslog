@@ -4,7 +4,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { listCatalogPrompts, getPromptText } from '../../../shared/domain/catalog';
-import { Badge, Button, Card, EmptyState, Input, Page } from '../../../shared/ui/components/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  Page,
+} from '../../../shared/ui/components/primitives';
 
 export function PlaybooksScreen() {
   const promptsQuery = useQuery({
@@ -26,7 +33,10 @@ export function PlaybooksScreen() {
   });
 
   return (
-    <Page title="Playbook inspector" subtitle="Read-only view over MCP prompts/list and prompts/get.">
+    <Page
+      title="Playbook inspector"
+      subtitle="Read-only view over MCP prompts/list and prompts/get."
+    >
       <div className="grid gap-4 lg:grid-cols-[0.9fr,1.1fr]">
         <Card title="Available prompts">
           <div className="space-y-2">
@@ -52,18 +62,24 @@ export function PlaybooksScreen() {
               </button>
             ))}
             {!promptsQuery.data?.length ? (
-              <EmptyState title="No prompts available" description="Refresh capabilities or reconnect if the prompt catalog is unavailable." />
+              <EmptyState
+                title="No prompts available"
+                description="Refresh capabilities or reconnect if the prompt catalog is unavailable."
+              />
             ) : null}
           </div>
         </Card>
 
-        <Card title={promptDef?.title ?? 'Prompt body'} actions={
-          promptDef ? (
-            <Button variant="secondary" onClick={() => promptMutation.mutate()}>
-              Render prompt
-            </Button>
-          ) : undefined
-        }>
+        <Card
+          title={promptDef?.title ?? 'Prompt body'}
+          actions={
+            promptDef ? (
+              <Button variant="secondary" onClick={() => promptMutation.mutate()}>
+                Render prompt
+              </Button>
+            ) : undefined
+          }
+        >
           {promptDef ? (
             <div className="space-y-4">
               {promptDef.arguments?.length ? (
@@ -83,19 +99,30 @@ export function PlaybooksScreen() {
                   ))}
                 </div>
               ) : (
-                <EmptyState title="No arguments required" description="This prompt can be rendered immediately." />
+                <EmptyState
+                  title="No arguments required"
+                  description="This prompt can be rendered immediately."
+                />
               )}
 
               {promptMutation.data ? (
                 <article className="prose prose-invert max-w-none rounded-xl border border-slate-800 bg-slate-950/50 p-4 text-sm">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{promptMutation.data.text}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {promptMutation.data.text}
+                  </ReactMarkdown>
                 </article>
               ) : (
-                <EmptyState title="Prompt body not rendered yet" description="Fill any required arguments and render the playbook to inspect its body." />
+                <EmptyState
+                  title="Prompt body not rendered yet"
+                  description="Fill any required arguments and render the playbook to inspect its body."
+                />
               )}
             </div>
           ) : (
-            <EmptyState title="No prompt selected" description="Pick a prompt from the left column." />
+            <EmptyState
+              title="No prompt selected"
+              description="Pick a prompt from the left column."
+            />
           )}
         </Card>
       </div>

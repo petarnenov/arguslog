@@ -130,9 +130,7 @@ export function AppShellLayout() {
 
   const trimmedRename = renameValue.trim();
   const canRename =
-    Boolean(currentOrg) &&
-    trimmedRename.length >= 2 &&
-    trimmedRename !== (currentOrg?.name ?? '');
+    Boolean(currentOrg) && trimmedRename.length >= 2 && trimmedRename !== (currentOrg?.name ?? '');
 
   return (
     <AppShell

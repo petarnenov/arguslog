@@ -28,8 +28,8 @@ export function DemoContextPage() {
       <h1>setContext</h1>
       <p>
         Contexts are richer than tags — full JSON blobs surfaced in the event detail page under
-        their own section. Use them for environment metadata that doesn't fit a single value:
-        device specs, request payloads, feature flag snapshots.
+        their own section. Use them for environment metadata that doesn't fit a single value: device
+        specs, request payloads, feature flag snapshots.
       </p>
       <div className="form-grid">
         <label>

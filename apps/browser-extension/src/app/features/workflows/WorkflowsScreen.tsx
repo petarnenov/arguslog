@@ -12,13 +12,25 @@ import {
   runTriageLoopWorkflow,
   type WorkflowResult,
 } from '../../../shared/domain/workflows';
-import { Badge, Button, Card, EmptyState, Input, Page } from '../../../shared/ui/components/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  Page,
+} from '../../../shared/ui/components/primitives';
 import { copyText, downloadFile } from '../../../shared/utils/export';
 
 function WorkflowResultCard(props: { result: WorkflowResult | undefined }) {
   const result = props.result;
   if (!result) {
-    return <EmptyState title="No workflow executed yet" description="Run one of the curated workflows to inspect its Markdown and JSON outputs." />;
+    return (
+      <EmptyState
+        title="No workflow executed yet"
+        description="Run one of the curated workflows to inspect its Markdown and JSON outputs."
+      />
+    );
   }
 
   return (
@@ -87,13 +99,23 @@ export function WorkflowsScreen() {
   });
 
   return (
-    <Page title="Curated workflows" subtitle="Native step machines for investigation, regression checks, postmortems, and triage loops.">
+    <Page
+      title="Curated workflows"
+      subtitle="Native step machines for investigation, regression checks, postmortems, and triage loops."
+    >
       <div className="grid gap-4 lg:grid-cols-[1fr,1fr]">
         <div className="space-y-4">
           <Card title="Investigate issue">
             <div className="space-y-3">
-              <Input value={investigateIssueId} onChange={(event) => setInvestigateIssueId(event.target.value)} placeholder="Issue ID" />
-              <Button disabled={!projectId || !investigateIssueId} onClick={() => runMutation.mutate(WORKFLOW_IDS.INVESTIGATE_ISSUE)}>
+              <Input
+                value={investigateIssueId}
+                onChange={(event) => setInvestigateIssueId(event.target.value)}
+                placeholder="Issue ID"
+              />
+              <Button
+                disabled={!projectId || !investigateIssueId}
+                onClick={() => runMutation.mutate(WORKFLOW_IDS.INVESTIGATE_ISSUE)}
+              >
                 Run investigate
               </Button>
             </div>
@@ -101,9 +123,20 @@ export function WorkflowsScreen() {
 
           <Card title="Regression check">
             <div className="space-y-3">
-              <Input value={currentVersion} onChange={(event) => setCurrentVersion(event.target.value)} placeholder="Current version" />
-              <Input value={previousVersion} onChange={(event) => setPreviousVersion(event.target.value)} placeholder="Previous version" />
-              <Button disabled={!projectId || !currentVersion || !previousVersion} onClick={() => runMutation.mutate(WORKFLOW_IDS.REGRESSION_CHECK)}>
+              <Input
+                value={currentVersion}
+                onChange={(event) => setCurrentVersion(event.target.value)}
+                placeholder="Current version"
+              />
+              <Input
+                value={previousVersion}
+                onChange={(event) => setPreviousVersion(event.target.value)}
+                placeholder="Previous version"
+              />
+              <Button
+                disabled={!projectId || !currentVersion || !previousVersion}
+                onClick={() => runMutation.mutate(WORKFLOW_IDS.REGRESSION_CHECK)}
+              >
                 Run regression check
               </Button>
             </div>
@@ -111,8 +144,15 @@ export function WorkflowsScreen() {
 
           <Card title="Release postmortem">
             <div className="space-y-3">
-              <Input value={postmortemVersion} onChange={(event) => setPostmortemVersion(event.target.value)} placeholder="Release version" />
-              <Button disabled={!projectId || !postmortemVersion} onClick={() => runMutation.mutate(WORKFLOW_IDS.RELEASE_POSTMORTEM)}>
+              <Input
+                value={postmortemVersion}
+                onChange={(event) => setPostmortemVersion(event.target.value)}
+                placeholder="Release version"
+              />
+              <Button
+                disabled={!projectId || !postmortemVersion}
+                onClick={() => runMutation.mutate(WORKFLOW_IDS.RELEASE_POSTMORTEM)}
+              >
                 Build postmortem
               </Button>
             </div>
@@ -120,8 +160,15 @@ export function WorkflowsScreen() {
 
           <Card title="Triage loop">
             <div className="space-y-3">
-              <Input value={triageBatchSize} onChange={(event) => setTriageBatchSize(event.target.value)} placeholder="Batch size" />
-              <Button disabled={!projectId} onClick={() => runMutation.mutate(WORKFLOW_IDS.TRIAGE_LOOP)}>
+              <Input
+                value={triageBatchSize}
+                onChange={(event) => setTriageBatchSize(event.target.value)}
+                placeholder="Batch size"
+              />
+              <Button
+                disabled={!projectId}
+                onClick={() => runMutation.mutate(WORKFLOW_IDS.TRIAGE_LOOP)}
+              >
                 Load triage batch
               </Button>
             </div>

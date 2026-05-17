@@ -34,10 +34,7 @@ export function getRelease(projectId: number, id: number): Promise<Release> {
   return apiFetch<Release>(`/api/v1/projects/${projectId}/releases/${id}`);
 }
 
-export function createRelease(
-  projectId: number,
-  input: ReleaseInput | string,
-): Promise<Release> {
+export function createRelease(projectId: number, input: ReleaseInput | string): Promise<Release> {
   // Tolerate legacy callsites that still pass a bare version string — wrap it transparently so
   // we don't need to touch every test/MCP/CLI caller in this same PR.
   const body: ReleaseInput = typeof input === 'string' ? { version: input } : input;

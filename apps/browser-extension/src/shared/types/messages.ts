@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { ExtensionSettingsSchema, PageContextSchema, WorkspaceSelectionSchema } from '../validation/models';
+import {
+  ExtensionSettingsSchema,
+  PageContextSchema,
+  WorkspaceSelectionSchema,
+} from '../validation/models';
 
 export const BackgroundRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('settings/get') }),

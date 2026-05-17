@@ -68,11 +68,7 @@ async function deriveKey(): Promise<CryptoKey> {
 async function encryptPat(pat: string): Promise<EncryptedPayload> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey();
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encodeUtf8(pat),
-  );
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encodeUtf8(pat));
   return {
     iv: toBase64(iv),
     ciphertext: toBase64(new Uint8Array(ciphertext)),

@@ -22,7 +22,9 @@ import { HomePage } from './pages/HomePage.js';
 export function App() {
   return (
     <BrowserRouter>
-      <ArguslogErrorBoundary fallback={({ error, reset }) => <ErrorFallback error={error} reset={reset} />}>
+      <ArguslogErrorBoundary
+        fallback={({ error, reset }) => <ErrorFallback error={error} reset={reset} />}
+      >
         <div className="layout">
           <DemoMenu />
           <main className="content">

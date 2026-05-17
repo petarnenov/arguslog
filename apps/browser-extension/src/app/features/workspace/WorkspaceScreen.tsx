@@ -2,8 +2,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { getConnectionStatus } from '../../../shared/domain/connection';
-import { getPageContext, listDsns, listMembers, listMyOrgs, listProjects, updateWorkspaceSelection } from '../../../shared/domain/workspace';
-import { Badge, Button, Card, EmptyState, Page, Select } from '../../../shared/ui/components/primitives';
+import {
+  getPageContext,
+  listDsns,
+  listMembers,
+  listMyOrgs,
+  listProjects,
+  updateWorkspaceSelection,
+} from '../../../shared/domain/workspace';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Page,
+  Select,
+} from '../../../shared/ui/components/primitives';
 
 function buildRecents(selection: {
   orgSlug?: string | undefined;
@@ -13,13 +27,25 @@ function buildRecents(selection: {
 }) {
   const recents = [];
   if (selection.orgId) {
-    recents.push({ type: 'org' as const, id: String(selection.orgId), label: selection.orgSlug ?? `Org ${selection.orgId}` });
+    recents.push({
+      type: 'org' as const,
+      id: String(selection.orgId),
+      label: selection.orgSlug ?? `Org ${selection.orgId}`,
+    });
   }
   if (selection.projectId) {
-    recents.push({ type: 'project' as const, id: String(selection.projectId), label: `Project ${selection.projectId}` });
+    recents.push({
+      type: 'project' as const,
+      id: String(selection.projectId),
+      label: `Project ${selection.projectId}`,
+    });
   }
   if (selection.issueId) {
-    recents.push({ type: 'issue' as const, id: String(selection.issueId), label: `Issue #${selection.issueId}` });
+    recents.push({
+      type: 'issue' as const,
+      id: String(selection.issueId),
+      label: `Issue #${selection.issueId}`,
+    });
   }
   return recents;
 }
@@ -90,8 +116,14 @@ export function WorkspaceScreen() {
 
   if (!statusQuery.data?.authSession.patPresent) {
     return (
-      <Page title="Workspace" subtitle="Connect first to browse organizations, projects, DSNs, and members.">
-        <EmptyState title="No PAT configured" description="Open the Connect or Settings tab and authenticate with an Arguslog personal access token." />
+      <Page
+        title="Workspace"
+        subtitle="Connect first to browse organizations, projects, DSNs, and members."
+      >
+        <EmptyState
+          title="No PAT configured"
+          description="Open the Connect or Settings tab and authenticate with an Arguslog personal access token."
+        />
       </Page>
     );
   }
@@ -102,14 +134,21 @@ export function WorkspaceScreen() {
       subtitle={`Capability snapshot: ${capabilitySummary}`}
       actions={
         statusQuery.data.pageContext?.issueId ? (
-          <Badge tone="success">Issue #{statusQuery.data.pageContext.issueId} detected on page</Badge>
+          <Badge tone="success">
+            Issue #{statusQuery.data.pageContext.issueId} detected on page
+          </Badge>
         ) : undefined
       }
     >
       <Card title="Current selection">
         <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-2">
-            <label htmlFor="workspace-org" className="text-xs uppercase tracking-wide text-slate-400">Organization</label>
+            <label
+              htmlFor="workspace-org"
+              className="text-xs uppercase tracking-wide text-slate-400"
+            >
+              Organization
+            </label>
             <Select
               id="workspace-org"
               value={orgId ?? ''}
@@ -142,7 +181,12 @@ export function WorkspaceScreen() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="workspace-project" className="text-xs uppercase tracking-wide text-slate-400">Project</label>
+            <label
+              htmlFor="workspace-project"
+              className="text-xs uppercase tracking-wide text-slate-400"
+            >
+              Project
+            </label>
             <Select
               id="workspace-project"
               disabled={!orgId}
@@ -178,7 +222,9 @@ export function WorkspaceScreen() {
           <div className="mt-4 rounded-xl border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-slate-200">
             <p className="font-medium text-white">Detected Argus page context</p>
             <p className="mt-1">
-              orgSlug={pageContextQuery.data.orgSlug ?? 'n/a'} · projectId={pageContextQuery.data.projectId ?? 'n/a'} · issueId={pageContextQuery.data.issueId ?? 'n/a'}
+              orgSlug={pageContextQuery.data.orgSlug ?? 'n/a'} · projectId=
+              {pageContextQuery.data.projectId ?? 'n/a'} · issueId=
+              {pageContextQuery.data.issueId ?? 'n/a'}
             </p>
             <div className="mt-3">
               <Button
@@ -212,10 +258,15 @@ export function WorkspaceScreen() {
           {membersQuery.data?.length ? (
             <div className="space-y-2">
               {membersQuery.data.map((member) => (
-                <div key={`${member.userId ?? member.email}-${member.role}`} className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-sm">
+                <div
+                  key={`${member.userId ?? member.email}-${member.role}`}
+                  className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-sm"
+                >
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-medium text-white">{member.displayName ?? member.email ?? member.userId ?? 'Unknown member'}</p>
+                      <p className="font-medium text-white">
+                        {member.displayName ?? member.email ?? member.userId ?? 'Unknown member'}
+                      </p>
                       <p className="text-slate-400">{member.email ?? member.userId}</p>
                     </div>
                     <Badge>{member.role ?? 'member'}</Badge>
@@ -224,7 +275,10 @@ export function WorkspaceScreen() {
               ))}
             </div>
           ) : (
-            <EmptyState title="No members loaded" description="Select an organization to fetch the current member list." />
+            <EmptyState
+              title="No members loaded"
+              description="Select an organization to fetch the current member list."
+            />
           )}
         </Card>
 
@@ -232,14 +286,22 @@ export function WorkspaceScreen() {
           {dsnsQuery.data?.length ? (
             <div className="space-y-2">
               {dsnsQuery.data.map((dsn) => (
-                <div key={`${dsn.id ?? dsn.dsnPublic}`} className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-sm">
+                <div
+                  key={`${dsn.id ?? dsn.dsnPublic}`}
+                  className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-sm"
+                >
                   <p className="font-medium text-white">{dsn.name ?? 'Default DSN'}</p>
-                  <p className="mt-1 break-all text-slate-400">{dsn.dsnPublic ?? dsn.dsn ?? 'No DSN value returned'}</p>
+                  <p className="mt-1 break-all text-slate-400">
+                    {dsn.dsnPublic ?? dsn.dsn ?? 'No DSN value returned'}
+                  </p>
                 </div>
               ))}
             </div>
           ) : (
-            <EmptyState title="No DSNs loaded" description="Select a project to inspect active DSN keys." />
+            <EmptyState
+              title="No DSNs loaded"
+              description="Select a project to inspect active DSN keys."
+            />
           )}
         </Card>
       </div>

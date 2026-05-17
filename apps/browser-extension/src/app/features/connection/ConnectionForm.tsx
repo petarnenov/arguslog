@@ -2,7 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { connect, getConnectionStatus } from '../../../shared/domain/connection';
-import { Button, Card, Field, InlineError, Input, Select } from '../../../shared/ui/components/primitives';
+import {
+  Button,
+  Card,
+  Field,
+  InlineError,
+  Input,
+  Select,
+} from '../../../shared/ui/components/primitives';
 import { getAccountLabel } from '../../../shared/utils/account';
 
 function getErrorMessage(error: unknown): string | undefined {
@@ -22,10 +29,7 @@ function getErrorMessage(error: unknown): string | undefined {
   return undefined;
 }
 
-export function ConnectionForm(props: {
-  compact?: boolean;
-  onConnected?: () => void;
-}) {
+export function ConnectionForm(props: { compact?: boolean; onConnected?: () => void }) {
   const queryClient = useQueryClient();
   const { data } = useQuery({
     queryKey: ['connection-status'],

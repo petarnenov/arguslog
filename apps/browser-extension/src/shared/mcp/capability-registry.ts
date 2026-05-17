@@ -4,7 +4,9 @@ import type { CapabilitySnapshot } from '../validation/models';
 
 function resolveRequiredTools(feature: string): string[] {
   if (feature in FEATURE_REQUIREMENTS.workflows) {
-    return FEATURE_REQUIREMENTS.workflows[feature as keyof typeof FEATURE_REQUIREMENTS.workflows] ?? [];
+    return (
+      FEATURE_REQUIREMENTS.workflows[feature as keyof typeof FEATURE_REQUIREMENTS.workflows] ?? []
+    );
   }
 
   const direct = FEATURE_REQUIREMENTS[feature as keyof typeof FEATURE_REQUIREMENTS];
@@ -21,7 +23,9 @@ export function getFeatureAvailability(
 ): { available: boolean; missingTools: string[] } {
   const requiredTools = resolveRequiredTools(feature);
   const missingTools =
-    snapshot === undefined ? requiredTools : requiredTools.filter((tool) => !snapshot.toolNames.includes(tool));
+    snapshot === undefined
+      ? requiredTools
+      : requiredTools.filter((tool) => !snapshot.toolNames.includes(tool));
 
   return {
     available: missingTools.length === 0,

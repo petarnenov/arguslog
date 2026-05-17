@@ -140,7 +140,8 @@ function buildConfigPayload(
       if (!owner || !repo || !token) {
         return {
           config: null,
-          error: 'GitHub Issue needs owner, repo, and a fine-grained PAT (or leave all blank to keep current).',
+          error:
+            'GitHub Issue needs owner, repo, and a fine-grained PAT (or leave all blank to keep current).',
         };
       }
       const config: Record<string, unknown> = { owner, repo, token };
@@ -319,10 +320,7 @@ export function AlertDestinationsPage() {
                         })
                       }
                       aria-label={t('alertDestinations.toggleAria', { name: d.name })}
-                      disabled={
-                        toggleMutation.isPending &&
-                        toggleMutation.variables?.id === d.id
-                      }
+                      disabled={toggleMutation.isPending && toggleMutation.variables?.id === d.id}
                     />
                   </Table.Td>
                   <Table.Td style={{ textAlign: 'right' }}>
@@ -403,7 +401,9 @@ export function AlertDestinationsPage() {
               <TagsInput
                 label={t('alertDestinations.emailTo')}
                 description={t('alertDestinations.emailToHint')}
-                placeholder={isEditMode ? t('alertDestinations.leaveBlankToKeep') : 'ops@example.com'}
+                placeholder={
+                  isEditMode ? t('alertDestinations.leaveBlankToKeep') : 'ops@example.com'
+                }
                 value={form.values.emailTo}
                 onChange={(v) => form.setFieldValue('emailTo', v)}
                 splitChars={[',', ' ', ';']}
@@ -419,7 +419,9 @@ export function AlertDestinationsPage() {
                     ? t('alertDestinations.secretEditHint')
                     : t('alertDestinations.slackWebhookUrlHint')
                 }
-                placeholder={isEditMode ? '••••••••' : 'https://hooks.slack.com/services/T00/B00/XXX'}
+                placeholder={
+                  isEditMode ? '••••••••' : 'https://hooks.slack.com/services/T00/B00/XXX'
+                }
                 {...form.getInputProps('slackWebhookUrl')}
                 disabled={saveMutation.isPending}
               />
@@ -445,7 +447,9 @@ export function AlertDestinationsPage() {
                       ? t('alertDestinations.secretEditHint')
                       : t('alertDestinations.webhookSecretHint')
                   }
-                  placeholder={isEditMode ? '••••••••' : t('alertDestinations.webhookSecretPlaceholder')}
+                  placeholder={
+                    isEditMode ? '••••••••' : t('alertDestinations.webhookSecretPlaceholder')
+                  }
                   {...form.getInputProps('webhookSecret')}
                   disabled={saveMutation.isPending}
                 />

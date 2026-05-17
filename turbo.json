@@ -6,7 +6,14 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "build/**", ".vite/**", ".output/**", ".wxt/**"],
-      "inputs": ["src/**", "public/**", "package.json", "tsconfig.json", "vite.config.ts", "wxt.config.ts"]
+      "inputs": [
+        "src/**",
+        "public/**",
+        "package.json",
+        "tsconfig.json",
+        "vite.config.ts",
+        "wxt.config.ts"
+      ]
     },
     "dev": {
       "dependsOn": ["^build"],
