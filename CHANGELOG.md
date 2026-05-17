@@ -111,8 +111,9 @@ already wired:
 - React Native: `['globalHandlers']` (no DOM / no breadcrumbs).
 - Plus framework wraps where the SDK exports one: `<ArguslogErrorBoundary>` for
   React, Vue, Next.js client, and React Native; `provideArguslog()` for Angular;
-  `instrumentation.ts` with `onRequestError` for Next.js server; Vue `arguslogPlugin`
-  via `app.use(...)`; Python `install_excepthook=True` + `install_logging_handler=30`;
+  `instrumentation.ts` with `onRequestError` for Next.js server; Vue `createArguslog()`
+  factory via `app.use(createArguslog({...}))`; Python `install_excepthook=True` +
+  `install_logging_handler=30`;
   Spring Boot autoconfig YAML. The agent picks the section matching its detected
   stack and pastes it verbatim — no more stripped-down `init({ dsn })`.
 

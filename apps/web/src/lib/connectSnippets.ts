@@ -200,18 +200,20 @@ export const appConfig: ApplicationConfig = {
     version: '2.0.0',
     installCmd: 'npm install @arguslog/sdk-vue@^2',
     detect: 'package.json contains "vue" (>= 3.x)',
-    entryFile: 'src/main.ts (app.use(arguslogPlugin))',
+    entryFile: 'src/main.ts (app.use(createArguslog({...})))',
     lang: 'ts',
     initSnippet: `import { createApp } from 'vue';
-import { arguslogPlugin } from '@arguslog/sdk-vue';
+import { createArguslog } from '@arguslog/sdk-vue';
 import App from './App.vue';
 
 const app = createApp(App);
-app.use(arguslogPlugin, {
-  dsn: '<DSN>',
-  environment: 'production',
-  integrations: ['globalHandlers', 'autoBreadcrumbs'],
-});
+app.use(
+  createArguslog({
+    dsn: '<DSN>',
+    environment: 'production',
+    integrations: ['globalHandlers', 'autoBreadcrumbs'],
+  }),
+);
 app.mount('#app');`,
     wrapSnippet: `<!-- In your root template (e.g. App.vue), wrap routed content: -->
 <template>

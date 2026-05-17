@@ -247,7 +247,8 @@ describe('buildAgentPrompt', () => {
     expect(md).toContain('<ArguslogErrorBoundary fallback={<p>Something went wrong.</p>}>');
     expect(md).toContain('<ArguslogErrorBoundary fallback={<CrashScreen />}>'); // RN variant
     expect(md).toContain('provideArguslog('); // Angular
-    expect(md).toContain('app.use(arguslogPlugin'); // Vue
+    expect(md).toContain('createArguslog('); // Vue — factory exported by @arguslog/sdk-vue
+    expect(md).not.toContain('arguslogPlugin'); // Regression guard: dashboard once shipped a non-existent symbol.
     expect(md).toContain('instrumentation.ts'); // Next.js server
     expect(md).toContain('onRequestError'); // Next.js error hook
 
