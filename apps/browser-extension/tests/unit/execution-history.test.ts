@@ -120,6 +120,26 @@ describe('execution-history', () => {
     expect(entries[0]?.resultSummary?.length).toBeLessThanOrEqual(2048);
   });
 
+  it('appends with workflowRunId attribution when provided', async () => {
+    await appendExecution({
+      toolName: 'list_issues',
+      args: { projectId: 1 },
+      outcome: 'ok',
+      durationMs: 5,
+      workflowRunId: 'run-abc',
+    });
+    await appendExecution({
+      toolName: 'get_issue',
+      args: { projectId: 1, issueId: 2 },
+      outcome: 'ok',
+      durationMs: 5,
+    });
+    const entries = await getExecutionHistory();
+    // Newest-first: the standalone tool entry is first, then the workflow entry.
+    expect(entries[0]?.workflowRunId).toBeUndefined();
+    expect(entries[1]?.workflowRunId).toBe('run-abc');
+  });
+
   it('clearExecutionHistory empties the store', async () => {
     await appendExecution({
       toolName: 'x',

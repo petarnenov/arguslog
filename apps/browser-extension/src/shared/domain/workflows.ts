@@ -1,7 +1,21 @@
-import type { IssueDetail, IssueSummary, ReleaseSummary } from '@arguslog/mcp-server/contract';
-
-import { getIssue, listIssueEvents, listIssues } from './issues';
-import { listReleases } from './releases';
+/**
+ * Compat shim — preserves the v1 public API while delegating to the Phase 3 step-machine
+ * engine. New callers (StepRunner) talk to the engine directly; legacy callers and the
+ * `workflows.test.ts` happy-path coverage keep working without changes.
+ *
+ * Each `runXxxWorkflow` here drives the engine end-to-end with an empty advertised-tools
+ * set (= capability gate disabled, since v1 had no gating) and runs `summarize()` to
+ * reproduce the v1 markdown + JSON output. Step badges in the returned `WorkflowResult`
+ * are derived from the engine's `stepStates[].status`.
+ */
+import type { WorkflowDefinition, WorkflowRunState } from './workflow-engine';
+import { advanceStep, startRun } from './workflow-engine';
+import {
+  investigateIssueDefinition,
+  regressionCheckDefinition,
+  releasePostmortemDefinition,
+  triageLoopDefinition,
+} from './workflow-definitions';
 
 export interface WorkflowStep {
   id: string;
@@ -16,53 +30,40 @@ export interface WorkflowResult {
   json: Record<string, unknown>;
 }
 
-function topFrame(issue: IssueDetail): string {
-  const frame = issue.latestEvent?.stacktrace?.frames?.[0];
-  if (!frame) return 'unknown';
-  return `${frame.filename ?? 'unknown'}:${frame.line ?? '?'} · ${frame.function ?? 'anonymous'}`;
+async function runDefinitionEndToEnd(
+  def: WorkflowDefinition,
+  inputs: Record<string, unknown>,
+): Promise<WorkflowResult> {
+  let state = startRun(def, inputs);
+  const deps = { advertisedTools: new Set<string>() };
+  while (state.status === 'in_progress' && state.currentStepIndex < def.steps.length) {
+    state = await advanceStep(state, def, deps);
+  }
+  return finalize(state, def);
 }
 
-function issueLine(issue: IssueSummary): string {
-  return `#${issue.id} · ${issue.title} · ${issue.level ?? 'unknown'} · ${issue.status ?? 'unknown'}`;
+function finalize(state: WorkflowRunState, def: WorkflowDefinition): WorkflowResult {
+  const { markdown, json } = def.summarize(state);
+  const steps: WorkflowStep[] = state.stepStates.map((s) => ({
+    id: s.id,
+    label: s.label,
+    status: s.status === 'error' ? 'error' : 'done',
+    detail: s.error?.message,
+  }));
+  // If any step errored, surface that error so the legacy caller can see it (matches v1
+  // which threw synchronously on `findRelease` miss).
+  const errored = state.stepStates.find((s) => s.status === 'error');
+  if (errored?.error) {
+    throw new Error(errored.error.message);
+  }
+  return { steps, markdown, json };
 }
 
 export async function runInvestigateIssueWorkflow(
   projectId: number,
   issueId: number,
 ): Promise<WorkflowResult> {
-  const issue = await getIssue(projectId, issueId);
-  const events = await listIssueEvents(projectId, issueId, 5);
-  const latestEvent = events[0];
-  const frame = topFrame(issue);
-  const markdown = `# Investigate issue #${issue.id}
-
-- **Title:** ${issue.title}
-- **Status:** ${issue.status ?? 'unknown'}
-- **Occurrences:** ${issue.count ?? 0}
-- **Top frame:** ${frame}
-- **Latest event:** ${latestEvent?.message ?? latestEvent?.title ?? 'n/a'}
-
-## Evidence
-
-Loaded ${events.length} recent events and inspected the latest stack frame for a root-cause hypothesis.
-`;
-
-  return {
-    steps: [
-      { id: 'detail', label: 'Loaded issue detail', status: 'done' },
-      { id: 'events', label: 'Loaded recent events', status: 'done' },
-    ],
-    markdown,
-    json: { issue, events },
-  };
-}
-
-function findRelease(releases: ReleaseSummary[], version: string): ReleaseSummary {
-  const match = releases.find((release) => release.version === version);
-  if (!match) {
-    throw new Error(`Release "${version}" was not found.`);
-  }
-  return match;
+  return runDefinitionEndToEnd(investigateIssueDefinition, { projectId, issueId });
 }
 
 export async function runRegressionCheckWorkflow(
@@ -70,91 +71,23 @@ export async function runRegressionCheckWorkflow(
   currentVersion: string,
   previousVersion: string,
 ): Promise<WorkflowResult> {
-  const releases = await listReleases(projectId);
-  const current = findRelease(releases, currentVersion);
-  const previous = findRelease(releases, previousVersion);
-  const newIssues = await listIssues({ projectId, firstSeenReleaseId: current.id, limit: 50 });
-  const previousWindow = await listIssues({ projectId, seenInReleaseId: previous.id, limit: 100 });
-  const previousIds = new Set(previousWindow.map((issue) => issue.id));
-  const classified = newIssues.map((issue) => ({
-    issue,
-    status: previousIds.has(issue.id) ? 'SPIKING' : 'NEW',
-  }));
-  const markdown = `# Regression check — ${previousVersion} → ${currentVersion}
-
-| Issue | Status |
-|---|---|
-${classified.map((item) => `| ${issueLine(item.issue)} | ${item.status} |`).join('\n')}
-`;
-
-  return {
-    steps: [
-      { id: 'releases', label: 'Resolved releases', status: 'done' },
-      { id: 'issues', label: 'Loaded release windows', status: 'done' },
-    ],
-    markdown,
-    json: { current, previous, newIssues, previousWindow, classified },
-  };
+  return runDefinitionEndToEnd(regressionCheckDefinition, {
+    projectId,
+    currentVersion,
+    previousVersion,
+  });
 }
 
 export async function runReleasePostmortemWorkflow(
   projectId: number,
   version: string,
 ): Promise<WorkflowResult> {
-  const releases = await listReleases(projectId);
-  const release = findRelease(releases, version);
-  const issues = await listIssues({ projectId, firstSeenReleaseId: release.id, limit: 25 });
-  const detail: IssueDetail[] = await Promise.all(
-    issues.slice(0, 10).map((issue) => getIssue(projectId, issue.id)),
-  );
-  const grouped: Record<string, IssueDetail[]> = {};
-  for (const issue of detail) {
-    const frame = topFrame(issue);
-    grouped[frame] ??= [];
-    grouped[frame].push(issue);
-  }
-
-  const markdown = `# Postmortem — ${version}
-
-**Issues introduced:** ${issues.length}
-
-## Top regressions
-${Object.entries(grouped)
-  .map(([frame, groupedIssues]) => `- **${frame}** — ${(groupedIssues ?? []).length} issue(s)`)
-  .join('\n')}
-`;
-
-  return {
-    steps: [
-      { id: 'release', label: 'Resolved release version', status: 'done' },
-      { id: 'issues', label: 'Loaded first-seen issues', status: 'done' },
-      { id: 'details', label: 'Loaded issue detail sample', status: 'done' },
-    ],
-    markdown,
-    json: { release, issues, grouped },
-  };
+  return runDefinitionEndToEnd(releasePostmortemDefinition, { projectId, version });
 }
 
 export async function runTriageLoopWorkflow(
   projectId: number,
   batchSize: number,
 ): Promise<WorkflowResult> {
-  const issues = await listIssues({
-    projectId,
-    status: 'unresolved',
-    limit: batchSize,
-  });
-
-  const markdown = `# Triage loop
-
-Loaded ${issues.length} unresolved issue(s).
-
-${issues.map(issueLine).join('\n')}
-`;
-
-  return {
-    steps: [{ id: 'batch', label: 'Loaded unresolved batch', status: 'done' }],
-    markdown,
-    json: { issues },
-  };
+  return runDefinitionEndToEnd(triageLoopDefinition, { projectId, batchSize });
 }

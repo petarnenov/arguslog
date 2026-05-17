@@ -34,6 +34,9 @@ const ToolExecutionSchema = z.object({
   errorBucket: z.string().optional(),
   errorMessage: z.string().optional(),
   truncated: z.boolean().optional(),
+  // Phase 3: attribution to a workflow run so HistoryScreen can group consecutive
+  // entries under their parent workflow row. Absent for standalone tool calls.
+  workflowRunId: z.string().optional(),
 });
 
 const HistoryArraySchema = z.array(ToolExecutionSchema);

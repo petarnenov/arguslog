@@ -41,3 +41,7 @@ export async function getWorkflowState<T>(): Promise<T | undefined> {
 export async function setWorkflowState<T>(state: T): Promise<void> {
   await browser.storage.session.set({ [WORKFLOW_STATE_KEY]: state });
 }
+
+export async function clearWorkflowState(): Promise<void> {
+  await browser.storage.session.remove(WORKFLOW_STATE_KEY);
+}

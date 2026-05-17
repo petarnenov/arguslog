@@ -19,6 +19,9 @@ const ToolExecutionSchema = z.object({
   errorBucket: z.string().optional(),
   errorMessage: z.string().optional(),
   truncated: z.boolean().optional(),
+  // Phase 3: present on entries written during a workflow run so HistoryScreen can
+  // collapse consecutive same-run entries under an expandable parent.
+  workflowRunId: z.string().optional(),
 });
 
 export type ToolExecution = z.infer<typeof ToolExecutionSchema>;

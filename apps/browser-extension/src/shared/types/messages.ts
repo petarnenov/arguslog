@@ -39,6 +39,9 @@ export const BackgroundRequestSchema = z.discriminatedUnion('type', [
       name: z.string(),
       args: z.record(z.unknown()).default({}),
       expectMutation: z.boolean().default(false),
+      // Phase 3: optional attribution so the background can stamp the resulting
+      // execution-history entry. Side-panel sets this via `withWorkflowRun(runId, …)`.
+      workflowRunId: z.string().optional(),
     }),
   }),
   z.object({ type: z.literal('workspace/get') }),

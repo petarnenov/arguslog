@@ -154,6 +154,7 @@ export async function handleBackgroundRequest(rawMessage: unknown): Promise<unkn
           message.payload.name,
           message.payload.args,
           message.payload.expectMutation,
+          message.payload.workflowRunId,
         );
         return ok(result);
       }

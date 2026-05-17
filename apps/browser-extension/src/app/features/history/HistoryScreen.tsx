@@ -7,6 +7,10 @@
  * Rerun gating: a history entry's Rerun button is itself capability-gated. If the
  * connected server no longer advertises the tool (PAT scope shrunk, server downgraded),
  * the button is disabled with the standard missing-tools tooltip.
+ *
+ * Phase 3 — workflow run grouping: consecutive entries sharing a `workflowRunId` are
+ * folded under an expandable parent row labelled with the workflow id, step count, and
+ * relative time. Standalone entries (no `workflowRunId`) render flat as before.
  */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -152,17 +156,98 @@ export function HistoryScreen() {
           description="Run a tool from the Tools screen or any of the workflows — its args + result will land here."
         />
       ) : (
-        <div className="space-y-3">
-          {entries.map((entry) => (
-            <HistoryEntry
-              key={entry.id}
-              entry={entry}
-              advertisedTools={advertisedTools}
-              onRerun={rerun}
-            />
-          ))}
-        </div>
+        <GroupedEntries
+          entries={entries}
+          advertisedTools={advertisedTools}
+          onRerun={rerun}
+        />
       )}
     </Page>
+  );
+}
+
+interface HistoryGroup {
+  kind: 'workflow';
+  workflowRunId: string;
+  entries: ToolExecution[];
+}
+interface FlatEntry {
+  kind: 'flat';
+  entry: ToolExecution;
+}
+type HistoryRow = HistoryGroup | FlatEntry;
+
+function groupEntries(entries: ToolExecution[]): HistoryRow[] {
+  const rows: HistoryRow[] = [];
+  for (const entry of entries) {
+    if (!entry.workflowRunId) {
+      rows.push({ kind: 'flat', entry });
+      continue;
+    }
+    const last = rows[rows.length - 1];
+    if (last && last.kind === 'workflow' && last.workflowRunId === entry.workflowRunId) {
+      last.entries.push(entry);
+    } else {
+      rows.push({ kind: 'workflow', workflowRunId: entry.workflowRunId, entries: [entry] });
+    }
+  }
+  return rows;
+}
+
+function GroupedEntries(props: {
+  entries: ToolExecution[];
+  advertisedTools: Set<string>;
+  onRerun: (entry: ToolExecution) => void;
+}) {
+  const rows = groupEntries(props.entries);
+  return (
+    <div className="space-y-3">
+      {rows.map((row) => {
+        if (row.kind === 'flat') {
+          return (
+            <HistoryEntry
+              key={row.entry.id}
+              entry={row.entry}
+              advertisedTools={props.advertisedTools}
+              onRerun={props.onRerun}
+            />
+          );
+        }
+        const newest = row.entries[0]!;
+        return (
+          <details
+            key={row.workflowRunId}
+            className="rounded-xl border border-blue-500/40 bg-slate-950/40"
+            open
+            data-testid="history-workflow-group"
+          >
+            <summary className="cursor-pointer list-none p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Badge tone="default">workflow</Badge>
+                  <span className="font-mono text-xs text-slate-200">
+                    {row.workflowRunId.slice(0, 8)}
+                  </span>
+                  <span className="text-sm text-slate-300">
+                    {row.entries.length} step{row.entries.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <span className="text-xs text-slate-500">{relativeTime(newest.ts)}</span>
+              </div>
+            </summary>
+            <div className="space-y-2 border-t border-slate-800 p-3">
+              {row.entries.map((entry) => (
+                <HistoryEntry
+                  key={entry.id}
+                  entry={entry}
+                  advertisedTools={props.advertisedTools}
+                  onRerun={props.onRerun}
+                />
+              ))}
+            </div>
+          </details>
+        );
+      })}
+    </div>
   );
 }

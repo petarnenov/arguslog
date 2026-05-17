@@ -280,6 +280,7 @@ export async function callTool(
   name: string,
   args: Record<string, unknown>,
   isMutation: boolean,
+  workflowRunId?: string,
 ): Promise<unknown> {
   const execute = () =>
     withClient(config, `tool/call:${name}`, async (client) => {
@@ -302,6 +303,7 @@ export async function callTool(
           outcome: 'ok',
           durationMs: Date.now() - startedAt,
           result,
+          workflowRunId,
         }).catch(() => undefined);
         return result;
       } catch (err) {
@@ -313,6 +315,7 @@ export async function callTool(
           durationMs: Date.now() - startedAt,
           errorBucket: appErr.bucket,
           errorMessage: appErr.message,
+          workflowRunId,
         }).catch(() => undefined);
         throw err;
       }
