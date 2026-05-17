@@ -51,7 +51,7 @@
     "@arguslog/eslint-config": "workspace:*",
     "@arguslog/tsconfig": "workspace:*",
     "@types/express": "^4.17.21",
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.8.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   },
