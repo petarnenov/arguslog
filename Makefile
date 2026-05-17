@@ -346,4 +346,9 @@ demo: ## Full reset → fresh infra → start dev stack → auto-seed demo data
 	    sleep 2; \
 	  done; \
 	) &
-	@$(MAKE)
+	@# Pre-seed the platform-admin allowlist with the demo email so the auto-seeded
+	@# `demo@arguslog.local` lands on a stack that surfaces the Admin sidebar item
+	@# out of the box. Demo-only by design: plain `make` / `make dev` don't go
+	@# through this recipe and stay admin-less. Override-friendly (developer's
+	@# shell or `.env.local` wins because `dev` sources it after this var is set).
+	@ARGUSLOG_PLATFORM_ADMINS="$${ARGUSLOG_PLATFORM_ADMINS:-demo@arguslog.local}" $(MAKE)
