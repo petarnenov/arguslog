@@ -12,7 +12,13 @@
 // no runtime reference to sdk-node (and its node:* imports) survives in the Edge bundle.
 import type { Breadcrumb, Level, NodeArguslogOptions, User } from '@arguslog/sdk-node';
 
-export type { Breadcrumb, EventPayload, Level, NodeArguslogOptions, User } from '@arguslog/sdk-node';
+export type {
+  Breadcrumb,
+  EventPayload,
+  Level,
+  NodeArguslogOptions,
+  User,
+} from '@arguslog/sdk-node';
 
 export interface ErrorContext {
   routerKind: 'Pages Router' | 'App Router';
@@ -44,7 +50,9 @@ export function captureMessage(_message: string, _level?: Level): undefined {
 export function setUser(_user: User | undefined): void {}
 export function setTag(_key: string, _value: string): void {}
 export function setContext(_name: string, _ctx: Record<string, unknown>): void {}
-export function addBreadcrumb(_crumb: Omit<Breadcrumb, 'timestamp'> & { timestamp?: number }): void {}
+export function addBreadcrumb(
+  _crumb: Omit<Breadcrumb, 'timestamp'> & { timestamp?: number },
+): void {}
 export function flush(): Promise<void> {
   return Promise.resolve();
 }
@@ -55,7 +63,11 @@ export function runWithRequestScope<T>(fn: () => T): T {
   return fn();
 }
 
-export function onRequestError(_err: unknown, _request: RequestInfo, _context: ErrorContext): void {}
+export function onRequestError(
+  _err: unknown,
+  _request: RequestInfo,
+  _context: ErrorContext,
+): void {}
 
 export function wrapApiHandler<TArgs extends unknown[], TResult>(
   handler: (...args: TArgs) => TResult | Promise<TResult>,

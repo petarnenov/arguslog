@@ -86,11 +86,7 @@ export default function HomePage() {
           {todos.map((t) => (
             <li key={t.id} className={t.done ? 'done' : ''}>
               <label>
-                <input
-                  type="checkbox"
-                  checked={t.done}
-                  onChange={() => void toggleTodo(t.id)}
-                />
+                <input type="checkbox" checked={t.done} onChange={() => void toggleTodo(t.id)} />
                 <span>{t.text}</span>
               </label>
               <button onClick={() => void deleteTodo(t.id)} aria-label={`Delete ${t.text}`}>

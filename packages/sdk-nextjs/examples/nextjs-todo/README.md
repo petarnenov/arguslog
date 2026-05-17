@@ -1,7 +1,7 @@
 # Next.js TODO — Arguslog Next.js SDK example
 
 A minimal Next.js 15 + App Router TODO app wired to [`@arguslog/sdk-nextjs`](../../). Shows
-the *standard* integration surface a real app needs:
+the _standard_ integration surface a real app needs:
 
 - `instrumentation.ts` — server-side `init()` + `onRequestError` for Next 15
 - `app/arguslog.client.ts` + `app/layout.tsx` — client SDK init + top-level `ArguslogErrorBoundary`
@@ -14,16 +14,16 @@ server restarts; that's intentional for a demo.
 
 ## What this demo proves
 
-| SDK feature                         | Where it's wired                                                      |
-| ----------------------------------- | --------------------------------------------------------------------- |
-| `init()` (server)                   | [`instrumentation.ts`](instrumentation.ts) — Node runtime only        |
-| `onRequestError` (Next 15 hook)     | [`instrumentation.ts`](instrumentation.ts) — re-exported from the SDK |
-| `init()` (client)                   | [`app/arguslog.client.ts`](app/arguslog.client.ts)                    |
-| `<ArguslogErrorBoundary>`           | [`app/layout.tsx`](app/layout.tsx) — wraps the whole app              |
-| `useArguslog()` + `addBreadcrumb`   | [`app/page.tsx`](app/page.tsx) — one crumb per todo action            |
-| `captureException`                  | `app/page.tsx` — "captureException()" demo button                     |
-| Error boundary catch                | `app/page.tsx` — "Throw render error" demo button                     |
-| `wrapRouteHandler`                  | [`app/api/todos/route.ts`](app/api/todos/route.ts) — GET/POST/PATCH/DELETE |
+| SDK feature                           | Where it's wired                                                                          |
+| ------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `init()` (server)                     | [`instrumentation.ts`](instrumentation.ts) — Node runtime only                            |
+| `onRequestError` (Next 15 hook)       | [`instrumentation.ts`](instrumentation.ts) — re-exported from the SDK                     |
+| `init()` (client)                     | [`app/arguslog.client.ts`](app/arguslog.client.ts)                                        |
+| `<ArguslogErrorBoundary>`             | [`app/layout.tsx`](app/layout.tsx) — wraps the whole app                                  |
+| `useArguslog()` + `addBreadcrumb`     | [`app/page.tsx`](app/page.tsx) — one crumb per todo action                                |
+| `captureException`                    | `app/page.tsx` — "captureException()" demo button                                         |
+| Error boundary catch                  | `app/page.tsx` — "Throw render error" demo button                                         |
+| `wrapRouteHandler`                    | [`app/api/todos/route.ts`](app/api/todos/route.ts) — GET/POST/PATCH/DELETE                |
 | Server-side capture via wrapped route | `app/page.tsx` "Trigger server error" → `GET /api/todos?fail=1` throws inside the wrapper |
 
 ## Quick start
