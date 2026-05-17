@@ -11,7 +11,7 @@
  * On success: invalidates the projects + workspace queries so the picker re-fetches,
  * then sets the new project as the active workspace selection.
  */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { getConnectionStatus } from '../../../shared/domain/connection';

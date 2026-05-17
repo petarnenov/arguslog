@@ -46,8 +46,7 @@ export const queryKeys = {
     ['admin', 'orgs', q, offset, limit] as const,
   adminAudit: (offset: number, limit: number) => ['admin', 'audit', offset, limit] as const,
   slackWorkspaces: (orgId: number) => ['slack-workspaces', orgId] as const,
-  gitBranches: (orgId: number, projectId: number) =>
-    ['git-branches', orgId, projectId] as const,
+  gitBranches: (orgId: number, projectId: number) => ['git-branches', orgId, projectId] as const,
 };
 
 export function useSlackWorkspaces(orgId: number | undefined, options: { enabled?: boolean } = {}) {

@@ -143,10 +143,7 @@ export function WorkflowsScreen() {
               />
               <Button
                 disabled={
-                  !projectId ||
-                  !currentVersion ||
-                  !previousVersion ||
-                  !regressionCaps.available
+                  !projectId || !currentVersion || !previousVersion || !regressionCaps.available
                 }
                 onClick={() => runMutation.mutate(WORKFLOW_IDS.REGRESSION_CHECK)}
                 title={formatMissingTools(regressionCaps.missingTools) ?? undefined}

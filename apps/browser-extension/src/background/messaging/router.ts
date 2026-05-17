@@ -3,10 +3,7 @@ import {
   setCapabilitySnapshot,
   clearCapabilitySnapshot,
 } from '../../shared/storage/capability-cache';
-import {
-  clearExecutionHistory,
-  getExecutionHistory,
-} from '../../shared/storage/execution-history';
+import { clearExecutionHistory, getExecutionHistory } from '../../shared/storage/execution-history';
 import { getSettings, updateSettings } from '../../shared/storage/settings-store';
 import {
   getPageContext,

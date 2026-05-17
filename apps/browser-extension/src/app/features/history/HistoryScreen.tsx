@@ -19,13 +19,7 @@ import {
   type ToolExecution,
 } from '../../../shared/domain/history';
 import { getConnectionStatus } from '../../../shared/domain/connection';
-import {
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  Page,
-} from '../../../shared/ui/components/primitives';
+import { Badge, Button, EmptyState, Page } from '../../../shared/ui/components/primitives';
 
 function relativeTime(iso: string, now: number = Date.now()): string {
   const then = new Date(iso).getTime();

@@ -109,9 +109,7 @@ export function ProjectsPage() {
       name: (v) => (v.trim().length < 2 ? t('onboarding.errorProjectName') : null),
       gitRepo: (v, values) =>
         // Provider picked but repo blank — surface a hint before the server 400s
-        values.gitProvider && v.trim() === ''
-          ? t('projects.gitRepoLabel')
-          : null,
+        values.gitProvider && v.trim() === '' ? t('projects.gitRepoLabel') : null,
     },
   });
 
@@ -234,8 +232,7 @@ export function ProjectsPage() {
     editTarget != null &&
     (editForm.values.gitProvider !== (editTarget.gitProvider ?? NO_PROVIDER) ||
       editTrimmedRepo !== (editTarget.gitRepo ?? ''));
-  const editGitValid =
-    !editForm.values.gitProvider || editTrimmedRepo.length > 0;
+  const editGitValid = !editForm.values.gitProvider || editTrimmedRepo.length > 0;
   const canSaveEdit =
     Boolean(editTarget) &&
     editTrimmedName.length >= 2 &&
@@ -370,10 +367,7 @@ export function ProjectsPage() {
                 clearable
                 value={editForm.values.gitProvider || null}
                 onChange={(value) => {
-                  editForm.setFieldValue(
-                    'gitProvider',
-                    (value ?? NO_PROVIDER) as '' | GitProvider,
-                  );
+                  editForm.setFieldValue('gitProvider', (value ?? NO_PROVIDER) as '' | GitProvider);
                   // Clearing the provider also clears the repo so the pair stays consistent.
                   if (!value) editForm.setFieldValue('gitRepo', '');
                 }}

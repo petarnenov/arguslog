@@ -25,9 +25,7 @@
  */
 
 export function getDashboardBaseUrl(mcpEndpoint: string): string {
-  const trimmed = mcpEndpoint.endsWith('/mcp')
-    ? mcpEndpoint.slice(0, -'/mcp'.length)
-    : mcpEndpoint;
+  const trimmed = mcpEndpoint.endsWith('/mcp') ? mcpEndpoint.slice(0, -'/mcp'.length) : mcpEndpoint;
   try {
     const url = new URL(trimmed);
     if (url.host.startsWith('mcp.')) {

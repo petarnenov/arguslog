@@ -35,7 +35,9 @@ describe('builders', () => {
   const base = 'https://app.arguslog.org';
 
   it('buildProjectUrl', () => {
-    expect(buildProjectUrl(base, 'acme', 42)).toBe('https://app.arguslog.org/orgs/acme/projects/42');
+    expect(buildProjectUrl(base, 'acme', 42)).toBe(
+      'https://app.arguslog.org/orgs/acme/projects/42',
+    );
   });
 
   it('buildIssueUrl', () => {

@@ -72,10 +72,7 @@ export function listProjects(orgId: number): Promise<Project[]> {
   return apiFetch<Project[]>(`/api/v1/orgs/${orgId}/projects`);
 }
 
-export function createProject(
-  orgId: number,
-  body: CreateProjectInput,
-): Promise<ProjectCreate> {
+export function createProject(orgId: number, body: CreateProjectInput): Promise<ProjectCreate> {
   return apiFetch<ProjectCreate>(`/api/v1/orgs/${orgId}/projects`, {
     method: 'POST',
     body: JSON.stringify(body),
@@ -123,7 +120,5 @@ export function archiveProject(orgId: number, projectId: number): Promise<void> 
  * `git-upstream` = 502).
  */
 export function listGitBranches(orgId: number, projectId: number): Promise<GitBranch[]> {
-  return apiFetch<GitBranch[]>(
-    `/api/v1/orgs/${orgId}/projects/${projectId}/git/branches`,
-  );
+  return apiFetch<GitBranch[]>(`/api/v1/orgs/${orgId}/projects/${projectId}/git/branches`);
 }

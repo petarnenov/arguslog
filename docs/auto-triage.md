@@ -59,14 +59,14 @@ issue still exists — the operator can assign manually from the GitHub UI.
 In the dashboard: **Settings → Alerts → Destinations → New**, pick kind
 **„GitHub Issue (auto-triage)"**, fill in:
 
-| Field            | Value                                                                      |
-| ---------------- | -------------------------------------------------------------------------- |
-| Name             | Anything memorable (e.g. „auto-triage → acme/web")                         |
-| Owner            | GitHub username / org (e.g. `acme`)                                        |
-| Repo             | Repository name only (e.g. `web`)                                          |
-| Fine-grained PAT | The token from the prereqs section                                         |
+| Field            | Value                                                                     |
+| ---------------- | ------------------------------------------------------------------------- |
+| Name             | Anything memorable (e.g. „auto-triage → acme/web")                        |
+| Owner            | GitHub username / org (e.g. `acme`)                                       |
+| Repo             | Repository name only (e.g. `web`)                                         |
+| Fine-grained PAT | The token from the prereqs section                                        |
 | Assignee         | Pre-filled with `copilot-swe-agent` — overwrite to assign a human instead |
-| Labels           | Leave blank for the default `arguslog-auto-triage`                         |
+| Labels           | Leave blank for the default `arguslog-auto-triage`                        |
 
 > The Assignee field on the **create** form is pre-filled with `copilot-swe-agent` so
 > auto-triage works out of the box without retyping a fiddle-prone handle from docs.

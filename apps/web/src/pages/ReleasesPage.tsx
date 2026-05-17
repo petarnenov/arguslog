@@ -331,8 +331,7 @@ export function ReleasesPage() {
                   isError={branchesQuery.isError}
                   errorMessage={
                     branchesQuery.error instanceof ApiError
-                      ? (branchesQuery.error.problem.detail ??
-                        branchesQuery.error.problem.title)
+                      ? (branchesQuery.error.problem.detail ?? branchesQuery.error.problem.title)
                       : null
                   }
                   value={form.values.gitRef}

@@ -26,11 +26,8 @@ vi.mock('webextension-polyfill', () => ({
 }));
 
 // Import AFTER the mock so the module picks up the stubbed `browser`.
-const {
-  appendExecution,
-  clearExecutionHistory,
-  getExecutionHistory,
-} = await import('../../src/shared/storage/execution-history');
+const { appendExecution, clearExecutionHistory, getExecutionHistory } =
+  await import('../../src/shared/storage/execution-history');
 
 describe('execution-history', () => {
   beforeEach(() => {
