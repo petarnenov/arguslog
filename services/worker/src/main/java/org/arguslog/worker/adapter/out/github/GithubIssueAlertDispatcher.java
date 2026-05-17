@@ -44,15 +44,15 @@ import org.springframework.stereotype.Component;
  * {@code assignees} array against the human-collaborator list and rejects bot/app identities
  * (including {@code copilot-swe-agent}) with HTTP 422. The dedicated sub-resource {@code POST
  * /repos/{owner}/{repo}/issues/{n}/assignees} is more permissive and accepts those handles. We
- * always create-then-assign in two calls, regardless of whether the configured assignee is a bot
- * or a human, so the dispatch path stays uniform.
+ * always create-then-assign in two calls, regardless of whether the configured assignee is a bot or
+ * a human, so the dispatch path stays uniform.
  *
  * <p>Body is markdown — Copilot reads it as the entire input (no MCP, no follow-up tool calls). We
  * pre-bake the stack trace + breadcrumbs from the latest event into the body so the agent has
  * something concrete to grep. Failure policy matches the rest of the dispatcher fleet: log + drop
  * on every error path (no retries — P3's persistent outbox is a separate piece of work). If step 1
- * (create) fails, we log and drop. If step 2 (assign) fails, the issue still exists in GitHub —
- * we log a WARN noting the assignee call failed so the operator can pick it up manually.
+ * (create) fails, we log and drop. If step 2 (assign) fails, the issue still exists in GitHub — we
+ * log a WARN noting the assignee call failed so the operator can pick it up manually.
  */
 @Component
 @EnableConfigurationProperties({GithubIssueProperties.class, AlertsProperties.class})
@@ -104,9 +104,9 @@ public class GithubIssueAlertDispatcher implements AlertDispatcher {
   }
 
   /**
-   * Step 1: {@code POST /repos/{owner}/{repo}/issues} with the rendered title, body, and labels
-   * but NO assignees — see class javadoc. Returns the newly-created issue number on success,
-   * {@code null} on failure (already logged).
+   * Step 1: {@code POST /repos/{owner}/{repo}/issues} with the rendered title, body, and labels but
+   * NO assignees — see class javadoc. Returns the newly-created issue number on success, {@code
+   * null} on failure (already logged).
    */
   private Integer createIssue(long destinationId, Config cfg, String title, String body) {
     ObjectNode requestBody = mapper.createObjectNode();

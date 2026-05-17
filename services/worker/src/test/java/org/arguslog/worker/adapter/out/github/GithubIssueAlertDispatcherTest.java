@@ -75,8 +75,7 @@ class GithubIssueAlertDispatcherTest {
                     .withStatus(201)
                     .withHeader("Content-Type", "application/json")
                     .withBody("{\"number\":123}")));
-    wm.stubFor(
-        post(urlPathMatching(ASSIGNEES_PATH_REGEX)).willReturn(aResponse().withStatus(201)));
+    wm.stubFor(post(urlPathMatching(ASSIGNEES_PATH_REGEX)).willReturn(aResponse().withStatus(201)));
   }
 
   @Test
