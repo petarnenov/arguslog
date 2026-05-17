@@ -704,15 +704,60 @@ const { walletClient } = initWeb3({
     version: '2.0.0',
     installCmd: 'npm install @arguslog/sdk-react-native@^2',
     detect: 'package.json contains "react-native"',
-    entryFile: 'App.tsx (top of the file, above the root component)',
+    entryFile: '.env + src/arguslog.ts + App.tsx (Expo-driven installer)',
     lang: 'tsx',
-    initSnippet: `import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react-native';
+    // Expo is the primary target — `EXPO_PUBLIC_*` env vars are picked up at build time
+    // without extra babel config. For bare RN the same shape works via react-native-config
+    // (see the SDK README for the bare-RN alternative).
+    initSnippet:
+      '// See `initFiles` below — React Native ships an Expo env-driven installer shape.',
+    initFiles: [
+      {
+        path: '.env',
+        lang: 'bash',
+        contents: `# Expo loads EXPO_PUBLIC_* at build time; do NOT commit a real DSN here.
+# For bare RN, see the SDK README — same pattern via react-native-config.
+EXPO_PUBLIC_ARGUSLOG_DSN=<DSN>
+EXPO_PUBLIC_APP_RELEASE=1.0.0`,
+      },
+      {
+        path: 'src/arguslog.ts',
+        lang: 'ts',
+        contents: `import { init } from '@arguslog/sdk-react-native';
 
-init({
-  dsn: '<DSN>',
-  environment: __DEV__ ? 'development' : 'production',
-  integrations: ['globalHandlers'],
-});
+let installed = false;
+
+/**
+ * Install Arguslog once at app boot. Reads the DSN from EXPO_PUBLIC_ARGUSLOG_DSN
+ * at build time. If the variable is missing (local dev without keys), the
+ * installer is a deliberate no-op so the app boots cleanly without Arguslog
+ * mounted. Native handlers (uncaught JS exceptions, native crashes) wire up
+ * automatically when init() runs.
+ */
+export function installArguslog(): void {
+  if (installed) return;
+  const dsn = process.env.EXPO_PUBLIC_ARGUSLOG_DSN;
+  if (!dsn) return;
+
+  init({
+    dsn,
+    environment: __DEV__ ? 'development' : 'production',
+    release: process.env.EXPO_PUBLIC_APP_RELEASE,
+    integrations: ['globalHandlers'],
+  });
+  installed = true;
+}`,
+      },
+      {
+        path: 'App.tsx',
+        lang: 'tsx',
+        contents: `import { ArguslogErrorBoundary } from '@arguslog/sdk-react-native';
+
+import { installArguslog } from './src/arguslog';
+import { CrashScreen } from './src/components/CrashScreen';
+import { RootNavigator } from './src/RootNavigator';
+
+installArguslog();
 
 export default function App() {
   return (
@@ -721,7 +766,64 @@ export default function App() {
     </ArguslogErrorBoundary>
   );
 }`,
+      },
+    ],
     wrapSnippet: null,
+    extras: {
+      recommendedArchitecture: {
+        description:
+          'React Native ships a UI error boundary (already in the install above) plus the same telemetry-service pattern as React. The crash-screen fallback is the boundary; the telemetry service is what catches the non-crash flows — "validation failed", "retry succeeded", "background sync errored". Wire one real screen with it and you have actionable telemetry for the next bug-report cycle.',
+        files: [
+          {
+            path: 'src/services/telemetry.ts',
+            lang: 'ts',
+            contents: `import {
+  addBreadcrumb,
+  captureException,
+  captureMessage,
+} from '@arguslog/sdk-react-native';
+
+/**
+ * One named breadcrumb / event per workflow phase. Instrument a single real
+ * screen (checkout, sign-in, sync) end-to-end so the next crash report shows
+ * the user journey, not just stack traces.
+ */
+export const telemetry = {
+  attempt: (action: string) =>
+    addBreadcrumb({ category: 'workflow', message: \`\${action}:attempt\`, level: 'info' }),
+  success: (action: string) =>
+    addBreadcrumb({ category: 'workflow', message: \`\${action}:success\`, level: 'info' }),
+  validation: (action: string, err: Error) =>
+    captureMessage(\`\${action} validation failed: \${err.message}\`, 'warning'),
+  unexpected: (action: string, err: Error) =>
+    captureException(err, { tags: { action } }),
+};`,
+          },
+        ],
+      },
+      verificationChecklist: [
+        { id: 'package', label: 'SDK installed (`@arguslog/sdk-react-native` in dependencies)' },
+        {
+          id: 'env',
+          label: '`EXPO_PUBLIC_ARGUSLOG_DSN` set in `.env` (or `react-native-config` for bare RN)',
+        },
+        { id: 'installer', label: '`installArguslog()` wired in `App.tsx`' },
+        {
+          id: 'boundary',
+          label: '`<ArguslogErrorBoundary fallback={<CrashScreen />}>` wraps the root navigator',
+        },
+        { id: 'workflow', label: 'One real user workflow instrumented with `telemetry.*`' },
+        { id: 'event', label: 'Test event received in the dashboard (verify step below)' },
+        {
+          id: 'device',
+          label: 'Onboarding verified on a physical device (not just simulator/emulator)',
+        },
+        {
+          id: 'failure',
+          label: 'One controlled failure path exercised (validation or unexpected)',
+        },
+      ],
+    },
   },
   {
     slug: 'node',
@@ -1333,6 +1435,23 @@ init({
         const nextEntry = SDK_CATALOG.find((p) => p.slug === 'nextjs');
         if (!nextEntry || !('initFiles' in nextEntry) || !nextEntry.initFiles) return '';
         return nextEntry.initFiles
+          .map((f) => `// === ${f.path} ===\n${f.contents.replace(/<DSN>/g, dsn)}`)
+          .join('\n\n');
+      })(),
+    },
+    {
+      // React Native ships the Expo env-driven workflow-first flow — ConnectProjectPage
+      // renders <OnboardingFlow slug="react-native" /> when this tab is active.
+      id: 'sdk-react-native',
+      group: 'sdk',
+      client: 'React Native',
+      language: 'tsx',
+      description:
+        'React Native + Expo (bare RN supported via react-native-config). Env-driven installer with a no-op fallback for local dev. Walk the 8 steps below — install plus one instrumented workflow plus device verification gives you trustworthy onboarding.',
+      code: (() => {
+        const rnEntry = SDK_CATALOG.find((p) => p.slug === 'react-native');
+        if (!rnEntry || !('initFiles' in rnEntry) || !rnEntry.initFiles) return '';
+        return rnEntry.initFiles
           .map((f) => `// === ${f.path} ===\n${f.contents.replace(/<DSN>/g, dsn)}`)
           .join('\n\n');
       })(),

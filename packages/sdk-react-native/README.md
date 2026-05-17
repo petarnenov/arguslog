@@ -17,7 +17,68 @@ pnpm add @arguslog/sdk-react-native
 pnpm add react react-native
 ```
 
-## Quick start
+## Quick start (Expo env-driven, recommended)
+
+Expo loads `EXPO_PUBLIC_*` env vars at build time without extra babel config — keep
+the DSN out of app code and let a tiny installer module mount Arguslog at boot.
+The installer no-ops cleanly when the DSN is missing, useful for local dev without
+keys.
+
+```bash
+# .env — DO NOT commit a real DSN
+EXPO_PUBLIC_ARGUSLOG_DSN=arguslog://<publicKey>@<host>/api/<projectId>
+EXPO_PUBLIC_APP_RELEASE=1.4.0
+```
+
+```ts
+// src/arguslog.ts
+import { init } from '@arguslog/sdk-react-native';
+
+let installed = false;
+
+export function installArguslog(): void {
+  if (installed) return;
+  const dsn = process.env.EXPO_PUBLIC_ARGUSLOG_DSN;
+  if (!dsn) return; // no-op when DSN is missing — safe for local dev
+
+  init({
+    dsn,
+    environment: __DEV__ ? 'development' : 'production',
+    release: process.env.EXPO_PUBLIC_APP_RELEASE,
+    integrations: ['globalHandlers'],
+  });
+  installed = true;
+}
+```
+
+```tsx
+// App.tsx
+import { ArguslogErrorBoundary } from '@arguslog/sdk-react-native';
+
+import { installArguslog } from './src/arguslog';
+import { CrashScreen } from './src/components/CrashScreen';
+import { RootNavigator } from './src/RootNavigator';
+
+installArguslog();
+
+export default function App() {
+  return (
+    <ArguslogErrorBoundary fallback={<CrashScreen />}>
+      <RootNavigator />
+    </ArguslogErrorBoundary>
+  );
+}
+```
+
+For **bare React Native** (no Expo), the same shape works with `react-native-config`
+instead of `process.env.EXPO_PUBLIC_*`:
+
+```ts
+import Config from 'react-native-config';
+const dsn = Config.ARGUSLOG_DSN;
+```
+
+### Inline (single-file alternative)
 
 ```tsx
 import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react-native';

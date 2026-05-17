@@ -49,6 +49,30 @@ Store. The remaining publish blockers are the operator-owned creative
 deliverables (screenshots, promo tiles, listing copy) documented in
 `store-assets/README.md`.
 
+### Changed — React Native Connect onboarding ships the Expo env-driven installer
+
+Phase 4 of the cross-SDK onboarding rework — the last per-SDK phase. The
+`@arguslog/sdk-react-native` catalog entry migrated to a 3-file `initFiles[]`
+shape primarily targeting Expo: `.env` (`EXPO_PUBLIC_ARGUSLOG_DSN` +
+`EXPO_PUBLIC_APP_RELEASE`), `src/arguslog.ts` (named `installArguslog()` that
+no-ops when DSN missing — safe for the local-dev / TestFlight / EAS Build
+shared-machine workflow), and `App.tsx` (calls the installer + wraps the root
+navigator in `<ArguslogErrorBoundary fallback={<CrashScreen />}>`).
+
+Bare RN consumers get a one-paragraph alternative in the README pointing at
+`react-native-config` — the env shape and installer pattern stay identical, only
+the env reader swaps. Verification checklist adds an RN-specific item: "verified
+on a physical device" — simulators / emulators don't always exercise the native
+crash path the same way real hardware does.
+
+`workflowFirstSlugs` in ConnectProjectPage now covers all 5 active JS SDK
+flows (Vue + React + Next.js + Angular + React Native). The cross-SDK integrity
+test parametrizes over every entry shipping `initFiles[]`, so any future
+SDK-export drift in any of the five fails CI loudly.
+
+SDK README leads with the new Expo env-driven Quick Start; the existing inline
+form is preserved as a single-file alternative for tutorials.
+
 ### Changed — Angular Connect onboarding ships the environment-driven provider shape
 
 Phase 3 of the cross-SDK onboarding rework. The Angular `SDK_CATALOG` entry
