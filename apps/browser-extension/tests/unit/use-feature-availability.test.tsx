@@ -9,8 +9,8 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { useFeatureAvailability } from '../../src/shared/hooks/useFeatureAvailability';
 import { getConnectionStatus } from '../../src/shared/domain/connection';
+import { useFeatureAvailability } from '../../src/shared/hooks/useFeatureAvailability';
 import type { ConnectionStatus } from '../../src/shared/validation/models';
 
 vi.mock('../../src/shared/domain/connection', () => ({

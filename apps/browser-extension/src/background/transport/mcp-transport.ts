@@ -16,6 +16,7 @@ import {
   type McpPromptDefinition,
   type McpToolDefinition,
 } from '../../shared/mcp/protocol';
+import { appendExecution } from '../../shared/storage/execution-history';
 import { createAppError, type AppError } from '../../shared/types/errors';
 import {
   AccountSummarySchema,
@@ -24,7 +25,6 @@ import {
 } from '../../shared/validation/models';
 import { recordConnectionError, recordConnectionSuccess } from '../auth/pat-vault';
 import { appendDiagnosticLog } from '../diagnostics/log-buffer';
-import { appendExecution } from '../../shared/storage/execution-history';
 
 /**
  * Error codes that signal connection/auth health (vs. e.g. a 404 from a missing issue,

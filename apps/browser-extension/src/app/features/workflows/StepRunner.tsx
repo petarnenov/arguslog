@@ -14,6 +14,13 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import type {
+  StepState,
+  StepStatus,
+  WorkflowDefinition,
+  WorkflowRunState,
+} from '../../../shared/domain/workflow-engine';
+import { advanceStep, rerunStep, runAllRemaining } from '../../../shared/domain/workflow-run';
 import { ConfirmDialog } from '../../../shared/ui/components/ConfirmDialog';
 import {
   Badge,
@@ -23,17 +30,6 @@ import {
   InlineError,
   Textarea,
 } from '../../../shared/ui/components/primitives';
-import {
-  advanceStep,
-  rerunStep,
-  runAllRemaining,
-} from '../../../shared/domain/workflow-run';
-import type {
-  StepState,
-  StepStatus,
-  WorkflowDefinition,
-  WorkflowRunState,
-} from '../../../shared/domain/workflow-engine';
 import { copyText, downloadFile } from '../../../shared/utils/export';
 
 interface Props {
@@ -66,7 +62,9 @@ function formatJson(value: unknown): string {
   }
 }
 
-function parseArgs(text: string): { ok: true; value: Record<string, unknown> } | { ok: false; error: string } {
+function parseArgs(
+  text: string,
+): { ok: true; value: Record<string, unknown> } | { ok: false; error: string } {
   if (!text.trim()) return { ok: true, value: {} };
   try {
     const parsed = JSON.parse(text);
@@ -202,7 +200,9 @@ export function StepRunner(props: Props) {
         // promise wired through the ConfirmDialog so the operator confirms inline.
         return new Promise<boolean>((resolve) => {
           setPendingApproval({ stepIdx, mode: 'run-all' });
-          (window as unknown as { __workflowApprovalResolve?: (v: boolean) => void }).__workflowApprovalResolve = resolve;
+          (
+            window as unknown as { __workflowApprovalResolve?: (v: boolean) => void }
+          ).__workflowApprovalResolve = resolve;
         });
       });
       onStateChange(next);
@@ -239,8 +239,8 @@ export function StepRunner(props: Props) {
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-xs text-slate-400">
-            Run <span className="font-mono text-slate-200">{state.runId.slice(0, 8)}</span> ·
-            status <Badge tone={isRunErrored ? 'danger' : isRunComplete ? 'success' : 'warn'}>
+            Run <span className="font-mono text-slate-200">{state.runId.slice(0, 8)}</span> · status{' '}
+            <Badge tone={isRunErrored ? 'danger' : isRunComplete ? 'success' : 'warn'}>
               {state.status}
             </Badge>{' '}
             · step {Math.min(currentIdx + 1, def.steps.length)} of {def.steps.length}
@@ -248,11 +248,7 @@ export function StepRunner(props: Props) {
           <div className="flex gap-2">
             {!isRunComplete ? (
               <>
-                <Button
-                  variant="secondary"
-                  disabled={inFlight || isRunComplete}
-                  onClick={doRunAll}
-                >
+                <Button variant="secondary" disabled={inFlight || isRunComplete} onClick={doRunAll}>
                   Run all remaining
                 </Button>
                 <Button

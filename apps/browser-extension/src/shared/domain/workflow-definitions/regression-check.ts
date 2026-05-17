@@ -53,9 +53,11 @@ export const regressionCheckDefinition: WorkflowDefinition = {
       label: 'Load issues first-seen in current release',
       tool: 'list_issues',
       prepareArgs: (state) => {
-        const resolved = state.stepStates[1]?.result as {
-          current: ReleaseSummary;
-        } | undefined;
+        const resolved = state.stepStates[1]?.result as
+          | {
+              current: ReleaseSummary;
+            }
+          | undefined;
         return {
           projectId: state.inputs.projectId as number,
           firstSeenReleaseId: resolved?.current.id,
@@ -74,9 +76,11 @@ export const regressionCheckDefinition: WorkflowDefinition = {
       label: 'Load issues seen in previous release',
       tool: 'list_issues',
       prepareArgs: (state) => {
-        const resolved = state.stepStates[1]?.result as {
-          previous: ReleaseSummary;
-        } | undefined;
+        const resolved = state.stepStates[1]?.result as
+          | {
+              previous: ReleaseSummary;
+            }
+          | undefined;
         return {
           projectId: state.inputs.projectId as number,
           seenInReleaseId: resolved?.previous.id,

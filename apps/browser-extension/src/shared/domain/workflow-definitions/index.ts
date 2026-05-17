@@ -11,6 +11,7 @@
 import { MUTATING_TOOLS, type WorkflowId } from '@arguslog/mcp-server/contract';
 
 import type { WorkflowDefinition } from '../workflow-engine';
+
 import { investigateIssueDefinition } from './investigate-issue';
 import { regressionCheckDefinition } from './regression-check';
 import { releasePostmortemDefinition } from './release-postmortem';

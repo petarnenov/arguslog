@@ -8,14 +8,14 @@
  * reproduce the v1 markdown + JSON output. Step badges in the returned `WorkflowResult`
  * are derived from the engine's `stepStates[].status`.
  */
-import type { WorkflowDefinition, WorkflowRunState } from './workflow-engine';
-import { advanceStep, startRun } from './workflow-engine';
 import {
   investigateIssueDefinition,
   regressionCheckDefinition,
   releasePostmortemDefinition,
   triageLoopDefinition,
 } from './workflow-definitions';
+import type { WorkflowDefinition, WorkflowRunState } from './workflow-engine';
+import { advanceStep, startRun } from './workflow-engine';
 
 export interface WorkflowStep {
   id: string;

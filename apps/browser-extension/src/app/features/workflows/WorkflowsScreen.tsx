@@ -18,20 +18,11 @@ import { useState } from 'react';
 
 import { getConnectionStatus } from '../../../shared/domain/connection';
 import { WORKFLOW_DEFINITIONS } from '../../../shared/domain/workflow-definitions';
-import {
-  clearRun,
-  getActiveRun,
-  saveRun,
-  startRun,
-} from '../../../shared/domain/workflow-run';
+import { clearRun, getActiveRun, saveRun, startRun } from '../../../shared/domain/workflow-run';
 import { useFeatureAvailability } from '../../../shared/hooks/useFeatureAvailability';
-import {
-  Button,
-  Card,
-  Input,
-  Page,
-} from '../../../shared/ui/components/primitives';
+import { Button, Card, Input, Page } from '../../../shared/ui/components/primitives';
 import { formatMissingTools } from '../../../shared/utils/format-missing-tools';
+
 import { StepRunner } from './StepRunner';
 
 const ACTIVE_RUN_QUERY_KEY = ['workflow-active-run'] as const;

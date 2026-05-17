@@ -241,17 +241,16 @@ export async function runAllRemaining(
   return current;
 }
 
-function withStepUpdate(
-  steps: StepState[],
-  idx: number,
-  patch: Partial<StepState>,
-): StepState[] {
+function withStepUpdate(steps: StepState[], idx: number, patch: Partial<StepState>): StepState[] {
   return steps.map((s, i) => (i === idx ? { ...s, ...patch } : s));
 }
 
 function mapStepError(err: unknown): { bucket?: string; message: string } {
   if (err && typeof err === 'object' && 'bucket' in err && 'message' in err) {
-    return { bucket: String((err as { bucket: unknown }).bucket), message: String((err as { message: unknown }).message) };
+    return {
+      bucket: String((err as { bucket: unknown }).bucket),
+      message: String((err as { message: unknown }).message),
+    };
   }
   if (err instanceof Error) return { message: err.message };
   return { message: String(err) };

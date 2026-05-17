@@ -11,15 +11,8 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StepRunner } from '../../src/app/features/workflows/StepRunner';
-import {
-  advanceStep,
-  rerunStep,
-  runAllRemaining,
-} from '../../src/shared/domain/workflow-run';
-import type {
-  WorkflowDefinition,
-  WorkflowRunState,
-} from '../../src/shared/domain/workflow-engine';
+import type { WorkflowDefinition, WorkflowRunState } from '../../src/shared/domain/workflow-engine';
+import { advanceStep, rerunStep, runAllRemaining } from '../../src/shared/domain/workflow-run';
 
 vi.mock('../../src/shared/domain/workflow-run', () => ({
   advanceStep: vi.fn(),

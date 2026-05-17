@@ -12,6 +12,8 @@
  */
 import { z } from 'zod';
 
+import { clearWorkflowState, getWorkflowState, setWorkflowState } from '../storage/workspace-store';
+
 import { withWorkflowRun } from './catalog';
 import {
   abortRun as engineAbortRun,
@@ -23,11 +25,6 @@ import {
   type WorkflowDefinition,
   type WorkflowRunState,
 } from './workflow-engine';
-import {
-  clearWorkflowState,
-  getWorkflowState,
-  setWorkflowState,
-} from '../storage/workspace-store';
 
 const StepStateSchema = z.object({
   id: z.string(),

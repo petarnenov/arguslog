@@ -12,17 +12,16 @@
  * folded under an expandable parent row labelled with the workflow id, step count, and
  * relative time. Standalone entries (no `workflowRunId`) render flat as before.
  */
+import { MUTATING_TOOLS } from '@arguslog/mcp-server/contract';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
-import { MUTATING_TOOLS } from '@arguslog/mcp-server/contract';
-
+import { getConnectionStatus } from '../../../shared/domain/connection';
 import {
   clearExecutionHistoryDomain,
   listExecutionHistory,
   type ToolExecution,
 } from '../../../shared/domain/history';
-import { getConnectionStatus } from '../../../shared/domain/connection';
 import { Badge, Button, EmptyState, Page } from '../../../shared/ui/components/primitives';
 
 function relativeTime(iso: string, now: number = Date.now()): string {
@@ -156,11 +155,7 @@ export function HistoryScreen() {
           description="Run a tool from the Tools screen or any of the workflows — its args + result will land here."
         />
       ) : (
-        <GroupedEntries
-          entries={entries}
-          advertisedTools={advertisedTools}
-          onRerun={rerun}
-        />
+        <GroupedEntries entries={entries} advertisedTools={advertisedTools} onRerun={rerun} />
       )}
     </Page>
   );

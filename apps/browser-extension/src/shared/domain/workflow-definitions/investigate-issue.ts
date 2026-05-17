@@ -40,11 +40,7 @@ export const investigateIssueDefinition: WorkflowDefinition = {
         limit: (state.inputs.eventLimit as number | undefined) ?? 5,
       }),
       run: async (args) =>
-        listIssueEvents(
-          args.projectId as number,
-          args.issueId as number,
-          args.limit as number,
-        ),
+        listIssueEvents(args.projectId as number, args.issueId as number, args.limit as number),
     },
   ],
   summarize: (state) => {
