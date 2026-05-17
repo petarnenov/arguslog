@@ -266,22 +266,121 @@ export const telemetry = {
     version: '2.0.0',
     installCmd: 'npm install @arguslog/sdk-angular@^2',
     detect: 'package.json contains "@angular/core"',
-    entryFile: 'src/app/app.config.ts (provideArguslog())',
+    entryFile: 'src/environments/*.ts + src/app/app.config.ts (env-driven provider)',
     lang: 'ts',
-    initSnippet: `import { ApplicationConfig } from '@angular/core';
+    // Angular's idiomatic env-config story is the stock `environment.ts` +
+    // `environment.production.ts` files swapped by the build via `fileReplacements` in
+    // angular.json. provideArguslog reads from these — no `@ngx-env/builder` or extra dep
+    // required. The provider is itself a no-op when `dsn` is empty/undefined so local dev
+    // without keys boots cleanly.
+    initSnippet: '// See `initFiles` below — Angular ships an environment-driven provider shape.',
+    initFiles: [
+      {
+        path: 'src/environments/environment.ts',
+        lang: 'ts',
+        contents: `// Base / dev config. Empty DSN → provideArguslog() is a no-op for local dev.
+// Override per-build via angular.json fileReplacements (production.ts below).
+export const environment = {
+  production: false,
+  arguslogDsn: '',
+  arguslogRelease: '',
+};`,
+      },
+      {
+        path: 'src/environments/environment.production.ts',
+        lang: 'ts',
+        contents: `// Production overlay — angular.json fileReplacements swaps this in for prod builds.
+// DO NOT commit a real DSN here; CI should inject it from secrets at build time.
+export const environment = {
+  production: true,
+  arguslogDsn: '<DSN>',
+  arguslogRelease: '1.0.0',
+};`,
+      },
+      {
+        path: 'src/app/app.config.ts',
+        lang: 'ts',
+        contents: `import { ApplicationConfig } from '@angular/core';
 import { provideArguslog } from '@arguslog/sdk-angular';
+
+import { environment } from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideArguslog({
-      dsn: '<DSN>',
-      environment: 'production',
-      integrations: ['globalHandlers', 'autoBreadcrumbs'],
-    }),
+    // Spread guards the provider from being wired at all when DSN is missing — keeps
+    // local dev quiet without resorting to runtime branching inside Arguslog.
+    ...(environment.arguslogDsn
+      ? [
+          provideArguslog({
+            dsn: environment.arguslogDsn,
+            environment: environment.production ? 'production' : 'development',
+            release: environment.arguslogRelease,
+            integrations: ['globalHandlers', 'autoBreadcrumbs'],
+          }),
+        ]
+      : []),
     // ...your other providers
   ],
 };`,
+      },
+    ],
     wrapSnippet: null,
+    extras: {
+      recommendedArchitecture: {
+        description:
+          'Angular has no UI-level error boundary — the SDK auto-wires the framework `ErrorHandler` so render-time errors are captured automatically. The most useful onboarding moment is therefore "I can see breadcrumbs and events from a real domain action." Inject a small TelemetryService and call it from your components / effects to light up attempt → success → validation/unexpected paths in Arguslog.',
+        files: [
+          {
+            path: 'src/app/services/telemetry.service.ts',
+            lang: 'ts',
+            contents: `import { Injectable } from '@angular/core';
+import {
+  addBreadcrumb,
+  captureException,
+  captureMessage,
+} from '@arguslog/sdk-angular';
+
+/**
+ * Inject anywhere a domain action runs. The methods are no-ops if Arguslog
+ * was not initialised (e.g. local dev without a DSN) — safe to call.
+ */
+@Injectable({ providedIn: 'root' })
+export class TelemetryService {
+  attempt(action: string): void {
+    addBreadcrumb({ category: 'workflow', message: \`\${action}:attempt\`, level: 'info' });
+  }
+  success(action: string): void {
+    addBreadcrumb({ category: 'workflow', message: \`\${action}:success\`, level: 'info' });
+  }
+  validation(action: string, err: Error): void {
+    captureMessage(\`\${action} validation failed: \${err.message}\`, 'warning');
+  }
+  unexpected(action: string, err: Error): void {
+    captureException(err, { tags: { action } });
+  }
+}`,
+          },
+        ],
+      },
+      verificationChecklist: [
+        { id: 'package', label: 'SDK installed (`@arguslog/sdk-angular` in dependencies)' },
+        {
+          id: 'env',
+          label: '`arguslogDsn` set in `environment.production.ts` (or your env injector)',
+        },
+        { id: 'installer', label: '`provideArguslog` wired in `app.config.ts` providers array' },
+        {
+          id: 'error-handler',
+          label: 'Default Angular `ErrorHandler` replaced (auto-wired by `provideArguslog`)',
+        },
+        { id: 'workflow', label: 'One real user workflow instrumented via `TelemetryService`' },
+        { id: 'event', label: 'Test event received in the dashboard (verify step below)' },
+        {
+          id: 'failure',
+          label: 'One controlled failure path exercised (validation or unexpected)',
+        },
+      ],
+    },
   },
   {
     slug: 'vue',
@@ -1177,6 +1276,23 @@ init({
         const reactEntry = SDK_CATALOG.find((p) => p.slug === 'react');
         if (!reactEntry || !('initFiles' in reactEntry) || !reactEntry.initFiles) return '';
         return reactEntry.initFiles
+          .map((f) => `// === ${f.path} ===\n${f.contents.replace(/<DSN>/g, dsn)}`)
+          .join('\n\n');
+      })(),
+    },
+    {
+      // Angular ships the environment-driven provider flow — ConnectProjectPage renders
+      // <OnboardingFlow slug="angular" /> when this tab is active.
+      id: 'sdk-angular',
+      group: 'sdk',
+      client: 'Angular',
+      language: 'ts',
+      description:
+        'Angular 17+ standalone. Environment-driven provider with empty-DSN no-op for local dev. Walk the 6 steps below — install plus one instrumented workflow gives you trustworthy onboarding.',
+      code: (() => {
+        const angularEntry = SDK_CATALOG.find((p) => p.slug === 'angular');
+        if (!angularEntry || !('initFiles' in angularEntry) || !angularEntry.initFiles) return '';
+        return angularEntry.initFiles
           .map((f) => `// === ${f.path} ===\n${f.contents.replace(/<DSN>/g, dsn)}`)
           .join('\n\n');
       })(),

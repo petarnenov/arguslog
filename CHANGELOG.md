@@ -49,6 +49,25 @@ Store. The remaining publish blockers are the operator-owned creative
 deliverables (screenshots, promo tiles, listing copy) documented in
 `store-assets/README.md`.
 
+### Changed — Angular Connect onboarding ships the environment-driven provider shape
+
+Phase 3 of the cross-SDK onboarding rework. The Angular `SDK_CATALOG` entry
+migrated to a 3-file `initFiles[]` shape that respects Angular's native config
+idiom: `environment.ts` (base/dev with empty DSN) + `environment.production.ts`
+(prod DSN, swapped by `angular.json` `fileReplacements`) +
+`app.config.ts` (provider spread guard — `provideArguslog` only registered when
+DSN is non-empty). No new dependency (`@ngx-env/builder` etc.), no runtime
+branching inside Arguslog — Angular's stock build-time swap handles the
+production/dev split cleanly.
+
+The recommended-architecture extra is an injectable `TelemetryService` covering
+the attempt → success → validation → unexpected pattern. The verification
+checklist swaps the React/Vue UI-boundary item for "default Angular
+`ErrorHandler` replaced" (the SDK auto-wires it via `provideArguslog`).
+
+SDK README updated to lead with the env-driven Quick Start; the existing
+NgModule + ArguslogService + advanced patterns sections are preserved.
+
 ### Changed — Next.js Connect onboarding ships the env-driven dual-path installer
 
 Phase 2 of the cross-SDK onboarding rework. The Next.js `SDK_CATALOG` entry migrated

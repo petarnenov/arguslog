@@ -19,11 +19,11 @@ describe('buildSnippets', () => {
     const ids = all.map((s) => s.id);
 
     // Agent: 6, Workflow: 4 (triage / postmortem / regression / investigate),
-    // SDK: 7 (vue + nextjs added for the workflow-first onboarding flow),
+    // SDK: 8 (workflow-first flow now covers vue + react + nextjs + angular),
     // MCP: 4, CLI: 2.
     expect(all.filter((s) => s.group === 'agent')).toHaveLength(6);
     expect(all.filter((s) => s.group === 'workflow')).toHaveLength(4);
-    expect(all.filter((s) => s.group === 'sdk')).toHaveLength(7);
+    expect(all.filter((s) => s.group === 'sdk')).toHaveLength(8);
     expect(all.filter((s) => s.group === 'mcp')).toHaveLength(4);
     expect(all.filter((s) => s.group === 'cli')).toHaveLength(2);
     expect(ids).toEqual([
@@ -39,6 +39,7 @@ describe('buildSnippets', () => {
       'workflow-investigate-issue',
       'sdk-javascript',
       'sdk-react',
+      'sdk-angular',
       'sdk-vue',
       'sdk-nextjs',
       'sdk-node',

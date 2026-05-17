@@ -22,7 +22,65 @@ npm install @arguslog/sdk-angular
 yarn add @arguslog/sdk-angular
 ```
 
-## Quick start (standalone bootstrap, Angular 17+)
+## Quick start (env-driven, recommended)
+
+Angular's stock pattern is `environment.ts` files swapped by the build via
+`fileReplacements` in `angular.json`. Configure the DSN there and let
+`app.config.ts` skip the provider entirely when the DSN is missing — safe for
+local dev without keys, no runtime branching inside Arguslog.
+
+```ts
+// src/environments/environment.ts — base / dev (empty DSN = no-op)
+export const environment = {
+  production: false,
+  arguslogDsn: '',
+  arguslogRelease: '',
+};
+```
+
+```ts
+// src/environments/environment.production.ts — angular.json fileReplacements swaps
+// this in for prod builds. DO NOT commit a real DSN here.
+export const environment = {
+  production: true,
+  arguslogDsn: 'arguslog://<key>@<host>/api/<projectId>',
+  arguslogRelease: '1.0.0',
+};
+```
+
+```ts
+// src/app/app.config.ts
+import { ApplicationConfig } from '@angular/core';
+import { provideArguslog } from '@arguslog/sdk-angular';
+
+import { environment } from '../environments/environment';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    // Skip provider entirely when DSN missing — keeps local dev quiet.
+    ...(environment.arguslogDsn
+      ? [
+          provideArguslog({
+            dsn: environment.arguslogDsn,
+            environment: environment.production ? 'production' : 'development',
+            release: environment.arguslogRelease,
+            integrations: ['globalHandlers', 'autoBreadcrumbs'],
+          }),
+        ]
+      : []),
+  ],
+};
+```
+
+`provideArguslog()` does three things in one call:
+
+1. Initializes `@arguslog/sdk-browser` with the supplied options.
+2. Replaces Angular's default `ErrorHandler` with `ArguslogErrorHandler`.
+3. Exposes `ARGUSLOG_OPTIONS` and `ArguslogService` for DI consumers.
+
+### Inline (single-file alternative)
+
+If you must wire everything inline at `bootstrapApplication`:
 
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
@@ -41,12 +99,6 @@ bootstrapApplication(AppComponent, {
   ],
 });
 ```
-
-`provideArguslog()` does three things in one call:
-
-1. Initializes `@arguslog/sdk-browser` with the supplied options.
-2. Replaces Angular's default `ErrorHandler` with `ArguslogErrorHandler`.
-3. Exposes `ARGUSLOG_OPTIONS` and `ArguslogService` for DI consumers.
 
 ## Quick start (NgModule, Angular ≤ 16 or hybrid apps)
 

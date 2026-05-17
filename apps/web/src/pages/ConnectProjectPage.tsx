@@ -481,7 +481,7 @@ export function ConnectProjectPage() {
                 // Each one is opted in via its SDK_CATALOG entry carrying `initFiles[]`
                 // + `extras`; the `<OnboardingFlow>` component renders the right N
                 // steps purely from the catalog content — no per-SDK branches here.
-                const workflowFirstSlugs = ['sdk-vue', 'sdk-react', 'sdk-nextjs'];
+                const workflowFirstSlugs = ['sdk-vue', 'sdk-react', 'sdk-nextjs', 'sdk-angular'];
                 if (!workflowFirstSlugs.includes(snippet.id)) return null;
                 const slug = snippet.id.replace(/^sdk-/, '');
                 return (
