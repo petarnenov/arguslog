@@ -119,7 +119,7 @@ jobs:
           fi
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: js-coverage
           path: |
@@ -168,7 +168,7 @@ jobs:
         run: ./gradlew build --stacktrace
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: gradle-reports
           path: |
@@ -258,7 +258,7 @@ jobs:
           fi
       - name: Upload generated spec
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: openapi-spec
           path: |
