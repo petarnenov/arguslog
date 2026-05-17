@@ -40,10 +40,19 @@ import org.springframework.stereotype.Component;
  *   <li>{@code labels} (optional array) — defaults to {@code ["arguslog-auto-triage"]}
  * </ul>
  *
- * Body is markdown — Copilot reads it as the entire input (no MCP, no follow-up tool calls). We
+ * <p>Two-step POST: GitHub's {@code POST /repos/{owner}/{repo}/issues} endpoint validates the
+ * {@code assignees} array against the human-collaborator list and rejects bot/app identities
+ * (including {@code copilot-swe-agent}) with HTTP 422. The dedicated sub-resource {@code POST
+ * /repos/{owner}/{repo}/issues/{n}/assignees} is more permissive and accepts those handles. We
+ * always create-then-assign in two calls, regardless of whether the configured assignee is a bot
+ * or a human, so the dispatch path stays uniform.
+ *
+ * <p>Body is markdown — Copilot reads it as the entire input (no MCP, no follow-up tool calls). We
  * pre-bake the stack trace + breadcrumbs from the latest event into the body so the agent has
  * something concrete to grep. Failure policy matches the rest of the dispatcher fleet: log + drop
- * on every error path (no retries — P3's persistent outbox is a separate piece of work).
+ * on every error path (no retries — P3's persistent outbox is a separate piece of work). If step 1
+ * (create) fails, we log and drop. If step 2 (assign) fails, the issue still exists in GitHub —
+ * we log a WARN noting the assignee call failed so the operator can pick it up manually.
  */
 @Component
 @EnableConfigurationProperties({GithubIssueProperties.class, AlertsProperties.class})
@@ -88,11 +97,21 @@ public class GithubIssueAlertDispatcher implements AlertDispatcher {
     String body = renderBody(alert, payload.orElse(null), cfg.assignee);
     String title = renderTitle(alert);
 
+    Integer issueNumber = createIssue(destination.id(), cfg, title, body);
+    if (issueNumber == null) return; // step-1 failure already logged
+
+    assignIssue(destination.id(), cfg, issueNumber, alert.issueId());
+  }
+
+  /**
+   * Step 1: {@code POST /repos/{owner}/{repo}/issues} with the rendered title, body, and labels
+   * but NO assignees — see class javadoc. Returns the newly-created issue number on success,
+   * {@code null} on failure (already logged).
+   */
+  private Integer createIssue(long destinationId, Config cfg, String title, String body) {
     ObjectNode requestBody = mapper.createObjectNode();
     requestBody.put("title", title);
     requestBody.put("body", body);
-    ArrayNode assignees = requestBody.putArray("assignees");
-    assignees.add(cfg.assignee);
     ArrayNode labels = requestBody.putArray("labels");
     for (String label : cfg.labels) labels.add(label);
 
@@ -100,41 +119,122 @@ public class GithubIssueAlertDispatcher implements AlertDispatcher {
     try {
       json = mapper.writeValueAsString(requestBody);
     } catch (JsonProcessingException e) {
-      log.warn("could not encode github_issue payload: {}", e.getMessage());
-      return;
+      log.warn("could not encode github_issue create payload: {}", e.getMessage());
+      return null;
     }
 
     URI url = URI.create(props.apiBaseUrl() + "/repos/" + cfg.owner + "/" + cfg.repo + "/issues");
     HttpRequest req =
-        HttpRequest.newBuilder(url)
-            .timeout(props.timeout())
-            .header("Authorization", "Bearer " + cfg.token)
-            .header("Accept", "application/vnd.github+json")
-            .header("X-GitHub-Api-Version", "2022-11-28")
-            .header("User-Agent", "arguslog/auto-triage")
+        githubRequest(url, cfg.token)
             .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
             .build();
 
     try {
       HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
-      if (resp.statusCode() == 201) {
-        log.info(
-            "github_issue destination {} created issue in {}/{} for alert issue {} — Copilot will pick it up shortly",
-            destination.id(),
-            cfg.owner,
-            cfg.repo,
-            alert.issueId());
-      } else {
+      if (resp.statusCode() != 201) {
         log.warn(
-            "github_issue destination {} POST returned HTTP {} body={}",
-            destination.id(),
+            "github_issue destination {} create POST returned HTTP {} body={}",
+            destinationId,
             resp.statusCode(),
             truncate(resp.body()));
+        return null;
+      }
+      JsonNode created = mapper.readTree(resp.body());
+      int number = created.path("number").asInt(0);
+      if (number == 0) {
+        log.warn(
+            "github_issue destination {} create response missing 'number' field; body={}",
+            destinationId,
+            truncate(resp.body()));
+        return null;
+      }
+      return number;
+    } catch (JsonProcessingException e) {
+      log.warn(
+          "github_issue destination {} create response not valid JSON: {}",
+          destinationId,
+          e.getMessage());
+      return null;
+    } catch (java.io.IOException | InterruptedException e) {
+      if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+      log.warn("github_issue destination {} create threw: {}", destinationId, e.getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * Step 2: {@code POST /repos/{owner}/{repo}/issues/{n}/assignees} with the configured assignee.
+   * Issue already exists at this point — if this call fails we log a WARN but the operator can
+   * still manually assign from the GitHub UI, so we don't try to roll back the issue creation.
+   */
+  private void assignIssue(long destinationId, Config cfg, int issueNumber, long alertIssueId) {
+    ObjectNode requestBody = mapper.createObjectNode();
+    ArrayNode assignees = requestBody.putArray("assignees");
+    assignees.add(cfg.assignee);
+
+    String json;
+    try {
+      json = mapper.writeValueAsString(requestBody);
+    } catch (JsonProcessingException e) {
+      log.warn("could not encode github_issue assignees payload: {}", e.getMessage());
+      return;
+    }
+
+    URI url =
+        URI.create(
+            props.apiBaseUrl()
+                + "/repos/"
+                + cfg.owner
+                + "/"
+                + cfg.repo
+                + "/issues/"
+                + issueNumber
+                + "/assignees");
+    HttpRequest req =
+        githubRequest(url, cfg.token)
+            .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
+            .build();
+
+    try {
+      HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+      if (resp.statusCode() / 100 == 2) {
+        log.info(
+            "github_issue destination {} created+assigned issue #{} in {}/{} to {} for alert issue {} — Copilot will pick it up shortly",
+            destinationId,
+            issueNumber,
+            cfg.owner,
+            cfg.repo,
+            cfg.assignee,
+            alertIssueId);
+      } else {
+        log.warn(
+            "github_issue destination {} created issue #{} in {}/{} but assignee POST failed HTTP {} body={} — operator can assign {} manually",
+            destinationId,
+            issueNumber,
+            cfg.owner,
+            cfg.repo,
+            resp.statusCode(),
+            truncate(resp.body()),
+            cfg.assignee);
       }
     } catch (java.io.IOException | InterruptedException e) {
       if (e instanceof InterruptedException) Thread.currentThread().interrupt();
-      log.warn("github_issue destination {} threw: {}", destination.id(), e.getMessage());
+      log.warn(
+          "github_issue destination {} created issue #{} but assignee POST threw: {}",
+          destinationId,
+          issueNumber,
+          e.getMessage());
     }
+  }
+
+  /** Shared header set for both step 1 and step 2 calls. */
+  private HttpRequest.Builder githubRequest(URI url, String token) {
+    return HttpRequest.newBuilder(url)
+        .timeout(props.timeout())
+        .header("Authorization", "Bearer " + token)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .header("User-Agent", "arguslog/auto-triage");
   }
 
   private Config readConfig(AlertDestination destination) {

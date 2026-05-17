@@ -67,6 +67,15 @@ interface DraftValues {
   githubLabels: string[];
 }
 
+/**
+ * Handle of the GitHub bot user backing Copilot Cloud Agent. Pre-filled into the
+ * `githubAssignee` field on the create form so the common auto-triage case ("assign new issues
+ * to Copilot") works without the operator hand-typing a fiddle-prone string from docs. Editing
+ * an existing destination zeros the assignee back to '' so a save with the rest of the config
+ * blank doesn't accidentally clobber a custom handle the operator stored previously.
+ */
+const COPILOT_DEFAULT_ASSIGNEE = 'copilot-swe-agent';
+
 const EMPTY_DRAFT: DraftValues = {
   kind: 'telegram',
   name: '',
@@ -79,7 +88,7 @@ const EMPTY_DRAFT: DraftValues = {
   githubOwner: '',
   githubRepo: '',
   githubToken: '',
-  githubAssignee: '',
+  githubAssignee: COPILOT_DEFAULT_ASSIGNEE,
   githubLabels: [],
 };
 
@@ -189,7 +198,11 @@ export function AlertDestinationsPage() {
     // Config field stays blank on edit — the api never echoes the secret back, and the form
     // treats "all config inputs blank" as "leave the existing encrypted blob alone, just
     // rename." If the user wants to rotate a secret, they fill the relevant input and submit.
-    form.setValues({ ...EMPTY_DRAFT, kind: d.kind, name: d.name });
+    // Override githubAssignee back to '' so the create-time pre-fill doesn't bleed into the
+    // edit form (showing a pre-filled handle on edit would mislead the operator about what's
+    // stored, and a blank save with only the assignee filled would silently overwrite the
+    // existing config).
+    form.setValues({ ...EMPTY_DRAFT, kind: d.kind, name: d.name, githubAssignee: '' });
     setEditing(d);
   }
 
