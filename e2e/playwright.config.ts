@@ -20,6 +20,10 @@ const isCI = Boolean(process.env.CI);
 
 export default defineConfig({
   testDir: './tests',
+  // Sweep orphan e2e-* orgs (left over from teardowns killed mid-flight) before any
+  // spec runs — the runner user is on silver tier with a 3-org cap, so a couple of
+  // missed teardowns from earlier runs is enough to make every `createOrg` fail 402.
+  globalSetup: './lib/globalSetup.ts',
   // 60s accommodates Railway cold-start on idle staging services plus the
   // programmatic-OIDC token roundtrip + initial dashboard render.
   timeout: 60_000,
