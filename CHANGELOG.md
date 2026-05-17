@@ -49,6 +49,25 @@ Store. The remaining publish blockers are the operator-owned creative
 deliverables (screenshots, promo tiles, listing copy) documented in
 `store-assets/README.md`.
 
+### Changed — React Connect onboarding ships the env-driven installer shape
+
+Phase 1 of the cross-SDK onboarding rework. The React `SDK_CATALOG` entry migrated
+to the same 3-file `initFiles[]` shape Vue uses: `.env.local` (DSN via
+`VITE_ARGUSLOG_DSN`), `src/arguslog.ts` (a named `installArguslog()` that no-ops
+when the DSN is missing — safe for local dev), and `src/main.tsx` (calls the
+installer between `createRoot` and render). The Connect screen's React tab now
+renders the same workflow-first 7-step flow Vue does — verification checklist that
+auto-ticks on test-event success, recommended-architecture telemetry-service
+example, magic-prompt that inlines the real DSN into the env block.
+
+The Vue-specific `<VueOnboardingFlow>` component was generalised into a
+slug-driven `<OnboardingFlow>` that reads everything (steps, files, checklist,
+telemetry, wrap snippet) from the catalog entry. Adding the next SDK (Next.js,
+Angular, RN) to the flow is now an `initFiles[]` + `extras` migration in the
+catalog — no per-SDK React component required. The cross-SDK integrity test is
+parametrized over every catalog entry shipping `initFiles[]`, so a React-snippet
+symbol-import drift would fail CI the same way the Vue one does.
+
 ### Fixed — Vue Connect onboarding ships an env-driven installer
 
 Resolves [`arguslog-sdks#2`](https://github.com/petarnenov/arguslog-sdks/issues/2)

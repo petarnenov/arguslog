@@ -252,12 +252,13 @@ describe('buildAgentPrompt', () => {
     expect(md).toContain('createArguslog('); // Vue — factory exported by @arguslog/sdk-vue
     expect(md).not.toContain('arguslogPlugin'); // Regression guard: dashboard once shipped a non-existent symbol.
 
-    // Vue env-driven installer shape (Phase A onboarding rework, issue #2).
+    // Vue + React env-driven installer shape (cross-SDK rework, arguslog-sdks#2).
     // The DSN lives in .env.local; the installer module reads it at build time and
-    // no-ops when missing; main.ts calls a named `installArguslog(app)` rather than
-    // inline `app.use(createArguslog(...))`.
+    // no-ops when missing; the entry file calls a named `installArguslog(...)` rather
+    // than inlining the init() / app.use(createArguslog(...)) call.
     expect(md).toContain('VITE_ARGUSLOG_DSN=<DSN>');
-    expect(md).toContain('installArguslog(app)');
+    expect(md).toContain('installArguslog(app)'); // Vue installer signature
+    expect(md).toContain('installArguslog();'); // React installer signature (no app param)
     expect(md).toContain('export function installArguslog');
     // ErrorBoundary uses the `fallback` prop, not slot syntax (runtime requires it).
     expect(md).toContain(':fallback="errorFallback"');

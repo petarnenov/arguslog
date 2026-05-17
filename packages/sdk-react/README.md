@@ -26,20 +26,48 @@ yarn add @arguslog/sdk-react
 `@arguslog/sdk-browser` is pulled in automatically as a regular dependency — no separate
 install required.
 
-## Quick start
+## Quick start (env-driven, recommended)
 
-Initialize once at app boot, then wrap your component tree in `<ArguslogErrorBoundary>`:
+For a Vite SPA, keep the DSN out of app code. Put it in `.env.local` and let a tiny
+installer module mount Arguslog once at boot. The installer no-ops cleanly when the DSN is
+missing — useful for local dev without keys.
+
+```bash
+# .env.local — DO NOT commit a real DSN
+VITE_ARGUSLOG_DSN=arguslog://<publicKey>@<ingestHost>/api/<projectId>
+VITE_APP_RELEASE=1.0.0
+```
+
+```ts
+// src/arguslog.ts
+import { init } from '@arguslog/sdk-react';
+
+let installed = false;
+
+export function installArguslog(): void {
+  if (installed) return;
+  const dsn = import.meta.env.VITE_ARGUSLOG_DSN;
+  if (!dsn) return; // no-op when DSN is missing — safe for local dev
+
+  init({
+    dsn,
+    environment: import.meta.env.MODE,
+    release: import.meta.env.VITE_APP_RELEASE,
+    integrations: ['globalHandlers', 'autoBreadcrumbs'],
+  });
+  installed = true;
+}
+```
 
 ```tsx
-import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react';
+// src/main.tsx
 import { createRoot } from 'react-dom/client';
+import { ArguslogErrorBoundary } from '@arguslog/sdk-react';
 
-init({
-  dsn: 'arguslog://<publicKey>@<ingestHost>/api/<projectId>',
-  environment: import.meta.env.MODE,
-  release: import.meta.env.VITE_RELEASE,
-  integrations: ['globalHandlers', 'autoBreadcrumbs'],
-});
+import App from './App';
+import { installArguslog } from './arguslog';
+
+installArguslog();
 
 createRoot(document.getElementById('root')!).render(
   <ArguslogErrorBoundary fallback={<div role="alert">Something went wrong.</div>}>
@@ -52,6 +80,28 @@ The boundary catches anything React throws during render / lifecycle / effect-cl
 it to Arguslog with `boundary: 'react'` tag, and renders the `fallback`. Imperative async
 errors (event handlers, fetch callbacks) need explicit `captureException` because React
 boundaries don't see those by design.
+
+### Inline (single-file alternative)
+
+If you must wire everything inline — e.g. a one-off demo or tutorial step — call `init()`
+directly:
+
+```tsx
+import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react';
+import { createRoot } from 'react-dom/client';
+
+init({
+  dsn: 'arguslog://<publicKey>@<ingestHost>/api/<projectId>',
+  environment: import.meta.env.MODE,
+  integrations: ['globalHandlers', 'autoBreadcrumbs'],
+});
+
+createRoot(document.getElementById('root')!).render(
+  <ArguslogErrorBoundary fallback={<div role="alert">Something went wrong.</div>}>
+    <App />
+  </ArguslogErrorBoundary>,
+);
+```
 
 ### Webpack / Create React App / Next.js Pages Router
 

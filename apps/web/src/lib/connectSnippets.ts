@@ -153,23 +153,112 @@ init({
     version: '2.0.2',
     installCmd: 'npm install @arguslog/sdk-react@^2',
     detect: 'package.json contains "react"',
-    entryFile: 'src/main.tsx (Vite) or src/index.tsx (CRA)',
+    entryFile: 'src/main.tsx + src/arguslog.ts + .env.local (env-driven installer)',
     lang: 'tsx',
-    initSnippet: `import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react';
-import { createRoot } from 'react-dom/client';
+    // Same env-driven 3-file shape Vue uses. Vite is the primary target — CRA is documented
+    // in the SDK README as a deprecated alternative using `REACT_APP_*` env vars instead.
+    initSnippet: '// See `initFiles` below — React ships a 3-file env-driven installer shape.',
+    initFiles: [
+      {
+        path: '.env.local',
+        lang: 'bash',
+        contents: `# Vite picks this up automatically; do NOT commit a real DSN here.
+VITE_ARGUSLOG_DSN=<DSN>
+VITE_APP_RELEASE=1.0.0`,
+      },
+      {
+        path: 'src/arguslog.ts',
+        lang: 'ts',
+        contents: `import { init } from '@arguslog/sdk-react';
 
-init({
-  dsn: '<DSN>',
-  environment: process.env.NODE_ENV,
-  integrations: ['globalHandlers', 'autoBreadcrumbs'],
-});
+let installed = false;
+
+/**
+ * Install Arguslog once at app boot. Reads the DSN from VITE_ARGUSLOG_DSN at
+ * build time. If the variable is missing (local dev without keys), the installer
+ * is a deliberate no-op so the app boots cleanly without Arguslog mounted.
+ */
+export function installArguslog(): void {
+  if (installed) return;
+  const dsn = import.meta.env.VITE_ARGUSLOG_DSN;
+  if (!dsn) return;
+
+  init({
+    dsn,
+    environment: import.meta.env.MODE,
+    release: import.meta.env.VITE_APP_RELEASE,
+    integrations: ['globalHandlers', 'autoBreadcrumbs'],
+  });
+  installed = true;
+}`,
+      },
+      {
+        path: 'src/main.tsx',
+        lang: 'tsx',
+        contents: `import { createRoot } from 'react-dom/client';
+import { ArguslogErrorBoundary } from '@arguslog/sdk-react';
+
+import App from './App';
+import { installArguslog } from './arguslog';
+
+installArguslog();
 
 createRoot(document.getElementById('root')!).render(
   <ArguslogErrorBoundary fallback={<p>Something went wrong.</p>}>
     <App />
   </ArguslogErrorBoundary>,
 );`,
+      },
+    ],
     wrapSnippet: null,
+    extras: {
+      recommendedArchitecture: {
+        description:
+          'The best React onboarding moment is not "the app crashed" — it is "I can see telemetry around a real user action." Wrap your domain calls in a tiny telemetry service so a single workflow lights up attempt → success → validation/unexpected failure paths in Arguslog. Useful operationally, not just technically.',
+        files: [
+          {
+            path: 'src/services/telemetry.ts',
+            lang: 'ts',
+            contents: `import { addBreadcrumb, captureException, captureMessage } from '@arguslog/sdk-react';
+
+/**
+ * One named breadcrumb / event per workflow phase. Instrument a single real action
+ * (checkout, create todo, save form) end-to-end so the next dashboard visit shows
+ * the user journey, not just stack traces.
+ */
+export const telemetry = {
+  attempt: (action: string) =>
+    addBreadcrumb({ category: 'workflow', message: \`\${action}:attempt\`, level: 'info' }),
+  success: (action: string) =>
+    addBreadcrumb({ category: 'workflow', message: \`\${action}:success\`, level: 'info' }),
+  validation: (action: string, err: Error) =>
+    captureMessage(\`\${action} validation failed: \${err.message}\`, 'warning'),
+  unexpected: (action: string, err: Error) =>
+    captureException(err, { tags: { action } }),
+};`,
+          },
+        ],
+      },
+      verificationChecklist: [
+        { id: 'package', label: 'SDK installed (`@arguslog/sdk-react` in dependencies)' },
+        {
+          id: 'env',
+          label:
+            '`VITE_ARGUSLOG_DSN` set in `.env.local` (Vite) — or `REACT_APP_ARGUSLOG_DSN` (CRA)',
+        },
+        { id: 'installer', label: '`installArguslog()` wired in `src/main.tsx`' },
+        {
+          id: 'boundary',
+          label: '`<ArguslogErrorBoundary fallback={...}>` wraps the React root',
+        },
+        { id: 'workflow', label: 'One real user workflow instrumented with `telemetry.*`' },
+        { id: 'event', label: 'Test event received in the dashboard (verify step below)' },
+        {
+          id: 'failure',
+          label: 'One controlled failure path exercised (validation or unexpected)',
+        },
+      ],
+    },
   },
   {
     slug: 'angular',
@@ -965,26 +1054,23 @@ init({
 });`,
     },
     {
+      // React's Connect tab is the same workflow-first 7-step flow as Vue: ConnectProjectPage
+      // renders <OnboardingFlow slug="react" /> when this sub-tab is active. The `code`
+      // field here remains a faithful single-paste version of the 3-file install for the
+      // copy-button + any consumer that reads ConnectSnippet.code directly.
       id: 'sdk-react',
       group: 'sdk',
       client: 'React',
       language: 'tsx',
       description:
-        'React 18 / 19. Wrap your root in <ArguslogErrorBoundary>; use the useArguslog() hook for imperative reporting.',
-      code: `import { init, ArguslogErrorBoundary } from '@arguslog/sdk-react';
-import { createRoot } from 'react-dom/client';
-
-init({
-  dsn: '${dsn}',
-  environment: process.env.NODE_ENV,
-  integrations: ['globalHandlers', 'autoBreadcrumbs'],
-});
-
-createRoot(document.getElementById('root')!).render(
-  <ArguslogErrorBoundary fallback={<p>Something went wrong.</p>}>
-    <App />
-  </ArguslogErrorBoundary>,
-);`,
+        'React 18 / 19 + Vite. Env-driven installer with a no-op fallback for local dev. Walk the 7 steps below — install plus one instrumented workflow gives you trustworthy onboarding.',
+      code: (() => {
+        const reactEntry = SDK_CATALOG.find((p) => p.slug === 'react');
+        if (!reactEntry || !('initFiles' in reactEntry) || !reactEntry.initFiles) return '';
+        return reactEntry.initFiles
+          .map((f) => `// === ${f.path} ===\n${f.contents.replace(/<DSN>/g, dsn)}`)
+          .join('\n\n');
+      })(),
     },
     {
       // Vue is special-cased in the UI: ConnectProjectPage renders <VueOnboardingFlow /> when

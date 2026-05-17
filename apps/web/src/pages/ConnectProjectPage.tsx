@@ -30,7 +30,7 @@ import { ApiError } from '../api/client';
 import { createDsn, type Dsn, type DsnSummary } from '../api/keys';
 import { queryKeys, useDsns, useMyOrgs, useMyTokens, useProjects } from '../api/queries';
 import { createMyToken, type PersonalAccessToken } from '../api/tokens';
-import { VueOnboardingFlow } from '../components/connect/VueOnboardingFlow';
+import { OnboardingFlow } from '../components/connect/OnboardingFlow';
 import { env } from '../env';
 import { buildSnippets, type ConnectSnippet, type SnippetGroup } from '../lib/connectSnippets';
 
@@ -475,9 +475,18 @@ export function ConnectProjectPage() {
           <Tabs.Panel value="sdk" pt="md">
             <SnippetSubTabs
               items={grouped.sdk}
-              renderItem={(snippet) =>
-                snippet.id === 'sdk-vue' ? (
-                  <VueOnboardingFlow
+              renderItem={(snippet) => {
+                // SDK slugs that ship the workflow-first onboarding flow (env-driven
+                // installer + verification checklist + recommended telemetry service).
+                // Each one is opted in via its SDK_CATALOG entry carrying `initFiles[]`
+                // + `extras`; the `<OnboardingFlow>` component renders the right N
+                // steps purely from the catalog content — no per-SDK branches here.
+                const workflowFirstSlugs = ['sdk-vue', 'sdk-react'];
+                if (!workflowFirstSlugs.includes(snippet.id)) return null;
+                const slug = snippet.id.replace(/^sdk-/, '');
+                return (
+                  <OnboardingFlow
+                    slug={slug}
                     dsn={dsnString}
                     pingState={{
                       onPing: () => pingMutation.mutate(),
@@ -485,8 +494,8 @@ export function ConnectProjectPage() {
                       result: pingResult,
                     }}
                   />
-                ) : null
-              }
+                );
+              }}
             />
           </Tabs.Panel>
           <Tabs.Panel value="mcp" pt="md">
