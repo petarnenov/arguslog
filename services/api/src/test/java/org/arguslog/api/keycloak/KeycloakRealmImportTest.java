@@ -159,14 +159,22 @@ class KeycloakRealmImportTest {
   }
 
   private static Path resolveRealmJson() {
+    // The test runs from different cwds depending on harness: Gradle daemon runs JVM
+    // with project-subdir cwd locally, but on CI workers (and some IDE configs) the JVM
+    // sees the repo root. Walk both anchors to keep the lookup robust.
     List<Path> candidates =
         List.of(
-            Path.of("../keycloak/realm/arguslog-realm.json"),
-            Path.of("services/keycloak/realm/arguslog-realm.json"));
+            Path.of("../keycloak/realm/arguslog-realm.json"), // from services/api/
+            Path.of("services/keycloak/realm/arguslog-realm.json"), // from repo root
+            Path.of("../../services/keycloak/realm/arguslog-realm.json"), // from build dirs
+            Path.of("build/resources/test/arguslog-realm.json")); // Gradle test resources
     return candidates.stream()
         .map(Path::toAbsolutePath)
         .filter(Files::isRegularFile)
         .findFirst()
-        .orElseThrow(() -> new IllegalStateException("Cannot locate arguslog-realm.json"));
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Cannot locate arguslog-realm.json. cwd=" + Path.of("").toAbsolutePath()));
   }
 }

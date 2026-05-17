@@ -133,7 +133,7 @@ export const SDK_CATALOG = [
   {
     slug: 'javascript',
     pkg: '@arguslog/sdk-browser',
-    version: '2.0.0',
+    version: '2.0.1',
     installCmd: 'npm install @arguslog/sdk-browser@^2',
     detect: 'package.json without a framework — vanilla HTML/JS or tooling-free bundler',
     entryFile: 'src/main.js or the first script loaded by index.html',
@@ -150,7 +150,7 @@ init({
   {
     slug: 'react',
     pkg: '@arguslog/sdk-react',
-    version: '2.0.1',
+    version: '2.0.2',
     installCmd: 'npm install @arguslog/sdk-react@^2',
     detect: 'package.json contains "react"',
     entryFile: 'src/main.tsx (Vite) or src/index.tsx (CRA)',
@@ -320,7 +320,7 @@ export default function App() {
   {
     slug: 'node',
     pkg: '@arguslog/sdk-node',
-    version: '2.0.0',
+    version: '2.0.1',
     installCmd: 'npm install @arguslog/sdk-node@^2',
     detect: 'package.json with no frontend framework (Express, Fastify, plain Node, workers)',
     entryFile: 'the FIRST file your process loads (e.g., src/index.ts before any handler import)',
@@ -356,7 +356,7 @@ arguslog:
   {
     slug: 'python',
     pkg: 'arguslog',
-    version: '2.0.0',
+    version: '2.0.2',
     installCmd: 'pip install "arguslog>=2,<3"  (or uv add arguslog>=2)',
     detect: 'pyproject.toml, requirements.txt, or setup.py',
     entryFile:
