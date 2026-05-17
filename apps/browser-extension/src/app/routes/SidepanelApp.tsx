@@ -1,18 +1,48 @@
 import { useQuery } from '@tanstack/react-query';
+import { lazy, Suspense } from 'react';
 import { MemoryRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 
 import { getConnectionStatus } from '../../shared/domain/connection';
 import { Badge } from '../../shared/ui/components/primitives';
 import { getAccountLabel } from '../../shared/utils/account';
-import { ConnectScreen } from '../features/connection/ConnectScreen';
-import { HistoryScreen } from '../features/history/HistoryScreen';
-import { IssuesScreen } from '../features/issues/IssuesScreen';
-import { PlaybooksScreen } from '../features/playbooks/PlaybooksScreen';
-import { ReleasesScreen } from '../features/releases/ReleasesScreen';
-import { SettingsScreen } from '../features/settings/SettingsScreen';
-import { ToolsScreen } from '../features/tools/ToolsScreen';
-import { WorkflowsScreen } from '../features/workflows/WorkflowsScreen';
-import { WorkspaceScreen } from '../features/workspace/WorkspaceScreen';
+
+// Each screen ships as its own chunk loaded on first navigation, not upfront. The Connect
+// screen is the only one a fresh install lands on, so its chunk is the only one that
+// shows up on the cold-start critical path; the other seven screens stream in as the
+// operator navigates. Vitest tests assert sidebar nav contents without rendering each
+// screen, so the lazy-shape doesn't break the unit suite.
+//
+// Named-export → default-export interop: React.lazy demands a default export, but our
+// screens export named functions. The `.then(m => ({ default: m.X }))` adapter keeps the
+// named exports as the source of truth in their own files (better for tree-shaking
+// surface + matches the codebase convention).
+const ConnectScreen = lazy(() =>
+  import('../features/connection/ConnectScreen').then((m) => ({ default: m.ConnectScreen })),
+);
+const HistoryScreen = lazy(() =>
+  import('../features/history/HistoryScreen').then((m) => ({ default: m.HistoryScreen })),
+);
+const IssuesScreen = lazy(() =>
+  import('../features/issues/IssuesScreen').then((m) => ({ default: m.IssuesScreen })),
+);
+const PlaybooksScreen = lazy(() =>
+  import('../features/playbooks/PlaybooksScreen').then((m) => ({ default: m.PlaybooksScreen })),
+);
+const ReleasesScreen = lazy(() =>
+  import('../features/releases/ReleasesScreen').then((m) => ({ default: m.ReleasesScreen })),
+);
+const SettingsScreen = lazy(() =>
+  import('../features/settings/SettingsScreen').then((m) => ({ default: m.SettingsScreen })),
+);
+const ToolsScreen = lazy(() =>
+  import('../features/tools/ToolsScreen').then((m) => ({ default: m.ToolsScreen })),
+);
+const WorkflowsScreen = lazy(() =>
+  import('../features/workflows/WorkflowsScreen').then((m) => ({ default: m.WorkflowsScreen })),
+);
+const WorkspaceScreen = lazy(() =>
+  import('../features/workspace/WorkspaceScreen').then((m) => ({ default: m.WorkspaceScreen })),
+);
 
 // `/connect` is deliberately absent: it duplicates the PAT-entry form already
 // owned by `/settings`, and unauthenticated operators reach it automatically
@@ -29,6 +59,19 @@ const navItems = [
   ['/playbooks', 'Playbooks'],
   ['/settings', 'Settings'],
 ] as const;
+
+/**
+ * Minimal Suspense fallback shown for the ~50-200ms it takes to fetch a screen chunk on
+ * first navigation. Kept dependency-free (plain Tailwind div) so it doesn't pull in any
+ * heavier components into the initial bundle that lazy-loading was meant to avoid.
+ */
+function ScreenLoading() {
+  return (
+    <div className="flex h-full items-center justify-center p-8 text-sm text-slate-400">
+      Loading…
+    </div>
+  );
+}
 
 export function SidepanelApp() {
   const statusQuery = useQuery({
@@ -70,18 +113,20 @@ export function SidepanelApp() {
         </aside>
 
         <main className="min-w-0 flex-1 p-4">
-          <Routes>
-            <Route path="/" element={<Navigate replace to={startPath} />} />
-            <Route path="/connect" element={<ConnectScreen />} />
-            <Route path="/workspace" element={<WorkspaceScreen />} />
-            <Route path="/issues" element={<IssuesScreen />} />
-            <Route path="/releases" element={<ReleasesScreen />} />
-            <Route path="/workflows" element={<WorkflowsScreen />} />
-            <Route path="/tools" element={<ToolsScreen />} />
-            <Route path="/history" element={<HistoryScreen />} />
-            <Route path="/playbooks" element={<PlaybooksScreen />} />
-            <Route path="/settings" element={<SettingsScreen />} />
-          </Routes>
+          <Suspense fallback={<ScreenLoading />}>
+            <Routes>
+              <Route path="/" element={<Navigate replace to={startPath} />} />
+              <Route path="/connect" element={<ConnectScreen />} />
+              <Route path="/workspace" element={<WorkspaceScreen />} />
+              <Route path="/issues" element={<IssuesScreen />} />
+              <Route path="/releases" element={<ReleasesScreen />} />
+              <Route path="/workflows" element={<WorkflowsScreen />} />
+              <Route path="/tools" element={<ToolsScreen />} />
+              <Route path="/history" element={<HistoryScreen />} />
+              <Route path="/playbooks" element={<PlaybooksScreen />} />
+              <Route path="/settings" element={<SettingsScreen />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </MemoryRouter>
