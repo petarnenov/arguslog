@@ -3,6 +3,7 @@ package org.arguslog.worker;
 import org.arguslog.worker.application.port.AlertContextResolver;
 import org.arguslog.worker.application.port.AlertDestinationRepository;
 import org.arguslog.worker.application.port.AlertRuleRepository;
+import org.arguslog.worker.application.port.EventReadRepository;
 import org.arguslog.worker.application.port.EventStore;
 import org.arguslog.worker.application.port.PersistedEventPublisher;
 import org.arguslog.worker.application.port.RuleThrottle;
@@ -30,6 +31,7 @@ class WorkerApplicationTests {
   // Mock every DB/Redis-bound port so the smoke test stays pure-context. Telegram dispatcher is
   // fine to instantiate (no token => log-and-drop) so we don't mock it here.
   @MockitoBean EventStore eventStore;
+  @MockitoBean EventReadRepository eventReadRepository;
   @MockitoBean AlertRuleRepository alertRuleRepository;
   @MockitoBean AlertDestinationRepository alertDestinationRepository;
   @MockitoBean AlertContextResolver alertContextResolver;
