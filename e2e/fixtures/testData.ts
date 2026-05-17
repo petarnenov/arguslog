@@ -54,27 +54,27 @@ export async function createOrg(name?: string): Promise<SeededOrg> {
 }
 
 export async function createProject(
-  orgId: number,
+  org: { id: number; slug: string },
   opts: { name?: string; platform?: string } = {},
 ): Promise<SeededProject> {
   const name = opts.name ?? uniqueName('e2e-project');
   const platform = opts.platform ?? 'javascript';
+  // POST /orgs/{orgId}/projects returns ProjectCreateResponse — { project, dsn } —
+  // bundling the freshly-minted DSN. We only need the project fields here; the org
+  // slug isn't on the wire (project carries orgId, not orgSlug) so we forward the
+  // caller-supplied org.slug onto the returned SeededProject.
   const created = await apiRequest<{
-    id: number;
-    slug: string;
-    name: string;
-    orgId: number;
-    orgSlug: string;
-  }>(`/api/v1/orgs/${orgId}/projects`, {
+    project: { id: number; slug: string; name: string; orgId: number };
+  }>(`/api/v1/orgs/${org.id}/projects`, {
     method: 'POST',
     body: { name, platform },
   });
   return {
-    id: created.id,
-    slug: created.slug,
-    name: created.name,
-    orgId: created.orgId,
-    orgSlug: created.orgSlug,
+    id: created.project.id,
+    slug: created.project.slug,
+    name: created.project.name,
+    orgId: created.project.orgId,
+    orgSlug: org.slug,
   };
 }
 

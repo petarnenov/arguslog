@@ -57,7 +57,7 @@ export const test = base.extend<ArguslogFixtures>({
   },
 
   seededProject: async ({ seededOrg }, use) => {
-    const project = await createProject(seededOrg.id);
+    const project = await createProject(seededOrg);
     // Org-level cleanup cascades — no per-project teardown needed.
     await use(project);
   },
