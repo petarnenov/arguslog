@@ -27,6 +27,11 @@ function buildUrl(path: string, query?: RequestOptions['query']): string {
   return url.toString();
 }
 
+// Retry transient 5xx errors (Railway deploy churn / cold-start) with exponential
+// back-off. 4xx stays surfaced — those are real test-data problems we want to see.
+const RETRY_STATUS = new Set([502, 503, 504]);
+const RETRY_DELAYS_MS = [500, 1500, 4000];
+
 export async function apiRequest<T = unknown>(path: string, opts: RequestOptions = {}): Promise<T> {
   const auth = opts.authToken ?? e2eConfig.runnerPAT;
   if (!auth) {
@@ -36,7 +41,7 @@ export async function apiRequest<T = unknown>(path: string, opts: RequestOptions
     );
   }
   const url = buildUrl(path, opts.query);
-  const resp = await fetch(url, {
+  const init: RequestInit = {
     method: opts.method ?? 'GET',
     headers: {
       Authorization: `Bearer ${auth}`,
@@ -44,20 +49,40 @@ export async function apiRequest<T = unknown>(path: string, opts: RequestOptions
       Accept: 'application/json',
     },
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-  });
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(
-      `${opts.method ?? 'GET'} ${path} → ${resp.status} ${resp.statusText}${
-        text ? ` — ${text.slice(0, 500)}` : ''
-      }`,
-    );
+  };
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const resp = await fetch(url, init);
+      if (RETRY_STATUS.has(resp.status) && attempt < RETRY_DELAYS_MS.length) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(
+          `${opts.method ?? 'GET'} ${path} → ${resp.status} ${resp.statusText}${
+            text ? ` — ${text.slice(0, 500)}` : ''
+          }`,
+        );
+      }
+      // 204 No Content has empty body — return undefined cast.
+      if (resp.status === 204) return undefined as T;
+      const contentType = resp.headers.get('content-type') ?? '';
+      if (contentType.includes('application/json')) {
+        return (await resp.json()) as T;
+      }
+      return (await resp.text()) as unknown as T;
+    } catch (err) {
+      lastError = err;
+      // Network-level failure (DNS, TCP reset, etc.) — retry on the same schedule.
+      if (attempt < RETRY_DELAYS_MS.length && !(err instanceof Error && err.message.includes(' → '))) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+      throw err;
+    }
   }
-  // 204 No Content has empty body — return undefined cast.
-  if (resp.status === 204) return undefined as T;
-  const contentType = resp.headers.get('content-type') ?? '';
-  if (contentType.includes('application/json')) {
-    return (await resp.json()) as T;
-  }
-  return (await resp.text()) as unknown as T;
+  throw lastError instanceof Error ? lastError : new Error(`apiRequest exhausted retries for ${path}`);
 }
