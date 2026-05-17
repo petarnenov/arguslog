@@ -80,6 +80,8 @@ export {
   ReleaseSummarySchema,
   DsnSchema,
   CreateProjectResultSchema,
+  PageMetaSchema,
+  paginated,
   ListProjectsInputSchema,
   ListIssuesInputSchema,
   GetIssueInputSchema,

@@ -211,14 +211,35 @@ export const CuratedToolInputSchemas = {
   get_release: GetReleaseInputSchema,
 } as const;
 
+/**
+ * Cursor-based pagination envelope used by every list endpoint on the api that can grow
+ * unbounded — today: issues + issue events. Other list tools (orgs, projects, releases,
+ * etc.) cap small enough to stay as bare arrays. The shape mirrors {@code
+ * services/api/src/main/java/.../PageResponse.java}.
+ */
+export const PageMetaSchema = z.object({
+  /** Opaque cursor for the next page, or absent on the last page. */
+  next: z.string().optional(),
+});
+
+export function paginated<T extends z.ZodTypeAny>(item: T) {
+  return z.object({
+    data: z.array(item),
+    page: PageMetaSchema,
+  });
+}
+
 export const CuratedToolOutputSchemas = {
   list_my_orgs: z.array(OrgSummarySchema),
   list_projects: z.array(ProjectSummarySchema),
-  list_issues: z.array(IssueSummarySchema),
+  // `list_issues` + `list_issue_events` are cursor-paginated on the api side
+  // (PageResponseIssueResponse / PageResponseEventResponse in the OpenAPI snapshot).
+  // The MCP tool forwards the envelope verbatim — consumers must extract `.data`.
+  list_issues: paginated(IssueSummarySchema),
   triage_issue: IssueDetailSchema,
   assign_issue: IssueDetailSchema,
   get_issue: IssueDetailSchema,
-  list_issue_events: z.array(IssueEventSchema),
+  list_issue_events: paginated(IssueEventSchema),
   create_project: CreateProjectResultSchema,
   create_release: ReleaseSummarySchema,
   list_members: z.array(MemberSchema),
