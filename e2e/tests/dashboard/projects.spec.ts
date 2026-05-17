@@ -13,7 +13,9 @@ test.describe('projects page', () => {
     // staging can take ~30s for two sequential authed fetches) instead of reload-
     // spamming, which only adds more round-trips per retry.
     await expect(projects.list()).toBeVisible({ timeout: 60_000 });
-    await expect(authedPage.getByText(seededProject.name)).toBeVisible({ timeout: 10_000 });
+    // name === slug for inputs without spaces, so the same string renders in both
+    // the title <p> and the slug <code> — `.first()` keeps strict-mode happy.
+    await expect(authedPage.getByText(seededProject.name).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('clicking a project card navigates to its issues page', async ({

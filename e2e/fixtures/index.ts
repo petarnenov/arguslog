@@ -18,6 +18,8 @@
  */
 import { test as base, expect, type Page } from '@playwright/test';
 
+import { ensureSlowModePatched } from '../lib/slowMode.js';
+
 import { loginAsTestUser } from './auth.js';
 import {
   createDsn,
@@ -41,6 +43,14 @@ interface ArguslogFixtures {
 }
 
 export const test = base.extend<ArguslogFixtures>({
+  // Override the base `page` fixture so the slowMode prototype patch is applied
+  // before any spec — including landing/auth specs that don't take `authedPage`.
+  // First call per worker patches Page+Locator; subsequent calls are no-ops.
+  page: async ({ page }, use) => {
+    ensureSlowModePatched(page);
+    await use(page);
+  },
+
   authedPage: async ({ page }, use) => {
     await loginAsTestUser(page);
     await use(page);
