@@ -68,7 +68,7 @@ mockito-junit = { module = "org.mockito:mockito-junit-jupiter", version.ref = "m
 pact-junit5 = { module = "au.com.dius.pact.consumer:junit5", version.ref = "pact" }
 pact-provider = { module = "au.com.dius.pact.provider:junit5spring", version.ref = "pact" }
 wiremock-standalone = { module = "org.wiremock:wiremock-standalone", version = "3.10.0" }
-awaitility = { module = "org.awaitility:awaitility", version = "4.2.2" }
+awaitility = { module = "org.awaitility:awaitility", version = "4.3.0" }
 
 [plugins]
 springBoot = { id = "org.springframework.boot", version.ref = "springBoot" }
