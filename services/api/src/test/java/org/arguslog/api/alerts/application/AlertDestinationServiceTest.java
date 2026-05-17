@@ -151,11 +151,7 @@ class AlertDestinationServiceTest {
   @Test
   void createsGithubIssueWithRequiredFields() {
     ObjectNode config =
-        mapper
-            .createObjectNode()
-            .put("owner", "acme")
-            .put("repo", "web")
-            .put("token", "ghp_xxx");
+        mapper.createObjectNode().put("owner", "acme").put("repo", "web").put("token", "ghp_xxx");
     when(writes.create(eq(1L), eq(DestinationKind.GITHUB_ISSUE), eq("triage"), anyString()))
         .thenReturn(sample(DestinationKind.GITHUB_ISSUE, "triage"));
 

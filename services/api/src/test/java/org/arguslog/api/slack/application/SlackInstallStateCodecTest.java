@@ -11,10 +11,10 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
- * Round-trips the state token codec — happy path, tampered signature, expiry, junk input. The
- * codec sits in the OAuth attack surface alongside {@link SlackSigningVerifier}, so the same
- * fail-closed posture (any decode failure → {@link SlackInstallStateCodec.Result.Invalid})
- * gets pinned down explicitly.
+ * Round-trips the state token codec — happy path, tampered signature, expiry, junk input. The codec
+ * sits in the OAuth attack surface alongside {@link SlackSigningVerifier}, so the same fail-closed
+ * posture (any decode failure → {@link SlackInstallStateCodec.Result.Invalid}) gets pinned down
+ * explicitly.
  */
 class SlackInstallStateCodecTest {
 

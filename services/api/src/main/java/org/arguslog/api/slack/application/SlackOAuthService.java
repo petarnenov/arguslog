@@ -15,14 +15,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 /**
- * Exchanges a Slack OAuth {@code code} for a bot token via {@code oauth.v2.access}, and builds
- * the authorize-URL the install endpoint redirects browsers to.
+ * Exchanges a Slack OAuth {@code code} for a bot token via {@code oauth.v2.access}, and builds the
+ * authorize-URL the install endpoint redirects browsers to.
  *
- * <p>No SDK — same pattern as {@code ResendInviteEmailSender}. Slack's {@code oauth.v2.access}
- * is a form-urlencoded POST; the response is JSON with {@code ok}, {@code team.id}, {@code
- * team.name}, {@code access_token} (bot token), and {@code authed_user.id}. A {@code "ok":
- * false} body comes back with HTTP 200 carrying an {@code error} string — we surface that as
- * a checked-style {@link Result.Failure} so the controller can render a friendly redirect.
+ * <p>No SDK — same pattern as {@code ResendInviteEmailSender}. Slack's {@code oauth.v2.access} is a
+ * form-urlencoded POST; the response is JSON with {@code ok}, {@code team.id}, {@code team.name},
+ * {@code access_token} (bot token), and {@code authed_user.id}. A {@code "ok": false} body comes
+ * back with HTTP 200 carrying an {@code error} string — we surface that as a checked-style {@link
+ * Result.Failure} so the controller can render a friendly redirect.
  */
 @Service
 @ConditionalOnProperty(name = "arguslog.slack.enabled", havingValue = "true", matchIfMissing = true)
@@ -48,8 +48,8 @@ public class SlackOAuthService {
 
   /**
    * Builds the URL the install controller 302s the user to. {@code redirectUri} is whatever the
-   * controller derived from the request (so dev / staging / prod each get their own callback
-   * URL without an env-var per environment).
+   * controller derived from the request (so dev / staging / prod each get their own callback URL
+   * without an env-var per environment).
    */
   public String buildAuthorizeUrl(String state, String redirectUri) {
     return props.authorizeUrl()

@@ -5,10 +5,9 @@ import java.time.Instant;
 import org.arguslog.api.releases.domain.ReleaseInput;
 
 /**
- * Wire format for creating / updating a release. {@code version} is required + trimmed; every
- * other field is optional metadata describing the deploy (timestamp, git provenance, stage,
- * changelog notes). Length validation runs in {@link
- * org.arguslog.api.releases.application.ReleaseService}.
+ * Wire format for creating / updating a release. {@code version} is required + trimmed; every other
+ * field is optional metadata describing the deploy (timestamp, git provenance, stage, changelog
+ * notes). Length validation runs in {@link org.arguslog.api.releases.application.ReleaseService}.
  */
 public record ReleaseRequest(
     String version,

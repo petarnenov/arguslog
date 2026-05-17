@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -159,14 +161,20 @@ class KeycloakRealmImportTest {
   }
 
   private static Path resolveRealmJson() {
-    List<Path> candidates =
-        List.of(
-            Path.of("../keycloak/realm/arguslog-realm.json"),
-            Path.of("services/keycloak/realm/arguslog-realm.json"));
-    return candidates.stream()
-        .map(Path::toAbsolutePath)
-        .filter(Files::isRegularFile)
-        .findFirst()
-        .orElseThrow(() -> new IllegalStateException("Cannot locate arguslog-realm.json"));
+    // The Gradle build copies services/keycloak/realm/arguslog-realm.json into
+    // build/resources/test as a `processTestResources` step (see services/api/build.gradle.kts),
+    // so the canonical lookup goes through the classpath. Filesystem-relative paths broke on
+    // CI runners where the JVM cwd differs from a developer's "run from services/api" flow.
+    URL resource = KeycloakRealmImportTest.class.getResource("/arguslog-realm.json");
+    if (resource == null) {
+      throw new IllegalStateException(
+          "Cannot locate /arguslog-realm.json on the test classpath. Verify "
+              + "services/api/build.gradle.kts copies it via processTestResources.");
+    }
+    try {
+      return Path.of(resource.toURI());
+    } catch (URISyntaxException e) {
+      throw new IllegalStateException("arguslog-realm.json URL is not a valid URI", e);
+    }
   }
 }

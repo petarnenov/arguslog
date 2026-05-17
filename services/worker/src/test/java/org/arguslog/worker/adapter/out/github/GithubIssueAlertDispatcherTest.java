@@ -79,7 +79,8 @@ class GithubIssueAlertDispatcherTest {
 
     var requests = wm.findAll(postRequestedFor(urlPathEqualTo(ISSUES_PATH)));
     assertThat(requests).hasSize(1);
-    assertThat(requests.get(0).getHeader("Authorization")).isEqualTo("Bearer ghp_test_xxxxxxxxxxxx");
+    assertThat(requests.get(0).getHeader("Authorization"))
+        .isEqualTo("Bearer ghp_test_xxxxxxxxxxxx");
     assertThat(requests.get(0).getHeader("Accept")).isEqualTo("application/vnd.github+json");
     assertThat(requests.get(0).getHeader("X-GitHub-Api-Version")).isEqualTo("2022-11-28");
 
@@ -142,10 +143,11 @@ class GithubIssueAlertDispatcherTest {
             """));
 
     dispatcher.dispatch(
-        alert,
-        githubDestination("{\"owner\":\"acme\",\"repo\":\"web\",\"token\":\"t\"}"));
+        alert, githubDestination("{\"owner\":\"acme\",\"repo\":\"web\",\"token\":\"t\"}"));
 
-    JsonNode body = mapper.readTree(wm.findAll(postRequestedFor(urlPathEqualTo(ISSUES_PATH))).get(0).getBodyAsString());
+    JsonNode body =
+        mapper.readTree(
+            wm.findAll(postRequestedFor(urlPathEqualTo(ISSUES_PATH))).get(0).getBodyAsString());
     String md = body.path("body").asText();
     assertThat(md).contains("render").contains("app.js:42");
     assertThat(md).contains("button.save");
@@ -159,7 +161,9 @@ class GithubIssueAlertDispatcherTest {
     dispatcher.dispatch(
         alert, githubDestination("{\"owner\":\"acme\",\"repo\":\"web\",\"token\":\"t\"}"));
 
-    JsonNode body = mapper.readTree(wm.findAll(postRequestedFor(urlPathEqualTo(ISSUES_PATH))).get(0).getBodyAsString());
+    JsonNode body =
+        mapper.readTree(
+            wm.findAll(postRequestedFor(urlPathEqualTo(ISSUES_PATH))).get(0).getBodyAsString());
     String md = body.path("body").asText();
     assertThat(md).contains("No symbolicated frames available.");
     assertThat(md).contains("No breadcrumbs recorded.");

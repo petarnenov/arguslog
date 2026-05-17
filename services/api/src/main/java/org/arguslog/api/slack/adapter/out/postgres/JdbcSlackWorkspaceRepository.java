@@ -21,10 +21,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * {@code @ConditionalOnProperty(arguslog.slack.enabled, matchIfMissing = true)} loads this in
- * production by default, but lets test contexts opt out by setting the property to false. The
- * same guard sits on {@link org.arguslog.api.slack.application.SlackCommandDispatcher} and
- * {@link org.arguslog.api.slack.adapter.in.web.SlackController}, so the three skip together —
- * no half-loaded graph that wedges Spring's bean factory.
+ * production by default, but lets test contexts opt out by setting the property to false. The same
+ * guard sits on {@link org.arguslog.api.slack.application.SlackCommandDispatcher} and {@link
+ * org.arguslog.api.slack.adapter.in.web.SlackController}, so the three skip together — no
+ * half-loaded graph that wedges Spring's bean factory.
  */
 @Component
 @ConditionalOnProperty(name = "arguslog.slack.enabled", havingValue = "true", matchIfMissing = true)
@@ -124,7 +124,8 @@ public class JdbcSlackWorkspaceRepository
   }
 
   private String encryptToBase64(String plaintext) {
-    return Base64.getEncoder().encodeToString(cipher.encrypt(plaintext.getBytes(StandardCharsets.UTF_8)));
+    return Base64.getEncoder()
+        .encodeToString(cipher.encrypt(plaintext.getBytes(StandardCharsets.UTF_8)));
   }
 
   @Override

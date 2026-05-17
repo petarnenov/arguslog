@@ -418,9 +418,7 @@ export function AlertRulesPage() {
                     { value: 'days', label: t('alertRules.windowUnits.days') },
                   ]}
                   value={form.values.windowUnit}
-                  onChange={(v) =>
-                    form.setFieldValue('windowUnit', (v ?? 'minutes') as WindowUnit)
-                  }
+                  onChange={(v) => form.setFieldValue('windowUnit', (v ?? 'minutes') as WindowUnit)}
                   disabled={saveMutation.isPending}
                   allowDeselect={false}
                 />

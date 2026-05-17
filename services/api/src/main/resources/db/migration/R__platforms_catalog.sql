@@ -18,16 +18,16 @@
 -- =====================================================================
 
 INSERT INTO platforms (slug, name, sdk_package, sdk_version, sort_order) VALUES
-  ('javascript',   'JavaScript / Browser', '@arguslog/sdk-browser',      '2.0.0', 10),
-  ('react',        'React',                '@arguslog/sdk-react',        '2.0.1', 20),
+  ('javascript',   'JavaScript / Browser', '@arguslog/sdk-browser',      '2.0.1', 10),
+  ('react',        'React',                '@arguslog/sdk-react',        '2.0.2', 20),
   ('angular',      'Angular',              '@arguslog/sdk-angular',      '2.0.0', 22),
   ('vue',          'Vue',                  '@arguslog/sdk-vue',          '2.0.0', 23),
   ('nextjs',       'Next.js',              '@arguslog/sdk-nextjs',       '2.0.0', 25),
   ('web3',         'Web3 (EVM + Solana)',  '@arguslog/sdk-web3',         '2.0.0', 27),
   ('react-native', 'React Native',         '@arguslog/sdk-react-native', '2.0.0', 30),
-  ('node',         'Node.js',              '@arguslog/sdk-node',         '2.0.0', 35),
+  ('node',         'Node.js',              '@arguslog/sdk-node',         '2.0.1', 35),
   ('java-spring',  'Java / Spring Boot',   'org.arguslog:java-sdk',      '2.0.0', 40),
-  ('python',       'Python',               'arguslog',                   '2.0.0', 50)
+  ('python',       'Python',               'arguslog',                   '2.0.2', 50)
 ON CONFLICT (slug) DO UPDATE SET
   name        = EXCLUDED.name,
   sdk_package = EXCLUDED.sdk_package,

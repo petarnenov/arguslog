@@ -171,8 +171,10 @@ class CachingSymbolicatorTest {
   @Test
   void leavesNonHashDottedNamesAlone() {
     // Real words / SemVer / nested module names should never be confused for a hash.
-    assertThat(CachingSymbolicator.stripHashSegment("Component.test.js")).isEqualTo("Component.test.js");
-    assertThat(CachingSymbolicator.stripHashSegment("lodash.debounce.js")).isEqualTo("lodash.debounce.js");
+    assertThat(CachingSymbolicator.stripHashSegment("Component.test.js"))
+        .isEqualTo("Component.test.js");
+    assertThat(CachingSymbolicator.stripHashSegment("lodash.debounce.js"))
+        .isEqualTo("lodash.debounce.js");
     assertThat(CachingSymbolicator.stripHashSegment("version.generated.ts"))
         .isEqualTo("version.generated.ts");
     // SemVer-like ranges with a dot — not a hash, mixed digits + dot but short and not hex-only.
@@ -183,14 +185,16 @@ class CachingSymbolicatorTest {
   void leavesPathsWithoutTrailingExtensionAlone() {
     // The guard `(?=\\.[A-Za-z])` requires another extension to the right of the hash. A bare
     // `something.abcdef` (with nothing after) is most likely not a hashed bundle filename.
-    assertThat(CachingSymbolicator.stripHashSegment("something.abcdef")).isEqualTo("something.abcdef");
+    assertThat(CachingSymbolicator.stripHashSegment("something.abcdef"))
+        .isEqualTo("something.abcdef");
   }
 
   @Test
   void mixedCaseHashShapesAreLeftAlone() {
     // Mixed case (uppercase+lowercase letters mixed in the segment) is almost never a hash —
     // bundlers emit pure-hex which is single-case by definition.
-    assertThat(CachingSymbolicator.stripHashSegment("app.D7f2A8e1.js")).isEqualTo("app.D7f2A8e1.js");
+    assertThat(CachingSymbolicator.stripHashSegment("app.D7f2A8e1.js"))
+        .isEqualTo("app.D7f2A8e1.js");
   }
 
   @Test

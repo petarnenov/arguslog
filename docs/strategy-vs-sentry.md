@@ -69,7 +69,7 @@
 - **Slack/Discord alerting от ден 1** — email-ите никой не ги чете в 2026.
   ✅ Outbound alerts чрез webhook/Telegram/Slack/email shipped в P3.
   ✅ Inbound Slack workspace integration (slash commands `/arguslog issues|resolve|
-  release|set-project` + Connect Slack бутон в dashboard-а + MCP curated tools)
+release|set-project` + Connect Slack бутон в dashboard-а + MCP curated tools)
   shipped 2026-05-15 — triage цикълът се случва в Slack без context switch.
 - **Public status page + post-mortems** — Sentry губи доверие при инциденти,
   защото е closed-box. Wherever възможно — be transparent.

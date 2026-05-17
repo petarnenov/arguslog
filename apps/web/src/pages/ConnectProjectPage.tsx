@@ -139,8 +139,7 @@ export function ConnectProjectPage() {
   // gone after page navigation, so on a return visit we can only see the name — not the
   // token — and have to offer Rotate to refill the magic prompt.
   const hasExistingQuickstartPat = useMemo(
-    () =>
-      (tokensQuery.data ?? []).some((t) => t.name.startsWith(PAT_QUICKSTART_PREFIX)),
+    () => (tokensQuery.data ?? []).some((t) => t.name.startsWith(PAT_QUICKSTART_PREFIX)),
     [tokensQuery.data],
   );
 

@@ -32,8 +32,8 @@ export function DemoScrubbingPage() {
 ]`}
       </pre>
       <p>
-        Fire the button below — on the dashboard you'll see <code>token</code> and <code>apiKey</code>{' '}
-        masked while <code>visible</code> goes through unchanged.
+        Fire the button below — on the dashboard you'll see <code>token</code> and{' '}
+        <code>apiKey</code> masked while <code>visible</code> goes through unchanged.
       </p>
       <div className="form-grid">
         <label>

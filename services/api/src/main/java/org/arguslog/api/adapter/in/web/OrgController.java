@@ -59,9 +59,7 @@ public class OrgController {
         .body(OrgResponse.from(created));
   }
 
-  /**
-   * Renames an org's display name. Slug is preserved so URLs/DSNs stay valid. Owner-only.
-   */
+  /** Renames an org's display name. Slug is preserved so URLs/DSNs stay valid. Owner-only. */
   @PatchMapping(value = "/{orgId}", consumes = MediaType.APPLICATION_JSON_VALUE)
   public OrgResponse rename(@PathVariable long orgId, @RequestBody OrgRequest body) {
     PatScopeGuard.require(PatScope.ORGS_WRITE);

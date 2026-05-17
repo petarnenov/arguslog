@@ -106,10 +106,12 @@ class OpenApiContractTest {
   @MockitoBean TokenHasher tokenHasher;
   @MockitoBean TierLookupRepository tierLookupRepository;
   @MockitoBean org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
+
   // Slack stack is opted in for this test (arguslog.slack.enabled=true above) so the snapshot
   // reflects the prod surface; mock the ports so the JDBC adapter doesn't autowire DataSource.
   @MockitoBean
   org.arguslog.api.slack.application.port.SlackWorkspaceRepository slackWorkspaceRepository;
+
   @MockitoBean
   org.arguslog.api.slack.application.port.SlackWorkspaceWriteRepository
       slackWorkspaceWriteRepository;

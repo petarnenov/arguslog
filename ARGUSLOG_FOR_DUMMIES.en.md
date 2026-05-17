@@ -1,6 +1,6 @@
 # 📘 Arguslog For Dummies
 
-*The little book that explains how the whole Arguslog works as if to a 6-year-old.*
+_The little book that explains how the whole Arguslog works as if to a 6-year-old._
 
 ---
 
@@ -38,12 +38,13 @@ The problem is: if you're playing and the game breaks on **your** phone — **th
 Arguslog is an **open-source**, **multi-tenant** error-tracking platform — like Sentry, but yours. You can host it on your own infrastructure (self-host), or use the hosted version at `arguslog.org` for free.
 
 **What it does concretely:**
+
 - Catches uncaught exceptions, log records, and breadcrumbs from JS, JVM and Python code via first-class SDKs
 - Fingerprints events, groups them into issues, stores them in Postgres + TimescaleDB
 - Shows them in a React dashboard for triage
 - Sends real-time alerts to Slack, Telegram, webhooks, or email
 - **Triage from Slack** — `/arguslog issues|issue <id>|resolve <id>|release <ver>|
-  set-project <slug>` slash commands from any channel; resolutions broadcast
+set-project <slug>` slash commands from any channel; resolutions broadcast
   in-channel so the team sees them without a separate ping
 - Translates minified JS stack traces back through source maps
 - Multi-tenant: orgs / projects / members / roles
@@ -62,6 +63,7 @@ Inside **every** game/app lives one tiny little helper. It's called the **SDK** 
 - It writes: "Hello! I'm the game 'Marketing Web'. The error is in `checkout.js` on line 42!"
 
 We have **many** kinds of helpers, because games are written in different languages:
+
 - 🟨 **JavaScript helper** (`sdk-browser`) — for web games
 - ⚛️ **React helper** (`sdk-react`) — for React apps
 - 🟢 **Node helper** (`sdk-node`) — for server apps
@@ -108,21 +110,24 @@ At the far end of the belt stands **Worker**. It does the most work:
 ### 📚 Postgres + TimescaleDB — the library
 
 A big room where **everything** is kept:
+
 - People, organizations, projects (normal shelves)
 - Events (a special shelf — hypertable, partitioned by day)
 - Audit log (also a hypertable)
 
-**TimescaleDB isn't a separate database!** It's an *extension* inside Postgres. One process, one network connection.
+**TimescaleDB isn't a separate database!** It's an _extension_ inside Postgres. One process, one network connection.
 
 ### 🛎️ API — the librarian
 
 When the programmer wants something, they don't walk into the library themselves — they ask **API** (REST):
+
 - "Show me the last 10 errors!" → API reads from Postgres → returns JSON
 - "Rename Org3!" → API checks permissions, applies the change
 
 ### 🖥️ Web — the pretty reading room
 
 The site you open — `arguslog.org`. React + Mantine + Vite. Here you see:
+
 - 📊 The list of errors
 - 📈 Charts
 - 🎯 Details
@@ -133,6 +138,7 @@ Web has no mind of its own — it just asks the API.
 ### 🛡️ Keycloak — the bouncer at the door
 
 Before you enter the Web room, **Keycloak**, the bouncer:
+
 - Asks who you are → email + password
 - Hands you a **badge** (JWT token) — you carry it everywhere
 - Keeps passwords in its own pantry (a separate Postgres database)
@@ -140,6 +146,7 @@ Before you enter the Web room, **Keycloak**, the bouncer:
 ### 🗄️ S3/MinIO — the warehouse
 
 For big things (sourcemaps):
+
 - In production — **R2** (Cloudflare)
 - Locally — **MinIO**
 
@@ -257,13 +264,13 @@ Like a hospital: ER (ingest), operating theatre (worker), and reception (api). Y
 
 ## 6. Who Stores What?
 
-| Place | What it keeps | Lifespan |
-|---|---|---|
-| 📚 **Postgres** | People, organizations, projects, errors, configurations | Forever |
-| ⏰ **TimescaleDB** (inside Postgres) | The events themselves | 365 days (Platinum) |
-| 🎢 **Redis Streams** | Letters in flight | Minutes |
-| 🗄️ **S3/MinIO** | Sourcemaps | As long as you keep them |
-| 🛡️ **Keycloak Postgres** | Passwords + users (a separate database!) | Forever |
+| Place                                | What it keeps                                           | Lifespan                 |
+| ------------------------------------ | ------------------------------------------------------- | ------------------------ |
+| 📚 **Postgres**                      | People, organizations, projects, errors, configurations | Forever                  |
+| ⏰ **TimescaleDB** (inside Postgres) | The events themselves                                   | 365 days (Platinum)      |
+| 🎢 **Redis Streams**                 | Letters in flight                                       | Minutes                  |
+| 🗄️ **S3/MinIO**                      | Sourcemaps                                              | As long as you keep them |
+| 🛡️ **Keycloak Postgres**             | Passwords + users (a separate database!)                | Forever                  |
 
 ---
 
@@ -342,18 +349,22 @@ That way **nobody along the path can steal the badge** — even if they steal th
 In the library there's a shared shelf `issues` (all errors from all companies). But Petar should see ONLY the errors of the Arguslog org, not of Geo-mini.
 
 **The old (wrong) way:**
+
 ```sql
 SELECT * FROM issues WHERE org_id = ? AND ...
 ```
+
 One developer forgets `WHERE org_id` → you see someone else's errors! 🚨
 
 **The RLS magic:**
+
 ```sql
 CREATE POLICY tenant_isolation ON issues
   USING (org_id = current_setting('app.org_id')::bigint);
 ```
 
 In the API service:
+
 ```java
 SET app.org_id = '1';  -- "we're working for Arguslog right now"
 SELECT * FROM issues;  -- automatically filtered to org_id=1 only
@@ -366,6 +377,7 @@ No matter how many mistakes the developers make — **data will never leak acros
 The dashboard shows **charts**: "errors per 5 minutes over 24 hours". With millions of events → seconds-to-minutes per query.
 
 **TimescaleDB's solution:**
+
 ```sql
 CREATE MATERIALIZED VIEW issue_counts_5m
 WITH (timescaledb.continuous) AS
@@ -382,6 +394,7 @@ This is a **pre-computed recipe**. Timescale only re-computes new events; the ol
 TimescaleDB is an **extension** on top of Postgres (like PostGIS). One process, one network connection. The Docker image `timescale/timescaledb:latest-pg16` = Postgres 16 + Timescale shared libraries.
 
 In `V1__initial_schema.sql`:
+
 ```sql
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 SELECT create_hypertable('events', 'received_at', chunk_time_interval => INTERVAL '1 day');
@@ -394,22 +407,25 @@ SELECT create_hypertable('events', 'received_at', chunk_time_interval => INTERVA
 ## 9. The Police: Rate Limits & Quotas
 
 ### Tier 1: Burst Limiter (in Ingest) 🏃
+
 ```
 If one DSN sends > 100 events/sec → block!
 ```
+
 **In-memory** (Bucket4j). Fast, but per-pod. `bucket4j-redis` is a P5 follow-up for cross-instance limits.
 
 ### Tier 2: Sustained Rate Limit (with Redis) 🚦
+
 A longer window, shared across pods.
 
 ### Tier 3: Monthly Quota (Tier-based) 📅
 
-| Tier | Events/month | Projects | Members | Retention |
-|---|---|---|---|---|
-| 🥉 regular | 5,000 | 1 | 1 | 7 days |
-| 🥈 silver | 50,000 | 5 | 5 | 30 days |
-| 🥇 gold | 500,000 | 20 | 20 | 90 days |
-| 💎 platinum | ∞ | ∞ | ∞ | 365 days |
+| Tier        | Events/month | Projects | Members | Retention |
+| ----------- | ------------ | -------- | ------- | --------- |
+| 🥉 regular  | 5,000        | 1        | 1       | 7 days    |
+| 🥈 silver   | 50,000       | 5        | 5       | 30 days   |
+| 🥇 gold     | 500,000      | 20       | 20      | 90 days   |
+| 💎 platinum | ∞            | ∞        | ∞       | 365 days  |
 
 The Worker checks every event: "which org? Over the limit?" → if yes → drop.
 
@@ -420,6 +436,7 @@ The Worker checks every event: "which org? Over the limit?" → if yes → drop.
 ### Why?
 
 When JS is compiled for production:
+
 ```js
 // It was:
 function calculateTotal(items) {
@@ -427,7 +444,9 @@ function calculateTotal(items) {
 }
 
 // It became:
-function a(b){return b.reduce((c,d)=>c+d.e,0)}
+function a(b) {
+  return b.reduce((c, d) => c + d.e, 0);
+}
 ```
 
 An error like `Error in a() at line 1:42` → tells you nothing. 😵
@@ -435,6 +454,7 @@ An error like `Error in a() at line 1:42` → tells you nothing. 😵
 ### Solution: Source Map
 
 The build emits a **map** (`bundle.js.map`):
+
 ```
 Line 1, column 42 in bundle.js
    = src/billing.ts:15
@@ -469,13 +489,16 @@ The developer understands instantly. 🎯
 ```bash
 make dev
 ```
+
 Starts:
+
 - 🐳 Docker compose — Postgres+Timescale, Redis, Keycloak, MinIO, Mailhog
 - 🟢 mprocs TUI — 4 panels: ingest (8080), api (8081), worker (8082), web (5173)
 
 ### 🏢 Life 2: Staging (Railway, auto on main)
 
 `dev` → `main` merge → GitHub Actions:
+
 1. Builds Docker images
 2. Pushes to Railway
 3. Deploys to the staging environment
@@ -501,6 +524,7 @@ A user in Japan
 ## 12. Tests: The Four Tiers
 
 ### 1. Unit tests (75% coverage)
+
 - Does EventFingerprinter group things correctly?
 - Does DsnValidator reject invalid DSNs?
 - Does the rate limiter count properly?
@@ -508,12 +532,14 @@ A user in Japan
 Fast (milliseconds), many of them, every commit.
 
 ### 2. Integration tests (40%)
+
 - Controller + real Redis (Testcontainers)?
 - Repository + real Postgres?
 
 Slower (seconds), fewer of them.
 
 ### 3. Contract tests (Pact)
+
 ```
 SDK says: "I'll send {event_id, message, level}"
    ↓ Pact records it
@@ -521,9 +547,11 @@ Ingest says: "I expect {event_id, message, level}"
    ↓ Pact compares
 ✓ Match → the contract holds
 ```
+
 Guarantees that SDK ↔ Ingest never drift out of sync.
 
 ### 4. E2E tests (Playwright, 10%)
+
 Real browser → arguslog.org → login → creates an org → sends an event → verifies it in the dashboard.
 
 The slowest tier but the most realistic.
@@ -535,6 +563,7 @@ The slowest tier but the most realistic.
 ### The big picture
 
 Picture a **restaurant**:
+
 - 📖 **The cookbook** = `openapi.json` (all API endpoints)
 - 🤖 **The cook** = `generate-tools.mjs` (the generator)
 - 📋 **The menus** = MCP tools (50+)
@@ -544,6 +573,7 @@ Picture a **restaurant**:
 ### Step 1: Spring Boot → OpenAPI spec
 
 Java annotations:
+
 ```java
 @RestController
 @RequestMapping("/api/v1/orgs")
@@ -556,6 +586,7 @@ public class OrgController {
 ```
 
 At build time, `springdoc-openapi` automatically generates `openapi.json`:
+
 ```json
 {
   "paths": {
@@ -619,6 +650,7 @@ then pass its \`id\` to other tools.`,
 ### Step 4: Merge magic
 
 In `tools.ts`:
+
 - Auto-gen tools carry **schemas + annotations** (from OpenAPI, accurate)
 - Curated tools carry **rich descriptions** (LLM-friendly)
 - They merge by `method + path` — no duplicates
@@ -655,14 +687,15 @@ async function executeTool(client, name, args) {
 ```
 
 `ArguslogClient` makes the HTTP request:
+
 ```ts
 fetch('https://api.arguslog.org/api/v1/orgs/8', {
   method: 'PATCH',
   headers: {
-    'Authorization': `Bearer ${ARGUSLOG_PAT}`,
+    Authorization: `Bearer ${ARGUSLOG_PAT}`,
     'Content-Type': 'application/json',
   },
-  body: JSON.stringify({ name: "OrgThree" }),
+  body: JSON.stringify({ name: 'OrgThree' }),
 });
 ```
 
@@ -693,6 +726,7 @@ fetch('https://api.arguslog.org/api/v1/orgs/8', {
 Arguslog has **two** GitHub repos:
 
 ### Repo 1: `petarnenov/arguslog` (PRIVATE)
+
 - `apps/web`, `apps/landing` — sources
 - `services/api`, `ingest`, `worker` — Java backend
 - `packages/sdk-*` — SDK source
@@ -703,6 +737,7 @@ Arguslog has **two** GitHub repos:
 The manor house — all the code. Not public (Railway secrets, history, …).
 
 ### Repo 2: `petarnenov/arguslog-sdks` (PUBLIC)
+
 - `packages/sdk-browser`, `sdk-react`, … — only the SDKs
 - `packages/mcp-server` — the MCP
 - `cli/` — the CLI
@@ -721,6 +756,7 @@ On a `main` push in the private repo → CI fires → syncs the selected files i
 ## 15. Tiers — The New OSS World
 
 ### The old plan (abandoned)
+
 - Lemon Squeezy (cards)
 - NOWPayments (crypto)
 - $9.99/month base plan
@@ -729,6 +765,7 @@ On a `main` push in the private repo → CI fires → syncs the selected files i
 There was a whole billing flow, Stripe webhooks, the works.
 
 ### The new plan (OSS pivot)
+
 - **No money in the code**
 - The tier values still live in the schema
 - They're granted by an admin (env allow-list `ARGUSLOG_PLATFORM_ADMINS`)
@@ -789,22 +826,22 @@ Change the API → the same PR updates the SDK + Web + MCP + docs. No five PRs i
 
 ## 17. Glossary
 
-| Term | What it is |
-|---|---|
-| **DSN** | Data Source Name — a public auth credential for SDK → ingest |
-| **PAT** | Personal Access Token — a user-level token for API/MCP |
-| **Fingerprint** | A hash of an error — identical errors → same fingerprint → 1 issue |
-| **Issue** | A grouped error (one row per unique bug) |
-| **Event** | An individual occurrence of an error |
-| **Source Map** | A map between minified ↔ original code |
-| **Release** | A version of the app (v1.2.3) |
-| **Hypertable** | A Timescale magic table partitioned by time |
-| **RLS** | Row-Level Security — automatic filtering inside Postgres |
-| **OIDC** | OpenID Connect — auth protocol (Keycloak ↔ Web) |
-| **PKCE** | Proof Key for Code Exchange — extra security for OAuth |
-| **MCP** | Model Context Protocol — bridge between Claude and tools |
-| **Tenant** | A logical partition in a multi-tenant system (= an org) |
-| **Symbolication** | The translation from minified to readable code |
+| Term              | What it is                                                         |
+| ----------------- | ------------------------------------------------------------------ |
+| **DSN**           | Data Source Name — a public auth credential for SDK → ingest       |
+| **PAT**           | Personal Access Token — a user-level token for API/MCP             |
+| **Fingerprint**   | A hash of an error — identical errors → same fingerprint → 1 issue |
+| **Issue**         | A grouped error (one row per unique bug)                           |
+| **Event**         | An individual occurrence of an error                               |
+| **Source Map**    | A map between minified ↔ original code                             |
+| **Release**       | A version of the app (v1.2.3)                                      |
+| **Hypertable**    | A Timescale magic table partitioned by time                        |
+| **RLS**           | Row-Level Security — automatic filtering inside Postgres           |
+| **OIDC**          | OpenID Connect — auth protocol (Keycloak ↔ Web)                    |
+| **PKCE**          | Proof Key for Code Exchange — extra security for OAuth             |
+| **MCP**           | Model Context Protocol — bridge between Claude and tools           |
+| **Tenant**        | A logical partition in a multi-tenant system (= an org)            |
+| **Symbolication** | The translation from minified to readable code                     |
 
 ---
 
@@ -869,4 +906,4 @@ And it all runs in **one city** (Railway cloud) or in **your house** (self-hoste
 
 ---
 
-*End of the book. Now you know how Arguslog works!* 📚✨
+_End of the book. Now you know how Arguslog works!_ 📚✨

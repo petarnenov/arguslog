@@ -600,7 +600,12 @@ function ProjectCard({ project, orgSlug, onArchive, onRename }: ProjectCardProps
             </Box>
           ) : (
             <Box mb="sm">
-              <Text size="xs" c="dimmed" fs="italic" data-testid={`project-no-events-${project.slug}`}>
+              <Text
+                size="xs"
+                c="dimmed"
+                fs="italic"
+                data-testid={`project-no-events-${project.slug}`}
+              >
                 {t('projects.noEvents')}
               </Text>
             </Box>

@@ -26,10 +26,7 @@ function renderAt(path = '/orgs/acme/integrations/slack') {
       <QueryClientProvider client={client}>
         <MemoryRouter initialEntries={[path]}>
           <Routes>
-            <Route
-              path="/orgs/:orgSlug/integrations/slack"
-              element={<SlackIntegrationsPage />}
-            />
+            <Route path="/orgs/:orgSlug/integrations/slack" element={<SlackIntegrationsPage />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
@@ -75,15 +72,11 @@ describe('SlackIntegrationsPage', () => {
       await userEvent.click(screen.getByTestId('slack-connect-button'));
 
       await waitFor(() =>
-        expect(assign).toHaveBeenCalledWith(
-          'https://slack.com/oauth/v2/authorize?state=opaque',
-        ),
+        expect(assign).toHaveBeenCalledWith('https://slack.com/oauth/v2/authorize?state=opaque'),
       );
       // Sanity-check the install endpoint was actually hit (not just a stray cache).
       expect(
-        calls.some((c) =>
-          c.url.endsWith('/api/v1/orgs/1/integrations/slack/oauth/install'),
-        ),
+        calls.some((c) => c.url.endsWith('/api/v1/orgs/1/integrations/slack/oauth/install')),
       ).toBe(true);
     } finally {
       Object.defineProperty(window, 'location', {
@@ -192,9 +185,7 @@ describe('SlackIntegrationsPage', () => {
 
     renderAt('/orgs/acme/integrations/slack?installed=Acme');
 
-    await waitFor(() =>
-      expect(screen.getByText(/Connected to Acme/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/Connected to Acme/i)).toBeInTheDocument());
   });
 
   it('creates an alert destination when the workspace has a captured webhook', async () => {
@@ -246,9 +237,7 @@ describe('SlackIntegrationsPage', () => {
       );
       expect(post).toBeTruthy();
     });
-    await waitFor(() =>
-      expect(screen.getByText(/Created alert destination/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/Created alert destination/i)).toBeInTheDocument());
   });
 
   it('hides the create-alert-destination button when the workspace has no webhook', async () => {

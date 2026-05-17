@@ -21,17 +21,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Slack-facing controller. Sits OUTSIDE the JWT/PAT auth chain — Slack signed requests can't
- * carry our bearer tokens. {@code /api/v1/slack/**} is allow-listed in SecurityConfig; the
- * signing-secret check inside this method is the only authentication.
+ * Slack-facing controller. Sits OUTSIDE the JWT/PAT auth chain — Slack signed requests can't carry
+ * our bearer tokens. {@code /api/v1/slack/**} is allow-listed in SecurityConfig; the signing-secret
+ * check inside this method is the only authentication.
  */
 // arguslog.slack.enabled=false opts the entire Slack stack out — every test that doesn't want
 // a DataSource autowire failure sets this. Production / staging leave it unset → default true.
 @RestController
 @ConditionalOnProperty(name = "arguslog.slack.enabled", havingValue = "true", matchIfMissing = true)
-@RequestMapping(
-    value = "/api/v1/slack",
-    produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/v1/slack", produces = MediaType.APPLICATION_JSON_VALUE)
 public class SlackController {
 
   private static final Logger log = LoggerFactory.getLogger(SlackController.class);
@@ -45,14 +43,13 @@ public class SlackController {
   }
 
   /**
-   * Slack POSTs form-encoded payloads here. Spring's body-parser would consume the InputStream
-   * for `@RequestParam`, but the signing verifier needs the raw bytes to recompute the HMAC.
-   * Read once from {@link HttpServletRequest#getReader} and parse manually.
+   * Slack POSTs form-encoded payloads here. Spring's body-parser would consume the InputStream for
+   * `@RequestParam`, but the signing verifier needs the raw bytes to recompute the HMAC. Read once
+   * from {@link HttpServletRequest#getReader} and parse manually.
    */
-  @PostMapping(
-      value = "/commands",
-      consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-  public ResponseEntity<SlackCommandResponse> commands(HttpServletRequest request) throws IOException {
+  @PostMapping(value = "/commands", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+  public ResponseEntity<SlackCommandResponse> commands(HttpServletRequest request)
+      throws IOException {
     String body = readBody(request);
     String timestamp = request.getHeader("X-Slack-Request-Timestamp");
     String signature = request.getHeader("X-Slack-Signature");
@@ -91,8 +88,10 @@ public class SlackController {
     return sb.toString();
   }
 
-  /** Tiny form-urlencoded parser — Spring's MultiValueMap would also work but pulls in the
-   *  servlet filter chain we deliberately bypass for this endpoint. */
+  /**
+   * Tiny form-urlencoded parser — Spring's MultiValueMap would also work but pulls in the servlet
+   * filter chain we deliberately bypass for this endpoint.
+   */
   private static Map<String, String> parseFormUrlencoded(String body) {
     Map<String, String> out = new HashMap<>();
     if (body == null || body.isEmpty()) return out;

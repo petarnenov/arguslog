@@ -8,8 +8,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * @param botToken empty in dev means "telegram dispatch is a no-op" — we log a warn at boot instead
  *     of crashing the worker.
- *     <p>The dashboard base url for the "Open in Arguslog" deep-link lives in the shared
- *     {@link org.arguslog.worker.adapter.out.AlertsProperties}, not here.
+ *     <p>The dashboard base url for the "Open in Arguslog" deep-link lives in the shared {@link
+ *     org.arguslog.worker.adapter.out.AlertsProperties}, not here.
  */
 @ConfigurationProperties(prefix = "arguslog.alerts.telegram")
 public record TelegramProperties(String apiBaseUrl, String botToken, Duration timeout) {

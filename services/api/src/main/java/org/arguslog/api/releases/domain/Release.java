@@ -9,9 +9,9 @@ import java.time.Instant;
  *
  * <p>Metadata fields ({@code releasedAt}, {@code gitSha}, {@code gitRef}, {@code deployStage},
  * {@code changelog}) are all nullable. {@code createdAt} is the row-insert time and is always
- * populated; {@code releasedAt} is the operator-declared deploy moment and only set when the
- * caller passes it on create/update. The 4-arg convenience constructor exists so older tests
- * and call-sites that don't care about the metadata don't need to thread nulls.
+ * populated; {@code releasedAt} is the operator-declared deploy moment and only set when the caller
+ * passes it on create/update. The 4-arg convenience constructor exists so older tests and
+ * call-sites that don't care about the metadata don't need to thread nulls.
  */
 public record Release(
     long id,

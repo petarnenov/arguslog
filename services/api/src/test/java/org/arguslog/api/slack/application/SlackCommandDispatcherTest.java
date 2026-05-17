@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import org.arguslog.api.application.CursorCodec;
 import org.arguslog.api.application.GetIssueUseCase;
 import org.arguslog.api.application.IssueTriageUseCase;
 import org.arguslog.api.application.IssuesByReleaseUseCase;
@@ -36,9 +35,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Each subcommand routes to the right downstream use case and produces a response shape that
- * Slack will render. The dispatcher itself is a pure routing layer — the underlying use cases
- * have their own unit / integration tests, so we mock them out here.
+ * Each subcommand routes to the right downstream use case and produces a response shape that Slack
+ * will render. The dispatcher itself is a pure routing layer — the underlying use cases have their
+ * own unit / integration tests, so we mock them out here.
  */
 @ExtendWith(MockitoExtension.class)
 class SlackCommandDispatcherTest {
@@ -214,8 +213,7 @@ class SlackCommandDispatcherTest {
             Instant.now(),
             3L,
             null);
-    when(triage.updateStatus(1L, 101L, 42L, Issue.Status.IGNORED))
-        .thenReturn(Optional.of(ignored));
+    when(triage.updateStatus(1L, 101L, 42L, Issue.Status.IGNORED)).thenReturn(Optional.of(ignored));
 
     SlackCommandResponse r = dispatcher.dispatch(payload("T123", "ignore 42"));
     assertThat(r.response_type()).isEqualTo("in_channel");

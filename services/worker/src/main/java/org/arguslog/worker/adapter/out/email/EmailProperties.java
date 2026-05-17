@@ -8,8 +8,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * intentionally do not crash boot so worker can keep delivering Telegram/Slack/webhook even when
  * email isn't yet provisioned.
  *
- * <p>The dashboard base url that the "Open in Arguslog" deep-link uses comes from the shared
- * {@link org.arguslog.worker.adapter.out.AlertsProperties}.
+ * <p>The dashboard base url that the "Open in Arguslog" deep-link uses comes from the shared {@link
+ * org.arguslog.worker.adapter.out.AlertsProperties}.
  */
 @ConfigurationProperties(prefix = "arguslog.alerts.email")
 public record EmailProperties(String apiBaseUrl, String apiKey, String from, Duration timeout) {

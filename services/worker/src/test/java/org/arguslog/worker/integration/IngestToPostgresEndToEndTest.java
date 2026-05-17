@@ -14,7 +14,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import javax.sql.DataSource;
 import org.arguslog.ingest.adapter.out.auth.PostgresProjectAuthenticator;
 import org.arguslog.ingest.adapter.out.quota.AllowAllQuotaEnforcer;
@@ -23,9 +26,6 @@ import org.arguslog.ingest.application.IngestEventService;
 import org.arguslog.ingest.application.IngestEventUseCase;
 import org.arguslog.ingest.application.IngestEventUseCase.Command;
 import org.arguslog.ingest.application.IngestEventUseCase.Result;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import org.arguslog.worker.adapter.in.redis.RedisStreamEventListener;
 import org.arguslog.worker.adapter.in.redis.RedisStreamProperties;
 import org.arguslog.worker.adapter.out.fingerprint.PayloadFingerprinter;
@@ -84,8 +84,8 @@ class IngestToPostgresEndToEndTest {
       new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
 
   /**
-   * In-memory R2 stand-in keyed by r2_key. Tests seed it before sending the release-tagged event
-   * so the symbolicator can resolve the bytes without a real S3 / MinIO container.
+   * In-memory R2 stand-in keyed by r2_key. Tests seed it before sending the release-tagged event so
+   * the symbolicator can resolve the bytes without a real S3 / MinIO container.
    */
   private static final Map<String, String> SOURCE_MAP_BLOBS = new HashMap<>();
 
@@ -135,11 +135,7 @@ class IngestToPostgresEndToEndTest {
         new CachingSymbolicator(new JdbcSymbolicationRepository(dataSource), inMemoryStore, mapper);
     ProcessEventService unwrapped =
         new ProcessEventService(
-            new PayloadFingerprinter(mapper),
-            rawStore,
-            persisted -> {},
-            symbolicator,
-            mapper);
+            new PayloadFingerprinter(mapper), rawStore, persisted -> {}, symbolicator, mapper);
     ProcessEventUseCase wrapped = event -> tx.execute(status -> unwrapped.process(event));
 
     RedisStreamProperties props =
@@ -292,7 +288,8 @@ class IngestToPostgresEndToEndTest {
         .pollInterval(Duration.ofMillis(100))
         .untilAsserted(() -> assertThat(countEvents()).isEqualTo(1L));
 
-    // Stored payload should now carry the decoded coordinates alongside the originals (the dashboard's
+    // Stored payload should now carry the decoded coordinates alongside the originals (the
+    // dashboard's
     // "raw" toggle reads the originals, the default view reads originalFilename/Lineno).
     EventRow row = lastEventRow();
     JsonNode persisted = new ObjectMapper().readTree(row.payload);
@@ -318,8 +315,7 @@ class IngestToPostgresEndToEndTest {
     try (Connection conn = dataSource.getConnection()) {
       for (String version : new String[] {firstRelease, secondRelease}) {
         try (PreparedStatement stmt =
-            conn.prepareStatement(
-                "INSERT INTO releases (project_id, version) VALUES (?, ?)")) {
+            conn.prepareStatement("INSERT INTO releases (project_id, version) VALUES (?, ?)")) {
           stmt.setLong(1, PROJECT_ID);
           stmt.setString(2, version);
           stmt.execute();
@@ -334,7 +330,8 @@ class IngestToPostgresEndToEndTest {
                 + "\",\"level\":\"error\",\"exception\":{\"values\":["
                 + "{\"type\":\"BoomError\",\"value\":\"x\"}]}}";
 
-    ingest.ingest(new Command(PROJECT_ID, DSN_PUBLIC, payloadFor.apply(firstRelease), "127.0.0.1", "junit"));
+    ingest.ingest(
+        new Command(PROJECT_ID, DSN_PUBLIC, payloadFor.apply(firstRelease), "127.0.0.1", "junit"));
     await()
         .atMost(Duration.ofSeconds(10))
         .pollInterval(Duration.ofMillis(100))
@@ -342,7 +339,8 @@ class IngestToPostgresEndToEndTest {
     Long releaseIdAfterFirst = firstSeenReleaseId(lastEventRow().issueId);
     assertThat(releaseIdAfterFirst).isNotNull();
 
-    ingest.ingest(new Command(PROJECT_ID, DSN_PUBLIC, payloadFor.apply(secondRelease), "127.0.0.1", "junit"));
+    ingest.ingest(
+        new Command(PROJECT_ID, DSN_PUBLIC, payloadFor.apply(secondRelease), "127.0.0.1", "junit"));
     await()
         .atMost(Duration.ofSeconds(10))
         .pollInterval(Duration.ofMillis(100))

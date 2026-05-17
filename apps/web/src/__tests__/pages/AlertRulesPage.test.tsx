@@ -198,11 +198,13 @@ describe('AlertRulesPage', () => {
     await waitFor(() => expect(screen.getByText('fresh-errors')).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /Edit fresh-errors/i }));
 
-    const windowInput = (await screen.findByRole('textbox', { name: /^Time window$/i })) as
-      HTMLInputElement;
+    const windowInput = (await screen.findByRole('textbox', {
+      name: /^Time window$/i,
+    })) as HTMLInputElement;
     expect(windowInput.value).toBe('5');
-    const thresholdInput = (await screen.findByRole('textbox', { name: /^Occurrence threshold$/i })) as
-      HTMLInputElement;
+    const thresholdInput = (await screen.findByRole('textbox', {
+      name: /^Occurrence threshold$/i,
+    })) as HTMLInputElement;
     expect(thresholdInput.value).toBe('3');
   });
 });

@@ -7,10 +7,10 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import javax.sql.DataSource;
-import java.time.Instant;
 import org.arguslog.api.releases.application.port.ReleaseRepository;
 import org.arguslog.api.releases.domain.Release;
 import org.arguslog.api.releases.domain.ReleaseInput;
@@ -182,8 +182,7 @@ class JdbcReleaseRepositoryTest {
 
   @Test
   void updatePersistsNewVersionAndMetadata() {
-    Release created =
-        repository.create(101L, ReleaseInput.versionOnly("upd-1.0.0"));
+    Release created = repository.create(101L, ReleaseInput.versionOnly("upd-1.0.0"));
     Optional<Release> updated =
         repository.update(
             101L,
@@ -205,8 +204,7 @@ class JdbcReleaseRepositoryTest {
 
   @Test
   void updateOnMissingReleaseReturnsEmpty() {
-    Optional<Release> missing =
-        repository.update(101L, 9999L, ReleaseInput.versionOnly("nope"));
+    Optional<Release> missing = repository.update(101L, 9999L, ReleaseInput.versionOnly("nope"));
     assertThat(missing).isEmpty();
   }
 

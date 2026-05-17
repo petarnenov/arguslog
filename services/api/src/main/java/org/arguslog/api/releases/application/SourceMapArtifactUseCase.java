@@ -19,8 +19,8 @@ public interface SourceMapArtifactUseCase {
 
   /**
    * Drops the artifact row and best-effort removes the underlying R2 blob. Returns {@code false}
-   * when the artifact does not exist under the given project + release scope (so the controller
-   * can surface a 404 without leaking whether the artifact existed in a different project).
+   * when the artifact does not exist under the given project + release scope (so the controller can
+   * surface a 404 without leaking whether the artifact existed in a different project).
    */
   boolean delete(long projectId, long releaseId, long artifactId);
 

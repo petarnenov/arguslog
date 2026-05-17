@@ -2,7 +2,6 @@ package org.arguslog.api.slack.adapter.in.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -12,9 +11,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
- * Filter must wrap incoming Slack command POSTs so the body survives Tomcat's eager
- * form-urlencoded parameter parsing — that was the production bug behind every
- * /arguslog command returning 401 with "bad signature".
+ * Filter must wrap incoming Slack command POSTs so the body survives Tomcat's eager form-urlencoded
+ * parameter parsing — that was the production bug behind every /arguslog command returning 401 with
+ * "bad signature".
  */
 class SlackBodyCachingFilterTest {
 
@@ -80,7 +79,8 @@ class SlackBodyCachingFilterTest {
     Object captured;
 
     @Override
-    public void doFilter(jakarta.servlet.ServletRequest request, jakarta.servlet.ServletResponse response)
+    public void doFilter(
+        jakarta.servlet.ServletRequest request, jakarta.servlet.ServletResponse response)
         throws IOException, jakarta.servlet.ServletException {
       this.captured = request;
     }

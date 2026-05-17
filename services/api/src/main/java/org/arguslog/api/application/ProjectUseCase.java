@@ -13,9 +13,9 @@ public interface ProjectUseCase {
   List<Project> list(long orgId);
 
   /**
-   * Per-project activity snapshot keyed by id — used by the dashboard project-list card.
-   * Projects with no events / issues are still returned with zero counts so the caller can
-   * render a "no activity yet" state without an extra branch.
+   * Per-project activity snapshot keyed by id — used by the dashboard project-list card. Projects
+   * with no events / issues are still returned with zero counts so the caller can render a "no
+   * activity yet" state without an extra branch.
    */
   Map<Long, ProjectStats> statsForOrg(long orgId);
 

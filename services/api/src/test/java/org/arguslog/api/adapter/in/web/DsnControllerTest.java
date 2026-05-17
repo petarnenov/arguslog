@@ -53,7 +53,8 @@ class DsnControllerTest extends AbstractControllerTest {
         .thenReturn(
             List.of(
                 new Dsn(101L, PROJECT_ID, "ACTIVE", true, Instant.parse("2026-05-01T00:00:00Z")),
-                new Dsn(100L, PROJECT_ID, "REVOKED", false, Instant.parse("2026-04-01T00:00:00Z"))));
+                new Dsn(
+                    100L, PROJECT_ID, "REVOKED", false, Instant.parse("2026-04-01T00:00:00Z"))));
 
     mvc.perform(get("/api/v1/projects/{projectId}/keys?includeRevoked=true", PROJECT_ID))
         .andExpect(status().isOk())

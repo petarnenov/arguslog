@@ -67,9 +67,9 @@ public class ProcessEventService implements ProcessEventUseCase {
   }
 
   /**
-   * Pulls {@code payload.release} (the SDK convention shared with CachingSymbolicator) as a
-   * plain string. Returns {@code null} on missing field, non-string field, or unparseable JSON
-   * — the persist path tolerates a null release version (column lands NULL).
+   * Pulls {@code payload.release} (the SDK convention shared with CachingSymbolicator) as a plain
+   * string. Returns {@code null} on missing field, non-string field, or unparseable JSON — the
+   * persist path tolerates a null release version (column lands NULL).
    */
   private String extractReleaseVersion(String payload) {
     try {
@@ -98,10 +98,10 @@ public class ProcessEventService implements ProcessEventUseCase {
 
   /**
    * Pulls SDK tags off the payload as a flat {@code Map<String,String>}. Supports both Sentry-
-   * style shapes — top-level object ({@code "tags":{"env":"prod"}}) and array-of-pairs
-   * ({@code "tags":[["env","prod"]]}). Non-textual values are stringified; non-textual keys
-   * dropped. Returns an empty map on missing field or malformed JSON — tag-clause rules then
-   * simply don't fire for this event.
+   * style shapes — top-level object ({@code "tags":{"env":"prod"}}) and array-of-pairs ({@code
+   * "tags":[["env","prod"]]}). Non-textual values are stringified; non-textual keys dropped.
+   * Returns an empty map on missing field or malformed JSON — tag-clause rules then simply don't
+   * fire for this event.
    */
   private Map<String, String> extractTags(String payload) {
     try {

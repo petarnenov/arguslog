@@ -46,7 +46,11 @@ export const WORKFLOWS: WorkflowDef[] = [
     description:
       'Walk the unresolved issue queue one item at a time. For each issue, propose an action, wait for the user, apply via MCP tools. Operationalises the "Loop" half of the slogan.',
     arguments: [
-      { name: 'projectId', description: 'Numeric project id from /me or /list_projects.', required: true },
+      {
+        name: 'projectId',
+        description: 'Numeric project id from /me or /list_projects.',
+        required: true,
+      },
       { name: 'batchSize', description: 'How many issues to walk per batch. Default 10.' },
     ],
     body: (args) => {
@@ -86,7 +90,11 @@ Never invent issue ids — only act on data you've fetched in this session.`;
       'Auto-generate a Markdown postmortem for issues first seen in a given release. Groups by stack-frame fingerprint, hypothesises root cause, recommends actions.',
     arguments: [
       { name: 'projectId', description: 'Numeric project id.', required: true },
-      { name: 'version', description: 'Release version string as it appears in Arguslog releases.', required: true },
+      {
+        name: 'version',
+        description: 'Release version string as it appears in Arguslog releases.',
+        required: true,
+      },
     ],
     body: (args) => {
       const projectId = requireArg(args, 'projectId', 'arguslog_release_postmortem');
@@ -140,8 +148,16 @@ Do not call any mutating MCP tools (no \`triage_issue\`, no \`assign_issue\`) �
       'Diff the current release against the previous one — surfaces issues that are new or spiking. Pairs each finding with stack frames + git blame so triage decisions are immediate.',
     arguments: [
       { name: 'projectId', description: 'Numeric project id.', required: true },
-      { name: 'currentVersion', description: 'The release you just shipped or are validating.', required: true },
-      { name: 'previousVersion', description: 'The reference release to diff against.', required: true },
+      {
+        name: 'currentVersion',
+        description: 'The release you just shipped or are validating.',
+        required: true,
+      },
+      {
+        name: 'previousVersion',
+        description: 'The reference release to diff against.',
+        required: true,
+      },
     ],
     body: (args) => {
       const projectId = requireArg(args, 'projectId', 'arguslog_regression_check');
@@ -186,7 +202,11 @@ Read-only by default. Only call \`triage_issue\` / \`assign_issue\` if the user 
       'Deep-dive a single issue: detail + recent events + breadcrumbs → root-cause hypothesis with file:line references → action proposal.',
     arguments: [
       { name: 'projectId', description: 'Numeric project id.', required: true },
-      { name: 'issueId', description: 'Numeric issue id from the dashboard URL or list_issues.', required: true },
+      {
+        name: 'issueId',
+        description: 'Numeric issue id from the dashboard URL or list_issues.',
+        required: true,
+      },
     ],
     body: (args) => {
       const projectId = requireArg(args, 'projectId', 'arguslog_investigate_issue');

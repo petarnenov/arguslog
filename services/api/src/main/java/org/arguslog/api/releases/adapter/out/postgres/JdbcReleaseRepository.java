@@ -121,8 +121,8 @@ public class JdbcReleaseRepository implements ReleaseRepository {
               new Object[] {
                 input.version(),
                 input.releasedAt() == null
-              ? null
-              : OffsetDateTime.ofInstant(input.releasedAt(), ZoneOffset.UTC),
+                    ? null
+                    : OffsetDateTime.ofInstant(input.releasedAt(), ZoneOffset.UTC),
                 input.gitSha(),
                 input.gitRef(),
                 input.deployStage(),

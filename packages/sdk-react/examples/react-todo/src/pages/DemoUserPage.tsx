@@ -50,9 +50,7 @@ export function DemoUserPage() {
           Clear user
         </button>
       </div>
-      <p className="muted">
-        Status: {identified ? <code>{identified}</code> : <em>anonymous</em>}
-      </p>
+      <p className="muted">Status: {identified ? <code>{identified}</code> : <em>anonymous</em>}</p>
     </div>
   );
 }

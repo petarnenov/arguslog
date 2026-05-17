@@ -13,10 +13,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * Single-method read port over the {@code events} table. The events table is a Timescale
- * hypertable partitioned on {@code received_at}; the (issue_id, received_at DESC) lookup hits the
- * default chunk index. We don't paginate — the only consumer (GithubIssueAlertDispatcher) wants
- * just the most recent event for an issue, full stop.
+ * Single-method read port over the {@code events} table. The events table is a Timescale hypertable
+ * partitioned on {@code received_at}; the (issue_id, received_at DESC) lookup hits the default
+ * chunk index. We don't paginate — the only consumer (GithubIssueAlertDispatcher) wants just the
+ * most recent event for an issue, full stop.
  */
 @Component
 public class JdbcEventReadRepository implements EventReadRepository {
@@ -44,8 +44,7 @@ public class JdbcEventReadRepository implements EventReadRepository {
   @Override
   public Optional<JsonNode> findLatestPayloadForIssue(long projectId, long issueId) {
     try {
-      String raw =
-          jdbc.queryForObject(LATEST_PAYLOAD_SQL, String.class, projectId, issueId);
+      String raw = jdbc.queryForObject(LATEST_PAYLOAD_SQL, String.class, projectId, issueId);
       if (raw == null) return Optional.empty();
       return Optional.of(json.readTree(raw));
     } catch (EmptyResultDataAccessException e) {

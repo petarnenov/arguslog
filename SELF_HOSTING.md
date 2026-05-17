@@ -36,31 +36,31 @@ Every env var the stack reads has a sensible localhost default. The ones
 below either have NO default (so the service won't boot without them) or
 have a default that's only safe for local dev:
 
-| Variable                              | Used by    | Notes                                                                                  |
-| ------------------------------------- | ---------- | -------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                        | api/worker | `jdbc:postgresql://host:5432/arguslog`                                                 |
-| `DATABASE_USER` / `DATABASE_PASSWORD` | api/worker | Postgres credentials                                                                   |
-| `REDIS_URL`                           | api/worker | `redis://host:6379` (events stream)                                                    |
-| `KEYCLOAK_ISSUER`                     | api/web    | OIDC issuer URL — must match the realm Keycloak boots with                             |
-| `ARGUSLOG_DEFAULT_TIER`               | api        | `regular` (default), `silver`, `gold`, or `platinum`. Set `platinum` for unlimited.    |
-| `ARGUSLOG_PLATFORM_ADMINS`            | api        | Comma-separated admin emails. Matches the JWT `email` claim.                           |
-| `ARGUSLOG_INITIAL_ADMIN_EMAIL`        | keycloak   | First-boot platform admin email — added to the realm + the allowlist above.            |
-| `ARGUSLOG_INITIAL_ADMIN_PASSWORD`     | keycloak   | First-boot password the admin uses to sign in once; change immediately after.          |
-| `R2_ENDPOINT` / `R2_BUCKET`           | api/worker | S3-compatible object store for sourcemaps. MinIO works in dev; R2 / S3 in prod.        |
-| `R2_ACCESS_KEY` / `R2_SECRET_KEY`     | api/worker | object-store credentials                                                               |
-| `RESEND_API_KEY`                      | worker     | Optional — alert + invite emails. Falls back to log-and-drop when empty.               |
-| `TELEGRAM_BOT_TOKEN`                  | worker     | Optional — Telegram alert dispatcher. Falls back to log-and-drop when empty.           |
-| `CORS_ORIGINS`                        | api        | Comma-separated allow-list for the dashboard origin. Defaults to `http://localhost:5173`. |
-| `ARGUSLOG_WEB_API_BASE_URL`           | web        | API URL the dashboard hits. **Runtime** — entrypoint writes `/srv/runtime-config.js` at boot, no rebuild needed. |
-| `ARGUSLOG_WEB_INGEST_BASE_URL`        | web        | Ingest URL for the Connect wizard's synthetic test-event probe. Runtime.               |
-| `ARGUSLOG_WEB_KEYCLOAK_URL` / `_REALM` / `_CLIENT_ID` | web | OIDC config. Runtime.                                                                  |
-| `ARGUSLOG_WEB_DOGFOOD_DSN`            | web        | Optional — DSN the dashboard's own errors get reported to. Runtime.                    |
-| `ARGUSLOG_WEB_RELEASE`                | web        | Optional release stamp shown in event payloads. Runtime.                               |
-| `VITE_*` (legacy)                     | web        | Build-time fallback, used when an image is baked with hardcoded URLs. The runtime path above supersedes these on every restart. |
-| `SLACK_SIGNING_SECRET`                | api        | HMAC key Slack signs every slash-command POST with. Empty → `/api/v1/slack/commands` rejects everything (fail-closed).             |
-| `SLACK_CLIENT_ID` / `SLACK_CLIENT_SECRET` | api    | OAuth app credentials (see "Slack workspace integration" below). Empty → install endpoint fail-closes to 503.                       |
-| `SLACK_OAUTH_STATE_SECRET`            | api        | HMAC key for the install-flow state token. **Must be distinct from `SLACK_SIGNING_SECRET`.** Generate with `openssl rand -hex 32`. |
-| `SLACK_OAUTH_REDIRECT_URI`            | api        | Public URL of the OAuth callback. Defaults to `http://localhost:8081/api/v1/slack/oauth/callback` for dev — set to your prod URL.   |
+| Variable                                              | Used by    | Notes                                                                                                                              |
+| ----------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                        | api/worker | `jdbc:postgresql://host:5432/arguslog`                                                                                             |
+| `DATABASE_USER` / `DATABASE_PASSWORD`                 | api/worker | Postgres credentials                                                                                                               |
+| `REDIS_URL`                                           | api/worker | `redis://host:6379` (events stream)                                                                                                |
+| `KEYCLOAK_ISSUER`                                     | api/web    | OIDC issuer URL — must match the realm Keycloak boots with                                                                         |
+| `ARGUSLOG_DEFAULT_TIER`                               | api        | `regular` (default), `silver`, `gold`, or `platinum`. Set `platinum` for unlimited.                                                |
+| `ARGUSLOG_PLATFORM_ADMINS`                            | api        | Comma-separated admin emails. Matches the JWT `email` claim.                                                                       |
+| `ARGUSLOG_INITIAL_ADMIN_EMAIL`                        | keycloak   | First-boot platform admin email — added to the realm + the allowlist above.                                                        |
+| `ARGUSLOG_INITIAL_ADMIN_PASSWORD`                     | keycloak   | First-boot password the admin uses to sign in once; change immediately after.                                                      |
+| `R2_ENDPOINT` / `R2_BUCKET`                           | api/worker | S3-compatible object store for sourcemaps. MinIO works in dev; R2 / S3 in prod.                                                    |
+| `R2_ACCESS_KEY` / `R2_SECRET_KEY`                     | api/worker | object-store credentials                                                                                                           |
+| `RESEND_API_KEY`                                      | worker     | Optional — alert + invite emails. Falls back to log-and-drop when empty.                                                           |
+| `TELEGRAM_BOT_TOKEN`                                  | worker     | Optional — Telegram alert dispatcher. Falls back to log-and-drop when empty.                                                       |
+| `CORS_ORIGINS`                                        | api        | Comma-separated allow-list for the dashboard origin. Defaults to `http://localhost:5173`.                                          |
+| `ARGUSLOG_WEB_API_BASE_URL`                           | web        | API URL the dashboard hits. **Runtime** — entrypoint writes `/srv/runtime-config.js` at boot, no rebuild needed.                   |
+| `ARGUSLOG_WEB_INGEST_BASE_URL`                        | web        | Ingest URL for the Connect wizard's synthetic test-event probe. Runtime.                                                           |
+| `ARGUSLOG_WEB_KEYCLOAK_URL` / `_REALM` / `_CLIENT_ID` | web        | OIDC config. Runtime.                                                                                                              |
+| `ARGUSLOG_WEB_DOGFOOD_DSN`                            | web        | Optional — DSN the dashboard's own errors get reported to. Runtime.                                                                |
+| `ARGUSLOG_WEB_RELEASE`                                | web        | Optional release stamp shown in event payloads. Runtime.                                                                           |
+| `VITE_*` (legacy)                                     | web        | Build-time fallback, used when an image is baked with hardcoded URLs. The runtime path above supersedes these on every restart.    |
+| `SLACK_SIGNING_SECRET`                                | api        | HMAC key Slack signs every slash-command POST with. Empty → `/api/v1/slack/commands` rejects everything (fail-closed).             |
+| `SLACK_CLIENT_ID` / `SLACK_CLIENT_SECRET`             | api        | OAuth app credentials (see "Slack workspace integration" below). Empty → install endpoint fail-closes to 503.                      |
+| `SLACK_OAUTH_STATE_SECRET`                            | api        | HMAC key for the install-flow state token. **Must be distinct from `SLACK_SIGNING_SECRET`.** Generate with `openssl rand -hex 32`. |
+| `SLACK_OAUTH_REDIRECT_URI`                            | api        | Public URL of the OAuth callback. Defaults to `http://localhost:8081/api/v1/slack/oauth/callback` for dev — set to your prod URL.  |
 
 Production deployments must override:
 
@@ -126,22 +126,22 @@ and set the corresponding two env vars on the `arguslog-keycloak` container.
 
 ### Register the OAuth apps
 
-| Provider | Where | Notes |
-| --- | --- | --- |
-| GitHub | <https://github.com/settings/developers> → **New OAuth App** | One callback URL per app — register a **separate OAuth App per environment** if you run multiple (local + staging + prod). Set Homepage URL = your dashboard origin; Authorization callback URL = the row from the table below. |
-| Google | <https://console.cloud.google.com/apis/credentials> → **Create Credentials → OAuth client ID** (Web application) | Supports multiple Authorized redirect URIs — **one app covers every environment**. |
-| GitLab | <https://gitlab.com/-/user_settings/applications> → **Add new application** | Confidential = yes; scopes = `openid`, `email`, `profile`, `read_user`. Supports multiple Redirect URIs — **one app covers every environment**. |
+| Provider | Where                                                                                                            | Notes                                                                                                                                                                                                                           |
+| -------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GitHub   | <https://github.com/settings/developers> → **New OAuth App**                                                     | One callback URL per app — register a **separate OAuth App per environment** if you run multiple (local + staging + prod). Set Homepage URL = your dashboard origin; Authorization callback URL = the row from the table below. |
+| Google   | <https://console.cloud.google.com/apis/credentials> → **Create Credentials → OAuth client ID** (Web application) | Supports multiple Authorized redirect URIs — **one app covers every environment**.                                                                                                                                              |
+| GitLab   | <https://gitlab.com/-/user_settings/applications> → **Add new application**                                      | Confidential = yes; scopes = `openid`, `email`, `profile`, `read_user`. Supports multiple Redirect URIs — **one app covers every environment**.                                                                                 |
 
 ### Callback URLs
 
 Substitute your environment's Keycloak hostname; the path is identical
 across providers:
 
-| Environment | URL |
-| --- | --- |
-| Local dev | `http://localhost:8180/realms/arguslog/broker/{github\|google\|gitlab}/endpoint` |
-| Staging | `https://arguslog-keycloak-staging.up.railway.app/realms/arguslog/broker/{github\|google\|gitlab}/endpoint` |
-| Production | `https://auth.arguslog.org/realms/arguslog/broker/{github\|google\|gitlab}/endpoint` |
+| Environment | URL                                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------------------- |
+| Local dev   | `http://localhost:8180/realms/arguslog/broker/{github\|google\|gitlab}/endpoint`                            |
+| Staging     | `https://arguslog-keycloak-staging.up.railway.app/realms/arguslog/broker/{github\|google\|gitlab}/endpoint` |
+| Production  | `https://auth.arguslog.org/realms/arguslog/broker/{github\|google\|gitlab}/endpoint`                        |
 
 ### Env vars on the Keycloak container
 

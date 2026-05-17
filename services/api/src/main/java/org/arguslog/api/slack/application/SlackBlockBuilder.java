@@ -12,8 +12,8 @@ import org.arguslog.api.domain.Issue;
  * (https://api.slack.com/reference/block-kit/blocks); we emit it as nested maps so Jackson
  * serializes verbatim without needing a typed POJO tree.
  *
- * <p>The dashboard link in every block is what makes the slash command useful — chat surface
- * for read-at-a-glance, click-through to the full UI for triage actions that need context.
+ * <p>The dashboard link in every block is what makes the slash command useful — chat surface for
+ * read-at-a-glance, click-through to the full UI for triage actions that need context.
  */
 public final class SlackBlockBuilder {
 
@@ -35,13 +35,7 @@ public final class SlackBlockBuilder {
       String title = truncate(i.title(), 200);
       String culprit = i.culprit() == null ? "" : " · `" + truncate(i.culprit(), 80) + "`";
       String url =
-          dashboardBaseUrl
-              + "/orgs/"
-              + orgSlug
-              + "/projects/"
-              + projectId
-              + "/issues/"
-              + i.id();
+          dashboardBaseUrl + "/orgs/" + orgSlug + "/projects/" + projectId + "/issues/" + i.id();
       String body =
           "*<"
               + url
@@ -121,7 +115,8 @@ public final class SlackBlockBuilder {
   public List<Map<String, Object>> releaseIssues(
       String orgSlug, long projectId, String version, List<Issue> issues) {
     if (issues.isEmpty()) {
-      return List.of(section("Clean ship — no new issues attributed to `" + escape(version) + "`."));
+      return List.of(
+          section("Clean ship — no new issues attributed to `" + escape(version) + "`."));
     }
     List<Map<String, Object>> blocks = new ArrayList<>();
     blocks.add(
@@ -136,13 +131,7 @@ public final class SlackBlockBuilder {
     blocks.add(divider());
     for (Issue i : issues) {
       String url =
-          dashboardBaseUrl
-              + "/orgs/"
-              + orgSlug
-              + "/projects/"
-              + projectId
-              + "/issues/"
-              + i.id();
+          dashboardBaseUrl + "/orgs/" + orgSlug + "/projects/" + projectId + "/issues/" + i.id();
       blocks.add(
           section(
               "*<"

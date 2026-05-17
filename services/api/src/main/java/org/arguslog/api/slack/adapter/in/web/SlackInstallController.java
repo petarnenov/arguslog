@@ -27,21 +27,20 @@ import org.springframework.web.bind.annotation.RestController;
  * Slack OAuth install flow. Two endpoints:
  *
  * <ol>
- *   <li>{@code GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install} — JWT-protected.
- *       Returns {@code 200 {authorizeUrl}} as JSON so the dashboard can navigate the browser
- *       to Slack itself. We can't 302 directly because the dashboard and api live on different
- *       origins (app.arguslog.org vs api.arguslog.org) — a top-level browser navigation to
- *       this endpoint carries no {@code Authorization: Bearer} header and hits 401 before the
- *       controller can build the redirect.
- *   <li>{@code GET /api/v1/slack/oauth/callback} — allow-listed under {@code /api/v1/slack/**}
- *       in SecurityConfig. The signed state IS the authentication; it carries the orgId +
- *       userId from the install step, so Slack callbacks for a different org can't sneak
- *       through.
+ *   <li>{@code GET /api/v1/orgs/{orgId}/integrations/slack/oauth/install} — JWT-protected. Returns
+ *       {@code 200 {authorizeUrl}} as JSON so the dashboard can navigate the browser to Slack
+ *       itself. We can't 302 directly because the dashboard and api live on different origins
+ *       (app.arguslog.org vs api.arguslog.org) — a top-level browser navigation to this endpoint
+ *       carries no {@code Authorization: Bearer} header and hits 401 before the controller can
+ *       build the redirect.
+ *   <li>{@code GET /api/v1/slack/oauth/callback} — allow-listed under {@code /api/v1/slack/**} in
+ *       SecurityConfig. The signed state IS the authentication; it carries the orgId + userId from
+ *       the install step, so Slack callbacks for a different org can't sneak through.
  * </ol>
  *
- * <p>Both endpoints short-circuit to 503 when {@link SlackOAuthProperties#configured()} is
- * false (self-hoster hasn't created a Slack app yet) instead of forwarding a half-broken
- * request to Slack and confusing the user with a generic 4xx from Slack.
+ * <p>Both endpoints short-circuit to 503 when {@link SlackOAuthProperties#configured()} is false
+ * (self-hoster hasn't created a Slack app yet) instead of forwarding a half-broken request to Slack
+ * and confusing the user with a generic 4xx from Slack.
  */
 @RestController
 @ConditionalOnProperty(name = "arguslog.slack.enabled", havingValue = "true", matchIfMissing = true)
@@ -94,7 +93,8 @@ public class SlackInstallController {
     if (slackError != null && !slackError.isBlank()) {
       log.info("slack oauth callback returned error={}", slackError);
       Long orgIdForRedirect = null;
-      if (state != null && !state.isBlank()
+      if (state != null
+          && !state.isBlank()
           && stateCodec.decode(state) instanceof SlackInstallStateCodec.Result.Ok ok) {
         orgIdForRedirect = ok.orgId();
       }
@@ -143,11 +143,11 @@ public class SlackInstallController {
   }
 
   /**
-   * Where to drop the user after the callback. The integrations page is org-scoped
-   * ({@code /orgs/<slug>/integrations/slack}) so we need the slug — look it up from the orgId
-   * that the state token carried. If we don't have an orgId (e.g. Slack returned an error with
-   * a missing/bad state) or the org row vanished mid-flow, fall back to the dashboard root so
-   * the user at least lands somewhere that exists rather than a 404.
+   * Where to drop the user after the callback. The integrations page is org-scoped ({@code
+   * /orgs/<slug>/integrations/slack}) so we need the slug — look it up from the orgId that the
+   * state token carried. If we don't have an orgId (e.g. Slack returned an error with a missing/bad
+   * state) or the org row vanished mid-flow, fall back to the dashboard root so the user at least
+   * lands somewhere that exists rather than a 404.
    */
   private ResponseEntity<String> redirectToDashboard(Long orgId, String query) {
     Optional<Org> org = orgId == null ? Optional.empty() : orgs.findById(orgId);

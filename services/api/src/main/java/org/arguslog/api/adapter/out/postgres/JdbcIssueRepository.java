@@ -89,11 +89,7 @@ public class JdbcIssueRepository implements IssueRepository {
     // Blank inputs are treated as "no filter" — defensive against the frontend sending an
     // empty string instead of dropping the param.
     String searchPattern =
-        searchText
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .map(s -> "%" + s + "%")
-            .orElse(null);
+        searchText.map(String::trim).filter(s -> !s.isEmpty()).map(s -> "%" + s + "%").orElse(null);
     // Encode the assignee filter as a single text mode arg used three times in the SQL:
     //   null → no filter; "" → unassigned-only; "<uuid>" → match exact user.
     String assigneeMode =

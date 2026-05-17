@@ -25,17 +25,17 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component;
 
 /**
- * Auto-triage dispatcher: when an alert rule fires, this creates a GitHub Issue assigned to
- * {@code copilot-swe-agent} (or a user-overridden assignee). Copilot's coding agent picks
- * assigned issues up automatically and opens a draft PR.
+ * Auto-triage dispatcher: when an alert rule fires, this creates a GitHub Issue assigned to {@code
+ * copilot-swe-agent} (or a user-overridden assignee). Copilot's coding agent picks assigned issues
+ * up automatically and opens a draft PR.
  *
  * <p>Per-destination config (decrypted JSON in {@code alert_destinations.config_encrypted}):
  *
  * <ul>
  *   <li>{@code owner} (required) — GitHub username or org
  *   <li>{@code repo} (required) — repository name
- *   <li>{@code token} (required) — fine-grained GitHub PAT scoped to that repo with
- *       {@code Contents: read}, {@code Issues: write}, {@code Pull requests: read}
+ *   <li>{@code token} (required) — fine-grained GitHub PAT scoped to that repo with {@code
+ *       Contents: read}, {@code Issues: write}, {@code Pull requests: read}
  *   <li>{@code assignee} (optional) — defaults to {@code copilot-swe-agent}
  *   <li>{@code labels} (optional array) — defaults to {@code ["arguslog-auto-triage"]}
  * </ul>
@@ -83,7 +83,8 @@ public class GithubIssueAlertDispatcher implements AlertDispatcher {
     Config cfg = readConfig(destination);
     if (cfg == null) return;
 
-    Optional<JsonNode> payload = events.findLatestPayloadForIssue(alert.projectId(), alert.issueId());
+    Optional<JsonNode> payload =
+        events.findLatestPayloadForIssue(alert.projectId(), alert.issueId());
     String body = renderBody(alert, payload.orElse(null), cfg.assignee);
     String title = renderTitle(alert);
 
@@ -103,8 +104,7 @@ public class GithubIssueAlertDispatcher implements AlertDispatcher {
       return;
     }
 
-    URI url =
-        URI.create(props.apiBaseUrl() + "/repos/" + cfg.owner + "/" + cfg.repo + "/issues");
+    URI url = URI.create(props.apiBaseUrl() + "/repos/" + cfg.owner + "/" + cfg.repo + "/issues");
     HttpRequest req =
         HttpRequest.newBuilder(url)
             .timeout(props.timeout())
@@ -152,8 +152,7 @@ public class GithubIssueAlertDispatcher implements AlertDispatcher {
     String repo = textOrNull(root, "repo");
     String token = textOrNull(root, "token");
     if (owner == null || repo == null || token == null) {
-      log.warn(
-          "github_issue destination {} missing required owner/repo/token", destination.id());
+      log.warn("github_issue destination {} missing required owner/repo/token", destination.id());
       return null;
     }
     String assignee = textOrNull(root, "assignee");
@@ -229,7 +228,8 @@ public class GithubIssueAlertDispatcher implements AlertDispatcher {
         "3. Form a hypothesis (what input would produce this error? what invariant was missed?).\n");
     b.append(
         "4. Make the smallest plausible change. If the cause isn't obvious from the data, open the PR as draft with `WIP:` in the title and write your uncertainty into both the PR body and a comment on this issue.\n");
-    b.append("5. The PR should `Closes #` this issue and link back to the Arguslog issue URL above.\n\n");
+    b.append(
+        "5. The PR should `Closes #` this issue and link back to the Arguslog issue URL above.\n\n");
 
     b.append("---\n");
     b.append("*Created automatically by Arguslog.*\n");
@@ -237,9 +237,9 @@ public class GithubIssueAlertDispatcher implements AlertDispatcher {
   }
 
   /**
-   * Extracts a readable stack trace from the latest event's payload. Handles the standard
-   * {@code exception.values[0].stacktrace.frames} shape that every SDK emits. Defensive at every
-   * level — a malformed payload just produces a no-data fallback, never a crash.
+   * Extracts a readable stack trace from the latest event's payload. Handles the standard {@code
+   * exception.values[0].stacktrace.frames} shape that every SDK emits. Defensive at every level — a
+   * malformed payload just produces a no-data fallback, never a crash.
    */
   private String extractStackFrames(JsonNode payload) {
     if (payload == null) return null;
@@ -284,7 +284,13 @@ public class GithubIssueAlertDispatcher implements AlertDispatcher {
       String ts = crumb.path("timestamp").asText("");
       String category = crumb.path("category").asText("");
       String message = crumb.path("message").asText("");
-      s.append("- `").append(ts).append("` **").append(category).append("**: ").append(message).append("\n");
+      s.append("- `")
+          .append(ts)
+          .append("` **")
+          .append(category)
+          .append("**: ")
+          .append(message)
+          .append("\n");
     }
     return s.toString().trim();
   }
@@ -294,5 +300,6 @@ public class GithubIssueAlertDispatcher implements AlertDispatcher {
     return s.length() > 240 ? s.substring(0, 240) + "…" : s;
   }
 
-  private record Config(String owner, String repo, String token, String assignee, List<String> labels) {}
+  private record Config(
+      String owner, String repo, String token, String assignee, List<String> labels) {}
 }

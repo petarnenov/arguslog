@@ -21,13 +21,13 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.arguslog.api.application.IssuesByReleaseUseCase;
 import org.arguslog.api.auth.adapter.in.web.PatAuthenticationFilter.PatAuthentication;
 import org.arguslog.api.auth.domain.PatScope;
 import org.arguslog.api.auth.domain.PersonalAccessToken;
+import org.arguslog.api.domain.Issue;
 import org.arguslog.api.releases.application.ReleaseUseCase.DuplicateReleaseException;
 import org.arguslog.api.releases.application.ReleaseUseCase.InvalidReleaseException;
-import org.arguslog.api.application.IssuesByReleaseUseCase;
-import org.arguslog.api.domain.Issue;
 import org.arguslog.api.releases.application.ReleaseUseCase.ReleaseNotFoundException;
 import org.arguslog.api.releases.domain.Release;
 import org.arguslog.api.releases.domain.ReleaseInput;
@@ -203,8 +203,7 @@ class ReleaseControllerTest extends AbstractControllerTest {
 
   @Test
   void putUpdatesReleaseVersion() throws Exception {
-    when(releaseUseCase.update(
-            eq(101L), eq(7L), argThat(i -> "2.0.0".equals(i.version()))))
+    when(releaseUseCase.update(eq(101L), eq(7L), argThat(i -> "2.0.0".equals(i.version()))))
         .thenReturn(new Release(7L, 101L, "2.0.0", Instant.parse("2026-05-05T12:00:00Z")));
 
     mvc.perform(
@@ -215,8 +214,7 @@ class ReleaseControllerTest extends AbstractControllerTest {
         .andExpect(jsonPath("$.id").value(7))
         .andExpect(jsonPath("$.version").value("2.0.0"));
 
-    verify(releaseUseCase)
-        .update(eq(101L), eq(7L), argThat(i -> "2.0.0".equals(i.version())));
+    verify(releaseUseCase).update(eq(101L), eq(7L), argThat(i -> "2.0.0".equals(i.version())));
   }
 
   @Test

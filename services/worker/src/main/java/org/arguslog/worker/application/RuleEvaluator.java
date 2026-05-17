@@ -81,8 +81,8 @@ public final class RuleEvaluator {
    * Tag clause: {@code {"key":"env","in":["production","staging"]}}. Match if the event carries a
    * tag with the same key and a value inside the {@code in} array. Missing key on the event is a
    * non-match — the rule was clearly asking for environment scoping and the event didn't supply
-   * one. Malformed clauses (no key, empty array) tolerate as match-all so a worker reading from
-   * a corrupted row doesn't drop legit traffic; the api validator is the real gate.
+   * one. Malformed clauses (no key, empty array) tolerate as match-all so a worker reading from a
+   * corrupted row doesn't drop legit traffic; the api validator is the real gate.
    */
   private static boolean matchesTag(JsonNode tag, Map<String, String> eventTags) {
     if (tag == null || tag.isNull()) return true;

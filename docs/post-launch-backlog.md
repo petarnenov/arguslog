@@ -65,7 +65,7 @@ Nothing open. Every original item is shipped or obsolete.
 - ~~4~~ Granular PAT scopes — `PatScope` enum + `PatScopeGuard.require(...)` on
   `ReleaseController` + `SourceMapArtifactController` (`releases:write`, `sourcemaps:write`).
 - ~~7~~ `import/order` lint warning in `apps/web/src/providers.tsx` — `pnpm exec eslint
-  src/providers.tsx` exits clean.
+src/providers.tsx` exits clean.
 
 ### Tech debt — obsolete after OSS conversion
 

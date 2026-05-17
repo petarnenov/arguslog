@@ -3,7 +3,7 @@
 When a new error event fires, Arguslog creates a GitHub Issue in your repo and assigns it
 to GitHub Copilot's coding agent (`copilot-swe-agent`). Copilot picks the issue up
 automatically, reads the stack trace + breadcrumbs out of the issue body, greps the repo,
-and opens a *draft* PR with the smallest plausible fix. The PR shows up in your normal
+and opens a _draft_ PR with the smallest plausible fix. The PR shows up in your normal
 review queue.
 
 Zero workflow files. Zero `ANTHROPIC_API_KEY`. The operator's existing Copilot
@@ -33,7 +33,7 @@ subscription is the entire runtime.
   enabled. Free / individual Pro don't include the agent.
 - **The target repository**: Settings → Code & automation → Copilot → confirm the coding
   agent is on. Your default branch (usually `main`) should be the PR target.
-- **A fine-grained GitHub PAT** scoped to that *one* repository with:
+- **A fine-grained GitHub PAT** scoped to that _one_ repository with:
   - `Contents: read` (Copilot reads code to make its diff; Arguslog itself doesn't, but
     the PAT covers the agent path too)
   - `Issues: write` (Arguslog creates the issue + assigns the agent)
@@ -52,14 +52,14 @@ subscription is the entire runtime.
 In the dashboard: **Settings → Alerts → Destinations → New**, pick kind
 **„GitHub Issue (auto-triage)"**, fill in:
 
-| Field | Value |
-|---|---|
-| Name | Anything memorable (e.g. „auto-triage → acme/web") |
-| Owner | GitHub username / org (e.g. `acme`) |
-| Repo | Repository name only (e.g. `web`) |
-| Fine-grained PAT | The token from the prereqs section |
-| Assignee | Leave blank for the default `copilot-swe-agent` |
-| Labels | Leave blank for the default `arguslog-auto-triage` |
+| Field            | Value                                              |
+| ---------------- | -------------------------------------------------- |
+| Name             | Anything memorable (e.g. „auto-triage → acme/web") |
+| Owner            | GitHub username / org (e.g. `acme`)                |
+| Repo             | Repository name only (e.g. `web`)                  |
+| Fine-grained PAT | The token from the prereqs section                 |
+| Assignee         | Leave blank for the default `copilot-swe-agent`    |
+| Labels           | Leave blank for the default `arguslog-auto-triage` |
 
 Or via API:
 
@@ -92,11 +92,13 @@ Send a synthetic event from the Connect-Project wizard (the SDK emits an
 `ArguslogConnectivityProbe` exception).
 
 Within ~30 s:
+
 - A new GitHub Issue appears in your repo, titled `[Arguslog] error in <project>:
-  <error title>`, with the markdown body containing the stack trace + recent
+<error title>`, with the markdown body containing the stack trace + recent
   breadcrumbs + a link to the Arguslog issue.
 
 Within a few minutes (Copilot's pickup queue is GitHub-side, not Arguslog-side):
+
 - A draft PR from `copilot-swe-agent` shows up referencing the issue with `Closes #N`.
 
 ## Pausing auto-triage

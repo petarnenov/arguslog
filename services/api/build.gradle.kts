@@ -6,10 +6,28 @@ description = "Arguslog API — REST API, Stripe webhooks, admin, Flyway owner"
 
 val libs = the<org.gradle.accessors.dm.LibrariesForLibs>()
 
+// The Keycloak realm JSON is a generated artifact — `render-realm.sh` substitutes the
+// __DEV_HOST__ / __*_CLIENT_ID__ placeholders in realm.template.json (which IS tracked in
+// git) and strips disabled IdPs. It's gitignored so secrets never accidentally land in a
+// commit. Tests that need the file (KeycloakRealmImportTest) get it via `processTestResources`
+// → copied onto the test classpath as `arguslog-realm.json`. To make a clean clone able to
+// run `./gradlew :services:api:test` without any prior setup, the Gradle task below runs the
+// render script first if the output is missing or stale.
+val renderKeycloakRealm by tasks.registering(Exec::class) {
+    description = "Renders services/keycloak/realm.template.json → realm/arguslog-realm.json " +
+        "via render-realm.sh so processTestResources has something to copy onto the classpath."
+    workingDir = rootDir
+    commandLine("bash", "services/keycloak/render-realm.sh")
+    inputs.file("$rootDir/services/keycloak/realm.template.json")
+    inputs.file("$rootDir/services/keycloak/render-realm.sh")
+    outputs.file("$rootDir/services/keycloak/realm/arguslog-realm.json")
+}
+
 // KeycloakRealmImportTest uses KeycloakContainer.withRealmImportFile, which expects the realm
 // JSON on the test classpath. Copy it from the canonical location (services/keycloak/realm) at
 // processTestResources time so the test never silently runs against a stale duplicate.
 tasks.named<Copy>("processTestResources") {
+    dependsOn(renderKeycloakRealm)
     from("../keycloak/realm/arguslog-realm.json")
 }
 

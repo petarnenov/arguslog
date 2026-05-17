@@ -26,10 +26,7 @@ function renderAt(path = '/orgs/acme/destinations') {
       <QueryClientProvider client={client}>
         <MemoryRouter initialEntries={[path]}>
           <Routes>
-            <Route
-              path="/orgs/:orgSlug/destinations"
-              element={<AlertDestinationsPage />}
-            />
+            <Route path="/orgs/:orgSlug/destinations" element={<AlertDestinationsPage />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
@@ -140,10 +137,7 @@ describe('AlertDestinationsPage', () => {
           { id: 10, orgId: 1, kind: 'slack', name: 'alerts', createdAt: '2026-05-01T00:00:00Z' },
         ]);
       }
-      if (
-        url.endsWith('/api/v1/orgs/1/alert-destinations/10') &&
-        init?.method === 'PUT'
-      ) {
+      if (url.endsWith('/api/v1/orgs/1/alert-destinations/10') && init?.method === 'PUT') {
         return jsonResponse({
           id: 10,
           orgId: 1,

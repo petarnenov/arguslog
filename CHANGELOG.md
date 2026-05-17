@@ -30,6 +30,7 @@ every workflow body — no auto-apply.
 Step 2 of the magic prompt (the "install the SDK and wire init()" block) now
 emits per-stack full templates with the recommended default integrations
 already wired:
+
 - Browser-family SDKs (javascript, react, vue, angular, nextjs client, web3):
   `integrations: ['globalHandlers', 'autoBreadcrumbs']`.
 - Server SDKs (node, nextjs server, instrumentation.ts): `['processHandlers', 'http']`.
@@ -113,20 +114,20 @@ the channel.
 - **MCP tools**: `list_slack_workspaces`, `revoke_slack_workspace`,
   `set_slack_default_project` (curated) + auto-generated `slack_commands`,
   `slack_install_install`, `slack_install_callback`, `integrations_slack` GET
-  + DELETE + PATCH. Ships in `@arguslog/mcp-server@2.2.0`.
+  - DELETE + PATCH. Ships in `@arguslog/mcp-server@2.2.0`.
 
 ### Configuration
 
 `arguslog-api` needs these env vars for the install flow to work (otherwise
 the install endpoint fail-closes to 503; existing routes are unaffected):
 
-| Variable | Purpose |
-| --- | --- |
-| `SLACK_CLIENT_ID` | OAuth app client id (`slack.com/apps` → your app → Basic Information) |
-| `SLACK_CLIENT_SECRET` | OAuth app client secret (same page) |
-| `SLACK_SIGNING_SECRET` | HMAC key Slack uses on every slash-command POST (already required for P3 outbound) |
+| Variable                   | Purpose                                                                                                                                            |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SLACK_CLIENT_ID`          | OAuth app client id (`slack.com/apps` → your app → Basic Information)                                                                              |
+| `SLACK_CLIENT_SECRET`      | OAuth app client secret (same page)                                                                                                                |
+| `SLACK_SIGNING_SECRET`     | HMAC key Slack uses on every slash-command POST (already required for P3 outbound)                                                                 |
 | `SLACK_OAUTH_STATE_SECRET` | HMAC key for the install-flow state token. **MUST be distinct from `SLACK_SIGNING_SECRET`** — leaking one must not let an attacker forge the other |
-| `SLACK_OAUTH_REDIRECT_URI` | Public URL of the callback endpoint (must match a redirect URL registered in the Slack app config) |
+| `SLACK_OAUTH_REDIRECT_URI` | Public URL of the callback endpoint (must match a redirect URL registered in the Slack app config)                                                 |
 
 ### Migrations
 

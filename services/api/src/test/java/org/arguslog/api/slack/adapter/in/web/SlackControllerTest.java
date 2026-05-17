@@ -47,9 +47,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Standalone @SpringBootTest — does NOT extend AbstractControllerTest because the Slack
- * subsystem is guarded by {@code @Profile("!test")} and the shared base activates {@code test}.
- * Using a different profile name ({@code slack-test}) lets the SlackController + dispatcher load,
+ * Standalone @SpringBootTest — does NOT extend AbstractControllerTest because the Slack subsystem
+ * is guarded by {@code @Profile("!test")} and the shared base activates {@code test}. Using a
+ * different profile name ({@code slack-test}) lets the SlackController + dispatcher load,
  * then @MockitoBean replaces the dispatcher / verifier / repos so no real DataSource is needed.
  */
 @SpringBootTest

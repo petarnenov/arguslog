@@ -119,13 +119,13 @@ class RuleEvaluatorTest {
   @org.junit.jupiter.api.Test
   void tagClauseAndsWithLevelClause() {
     AlertRule r =
-        rule(
-            "{\"level\":{\"in\":[\"error\"]},\"tag\":{\"key\":\"env\",\"in\":[\"production\"]}}");
+        rule("{\"level\":{\"in\":[\"error\"]},\"tag\":{\"key\":\"env\",\"in\":[\"production\"]}}");
     // level match + tag match → fire
     assertThat(evaluator.matches(r, eventWithTags(java.util.Map.of("env", "production")))).isTrue();
     // tag match + wrong level → no fire
     PersistedEvent infoLevel =
-        new PersistedEvent(7L, 101L, "info", false, 1, NOW, NOW, java.util.Map.of("env", "production"));
+        new PersistedEvent(
+            7L, 101L, "info", false, 1, NOW, NOW, java.util.Map.of("env", "production"));
     assertThat(evaluator.matches(r, infoLevel)).isFalse();
   }
 }

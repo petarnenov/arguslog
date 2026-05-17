@@ -26,10 +26,9 @@ public record Issue(
     Instant aiAnalyzedAt) {
 
   /**
-   * Convenience constructor preserving older test/builder sites that don't set release
-   * attribution OR the auto-triage analysis fields. Defaults the trailing five fields to
-   * {@code null} — same posture as a freshly-ingested issue before either subsystem has
-   * touched it.
+   * Convenience constructor preserving older test/builder sites that don't set release attribution
+   * OR the auto-triage analysis fields. Defaults the trailing five fields to {@code null} — same
+   * posture as a freshly-ingested issue before either subsystem has touched it.
    */
   public Issue(
       long id,
@@ -63,8 +62,8 @@ public record Issue(
   }
 
   /**
-   * Convenience constructor for sites that DO know release attribution but predate the
-   * auto-triage AI analysis fields. Defaults the three AI fields to {@code null}.
+   * Convenience constructor for sites that DO know release attribution but predate the auto-triage
+   * AI analysis fields. Defaults the three AI fields to {@code null}.
    */
   public Issue(
       long id,

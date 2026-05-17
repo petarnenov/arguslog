@@ -52,8 +52,7 @@ public class ReleaseController {
   public ResponseEntity<ReleaseResponse> create(
       @PathVariable long projectId, @RequestBody ReleaseRequest body) {
     PatScopeGuard.require(PatScope.RELEASES_WRITE);
-    ReleaseInput input =
-        body == null ? ReleaseInput.versionOnly(null) : body.toInput();
+    ReleaseInput input = body == null ? ReleaseInput.versionOnly(null) : body.toInput();
     Release created = useCase.create(projectId, input);
     return ResponseEntity.created(URI.create(String.valueOf(created.id())))
         .body(ReleaseResponse.from(created));
@@ -71,8 +70,7 @@ public class ReleaseController {
   public ReleaseResponse update(
       @PathVariable long projectId, @PathVariable long id, @RequestBody ReleaseRequest body) {
     PatScopeGuard.require(PatScope.RELEASES_WRITE);
-    ReleaseInput input =
-        body == null ? ReleaseInput.versionOnly(null) : body.toInput();
+    ReleaseInput input = body == null ? ReleaseInput.versionOnly(null) : body.toInput();
     Release updated = useCase.update(projectId, id, input);
     return ReleaseResponse.from(updated);
   }
@@ -88,8 +86,8 @@ public class ReleaseController {
 
   /**
    * Issues whose `first_seen_release_id` equals this release — the regression-watchlist surface.
-   * Empty list when nothing new shipped under this release. 404 when the release id doesn't
-   * exist under the project.
+   * Empty list when nothing new shipped under this release. 404 when the release id doesn't exist
+   * under the project.
    */
   @GetMapping("/{id}/issues")
   public List<IssueResponse> issuesIntroducedInRelease(

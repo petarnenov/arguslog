@@ -88,8 +88,9 @@ describe('arguslog ping', () => {
   });
 
   it('surfaces a friendly error when no active DSN exists', async () => {
-    globalThis.fetch = vi.fn(async () =>
-      new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } }),
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } }),
     ) as typeof fetch;
 
     const r = await run(['ping', '--project', '42'], { loadConfig: () => FAKE_CONFIG });

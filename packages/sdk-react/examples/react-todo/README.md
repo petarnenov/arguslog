@@ -8,28 +8,28 @@ from the browser and verify the event lands on your Arguslog dashboard.
 
 The app intentionally exercises every public surface of the React SDK in a real-world shape:
 
-| SDK feature                                          | Where it's wired                                                                                                  |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `init()` with full `ArguslogOptions`                 | [`src/arguslog.ts`](src/arguslog.ts) — DSN, release, environment, sampling, scrubbing, beforeSend, integrations   |
-| `globalHandlers` integration                         | `arguslog.ts` — `window.onerror` + `onunhandledrejection` reported automatically                                  |
-| `autoBreadcrumbs` integration                        | `arguslog.ts` — console / fetch / xhr / history / DOM clicks / resourceErrors / webVitals / longTasks / visibility |
-| Global `setTag` / `setContext`                       | `arguslog.ts` — `component`, `framework`, `runtime` baked into every event                                        |
-| `<ArguslogErrorBoundary>` (top-level)                | [`src/App.tsx`](src/App.tsx) — wraps the whole app, falls back to `ErrorFallback`                                 |
-| `<ArguslogErrorBoundary>` (nested)                   | `/demo/boundary` — independent boundary around a child that throws                                                |
-| `useArguslog()` hook                                 | [`src/pages/HomePage.tsx`](src/pages/HomePage.tsx) + every demo page                                              |
-| `captureException`                                   | `/demo/capture-exception` + `HomePage` "Trigger handled error" button                                             |
-| `captureMessage`                                     | `/demo/capture-message`                                                                                            |
-| All severity levels (`debug`→`fatal`)                | `/demo/levels`                                                                                                     |
-| Unhandled sync error                                 | `/demo/unhandled-sync` — `setTimeout(() => { throw … }, 0)`                                                       |
-| Unhandled promise rejection                          | `/demo/unhandled-async` — `Promise.reject` + async/await without try/catch                                        |
-| `setUser` / clear                                    | `/demo/user`                                                                                                       |
-| `setTag` (event-scoped)                              | `/demo/tags`                                                                                                       |
-| `setContext`                                         | `/demo/context`                                                                                                    |
-| `addBreadcrumb` (manual)                             | `/demo/breadcrumbs` + every TODO action                                                                            |
-| PII / secret scrubbing with `extraPatterns`          | `/demo/scrubbing`                                                                                                  |
-| `beforeSend` filter                                  | `/demo/before-send`                                                                                                |
-| `flush()` before unload                              | `/demo/flush`                                                                                                      |
-| `getClient()` + `parseDsn()` introspection           | `/demo/client`                                                                                                     |
+| SDK feature                                 | Where it's wired                                                                                                   |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `init()` with full `ArguslogOptions`        | [`src/arguslog.ts`](src/arguslog.ts) — DSN, release, environment, sampling, scrubbing, beforeSend, integrations    |
+| `globalHandlers` integration                | `arguslog.ts` — `window.onerror` + `onunhandledrejection` reported automatically                                   |
+| `autoBreadcrumbs` integration               | `arguslog.ts` — console / fetch / xhr / history / DOM clicks / resourceErrors / webVitals / longTasks / visibility |
+| Global `setTag` / `setContext`              | `arguslog.ts` — `component`, `framework`, `runtime` baked into every event                                         |
+| `<ArguslogErrorBoundary>` (top-level)       | [`src/App.tsx`](src/App.tsx) — wraps the whole app, falls back to `ErrorFallback`                                  |
+| `<ArguslogErrorBoundary>` (nested)          | `/demo/boundary` — independent boundary around a child that throws                                                 |
+| `useArguslog()` hook                        | [`src/pages/HomePage.tsx`](src/pages/HomePage.tsx) + every demo page                                               |
+| `captureException`                          | `/demo/capture-exception` + `HomePage` "Trigger handled error" button                                              |
+| `captureMessage`                            | `/demo/capture-message`                                                                                            |
+| All severity levels (`debug`→`fatal`)       | `/demo/levels`                                                                                                     |
+| Unhandled sync error                        | `/demo/unhandled-sync` — `setTimeout(() => { throw … }, 0)`                                                        |
+| Unhandled promise rejection                 | `/demo/unhandled-async` — `Promise.reject` + async/await without try/catch                                         |
+| `setUser` / clear                           | `/demo/user`                                                                                                       |
+| `setTag` (event-scoped)                     | `/demo/tags`                                                                                                       |
+| `setContext`                                | `/demo/context`                                                                                                    |
+| `addBreadcrumb` (manual)                    | `/demo/breadcrumbs` + every TODO action                                                                            |
+| PII / secret scrubbing with `extraPatterns` | `/demo/scrubbing`                                                                                                  |
+| `beforeSend` filter                         | `/demo/before-send`                                                                                                |
+| `flush()` before unload                     | `/demo/flush`                                                                                                      |
+| `getClient()` + `parseDsn()` introspection  | `/demo/client`                                                                                                     |
 
 ## Project layout
 

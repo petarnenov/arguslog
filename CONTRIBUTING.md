@@ -43,9 +43,9 @@ will pull the image (~few minutes); subsequent runs reuse the cached image.
 
 ## Coding conventions
 
-- **Comments**: default to none. Only add one when the *why* is non-obvious
+- **Comments**: default to none. Only add one when the _why_ is non-obvious
   (a hidden constraint, a workaround for a specific bug, an invariant that
-  isn't enforced by types). Don't explain *what* — well-named identifiers
+  isn't enforced by types). Don't explain _what_ — well-named identifiers
   do that. Don't reference the current task or callers.
 - **Tests**: integration tests run against real Postgres via Testcontainers
   (`@Testcontainers`). Unit tests use Mockito for the application layer.
@@ -73,8 +73,8 @@ don't hardcode tier names in business logic.
 
 Conventional Commits prefix (`feat:`, `fix:`, `chore:`, `docs:`,
 `refactor:`, `test:`) followed by a 1-line summary. Body is optional but
-when present should explain *why*, not *what* — the diff already shows
-*what*.
+when present should explain _why_, not _what_ — the diff already shows
+_what_.
 
 ```
 fix(worker-billing): keep stream pollers alive on transient connection drops

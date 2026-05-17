@@ -50,17 +50,17 @@ public interface IssueRepository {
 
   /**
    * Returns up to {@code limit} issues whose {@code first_seen_release_id = releaseId}, ordered by
-   * first_seen_at desc, id desc — newest within the release first. Uses the partial index from
-   * V35 ({@code idx_issues_first_seen_release}), so the scan stays bounded even on projects with
-   * a very large issue count. No cursor: the per-release list is expected to be small (regression
+   * first_seen_at desc, id desc — newest within the release first. Uses the partial index from V35
+   * ({@code idx_issues_first_seen_release}), so the scan stays bounded even on projects with a very
+   * large issue count. No cursor: the per-release list is expected to be small (regression
    * watchlist), and the dashboard renders all of them in a single card.
    */
   List<Issue> listIntroducedInRelease(long projectId, long releaseId, int limit);
 
   /**
-   * Persists the auto-triage agent's analysis on an issue. Sets {@code ai_analysis},
-   * {@code ai_analysis_model}, and stamps {@code ai_analyzed_at = now()} in one UPDATE. Returns
-   * the refreshed row; empty if the (projectId, issueId) pair does not exist. The endpoint is
+   * Persists the auto-triage agent's analysis on an issue. Sets {@code ai_analysis}, {@code
+   * ai_analysis_model}, and stamps {@code ai_analyzed_at = now()} in one UPDATE. Returns the
+   * refreshed row; empty if the (projectId, issueId) pair does not exist. The endpoint is
    * idempotent — re-running with new content overwrites the prior analysis (no history yet).
    */
   Optional<Issue> updateAiAnalysis(long projectId, long issueId, String analysis, String model);

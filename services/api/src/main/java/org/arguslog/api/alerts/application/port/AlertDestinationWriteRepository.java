@@ -17,8 +17,8 @@ public interface AlertDestinationWriteRepository {
   Optional<AlertDestination> update(long orgId, long id, String name, String configJson);
 
   /**
-   * Flips just the {@code enabled} column. Returns the refreshed row or empty when the
-   * destination doesn't exist under this org.
+   * Flips just the {@code enabled} column. Returns the refreshed row or empty when the destination
+   * doesn't exist under this org.
    */
   Optional<AlertDestination> setEnabled(long orgId, long id, boolean enabled);
 

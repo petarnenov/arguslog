@@ -34,8 +34,9 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
-import { queryKeys, useRelease, useReleaseIssues, useSourceMaps } from '../api/queries';
 import type { Issue } from '../api/issues';
+import { queryKeys, useRelease, useReleaseIssues, useSourceMaps } from '../api/queries';
+import type { Release } from '../api/releases';
 import {
   createSourceMapUpload,
   deleteSourceMap,
@@ -83,7 +84,11 @@ export function ReleaseDetailPage() {
     return (
       <Stack>
         <Title order={3}>{t('releaseDetail.notFound')}</Title>
-        <Button component={Link} to={`/orgs/${orgSlug}/projects/${projectId}/releases`} variant="light">
+        <Button
+          component={Link}
+          to={`/orgs/${orgSlug}/projects/${projectId}/releases`}
+          variant="light"
+        >
           {t('releaseDetail.backToList')}
         </Button>
       </Stack>
@@ -315,24 +320,25 @@ function ReleaseMetadataCard({
   release,
   formatter,
 }: {
-  release: import('../api/releases').Release;
+  release: Release;
   formatter: Intl.DateTimeFormat;
 }) {
   const { t } = useTranslation();
   const rows: Array<[string, React.ReactNode]> = [];
   if (release.releasedAt) {
-    rows.push([
-      t('releaseDetail.releasedAt'),
-      formatter.format(new Date(release.releasedAt)),
-    ]);
+    rows.push([t('releaseDetail.releasedAt'), formatter.format(new Date(release.releasedAt))]);
   }
-  if (release.gitRef) rows.push([t('releaseDetail.gitRef'), <Code key="ref">{release.gitRef}</Code>]);
+  if (release.gitRef)
+    rows.push([t('releaseDetail.gitRef'), <Code key="ref">{release.gitRef}</Code>]);
   if (release.gitSha) {
     const short = release.gitSha.length > 12 ? release.gitSha.slice(0, 12) : release.gitSha;
     rows.push([
       t('releaseDetail.gitSha'),
       <Group gap={4} key="sha">
-        <Code style={{ fontSize: 12 }}>{short}{release.gitSha.length > 12 ? '…' : ''}</Code>
+        <Code style={{ fontSize: 12 }}>
+          {short}
+          {release.gitSha.length > 12 ? '…' : ''}
+        </Code>
         <CopyButton value={release.gitSha}>
           {({ copied, copy }) => (
             <Button
@@ -407,7 +413,9 @@ function SourceMapRow({
   const handleDelete = () => {
     // Inline window.confirm intentionally — the action is destructive but reversible (just re-upload)
     // and the rest of the dashboard uses the same pattern (DeleteReleaseButton on ReleasesPage).
-    if (window.confirm(t('releaseDetail.deleteSourceMapConfirm', { path: artifact.originalPath }))) {
+    if (
+      window.confirm(t('releaseDetail.deleteSourceMapConfirm', { path: artifact.originalPath }))
+    ) {
       deleteMutation.mutate();
     }
   };

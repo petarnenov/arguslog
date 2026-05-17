@@ -70,7 +70,9 @@ export async function ping(
   });
   if (!resp.ok) {
     const body = await resp.text().catch(() => '');
-    throw new Error(`ingest rejected probe: HTTP ${resp.status}${body ? ` — ${body.slice(0, 200)}` : ''}`);
+    throw new Error(
+      `ingest rejected probe: HTTP ${resp.status}${body ? ` — ${body.slice(0, 200)}` : ''}`,
+    );
   }
 
   return { eventId: payload.eventId, dsnPublic: active.dsnPublic, ingestUrl };

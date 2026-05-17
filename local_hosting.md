@@ -31,18 +31,18 @@ User decisions (recorded for the implementer):
 
 Inventory from Phase 1 exploration:
 
-| Piece | Where | What it does |
-| --- | --- | --- |
-| `make dev` | `Makefile` | Full orchestration: doctor → install → build-sdks → up → mprocs |
-| `make doctor` | `Makefile` (~line 282) | Verifies docker, pnpm, mprocs, java (JDK 21), gradlew |
-| `make up` | `Makefile` | `docker compose up --wait` with healthchecks (Postgres / Redis / Keycloak / MinIO / MailHog) |
-| `make install` | `Makefile` | `pnpm install --frozen-lockfile` at workspace root |
-| `make build-sdks` | `Makefile` | Incremental `tsc` build of `@arguslog/sdk-*` packages |
-| Compose stack | `infra/docker/docker-compose.yml` | All infra services with healthchecks |
-| Keycloak realm rendering | `services/keycloak/render-realm.sh` | Renders realm JSON with `DEV_HOST` substitution |
-| `.env.example` | repo root | Sane localhost defaults; every third-party (Stripe, Resend, Slack, R2) gracefully degrades when blank |
-| `mprocs.yaml` | repo root | 4-panel TUI auto-running ingest / api / worker / web |
-| CLI `arguslog ping` | `cli/src/commands/ping.ts` | Sends a synthetic event through ingest given a project id |
+| Piece                    | Where                               | What it does                                                                                          |
+| ------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `make dev`               | `Makefile`                          | Full orchestration: doctor → install → build-sdks → up → mprocs                                       |
+| `make doctor`            | `Makefile` (~line 282)              | Verifies docker, pnpm, mprocs, java (JDK 21), gradlew                                                 |
+| `make up`                | `Makefile`                          | `docker compose up --wait` with healthchecks (Postgres / Redis / Keycloak / MinIO / MailHog)          |
+| `make install`           | `Makefile`                          | `pnpm install --frozen-lockfile` at workspace root                                                    |
+| `make build-sdks`        | `Makefile`                          | Incremental `tsc` build of `@arguslog/sdk-*` packages                                                 |
+| Compose stack            | `infra/docker/docker-compose.yml`   | All infra services with healthchecks                                                                  |
+| Keycloak realm rendering | `services/keycloak/render-realm.sh` | Renders realm JSON with `DEV_HOST` substitution                                                       |
+| `.env.example`           | repo root                           | Sane localhost defaults; every third-party (Stripe, Resend, Slack, R2) gracefully degrades when blank |
+| `mprocs.yaml`            | repo root                           | 4-panel TUI auto-running ingest / api / worker / web                                                  |
+| CLI `arguslog ping`      | `cli/src/commands/ping.ts`          | Sends a synthetic event through ingest given a project id                                             |
 
 All three of the changes below are **additive** — nothing existing breaks.
 
@@ -74,15 +74,16 @@ the detected OS. Detect with `uname -s` (Darwin / Linux). For Linux, prefer apt 
 
 Required tools + canonical install commands:
 
-| Tool | macOS | Linux (Debian/Ubuntu) | Linux (generic) |
-| --- | --- | --- | --- |
-| `docker` | `brew install --cask docker` | `sudo apt install docker.io docker-compose-plugin` | "Install Docker Engine — https://docs.docker.com/engine/install/" |
-| `pnpm` | `brew install pnpm` | `curl -fsSL https://get.pnpm.io/install.sh \| sh -` | same |
-| `mprocs` | `brew install mprocs` | `cargo install mprocs` (or download release binary) | same |
-| Java 21 | `brew install openjdk@21` + `export PATH` hint | `curl -s https://get.sdkman.io \| bash && sdk install java 21.0.5-tem` | same |
-| `node` (≥22) | `brew install node@22` | `nvm install 22 && nvm use 22` | "Install Node 22 — https://nodejs.org/" |
+| Tool         | macOS                                          | Linux (Debian/Ubuntu)                                                  | Linux (generic)                                                   |
+| ------------ | ---------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `docker`     | `brew install --cask docker`                   | `sudo apt install docker.io docker-compose-plugin`                     | "Install Docker Engine — https://docs.docker.com/engine/install/" |
+| `pnpm`       | `brew install pnpm`                            | `curl -fsSL https://get.pnpm.io/install.sh \| sh -`                    | same                                                              |
+| `mprocs`     | `brew install mprocs`                          | `cargo install mprocs` (or download release binary)                    | same                                                              |
+| Java 21      | `brew install openjdk@21` + `export PATH` hint | `curl -s https://get.sdkman.io \| bash && sdk install java 21.0.5-tem` | same                                                              |
+| `node` (≥22) | `brew install node@22`                         | `nvm install 22 && nvm use 22`                                         | "Install Node 22 — https://nodejs.org/"                           |
 
 Behavior:
+
 - Check **every** tool, collect all misses (don't bail on first failure).
 - For each miss, print a `❌ <tool> missing — install with: <command>`.
 - After all checks, exit 1 if any missing.
@@ -154,7 +155,7 @@ friendly "is `make dev` running in another terminal?" message.
 
 Replace the `## Quick start` section's bullet list with:
 
-```markdown
+````markdown
 ## Quick start
 
 Prereqs: Docker, JDK 21, Node 22, pnpm, mprocs. Run `make doctor` to confirm + get
@@ -167,10 +168,12 @@ make                      # bring up the whole stack (one command)
 # (optional, in a separate terminal:)
 make seed                 # mint demo org + project + sample events
 ```
+````
 
 Then open <http://localhost:5173>. Sign up with any email; `make seed` already created
 `demo@arguslog.local / demo` if you ran it.
-```
+
+````
 
 Mirror the same update in `CONTRIBUTING.md`.
 
@@ -204,7 +207,7 @@ make                       # = make dev; stack comes up in mprocs TUI
 # In a separate terminal
 make seed                  # creates demo org + events
 open http://localhost:5173 # sign in as demo@arguslog.local / demo
-```
+````
 
 Success criteria:
 

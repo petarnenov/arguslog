@@ -34,13 +34,13 @@ import org.springframework.web.bind.annotation.RestController;
  * so OrgAccessGuard pins OrgContext + verifies membership before any handler runs.
  *
  * <p>The {@link SlackWorkspaceDto} response intentionally <strong>excludes the install
- * token</strong>. Listing the bot token would be a leak — the token never leaves the server
- * except in outbound API calls to Slack.
+ * token</strong>. Listing the bot token would be a leak — the token never leaves the server except
+ * in outbound API calls to Slack.
  *
  * <p>DELETE / PATCH explicitly look the row up via {@link SlackWorkspaceRepository#listForOrg}
- * before mutating, so a caller in org A trying to act on org B's workspace id gets a 404 (not
- * 403 — never confirm a row's existence to a non-member). The downstream
- * {@code deactivate}/{@code setDefaultProject} also pin OrgContext for RLS — defence in depth.
+ * before mutating, so a caller in org A trying to act on org B's workspace id gets a 404 (not 403 —
+ * never confirm a row's existence to a non-member). The downstream {@code deactivate}/{@code
+ * setDefaultProject} also pin OrgContext for RLS — defence in depth.
  */
 @RestController
 @RequestMapping(
@@ -102,12 +102,12 @@ public class IntegrationsSlackController {
   }
 
   /**
-   * Creates an Alert Destination of kind SLACK using the workspace's stored incoming-webhook
-   * URL. One-click setup: user installs the Slack app → comes back to this page → clicks
-   * "Create alert destination" → no copy-paste of the webhook URL required.
+   * Creates an Alert Destination of kind SLACK using the workspace's stored incoming-webhook URL.
+   * One-click setup: user installs the Slack app → comes back to this page → clicks "Create alert
+   * destination" → no copy-paste of the webhook URL required.
    *
-   * <p>Returns 422 if the workspace has no captured webhook (legacy row, or installer skipped
-   * the channel selector during OAuth). Caller's expected to surface the right UI hint.
+   * <p>Returns 422 if the workspace has no captured webhook (legacy row, or installer skipped the
+   * channel selector during OAuth). Caller's expected to surface the right UI hint.
    */
   @PostMapping(value = "/{id}/alert-destination", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<AlertDestinationDto> createAlertDestination(
@@ -119,9 +119,10 @@ public class IntegrationsSlackController {
       throw new MissingWebhookException(
           "workspace " + id + " has no captured incoming-webhook; reinstall the Slack app");
     }
-    String name = body != null && body.name() != null && !body.name().isBlank()
-        ? body.name().trim()
-        : defaultDestinationName(workspace);
+    String name =
+        body != null && body.name() != null && !body.name().isBlank()
+            ? body.name().trim()
+            : defaultDestinationName(workspace);
     ObjectNode config = mapper.createObjectNode();
     config.put("webhookUrl", workspace.webhookUrl());
     // Idempotent one-click: if the caller already created a destination with this name (eg.

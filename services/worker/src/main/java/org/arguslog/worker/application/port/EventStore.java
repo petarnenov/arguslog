@@ -15,9 +15,9 @@ public interface EventStore {
    * bump occurrence_count + last_seen_at, (3) insert the event payload into the events hypertable.
    * The {@code releaseVersion} (read from {@code payload.release}, may be {@code null}) is
    * attributed to the issue ONLY on first insert — later events on the same fingerprint never
-   * overwrite first_seen_release_id, so the "first seen in vX.Y.Z" claim is stable.
-   * Returns the post-upsert issue snapshot the rule evaluator needs (level / first_seen /
-   * occurrence_count) so we don't pay a re-SELECT per event.
+   * overwrite first_seen_release_id, so the "first seen in vX.Y.Z" claim is stable. Returns the
+   * post-upsert issue snapshot the rule evaluator needs (level / first_seen / occurrence_count) so
+   * we don't pay a re-SELECT per event.
    */
   PersistResult persist(IncomingEvent event, Fingerprint fingerprint, String releaseVersion);
 

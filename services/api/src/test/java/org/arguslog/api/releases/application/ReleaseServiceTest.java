@@ -113,8 +113,7 @@ class ReleaseServiceTest {
   void overlongGitShaRejected() {
     String tooLong = "a".repeat(ReleaseService.MAX_GIT_SHA_LENGTH + 1);
     assertThatThrownBy(
-            () ->
-                service.create(101L, new ReleaseInput("1.2.3", null, tooLong, null, null, null)))
+            () -> service.create(101L, new ReleaseInput("1.2.3", null, tooLong, null, null, null)))
         .isInstanceOf(InvalidReleaseException.class)
         .hasMessageContaining("gitSha");
     verifyNoInteractions(repository);
@@ -157,8 +156,7 @@ class ReleaseServiceTest {
     Release out = service.update(101L, 7L, ReleaseInput.versionOnly("  2.0.0  "));
 
     assertThat(out).isEqualTo(after);
-    verify(repository)
-        .update(eq(101L), eq(7L), argThat(i -> "2.0.0".equals(i.version())));
+    verify(repository).update(eq(101L), eq(7L), argThat(i -> "2.0.0".equals(i.version())));
   }
 
   @Test
@@ -178,7 +176,8 @@ class ReleaseServiceTest {
 
   @Test
   void updateThrowsNotFoundWhenRepoMisses() {
-    when(repository.update(eq(101L), eq(99L), any(ReleaseInput.class))).thenReturn(Optional.empty());
+    when(repository.update(eq(101L), eq(99L), any(ReleaseInput.class)))
+        .thenReturn(Optional.empty());
     assertThatThrownBy(() -> service.update(101L, 99L, ReleaseInput.versionOnly("x")))
         .isInstanceOf(ReleaseNotFoundException.class);
   }

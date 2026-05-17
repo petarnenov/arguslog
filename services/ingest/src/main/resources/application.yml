@@ -38,7 +38,7 @@ management:
       # from the browser; without this, OPTIONS preflight 403s. Body is uptime/up-down only —
       # no auth state — so wide-open Origin matches the existing public exposure of /health.
       cors:
-        allowed-origins: "*"
+        allowed-origins: '*'
         allowed-methods: GET,OPTIONS
   endpoint:
     health:

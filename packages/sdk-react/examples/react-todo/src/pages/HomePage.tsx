@@ -52,9 +52,7 @@ export function HomePage() {
   };
 
   const handleToggle = (id: string) => {
-    setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
-    );
+    setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
     arguslog.addBreadcrumb({
       category: 'todo',
       message: 'todo.toggle',
@@ -119,11 +117,7 @@ export function HomePage() {
           {todos.map((todo) => (
             <li key={todo.id} className={todo.done ? 'done' : ''}>
               <label>
-                <input
-                  type="checkbox"
-                  checked={todo.done}
-                  onChange={() => handleToggle(todo.id)}
-                />
+                <input type="checkbox" checked={todo.done} onChange={() => handleToggle(todo.id)} />
                 <span>{todo.text}</span>
               </label>
               <button type="button" onClick={() => handleDelete(todo.id)} aria-label="Delete">

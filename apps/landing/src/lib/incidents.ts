@@ -15,12 +15,7 @@
  */
 
 export type IncidentSeverity = 'minor' | 'major' | 'critical' | 'unknown';
-export type IncidentStatus =
-  | 'investigating'
-  | 'identified'
-  | 'monitoring'
-  | 'resolved'
-  | 'unknown';
+export type IncidentStatus = 'investigating' | 'identified' | 'monitoring' | 'resolved' | 'unknown';
 
 export interface Incident {
   /** ISO 8601 timestamp parsed from the heading. */
@@ -36,7 +31,7 @@ export interface Incident {
 const SENTINEL = '<!-- INCIDENTS BELOW -->';
 
 export function parseIncidents(markdown: string): Incident[] {
-  const body = markdown.includes(SENTINEL) ? markdown.split(SENTINEL)[1] ?? '' : markdown;
+  const body = markdown.includes(SENTINEL) ? (markdown.split(SENTINEL)[1] ?? '') : markdown;
   const sections = body.split(/\n##\s+/).slice(1); // first split is the prelude — drop it
   const out: Incident[] = [];
   for (const raw of sections) {
@@ -63,9 +58,7 @@ function parseHeading(
   raw: string,
 ): { startedAt: string; title: string; severity: IncidentSeverity } | null {
   // "2026-05-13T18:42Z — Worker deploy failed (minor)"
-  const match = raw.match(
-    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z?)\s*[—-]\s*(.+?)(?:\s*\(([^)]+)\))?$/,
-  );
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z?)\s*[—-]\s*(.+?)(?:\s*\(([^)]+)\))?$/);
   if (!match) return null;
   return {
     startedAt: match[1]!,
@@ -105,7 +98,11 @@ function parseBody(rest: string): {
     if (meta) {
       const key = meta[1]!.toLowerCase();
       const value = meta[2]!.trim();
-      if (key === 'affected') affected = value.split(',').map((s) => s.trim()).filter(Boolean);
+      if (key === 'affected')
+        affected = value
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
       else if (key === 'status') status = parseStatus(value);
       else if (key === 'duration') duration = value;
     } else if (trimmed.length > 0) {

@@ -5,10 +5,18 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "build/**", ".vite/**"],
-      "inputs": ["src/**", "public/**", "package.json", "tsconfig.json", "vite.config.ts"]
+      "outputs": ["dist/**", "build/**", ".vite/**", ".output/**", ".wxt/**"],
+      "inputs": [
+        "src/**",
+        "public/**",
+        "package.json",
+        "tsconfig.json",
+        "vite.config.ts",
+        "wxt.config.ts"
+      ]
     },
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },
@@ -24,7 +32,7 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
-      "inputs": ["src/**", "test/**", "vitest.config.ts", "package.json"]
+      "inputs": ["src/**", "test/**", "tests/**", "vitest.config.ts", "package.json"]
     },
     "test:coverage": {
       "dependsOn": ["^build"],

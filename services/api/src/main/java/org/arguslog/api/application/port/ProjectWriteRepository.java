@@ -27,8 +27,8 @@ public interface ProjectWriteRepository {
 
   /**
    * Returns per-project activity stats for every live project in the org, keyed by project id.
-   * Projects with no events / issues yet land in the map with zero counts and {@code null}
-   * {@code lastEventAt}. Used by the dashboard project-list card; not for hot ingest paths.
+   * Projects with no events / issues yet land in the map with zero counts and {@code null} {@code
+   * lastEventAt}. Used by the dashboard project-list card; not for hot ingest paths.
    */
   Map<Long, ProjectStats> statsForOrg(long orgId);
 }

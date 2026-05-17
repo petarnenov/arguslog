@@ -68,7 +68,9 @@ class JdbcEventStoreTest {
     // without
     // bringing the full Spring context up.
     TransactionTemplate template = new TransactionTemplate(txm);
-    store = (event, fingerprint, releaseVersion) -> template.execute(status -> raw.persist(event, fingerprint, releaseVersion));
+    store =
+        (event, fingerprint, releaseVersion) ->
+            template.execute(status -> raw.persist(event, fingerprint, releaseVersion));
   }
 
   @AfterAll

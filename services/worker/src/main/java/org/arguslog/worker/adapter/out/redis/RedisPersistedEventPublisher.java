@@ -21,8 +21,8 @@ import org.springframework.stereotype.Component;
  * event ingestion.
  *
  * <p>Tags get nested as a JSON-encoded string in the {@code tags} field so the surrounding
- * map-record shape stays primitive (Redis Streams require string values). Empty / null tags
- * land as {@code "{}"} so the listener can always parse without a null-guard branch.
+ * map-record shape stays primitive (Redis Streams require string values). Empty / null tags land as
+ * {@code "{}"} so the listener can always parse without a null-guard branch.
  */
 @Component
 public class RedisPersistedEventPublisher implements PersistedEventPublisher {

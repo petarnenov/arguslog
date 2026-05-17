@@ -54,8 +54,8 @@ export function DemoBreadcrumbsPage() {
       ) : null}
       <p className="muted">
         The <code>autoBreadcrumbs</code> integration in <code>arguslog.ts</code> already records
-        console, fetch, history, DOM clicks, web vitals, long tasks and more — you usually only
-        need <code>addBreadcrumb</code> for app-specific signal the auto-instrumentation can't see.
+        console, fetch, history, DOM clicks, web vitals, long tasks and more — you usually only need{' '}
+        <code>addBreadcrumb</code> for app-specific signal the auto-instrumentation can't see.
       </p>
     </div>
   );

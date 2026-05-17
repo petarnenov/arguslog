@@ -59,9 +59,7 @@ export interface SlackInstallStart {
  * and hit 401 before the controller could issue the redirect.
  */
 export function startSlackInstall(orgId: number): Promise<SlackInstallStart> {
-  return apiFetch<SlackInstallStart>(
-    `/api/v1/orgs/${orgId}/integrations/slack/oauth/install`,
-  );
+  return apiFetch<SlackInstallStart>(`/api/v1/orgs/${orgId}/integrations/slack/oauth/install`);
 }
 
 /**

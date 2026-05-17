@@ -45,9 +45,9 @@ public class IssueTriageService implements IssueTriageUseCase {
   }
 
   /**
-   * Hard ceiling on the analysis body. 32 KB is generous for a triage paragraph + suggested
-   * fix; anything larger is almost certainly the agent dumping a full event payload back at
-   * us, which is wasteful and would bloat the issues row.
+   * Hard ceiling on the analysis body. 32 KB is generous for a triage paragraph + suggested fix;
+   * anything larger is almost certainly the agent dumping a full event payload back at us, which is
+   * wasteful and would bloat the issues row.
    */
   private static final int MAX_AI_ANALYSIS_BYTES = 32 * 1024;
 

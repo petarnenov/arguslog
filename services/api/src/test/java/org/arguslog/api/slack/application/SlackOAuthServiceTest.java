@@ -17,8 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * WireMock-backed exchange test for {@code oauth.v2.access}. Slack's "ok:false" responses come
- * back with HTTP 200 + an {@code error} string in the body, so the {@link
+ * WireMock-backed exchange test for {@code oauth.v2.access}. Slack's "ok:false" responses come back
+ * with HTTP 200 + an {@code error} string in the body, so the {@link
  * SlackOAuthService.Result.Failure} mapping has to be driven by body content, not status alone.
  */
 class SlackOAuthServiceTest {
@@ -96,8 +96,7 @@ class SlackOAuthServiceTest {
                     .withHeader("Content-Type", "application/json")
                     .withBody("{\"ok\":false,\"error\":\"invalid_code\"}")));
 
-    SlackOAuthService.Result r =
-        service.exchangeCode("bad-code", "http://localhost:8081/cb");
+    SlackOAuthService.Result r = service.exchangeCode("bad-code", "http://localhost:8081/cb");
     assertThat(r).isInstanceOf(SlackOAuthService.Result.Failure.class);
     assertThat(((SlackOAuthService.Result.Failure) r).error()).isEqualTo("invalid_code");
   }

@@ -68,6 +68,7 @@ class ApiApplicationTests {
   @MockitoBean TokenHasher tokenHasher;
   @MockitoBean TierLookupRepository tierLookupRepository;
   @MockitoBean org.arguslog.api.admin.application.port.AdminQueryPort adminQueryPort;
+
   // Slack subsystem is @ConditionalOnBean(DataSource.class) — skips entirely here.
 
   @Test

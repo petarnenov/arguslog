@@ -8,9 +8,9 @@ import org.arguslog.api.releases.domain.ReleaseInput;
 public interface ReleaseUseCase {
 
   /**
-   * Creates a release with full operator metadata ({@code releasedAt}, {@code gitSha},
-   * {@code gitRef}, {@code deployStage}, {@code changelog}). Use {@link ReleaseInput#versionOnly}
-   * for the minimal CLI v1 / MCP flow that doesn't carry metadata.
+   * Creates a release with full operator metadata ({@code releasedAt}, {@code gitSha}, {@code
+   * gitRef}, {@code deployStage}, {@code changelog}). Use {@link ReleaseInput#versionOnly} for the
+   * minimal CLI v1 / MCP flow that doesn't carry metadata.
    */
   Release create(long projectId, ReleaseInput input);
 

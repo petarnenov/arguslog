@@ -32,10 +32,7 @@ export function initArguslog(): void {
     // credit-card-shaped numbers); extraPatterns adds project-specific shapes.
     scrubbing: {
       enabled: true,
-      extraPatterns: [
-        /todo_secret_[a-z0-9]+/gi,
-        /demo[_-]?api[_-]?key/gi,
-      ],
+      extraPatterns: [/todo_secret_[a-z0-9]+/gi, /demo[_-]?api[_-]?key/gi],
     },
 
     // Final filter — last chance to mutate or drop. Returning null drops the event entirely.

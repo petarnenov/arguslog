@@ -17,10 +17,7 @@ function renderAt(path: string) {
       <QueryClientProvider client={client}>
         <MemoryRouter initialEntries={[path]}>
           <Routes>
-            <Route
-              path="/orgs/:orgSlug/projects/:projectId/keys"
-              element={<ProjectKeysPage />}
-            />
+            <Route path="/orgs/:orgSlug/projects/:projectId/keys" element={<ProjectKeysPage />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
@@ -194,9 +191,7 @@ describe('ProjectKeysPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId(`dsn-row-${KEY_B.id}`)).toBeInTheDocument();
     });
-    const includeRevokedCall = calls.find((c) =>
-      c.url.endsWith('?includeRevoked=true'),
-    );
+    const includeRevokedCall = calls.find((c) => c.url.endsWith('?includeRevoked=true'));
     expect(includeRevokedCall).toBeDefined();
 
     // Revoked rows: status badge says "Revoked", rotate + revoke buttons are absent.
