@@ -2,7 +2,16 @@ import browser from 'webextension-polyfill';
 
 import { type ExtensionSettings, ExtensionSettingsSchema } from '../validation/models';
 
+import { readVersioned, writeVersioned } from './schema-version';
+
 const SETTINGS_KEY = 'settings';
+
+/**
+ * Bump when the on-disk shape changes. The migrations map in {@link getSettings} must
+ * have an entry for every prior version that needs a transform; missing entries are
+ * treated as no-op (shape unchanged, just a version bump).
+ */
+const CURRENT_SCHEMA_VERSION = 1;
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
   endpoint: 'https://mcp.arguslog.org/mcp',
@@ -12,9 +21,13 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
 };
 
 export async function getSettings(): Promise<ExtensionSettings> {
-  const raw = (await browser.storage.sync.get(SETTINGS_KEY))[SETTINGS_KEY];
-  const parsed = ExtensionSettingsSchema.safeParse(raw);
-  return parsed.success ? parsed.data : DEFAULT_SETTINGS;
+  return readVersioned({
+    area: browser.storage.sync as unknown as chrome.storage.StorageArea,
+    key: SETTINGS_KEY,
+    currentVersion: CURRENT_SCHEMA_VERSION,
+    schema: ExtensionSettingsSchema,
+    defaults: DEFAULT_SETTINGS,
+  });
 }
 
 export async function updateSettings(next: Partial<ExtensionSettings>): Promise<ExtensionSettings> {
@@ -22,6 +35,11 @@ export async function updateSettings(next: Partial<ExtensionSettings>): Promise<
     ...(await getSettings()),
     ...next,
   });
-  await browser.storage.sync.set({ [SETTINGS_KEY]: merged });
+  await writeVersioned(
+    browser.storage.sync as unknown as chrome.storage.StorageArea,
+    SETTINGS_KEY,
+    CURRENT_SCHEMA_VERSION,
+    merged,
+  );
   return merged;
 }

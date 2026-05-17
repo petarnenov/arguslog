@@ -19,9 +19,12 @@
 import browser from 'webextension-polyfill';
 import { z } from 'zod';
 
+import { readVersioned, writeVersioned } from './schema-version';
+
 const HISTORY_KEY = 'execution.history';
 const HISTORY_CAP = 200;
 const RESULT_SUMMARY_BUDGET = 2048;
+const HISTORY_SCHEMA_VERSION = 1;
 
 const ToolExecutionSchema = z.object({
   id: z.string(),
@@ -44,9 +47,13 @@ const HistoryArraySchema = z.array(ToolExecutionSchema);
 export type ToolExecution = z.infer<typeof ToolExecutionSchema>;
 
 export async function getExecutionHistory(): Promise<ToolExecution[]> {
-  const raw = (await browser.storage.local.get(HISTORY_KEY))[HISTORY_KEY];
-  const parsed = HistoryArraySchema.safeParse(raw);
-  return parsed.success ? parsed.data : [];
+  return readVersioned({
+    area: browser.storage.local as unknown as chrome.storage.StorageArea,
+    key: HISTORY_KEY,
+    currentVersion: HISTORY_SCHEMA_VERSION,
+    schema: HistoryArraySchema,
+    defaults: [],
+  });
 }
 
 export async function appendExecution(
@@ -58,7 +65,12 @@ export async function appendExecution(
     const existing = await getExecutionHistory();
     const entry = buildEntry(partial);
     const next = [entry, ...existing].slice(0, HISTORY_CAP);
-    await browser.storage.local.set({ [HISTORY_KEY]: next });
+    await writeVersioned(
+      browser.storage.local as unknown as chrome.storage.StorageArea,
+      HISTORY_KEY,
+      HISTORY_SCHEMA_VERSION,
+      next,
+    );
   } catch (err) {
     // Tool call must succeed even when history can't be persisted.
     console.warn('[execution-history] append failed:', err);
