@@ -49,6 +49,50 @@ Store. The remaining publish blockers are the operator-owned creative
 deliverables (screenshots, promo tiles, listing copy) documented in
 `store-assets/README.md`.
 
+### Fixed — Connect magic prompt now teaches secret hygiene before writing files
+
+A GitGuardian Bearer-token alert hit one of our dogfood repos
+(`petarnenov/vue-todo-app`) within minutes of an operator pasting the Connect
+magic prompt into Claude Code and Copilot. Both `.mcp.json` and
+`.vscode/mcp.json` landed in the repo with `"Authorization": "Bearer <PAT>"`
+inlined — the agent wrote the files, then a routine `git add . && git commit`
+swept the secrets in.
+
+Root cause: the magic prompt inlines real credentials (correctly — agents
+can't substitute placeholders reliably) but never tells the agent to add the
+target file to `.gitignore` before writing it, and the per-config snippets
+have no DO NOT COMMIT banner. Result: every "wire MCP" pass on a fresh repo
+was one careless `git add .` away from a credential leak.
+
+Fix lives entirely in the magic-prompt generator and the catalog env files:
+
+- New `mcpHygieneReminder(path)` helper renders a blockquote warning above
+  every "write this file" instruction in `agentMcpInstructions()`. The
+  warning names the literal path and points at `.git/info/exclude` as a
+  shared-repo escape hatch. Wired for Claude Code (`.mcp.json`), Cursor
+  (`.cursor/mcp.json`), Codex (`.codex/config.toml`), Copilot (both
+  `.vscode/mcp.json` and `.mcp.json`), and Continue (`.continue/mcpServers/`).
+  Windsurf's config lives in `~/.codeium/`, so the warning is informational
+  there — no `.gitignore` needed.
+- `agentCredentialsBlock` grew a "Secret hygiene — before you run `git add`"
+  section between the inlined-credentials list and the "Revoking or rotating
+  later" paragraph. Includes a ready-to-paste `.gitignore` block covering all
+  MCP config paths plus `.env.local` / `.env*.local`.
+- Every `.env*` snippet in `SDK_CATALOG['vue' | 'react' | 'nextjs' | 'angular' | 'react-native']`
+  leads with a `# DO NOT COMMIT —` line that names the file's `.gitignore`
+  requirement. Angular's `environment.production.ts` (which IS git-tracked by
+  design) gets a stronger banner explaining the CI-injection assumption.
+
+Regression guards in `connectSnippets.test.ts`: every agent prompt must
+contain "Secret hygiene", "`.gitignore`", "`.env.local`", and "`.mcp.json`".
+Each repo-writing agent's MCP step is asserted to mention `.gitignore`
+_before_ the path it tells the agent to write. Copilot's dual-file flow
+gets a separate assert for both warning anchors.
+
+No magic-prompt invariant broken — real DSN + PAT remain inlined at the
+exact config keys the agent reads. The hygiene block is guidance the agent
+acts on _before_ the destructive `git add`, not a placeholder substitution.
+
 ### Fixed — Connect-screen crash + route-level errors now reach Arguslog
 
 Two bugs surfaced during dogfood testing of the new Connect flow:

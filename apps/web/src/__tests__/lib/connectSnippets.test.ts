@@ -4,6 +4,7 @@ import {
   buildAgentPrompt,
   buildSnippets,
   SDK_CATALOG,
+  type AgentTarget,
   type SnippetContext,
 } from '../../lib/connectSnippets';
 
@@ -175,7 +176,42 @@ describe('buildAgentPrompt', () => {
       expect(md).toMatch(/Revoking or rotating later/i);
       expect(md).toContain('https://app.arguslog.org/me/tokens');
       expect(md).toMatch(/delete_me_tokens/);
+
+      // Secret-hygiene guard (post-GitGuardian incident). Every agent prompt must carry
+      // the "Secret hygiene — before you run git add" section AND a `.gitignore` example
+      // block; the .env / MCP paths in that block prevent the class of leak where an
+      // agent writes a PAT-bearing config and then sweeps it into a commit.
+      expect(md).toContain('Secret hygiene');
+      expect(md).toContain('.gitignore');
+      expect(md).toContain('.env.local');
+      expect(md).toContain('.mcp.json');
     }
+  });
+
+  it('every per-agent MCP step warns the agent to add the config path to .gitignore', () => {
+    // Each agent (except Windsurf — its config lives in $HOME, not the repo) writes one
+    // or more files into the repo. We assert each path-mention is paired with a
+    // gitignore warning so the bug class never recurs.
+    const repoAgentChecks: Array<[AgentTarget, string]> = [
+      ['claude-code', '.mcp.json'],
+      ['cursor', '.cursor/mcp.json'],
+      ['codex', '.codex/config.toml'],
+      ['continue', '.continue/mcpServers/'],
+    ];
+    for (const [agent, expectedPath] of repoAgentChecks) {
+      const md = buildAgentPrompt(baseCtx, agent);
+      // The hygiene reminder mentions the same path it's warning about — pair them.
+      const idx = md.indexOf(expectedPath);
+      expect(idx).toBeGreaterThanOrEqual(0);
+      const beforePath = md.slice(0, idx);
+      expect(beforePath).toMatch(/Secret hygiene|\.gitignore/);
+    }
+    // Copilot's dual-file flow needs both warnings.
+    const copilotMd = buildAgentPrompt(baseCtx, 'copilot');
+    expect(copilotMd).toContain('.vscode/mcp.json');
+    expect(copilotMd).toContain('.mcp.json');
+    // The hygiene reminder mentions both paths.
+    expect((copilotMd.match(/Secret hygiene/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
   it('uses hosted MCP URL for every agent (all six speak Streamable HTTP)', () => {

@@ -162,7 +162,10 @@ init({
       {
         path: '.env.local',
         lang: 'bash',
-        contents: `# Vite picks this up automatically; do NOT commit a real DSN here.
+        contents: `# DO NOT COMMIT — ensure \`.env.local\` is in \`.gitignore\` before \`git add .\`.
+# Vite injects these into the build bundle at compile time. The DSN is project-scoped
+# (ingest-only, safe to expose in the shipped bundle) — but the env file itself is
+# meant to stay local, and committing it is a habit that leaks real secrets elsewhere.
 VITE_ARGUSLOG_DSN=<DSN>
 VITE_APP_RELEASE=1.0.0`,
       },
@@ -289,8 +292,11 @@ export const environment = {
       {
         path: 'src/environments/environment.production.ts',
         lang: 'ts',
-        contents: `// Production overlay — angular.json fileReplacements swaps this in for prod builds.
-// DO NOT commit a real DSN here; CI should inject it from secrets at build time.
+        contents: `// DO NOT COMMIT real secrets here. This file is tracked by git (Angular's stock
+// fileReplacements pattern keeps it in the repo); CI / your secrets manager should
+// rewrite the DSN at build time. For local dev, leave \`arguslogDsn: ''\` here and
+// rely on the swap. Production overlay — angular.json fileReplacements swaps this
+// in for prod builds.
 export const environment = {
   production: true,
   arguslogDsn: '<DSN>',
@@ -399,7 +405,10 @@ export class TelemetryService {
       {
         path: '.env.local',
         lang: 'bash',
-        contents: `# Vite picks this up automatically; do NOT commit a real DSN here.
+        contents: `# DO NOT COMMIT — ensure \`.env.local\` is in \`.gitignore\` before \`git add .\`.
+# Vite injects these into the build bundle at compile time. The DSN is project-scoped
+# (ingest-only, safe to expose in the shipped bundle) — but the env file itself is
+# meant to stay local, and committing it is a habit that leaks real secrets elsewhere.
 VITE_ARGUSLOG_DSN=<DSN>
 VITE_APP_RELEASE=1.0.0`,
       },
@@ -540,8 +549,9 @@ export const telemetry = {
       {
         path: '.env.local',
         lang: 'bash',
-        contents: `# Next.js auto-loads this; do NOT commit a real DSN here.
-# Client-side bundle reads NEXT_PUBLIC_* at build time.
+        contents: `# DO NOT COMMIT — ensure \`.env.local\` is in \`.gitignore\` before \`git add .\`.
+# Next.js auto-loads .env.local; the file is gitignored by the official Next template
+# but verify in your repo. Client-side bundle reads NEXT_PUBLIC_* at build time.
 NEXT_PUBLIC_ARGUSLOG_DSN=<DSN>
 # Server-side runtime reads bare process.env (Node SDK picks up ARGUSLOG_DSN
 # natively when init({dsn}) is omitted).
@@ -715,8 +725,10 @@ const { walletClient } = initWeb3({
       {
         path: '.env',
         lang: 'bash',
-        contents: `# Expo loads EXPO_PUBLIC_* at build time; do NOT commit a real DSN here.
-# For bare RN, see the SDK README — same pattern via react-native-config.
+        contents: `# DO NOT COMMIT — ensure \`.env\` is in \`.gitignore\` before \`git add .\`.
+# Expo loads EXPO_PUBLIC_* at build time and inlines them into the JS bundle.
+# The DSN is project-scoped (ingest-only) but the env file itself is meant to stay
+# local. For bare RN, see the SDK README — same pattern via react-native-config.
 EXPO_PUBLIC_ARGUSLOG_DSN=<DSN>
 EXPO_PUBLIC_APP_RELEASE=1.0.0`,
       },
@@ -1048,6 +1060,26 @@ For the detected slug, paste the matching block verbatim. The templates already 
 ${templates}`;
 }
 
+/**
+ * One-line "add to .gitignore before writing" reminder rendered as a Markdown blockquote
+ * just above each "write this file" instruction. The exact file path is interpolated so
+ * the agent has the literal pattern to add. Real incident this guards: a Claude Code +
+ * Copilot install dropped `.mcp.json` + `.vscode/mcp.json` into a fresh repo, the operator
+ * ran `git add . && git push`, and GitGuardian flagged the Bearer PAT within minutes.
+ *
+ * The text is deliberate: NEVER omit the "(or `.git/info/exclude` if you can't edit
+ * .gitignore — e.g. a shared repo where the line would surprise teammates)" escape hatch.
+ * That sentence is the difference between an agent silently committing the file because
+ * it can't write .gitignore vs. quietly adding the local exclude.
+ */
+function mcpHygieneReminder(path: string): string {
+  return `> ⚠️ **Secret hygiene — add \`${path}\` to \`.gitignore\` BEFORE writing it.** This file
+> will contain your real Personal Access Token inside the \`Authorization: Bearer …\` header.
+> Committing it leaks a credential that GitGuardian / similar scanners flag within minutes.
+> If you can't edit \`.gitignore\` (e.g. a shared repo), add the path to \`.git/info/exclude\`
+> instead — same effect, no diff for teammates to review.`;
+}
+
 function agentMcpInstructions(
   agent: AgentTarget,
   pat: string,
@@ -1073,6 +1105,8 @@ claude mcp add arguslog ${httpUrl} \\
 
 **Fallback (file-based)** — write to \`${target.configPath}\`:
 
+${mcpHygieneReminder('.mcp.json')}
+
 \`\`\`json
 {
   "mcpServers": {
@@ -1094,6 +1128,8 @@ claude mcp add arguslog ${httpUrl} \\
     return `## Step 3 — register the Arguslog MCP server
 
 Write \`${target.configPath}\` (create the file if missing):
+
+${mcpHygieneReminder('.cursor/mcp.json')}
 
 \`\`\`json
 {
@@ -1119,6 +1155,8 @@ Restart Cursor (or click "Reload MCP" in Settings → MCP) so the server is pick
 
 Codex stores MCP configuration in **TOML**, not JSON. Append the following block to \`${target.configPath}\` (create the file and the \`.codex/\` directory if missing — Codex auto-creates them on first run):
 
+${mcpHygieneReminder('.codex/config.toml')}
+
 \`\`\`toml
 [mcp_servers.arguslog]
 url = "${httpUrl}"
@@ -1140,6 +1178,8 @@ GitHub Copilot has two surfaces that each read a different MCP config file. Writ
 
 **A. Copilot Chat (VS Code)** — write \`.vscode/mcp.json\`:
 
+${mcpHygieneReminder('.vscode/mcp.json')}
+
 \`\`\`json
 {
   "servers": {
@@ -1155,6 +1195,8 @@ GitHub Copilot has two surfaces that each read a different MCP config file. Writ
 \`\`\`
 
 **B. Copilot CLI** — write the workspace config at \`.mcp.json\` (or for a user-wide install, \`~/.copilot/mcp-config.json\`). Copilot CLI migrated to this layout per https://gh.io/copilotcli-mcpmigrate:
+
+${mcpHygieneReminder('.mcp.json')}
 
 \`\`\`json
 {
@@ -1179,6 +1221,9 @@ Reload the VS Code window (Chat) and/or re-run \`gh copilot\` (CLI) so the new s
     return `## Step 3 — register the Arguslog MCP server
 
 Write \`${target.configPath}\` (create the file and parent directories if missing). **Windsurf uses \`serverUrl\` (not \`url\`)** for HTTP-transport MCP servers:
+
+> ℹ️ This config lives under your home directory (\`~/.codeium/\`), not in the project repo,
+> so it can't accidentally be \`git add\`-ed. No \`.gitignore\` entry required for this file.
 
 \`\`\`json
 {
@@ -1205,6 +1250,8 @@ Reload Windsurf (or click "Refresh" in the MCP plugin panel) so the new server i
 Continue 1.0+ reads each MCP server from its own YAML file under \`.continue/mcpServers/\` in the workspace root (the legacy \`experimental.modelContextProtocolServers\` array in \`~/.continue/config.json\` is deprecated).
 
 Write \`.continue/mcpServers/arguslog.yaml\` (create the directory if missing):
+
+${mcpHygieneReminder('.continue/mcpServers/')}
 
 \`\`\`yaml
 name: arguslog
@@ -1243,6 +1290,32 @@ function agentCredentialsBlock(dsn: string, pat: string): string {
 - **Personal Access Token** (for the MCP server): \`${pat}\` — already inlined in every MCP config snippet above.
 
 These are real, freshly issued by the Arguslog dashboard, and substituted at the exact key the agent reads (\`headers.Authorization\` for HTTP transports; \`env.ARGUSLOG_PAT\` for stdio). You do **not** need to ask the user to replace them — there shouldn't be any placeholders left.
+
+### Secret hygiene — before you run \`git add\`
+
+Every file you just wrote that contains the PAT or the DSN must land in \`.gitignore\`
+*before* the next \`git add\` / \`git commit\`. Tokens leaked into git history are usually
+flagged by GitGuardian (or similar scanners) within minutes; at that point the only
+real fix is **revoke + rotate via the Connect page**, which is wasteful round-trip work.
+The cheap version is: add the path now.
+
+Common patterns to add (one per file you wrote — skip ones not applicable):
+
+\`\`\`gitignore
+# MCP server configs — carry Personal Access Tokens.
+.mcp.json
+.vscode/mcp.json
+.cursor/mcp.json
+.codex/config.toml
+.continue/mcpServers/
+
+# Local env files — carry build-time secrets (DSN / release tags / etc).
+.env.local
+.env*.local
+\`\`\`
+
+If editing \`.gitignore\` is impractical (shared repo where the line would surprise
+teammates), add the same paths to \`.git/info/exclude\` instead — same effect, no diff.
 
 ### Revoking or rotating later
 
