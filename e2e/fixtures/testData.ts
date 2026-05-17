@@ -107,7 +107,10 @@ export async function ingestSyntheticEvent(
   hint: { message?: string } = {},
 ): Promise<string> {
   const eventId = randomBytes(16).toString('hex');
-  const ingestUrl = `${e2eConfig.apiURL}/api/${extractProjectIdFromDsn(dsn.dsn)}/events`;
+  // Ingest lives on its own Railway service (arguslog-ingest-*), distinct from the
+  // dashboard api. The route shape `/api/{projectId}/events` collides with the api
+  // base path, so we MUST hit ingestURL — not apiURL — for the DSN-authed POST.
+  const ingestUrl = `${e2eConfig.ingestURL}/api/${extractProjectIdFromDsn(dsn.dsn)}/events`;
   const payload = {
     eventId,
     timestamp: Date.now(),

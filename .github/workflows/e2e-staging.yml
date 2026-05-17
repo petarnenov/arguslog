@@ -50,6 +50,7 @@ jobs:
       ARGUSLOG_E2E_BASE_URL: https://arguslog-web-staging.up.railway.app
       ARGUSLOG_E2E_LANDING_URL: https://arguslog.org
       ARGUSLOG_E2E_API_URL: https://arguslog-api-staging.up.railway.app
+      ARGUSLOG_E2E_INGEST_URL: https://arguslog-ingest-staging.up.railway.app
       ARGUSLOG_E2E_KEYCLOAK_URL: https://arguslog-keycloak-staging.up.railway.app
       ARGUSLOG_E2E_KEYCLOAK_REALM: arguslog
       ARGUSLOG_E2E_DASHBOARD_CLIENT_ID: arguslog-web

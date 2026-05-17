@@ -66,6 +66,10 @@ export const e2eConfig = {
   baseURL,
   landingURL,
   apiURL: process.env.ARGUSLOG_E2E_API_URL ?? 'https://arguslog.org',
+  // Ingest is a separate Railway service from `api` — DSN-authed event POSTs land
+  // on `/api/{projectId}/events` exposed by the ingest service, NOT the dashboard
+  // API. Mixing them up returns 401 because the api service has no such route.
+  ingestURL: process.env.ARGUSLOG_E2E_INGEST_URL ?? 'https://arguslog-ingest-staging.up.railway.app',
   keycloakURL:
     process.env.ARGUSLOG_E2E_KEYCLOAK_URL ?? 'https://arguslog-keycloak-staging.up.railway.app',
   keycloakRealm: process.env.ARGUSLOG_E2E_KEYCLOAK_REALM ?? 'arguslog',
