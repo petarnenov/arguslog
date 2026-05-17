@@ -2,6 +2,53 @@
 
 ## Unreleased
 
+### Added — browser-extension 1.0.0, Chrome MV3 best-practices sync
+
+Bumps the sidepanel extension from a pre-release `0.1.0` to a Web Store
+publishable `1.0.0` and lands the four-phase audit follow-up against Chrome's
+Manifest V3 docs:
+
+- **Permissions tightening**: dropped `'tabs'` from the manifest in favour of
+  `'activeTab'` — the single tab-query call site is the textbook `activeTab`
+  scenario, so the broader permission was pure attack-surface waste.
+- **Service-worker lifecycle**: top-level `chrome.runtime.onInstalled` handler
+  logs version transitions and runs storage migrations so on-disk blobs from
+  the previous version are lifted instead of silently wiped.
+- **Storage schema versioning**: new `src/shared/storage/schema-version.ts`
+  helper wraps every `chrome.storage` blob in `{ __schemaVersion, data }`
+  with a per-store migrations chain. Legacy bare-payload blobs from
+  pre-1.0 versions are tolerated as v1 and lifted on first read; the
+  PAT vault's AES-GCM envelope stays unversioned (encrypted plaintext
+  hasn't changed shape).
+- **Real-browser smoke test**: new Playwright suite at
+  `tests/e2e/sidepanel.spec.ts` loads the unpacked build into Chromium
+  and asserts the manifest stays MV3, the sidebar contains the eight
+  expected items, and the deprecated "Connect" nav-link stays gone.
+- **Bundle perf**: switched the eight sidepanel screens to
+  `React.lazy()` so the entry chunk dropped from **231 KB to 27 KB**
+  (~8.5×). Each screen streams in on first navigation; total bundle
+  grew ~11 KB due to per-chunk preamble overhead but the operator-visible
+  cold start is dramatically faster. A `tests/unit/bundle-size.test.ts`
+  guard ratchets `sidepanel-entry < 50 KB`, `background.js < 320 KB`,
+  and `total .output < 1 000 KB`.
+- **i18n scaffolding**: new `public/_locales/en/messages.json` with the
+  20 anchor strings (extension name + description, eight sidebar
+  labels, six primary buttons, three error banners) plus a `useI18n`
+  hook (`src/shared/hooks/useI18n.ts`) over `chrome.i18n.getMessage`.
+  Default locale set in the manifest so unsupported UI languages fall
+  back to English. Adding Bulgarian / German / Russian is now one PR
+  of additional locale files plus more keys — no code refactor.
+- **Web Store publish prep**: new `PRIVACY.md` covering every
+  `chrome.storage` blob the extension touches; manifest `homepage_url`
+  points at the hosted privacy policy. `apps/browser-extension/store-assets/`
+  scaffolds the screenshot + promo + listing-copy assets the operator
+  produces before submission.
+
+This is the foundation for shipping the extension to the Chrome Web
+Store. The remaining publish blockers are the operator-owned creative
+deliverables (screenshots, promo tiles, listing copy) documented in
+`store-assets/README.md`.
+
 ### Fixed — Vue Connect onboarding ships an env-driven installer
 
 Resolves [`arguslog-sdks#2`](https://github.com/petarnenov/arguslog-sdks/issues/2)

@@ -14,6 +14,11 @@ export default defineConfig({
     default_locale: 'en',
     name: '__MSG_extensionName__',
     description: '__MSG_extensionDescription__',
+    // `homepage_url` is what Chrome surfaces as the "Visit website" link in the
+    // chrome://extensions card; it doubles as the link the Web Store listing renders
+    // next to the developer name. Pointing at the privacy policy means the operator can
+    // reach it from inside Chrome without leaving the extension UI.
+    homepage_url: 'https://arguslog.org/privacy/browser-extension',
     // 'tabs' deliberately omitted — the one query in src/shared/domain/connection.ts
     // (`{ active: true, currentWindow: true }`) is the textbook activeTab scenario and
     // doesn't need the broader 'tabs' permission. Smaller permission surface ⇒ faster
