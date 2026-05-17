@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import { MemoryRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 
 import { getConnectionStatus } from '../../shared/domain/connection';
+import { useI18n, type I18nKey } from '../../shared/hooks/useI18n';
 import { Badge } from '../../shared/ui/components/primitives';
 import { getAccountLabel } from '../../shared/utils/account';
 
@@ -49,16 +50,16 @@ const WorkspaceScreen = lazy(() =>
 // through the `startPath` redirect below. Once a PAT exists, Settings is the
 // single management surface — adding `/connect` to the sidebar again would
 // resurrect the duplication report the operator filed against the sidepanel.
-const navItems = [
-  ['/workspace', 'Workspace'],
-  ['/issues', 'Issues'],
-  ['/releases', 'Releases'],
-  ['/workflows', 'Workflows'],
-  ['/tools', 'Tools'],
-  ['/history', 'History'],
-  ['/playbooks', 'Playbooks'],
-  ['/settings', 'Settings'],
-] as const;
+const navItems: ReadonlyArray<readonly [string, I18nKey]> = [
+  ['/workspace', 'navWorkspace'],
+  ['/issues', 'navIssues'],
+  ['/releases', 'navReleases'],
+  ['/workflows', 'navWorkflows'],
+  ['/tools', 'navTools'],
+  ['/history', 'navHistory'],
+  ['/playbooks', 'navPlaybooks'],
+  ['/settings', 'navSettings'],
+];
 
 /**
  * Minimal Suspense fallback shown for the ~50-200ms it takes to fetch a screen chunk on
@@ -74,6 +75,7 @@ function ScreenLoading() {
 }
 
 export function SidepanelApp() {
+  const { t } = useI18n();
   const statusQuery = useQuery({
     queryKey: ['connection-status'],
     queryFn: getConnectionStatus,
@@ -98,7 +100,7 @@ export function SidepanelApp() {
           </div>
 
           <nav className="space-y-1">
-            {navItems.map(([to, label]) => (
+            {navItems.map(([to, labelKey]) => (
               <NavLink
                 key={to}
                 to={to}
@@ -106,7 +108,7 @@ export function SidepanelApp() {
                   `block rounded-xl px-3 py-2 text-sm ${isActive ? 'bg-blue-500/20 text-white' : 'text-slate-300 hover:bg-slate-900'}`
                 }
               >
-                {label}
+                {t(labelKey)}
               </NavLink>
             ))}
           </nav>

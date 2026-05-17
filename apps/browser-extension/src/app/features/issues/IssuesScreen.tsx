@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { getConnectionStatus } from '../../../shared/domain/connection';
+import { useI18n } from '../../../shared/hooks/useI18n';
 import {
   assignIssue,
   getIssue,
@@ -31,6 +32,7 @@ import { formatMissingTools } from '../../../shared/utils/format-missing-tools';
 export function IssuesScreen() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const statusQuery = useQuery({ queryKey: ['connection-status'], queryFn: getConnectionStatus });
   const projectId = statusQuery.data?.workspaceSelection.projectId;
   const orgId = statusQuery.data?.workspaceSelection.orgId;
@@ -130,7 +132,7 @@ export function IssuesScreen() {
         />
         <div className="mt-3 flex justify-center">
           <Button onClick={() => navigate('/workspace')} data-testid="issues-pick-project-cta">
-            Pick a project
+            {t('btnPickProject')}
           </Button>
         </div>
       </Page>
@@ -183,7 +185,7 @@ export function IssuesScreen() {
               data-testid="issues-error-banner"
               role="alert"
             >
-              <p className="font-medium">Couldn&apos;t load issues</p>
+              <p className="font-medium">{t('errIssuesLoadFailed')}</p>
               <p className="mt-1 text-rose-300/90">
                 {issuesQuery.error instanceof Error
                   ? issuesQuery.error.message

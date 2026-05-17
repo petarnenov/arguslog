@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { connect, getConnectionStatus } from '../../../shared/domain/connection';
+import { useI18n } from '../../../shared/hooks/useI18n';
 import {
   getWorkspaceSelection,
   listMyOrgs,
@@ -38,6 +39,7 @@ function getErrorMessage(error: unknown): string | undefined {
 }
 
 export function ConnectionForm(props: { compact?: boolean; onConnected?: () => void }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const { data } = useQuery({
     queryKey: ['connection-status'],
@@ -184,7 +186,7 @@ export function ConnectionForm(props: { compact?: boolean; onConnected?: () => v
               : 'No connected identity yet.'}
           </div>
           <Button disabled={mutation.isPending || pat.trim().length === 0} type="submit">
-            {mutation.isPending ? 'Connecting…' : 'Connect'}
+            {mutation.isPending ? t('btnConnecting') : t('btnConnect')}
           </Button>
         </div>
       </form>

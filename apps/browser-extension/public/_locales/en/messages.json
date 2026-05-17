@@ -1,0 +1,39 @@
+{
+  "extensionName": {
+    "message": "Arguslog MCP Console",
+    "description": "Display name shown in chrome://extensions and the Web Store listing."
+  },
+  "extensionDescription": {
+    "message": "Chromium-first operator console for Arguslog MCP with curated issue, release, workflow, and tool surfaces.",
+    "description": "Tagline shown next to the name; appears under 132 characters per Web Store policy."
+  },
+
+  "navWorkspace": { "message": "Workspace" },
+  "navIssues": { "message": "Issues" },
+  "navReleases": { "message": "Releases" },
+  "navWorkflows": { "message": "Workflows" },
+  "navTools": { "message": "Tools" },
+  "navHistory": { "message": "History" },
+  "navPlaybooks": { "message": "Playbooks" },
+  "navSettings": { "message": "Settings" },
+
+  "btnConnect": { "message": "Connect" },
+  "btnConnecting": { "message": "Connecting…" },
+  "btnPickProject": { "message": "Pick a project" },
+  "btnSave": { "message": "Save" },
+  "btnCancel": { "message": "Cancel" },
+  "btnRetry": { "message": "Retry" },
+
+  "errIssuesLoadFailed": {
+    "message": "Couldn't load issues",
+    "description": "Banner title above the issue list when listIssues rejects (typically 401/403 from an expired PAT)."
+  },
+  "errReleasesLoadFailed": {
+    "message": "Couldn't load releases",
+    "description": "Banner title above the releases list on transport / auth failure."
+  },
+  "errToolsLoadFailed": {
+    "message": "Couldn't load tools",
+    "description": "Banner title on the Tools screen when the capability catalog query rejects."
+  }
+}
