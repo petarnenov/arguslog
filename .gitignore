@@ -26,6 +26,8 @@ build/
 !gradle-wrapper.jar
 !**/src/**/build/
 bin/
+!packages/mcp-server/bin
+!packages/mcp-server/bin/**
 *.class
 *.jar
 !gradle/wrapper/*.jar

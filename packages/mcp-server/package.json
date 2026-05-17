@@ -8,9 +8,9 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "mcp-server": "./dist/index.js",
-    "arguslog-mcp": "./dist/index.js",
-    "arguslog-mcp-http": "./dist/http.js"
+    "mcp-server": "./bin/mcp-stdio.js",
+    "arguslog-mcp": "./bin/mcp-stdio.js",
+    "arguslog-mcp-http": "./bin/mcp-http.js"
   },
   "exports": {
     ".": {
@@ -23,6 +23,7 @@
     }
   },
   "files": [
+    "bin",
     "dist",
     "README.md",
     "smithery.yaml",
@@ -31,7 +32,8 @@
   ],
   "scripts": {
     "generate": "node scripts/generate-tools.mjs",
-    "build": "pnpm run generate && tsc -p tsconfig.build.json && chmod +x dist/index.js dist/http.js",
+    "build": "pnpm run generate && tsc -p tsconfig.build.json",
+    "prepare": "test -f dist/index.js || pnpm run build",
     "dev": "pnpm run generate && tsc -p tsconfig.build.json --watch",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
