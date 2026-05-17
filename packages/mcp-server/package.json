@@ -33,7 +33,6 @@
   "scripts": {
     "generate": "node scripts/generate-tools.mjs",
     "build": "pnpm run generate && tsc -p tsconfig.build.json",
-    "prepare": "test -f dist/index.js || pnpm run build",
     "dev": "pnpm run generate && tsc -p tsconfig.build.json --watch",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
