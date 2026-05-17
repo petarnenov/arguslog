@@ -301,9 +301,11 @@ export function ProjectsPage() {
           <Loader size="sm" />
         </Center>
       ) : projectsQuery.data && projectsQuery.data.length === 0 ? (
-        <Text c="dimmed">{t('projects.empty')}</Text>
+        <Text c="dimmed" data-testid="projects-empty-state">
+          {t('projects.empty')}
+        </Text>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md" data-testid="projects-list">
           {projectsQuery.data?.map((p) => (
             <ProjectCard
               key={p.id}

@@ -67,10 +67,13 @@ export class IssueDetailPage {
     return this.page.getByTestId('stacktrace');
   }
   resolveButton() {
-    return this.page.getByRole('button', { name: /resolve/i });
+    return this.page.getByTestId('issue-detail-resolve');
   }
   reopenButton() {
-    return this.page.getByRole('button', { name: /reopen/i });
+    return this.page.getByTestId('issue-detail-reopen');
+  }
+  ignoreButton() {
+    return this.page.getByTestId('issue-detail-ignore');
   }
   statusBadge() {
     return this.page.getByTestId('issue-status-badge');
@@ -133,13 +136,15 @@ export class ReleasesPage {
     await this.page.goto(`/orgs/${orgSlug}/projects/${projectId}/releases`);
   }
   list() {
-    return this.page.getByTestId('releases-list');
+    // Dashboard uses `releases-table` for the wrapping <Table>; the per-row
+    // testid is `release-row-${releaseId}` (numeric id, not version).
+    return this.page.getByTestId('releases-table');
   }
   newReleaseButton() {
     return this.page.getByRole('button', { name: /new release|create release/i });
   }
-  releaseRow(version: string) {
-    return this.page.getByTestId(`release-row-${version}`);
+  releaseRow(releaseId: number) {
+    return this.page.getByTestId(`release-row-${releaseId}`);
   }
 }
 
@@ -152,7 +157,8 @@ export class AlertRulesPage {
     return this.page.getByRole('button', { name: /new (alert )?rule|create rule/i });
   }
   rulesList() {
-    return this.page.getByTestId('alert-rules-list');
+    // Dashboard uses `alert-rules-table` for the wrapping element.
+    return this.page.getByTestId('alert-rules-table');
   }
 }
 
@@ -165,7 +171,7 @@ export class AlertDestinationsPage {
     return this.page.getByRole('button', { name: /new destination|add destination/i });
   }
   destinationsList() {
-    return this.page.getByTestId('destinations-list');
+    return this.page.getByTestId('alert-destinations-table');
   }
 }
 
@@ -178,7 +184,7 @@ export class MembersPage {
     return this.page.getByRole('button', { name: /invite/i });
   }
   membersList() {
-    return this.page.getByTestId('members-list');
+    return this.page.getByTestId('members-table');
   }
 }
 
@@ -188,10 +194,13 @@ export class TokensPage {
     await this.page.goto('/me/tokens');
   }
   createTokenButton() {
-    return this.page.getByRole('button', { name: /create.*token|new.*token/i });
+    return this.page.getByTestId('pat-create-button');
+  }
+  nameInput() {
+    return this.page.getByTestId('pat-name-input');
   }
   tokensList() {
-    return this.page.getByTestId('tokens-list');
+    return this.page.getByTestId('tokens-table');
   }
 }
 

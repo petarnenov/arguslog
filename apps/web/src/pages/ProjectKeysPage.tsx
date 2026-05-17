@@ -166,7 +166,7 @@ export function ProjectKeysPage() {
         </Card>
       ) : (
         <Card withBorder padding={0} radius="md">
-          <Table>
+          <Table data-testid="keys-list">
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t('projectKeys.colId')}</Table.Th>

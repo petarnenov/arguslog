@@ -81,7 +81,10 @@ export function OnboardingPage() {
   return (
     <Center mih="100vh" p="md">
       <Card shadow="sm" padding="xl" radius="md" withBorder w={520}>
-        <form onSubmit={form.onSubmit((values) => mutation.mutate(values))}>
+        <form
+          onSubmit={form.onSubmit((values) => mutation.mutate(values))}
+          data-testid="onboarding-form"
+        >
           <Stack>
             <Title order={3}>{t('onboarding.title')}</Title>
             <TextInput

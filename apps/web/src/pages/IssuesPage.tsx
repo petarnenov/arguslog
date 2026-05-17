@@ -274,10 +274,13 @@ export function IssuesPage() {
           </Table.Thead>
           <Table.Tbody>
             {query.data.data.map((issue) => (
-              <Table.Tr key={issue.id}>
+              <Table.Tr key={issue.id} data-testid="issues-row">
                 <Table.Td>
                   <Stack gap={2}>
-                    <Link to={`/orgs/${orgSlug}/projects/${projectId}/issues/${issue.id}`}>
+                    <Link
+                      to={`/orgs/${orgSlug}/projects/${projectId}/issues/${issue.id}`}
+                      data-testid={`issue-link-${issue.id}`}
+                    >
                       <Text fw={500}>{issue.title}</Text>
                     </Link>
                     {issue.culprit && (

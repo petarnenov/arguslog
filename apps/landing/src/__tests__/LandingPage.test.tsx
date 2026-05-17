@@ -66,7 +66,12 @@ describe('LandingPage', () => {
     renderLanding();
 
     await waitFor(() => {
-      expect(screen.getAllByTestId('platform-card')).toHaveLength(2);
+      // Per-slug testid `landing-platform-card-<slug>` — same renders, one assert
+      // per card. The previous shared `platform-card` testid was renamed for
+      // E2E selector specificity (so a Playwright run can target a specific SDK
+      // without indexing into a list).
+      expect(screen.getByTestId('landing-platform-card-javascript')).toBeInTheDocument();
+      expect(screen.getByTestId('landing-platform-card-react-native')).toBeInTheDocument();
     });
     expect(screen.getByText('JavaScript / Browser')).toBeInTheDocument();
     expect(screen.getByText('React Native')).toBeInTheDocument();

@@ -266,7 +266,7 @@ function Platforms({
   const { t } = useTranslation();
 
   return (
-    <Box py={64}>
+    <Box py={64} data-testid="landing-platforms">
       <Container size="lg">
         <Stack gap="xs" mb="xl">
           <Title order={2}>{t('platforms.heading')}</Title>
@@ -291,7 +291,7 @@ function Platforms({
                 withBorder
                 padding="md"
                 radius="md"
-                data-testid="platform-card"
+                data-testid={`landing-platform-card-${p.slug}`}
                 component="a"
                 href={platformReadmeUrl(p.slug)}
                 target="_blank"
