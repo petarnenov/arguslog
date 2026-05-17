@@ -38,7 +38,11 @@ export function Providers({ children }: { children: ReactNode }) {
         dsn: env.VITE_DOGFOOD_DSN,
         environment: import.meta.env.MODE,
         release: env.VITE_RELEASE,
-        integrations: ['globalHandlers', 'breadcrumbs'],
+        // `'autoBreadcrumbs'` is the meta-flag that installs every shipped breadcrumb
+        // integration (console, fetch, xhr, history, dom). The earlier `'breadcrumbs'`
+        // string didn't match any known integration id and was silently ignored — events
+        // landed in Arguslog without user-journey context.
+        integrations: ['globalHandlers', 'autoBreadcrumbs'],
       });
     }
   }, []);
