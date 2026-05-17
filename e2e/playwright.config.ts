@@ -56,6 +56,12 @@ export default defineConfig({
   ],
 });
 
+/**
+ * Runtime config the fixtures read at test time. The dashboard authority + realm
+ * are still needed to construct the correct `oidc.user:…` localStorage key (matches
+ * `apps/web/src/auth/userManager.ts`); the access token itself is the PAT, not a
+ * real Keycloak-issued JWT.
+ */
 export const e2eConfig = {
   baseURL,
   landingURL,
@@ -63,9 +69,6 @@ export const e2eConfig = {
   keycloakURL:
     process.env.ARGUSLOG_E2E_KEYCLOAK_URL ?? 'https://arguslog-keycloak-staging.up.railway.app',
   keycloakRealm: process.env.ARGUSLOG_E2E_KEYCLOAK_REALM ?? 'arguslog',
-  keycloakClientId: process.env.ARGUSLOG_E2E_KEYCLOAK_CLIENT_ID ?? 'arguslog-seed',
-  testUserEmail: process.env.ARGUSLOG_E2E_TEST_USER_EMAIL ?? '',
-  testUserPassword: process.env.ARGUSLOG_E2E_TEST_USER_PASSWORD ?? '',
   runnerPAT: process.env.ARGUSLOG_E2E_RUNNER_PAT ?? '',
   runId: process.env.GITHUB_RUN_ID ?? `local-${Date.now().toString(36)}`,
 };

@@ -4,16 +4,16 @@ name: E2E (staging)
 # every successful deploy, plus a nightly cron to catch drift (config rot, expired
 # tokens, Cloudflare config issues, …) and a manual dispatch for ad-hoc runs.
 #
-# Required secrets (configure once in repo settings → Actions → Secrets):
-#   E2E_TEST_USER_EMAIL    — Keycloak user dedicated to E2E (e.g. `e2e@arguslog.local`)
-#   E2E_TEST_USER_PASSWORD — that user's password
-#   E2E_RUNNER_PAT         — long-lived PAT minted for that user with full CRUD scopes
-#                            (orgs/projects/keys/releases/alerts/members/tokens write)
+# Required secret (configure once in repo settings → Actions → Secrets):
+#   E2E_RUNNER_PAT — long-lived PAT minted on staging for the test user with full CRUD
+#                    scopes. The auth fixture seeds it into the page's localStorage as
+#                    the OIDC user blob's `access_token`; the dashboard treats the
+#                    user as signed in (no Keycloak round-trip), and every API call
+#                    ships the PAT as Bearer — accepted by SecurityConfig's PAT bearer
+#                    resolver.
 #
-# Required Keycloak setup (one-time, documented in e2e/README.md):
-#   - `arguslog-seed` client exists in the `arguslog` realm with Direct Access Grants
-#     enabled and an audience mapper that includes `arguslog-web`.
-#   - The E2E user exists with the password above.
+# That's the entire prereq. No Keycloak seed client, no separate test-user password,
+# no OIDC password grant. See e2e/README.md.
 
 on:
   workflow_run:
@@ -48,10 +48,7 @@ jobs:
       ARGUSLOG_E2E_API_URL: https://arguslog.org
       ARGUSLOG_E2E_KEYCLOAK_URL: https://arguslog-keycloak-staging.up.railway.app
       ARGUSLOG_E2E_KEYCLOAK_REALM: arguslog
-      ARGUSLOG_E2E_KEYCLOAK_CLIENT_ID: arguslog-seed
       ARGUSLOG_E2E_DASHBOARD_CLIENT_ID: arguslog-web
-      ARGUSLOG_E2E_TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER_EMAIL }}
-      ARGUSLOG_E2E_TEST_USER_PASSWORD: ${{ secrets.E2E_TEST_USER_PASSWORD }}
       ARGUSLOG_E2E_RUNNER_PAT: ${{ secrets.E2E_RUNNER_PAT }}
     steps:
       - uses: actions/checkout@v5

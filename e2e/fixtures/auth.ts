@@ -3,39 +3,45 @@
  *
  * The dashboard uses `oidc-client-ts` with a `WebStorageStateStore` against
  * `window.localStorage` — the OIDC user blob lands under a key shaped
- * `oidc.user:<authority>:<client_id>`. Rather than scripting the full browser
- * redirect dance through Keycloak's login form (slow, fragile in CI), we mint
- * an access token via the Direct Access Grants (password) flow against the
- * `arguslog-seed` client and seed the resulting User blob into localStorage
- * before the dashboard boots.
+ * `oidc.user:<authority>:<client_id>`. `AuthProvider` boots `userManager.getUser()`
+ * on mount, which reads that key and pushes the result into the auth store; if
+ * `expires_at` is in the future, the store flips to `status: 'authenticated'`
+ * and `RequireAuth` renders the protected children.
  *
- * Pre-requisites on the target environment (one-time manual setup, documented
- * in `e2e/README.md`):
- *   1. The realm has the `arguslog-seed` client with Direct Access Grants
- *      enabled and an audience mapper that includes `arguslog-web`.
- *   2. A dedicated E2E user exists (`e2e@arguslog.local` by default) with a
- *      known password.
- *   3. Env vars `ARGUSLOG_E2E_TEST_USER_EMAIL` + `ARGUSLOG_E2E_TEST_USER_PASSWORD`
- *      are set in the test runner.
+ * Critical insight that lets us skip Keycloak entirely: the dashboard's API client
+ * (`apps/web/src/api/client.ts`) sends whatever `useAuthStore.accessToken` holds
+ * verbatim as the `Authorization: Bearer …` header. The backend's `SecurityConfig`
+ * accepts `Bearer arglog_pat_*` strings as Personal Access Token credentials
+ * (see `services/api/.../SecurityConfig.java`). So if we seed a synthetic OIDC
+ * user blob where `access_token = <runner PAT>`, the dashboard treats the user
+ * as signed-in and every API call carries the PAT — which the backend resolves
+ * to the PAT-owner identity.
+ *
+ * Net effect: only ONE staging-side secret is needed — `ARGUSLOG_E2E_RUNNER_PAT`.
+ * No dedicated Keycloak seed client, no separate password-grant flow, no test
+ * user with a known password. The PAT-owner identity IS the E2E test user.
  */
-import { type Page, type BrowserContext } from '@playwright/test';
+import { type BrowserContext, type Page } from '@playwright/test';
 
 import { e2eConfig } from '../playwright.config.js';
 
-interface OidcTokenResponse {
-  access_token: string;
-  expires_in: number;
-  refresh_token?: string;
-  id_token?: string;
-  token_type: 'Bearer';
-  scope?: string;
-}
-
 interface OidcStoredUser {
-  /** Matches oidc-client-ts `User` shape exactly so the SDK reads it back without complaint. */
+  /** PAT plaintext — sent verbatim as Bearer by the dashboard's apiFetch. */
   access_token: string;
+  /** Seconds-since-epoch. Set far in the future so `user.expired` stays false. */
   expires_at: number;
+  /**
+   * Dummy refresh token. The dashboard never silent-renews a PAT-based session
+   * (silent renew talks to Keycloak's token endpoint, which would 401 for a
+   * non-OIDC access token — but silent renew only fires near expiry, and our
+   * `expires_at` is years out).
+   */
   refresh_token?: string;
+  /**
+   * Dummy id token. `oidc-client-ts` only validates the id_token at login
+   * callback time; on subsequent `getUser()` loads it's only inspected for
+   * claims. A minimal unsigned-shape value passes without errors.
+   */
   id_token?: string;
   token_type: 'Bearer';
   scope?: string;
@@ -48,122 +54,71 @@ interface OidcStoredUser {
   };
 }
 
-let cachedToken: OidcTokenResponse | undefined;
-let cachedAt = 0;
-
 /**
- * Exchanges the test-user creds for an access token via Keycloak's password grant.
- * Cached for 30s so repeated `loginAsTestUser` calls within a single test don't hammer KC.
- */
-export async function getTestUserToken(): Promise<OidcTokenResponse> {
-  const ageMs = Date.now() - cachedAt;
-  if (cachedToken && ageMs < 30_000) return cachedToken;
-
-  if (!e2eConfig.testUserEmail || !e2eConfig.testUserPassword) {
-    throw new Error(
-      'ARGUSLOG_E2E_TEST_USER_EMAIL and ARGUSLOG_E2E_TEST_USER_PASSWORD must be set. ' +
-        'See e2e/README.md for staging-side setup.',
-    );
-  }
-
-  const url = `${e2eConfig.keycloakURL}/realms/${e2eConfig.keycloakRealm}/protocol/openid-connect/token`;
-  const body = new URLSearchParams({
-    client_id: e2eConfig.keycloakClientId,
-    username: e2eConfig.testUserEmail,
-    password: e2eConfig.testUserPassword,
-    grant_type: 'password',
-    scope: 'openid profile email',
-  });
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
-  });
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(
-      `Keycloak password-grant failed: ${resp.status} ${resp.statusText}${
-        text ? ` — ${text.slice(0, 300)}` : ''
-      }. ` +
-        'Verify the seed client exists on staging and the test user is set up per e2e/README.md.',
-    );
-  }
-  cachedToken = (await resp.json()) as OidcTokenResponse;
-  cachedAt = Date.now();
-  return cachedToken;
-}
-
-/**
- * Decodes the access token's `sub` + `email` + `name` claims so the seeded
- * user blob in localStorage matches the shape oidc-client-ts produces after
- * its own callback. No signature check — we're not validating, just reading.
- */
-function decodeJwtPayload(jwt: string): {
-  sub: string;
-  email?: string;
-  name?: string;
-  preferred_username?: string;
-} {
-  const [, payload] = jwt.split('.');
-  if (!payload) throw new Error('JWT missing payload segment');
-  // Base64-url-decode (replace - with +, _ with /, pad to multiple of 4)
-  const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
-  const json = Buffer.from(padded, 'base64').toString('utf8');
-  return JSON.parse(json);
-}
-
-function buildOidcUserBlob(token: OidcTokenResponse): OidcStoredUser {
-  const claims = decodeJwtPayload(token.access_token);
-  return {
-    access_token: token.access_token,
-    expires_at: Math.floor(Date.now() / 1000) + token.expires_in,
-    refresh_token: token.refresh_token,
-    id_token: token.id_token,
-    token_type: 'Bearer',
-    scope: token.scope ?? 'openid profile email',
-    session_state: null,
-    profile: {
-      sub: claims.sub,
-      email: claims.email,
-      name: claims.name,
-      preferred_username: claims.preferred_username,
-    },
-  };
-}
-
-/**
- * Storage key oidc-client-ts uses to persist the User in WebStorageStateStore.
- * Shape: `oidc.user:<authority>:<client_id>` where authority is
- * `<keycloak_url>/realms/<realm>` — must match the runtime `getUserManager()`
- * config in `apps/web/src/auth/userManager.ts`. The dashboard's keycloak
- * env vars (VITE_KEYCLOAK_URL + VITE_KEYCLOAK_REALM + VITE_KEYCLOAK_CLIENT_ID)
- * are the staging ones (the public client `arguslog-web`), not the seed
- * client we minted the token with — both clients live in the same realm,
- * so the access token is accepted by the API regardless of which client
- * minted it (assuming the audience mapper is configured).
+ * Storage key shape `oidc-client-ts` uses in `WebStorageStateStore`:
+ *   `oidc.user:<authority>:<client_id>`
+ *
+ * Authority is the production `arguslog-web` runtime config:
+ *   `<keycloak_url>/realms/<realm>` — pulled from env so a self-hosted target works.
+ *
+ * Must match `getUserManager()` in `apps/web/src/auth/userManager.ts` exactly,
+ * otherwise the SDK reads a different key and sees no session.
  */
 function oidcStorageKey(authority: string, clientId: string): string {
   return `oidc.user:${authority}:${clientId}`;
 }
 
+function buildOidcUserBlobFromPat(pat: string): OidcStoredUser {
+  // 10 years out — well past any reasonable E2E run duration.
+  const tenYears = 10 * 365 * 24 * 3600;
+  // Profile claims are cosmetic for the dashboard's auth state (rendered as the
+  // sidebar's "Logged in as …" line). Use a recognisable shape so a screenshot
+  // captured during a failure makes it obvious this is an E2E run.
+  return {
+    access_token: pat,
+    expires_at: Math.floor(Date.now() / 1000) + tenYears,
+    refresh_token: 'e2e-no-refresh',
+    id_token: 'e2e.no.idtoken',
+    token_type: 'Bearer',
+    scope: 'openid profile email',
+    session_state: null,
+    profile: {
+      sub: '00000000-0000-0000-0000-e2eb0e2eb0e2',
+      email: 'e2e-runner@arguslog.local',
+      name: 'E2E Test Runner',
+      preferred_username: 'e2e-runner',
+    },
+  };
+}
+
 /**
- * Seeds the OIDC user blob into the page's localStorage BEFORE any app code
- * runs. Use this as the first line of any authenticated test:
+ * Primes the page so `AuthProvider` boots into an authenticated state without
+ * ever talking to Keycloak. Use this as the first line of any authenticated
+ * test:
  *
  *   ```ts
  *   await loginAsTestUser(page);
  *   await page.goto('/orgs');
  *   ```
+ *
+ * Mechanism: `addInitScript` runs in the page's frame before any of the app's
+ * scripts. We write the synthetic OIDC user blob to `localStorage` so that
+ * `AuthProvider`'s `getUser()` call finds a valid, non-expired session.
  */
 export async function loginAsTestUser(page: Page): Promise<void> {
-  const token = await getTestUserToken();
-  const userBlob = buildOidcUserBlob(token);
+  if (!e2eConfig.runnerPAT) {
+    throw new Error(
+      'ARGUSLOG_E2E_RUNNER_PAT must be set. This is a Personal Access Token minted on staging ' +
+        'for the test user; the dashboard treats it as the active session via the OIDC user ' +
+        'blob seeded into localStorage. See e2e/README.md for one-time setup.',
+    );
+  }
 
-  // The dashboard's UserManager is built with the production `arguslog-web`
-  // client_id, so localStorage must persist under that key — not the seed
-  // client we used to mint the token. The realm + authority host stays the
-  // same (only client_id differs).
+  const userBlob = buildOidcUserBlobFromPat(e2eConfig.runnerPAT);
+
+  // The dashboard's UserManager constructs its authority from
+  // VITE_KEYCLOAK_URL + VITE_KEYCLOAK_REALM and uses the production
+  // `arguslog-web` client_id. Match that key shape exactly.
   const authority = `${e2eConfig.keycloakURL}/realms/${e2eConfig.keycloakRealm}`;
   const productionClientId = process.env.ARGUSLOG_E2E_DASHBOARD_CLIENT_ID ?? 'arguslog-web';
   const storageKey = oidcStorageKey(authority, productionClientId);
@@ -183,22 +138,15 @@ export async function loginAsTestUser(page: Page): Promise<void> {
 }
 
 /**
- * Returns the same access token a logged-in browser would carry — useful when an
- * API call needs to authenticate as the test user (e.g. for setup that the runner
- * PAT can't do on the user's behalf).
+ * Returns the PAT that the authed page is logged in with. Useful for tests
+ * that need to make a server-side API call as the test user (e.g. seeding
+ * extra data outside the standard `testData` fixture).
  */
-export async function getTestUserAccessToken(): Promise<string> {
-  const token = await getTestUserToken();
-  return token.access_token;
-}
-
-/**
- * Drops the auth fixture's token cache. Call between distinct user sessions in
- * the same test file — rare, since most specs use the same fixture across tests.
- */
-export function resetAuthCache(): void {
-  cachedToken = undefined;
-  cachedAt = 0;
+export function getTestUserAccessToken(): string {
+  if (!e2eConfig.runnerPAT) {
+    throw new Error('ARGUSLOG_E2E_RUNNER_PAT must be set.');
+  }
+  return e2eConfig.runnerPAT;
 }
 
 /**

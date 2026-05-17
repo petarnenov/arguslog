@@ -31,11 +31,9 @@ teardown (cascades to projects, DSNs, alert rules, releases, members).
 
 ### Against staging
 
-You need three secrets — minted once and put in your shell or `.env.local` at repo root:
+You need ONE secret — minted once on staging and exported as an env var:
 
 ```bash
-export ARGUSLOG_E2E_TEST_USER_EMAIL=e2e@arguslog.local
-export ARGUSLOG_E2E_TEST_USER_PASSWORD=<password>
 export ARGUSLOG_E2E_RUNNER_PAT=arglog_pat_<plaintext>
 ```
 
@@ -59,10 +57,9 @@ pnpm exec playwright test --ui
 # Terminal 1: bring the stack up
 make demo
 
-# Terminal 2: set local env + run
-export ARGUSLOG_E2E_TEST_USER_EMAIL=demo@arguslog.local
-export ARGUSLOG_E2E_TEST_USER_PASSWORD=demo
-export ARGUSLOG_E2E_RUNNER_PAT=<mint via /me/tokens UI after demo seeds>
+# Terminal 2: mint a PAT for the demo user (or any local user) via the
+# dashboard's /me/tokens UI, then:
+export ARGUSLOG_E2E_RUNNER_PAT=<arglog_pat_…>
 cd e2e
 pnpm test:local
 ```
@@ -71,38 +68,20 @@ pnpm test:local
 
 ## One-time staging-side setup
 
-These must exist before any E2E run against staging. Cardholder of the staging Keycloak
-admin needs to do this once.
+**Just one thing**: mint a long-lived PAT on staging for the E2E user and store its
+plaintext in `E2E_RUNNER_PAT` secret. The auth fixture seeds an OIDC user blob into
+the page's `localStorage` where `access_token` is the PAT plaintext — the dashboard
+treats the user as signed in, and every API call ships the PAT as `Authorization:
+Bearer …`, which the backend's `SecurityConfig` resolves to the PAT owner's identity.
 
-### 1. Seed client in Keycloak
+No Keycloak seed client, no separate test user with a password, no OIDC password
+grant. The PAT-owner IS the E2E test user.
 
-The dashboard normally authenticates via the `arguslog-web` Keycloak client which has
-**Direct Access Grants disabled** (correct production posture). For programmatic E2E
-login we need a separate dev-only client:
+### Mint the PAT
 
-- Client ID: `arguslog-seed`
-- Access Type: `public`
-- Direct Access Grants: **enabled**
-- Standard Flow: disabled
-- Audience mapper: include `arguslog-web` (so the access token's `aud` claim covers
-  the dashboard's API audience)
-
-The local realm template (`infra/keycloak/realm.template.json`) already ships this
-client — staging should mirror that. If the import was applied before the seed
-client was added, re-apply or hand-create through the KC admin UI.
-
-### 2. Dedicated E2E user
-
-- Username/email: `e2e@arguslog.local` (override via `ARGUSLOG_E2E_TEST_USER_EMAIL`)
-- Password: generate a strong one; put it in GitHub Secrets as `E2E_TEST_USER_PASSWORD`
-- Email verified: yes
-- Realm role: regular `user` (not `platform-admin` — the admin spec gracefully detects
-  either case)
-
-### 3. Long-lived runner PAT
-
-Sign in as the E2E user on staging, mint a PAT named `e2e-runner-permanent` with
-these scopes:
+Sign in to staging (https://app.arguslog.org) as whoever you want the E2E test user
+to be (any regular account — does not need platform-admin). Mint a PAT named
+`e2e-runner-permanent` with these scopes:
 
 - `orgs:read`, `orgs:write`
 - `projects:read`, `projects:write`
@@ -113,17 +92,26 @@ these scopes:
 - `alerts:read`, `alerts:write`
 - `tokens:read`, `tokens:write`
 
-Copy the plaintext once — put it in GitHub Secrets as `E2E_RUNNER_PAT`.
+Copy the plaintext once (it's only shown once).
 
-### 4. GitHub repo secrets
+### GitHub repo secret
 
-Repo Settings → Secrets and variables → Actions → New repository secret. Add three:
+Repo Settings → Secrets and variables → Actions → New repository secret:
 
-| Name                     | Value                                             |
-| ------------------------ | ------------------------------------------------- |
-| `E2E_TEST_USER_EMAIL`    | `e2e@arguslog.local` (or whatever email you used) |
-| `E2E_TEST_USER_PASSWORD` | the password from step 2                          |
-| `E2E_RUNNER_PAT`         | the PAT plaintext from step 3                     |
+| Name             | Value                                         |
+| ---------------- | --------------------------------------------- |
+| `E2E_RUNNER_PAT` | the PAT plaintext from above (`arglog_pat_…`) |
+
+That's the entire prereq. The CI workflow will pick up the secret on the next
+deploy-staging → e2e-staging trigger.
+
+### CLI shortcut
+
+If you have `gh` configured for the repo and the PAT plaintext on your clipboard:
+
+```bash
+gh secret set E2E_RUNNER_PAT --body 'arglog_pat_…'
+```
 
 ---
 
@@ -180,19 +168,24 @@ when needed (CI's `cancel-in-progress: false` makes overlapping runs rare).
 
 ---
 
-## Why programmatic OIDC + a separate runner PAT?
+## Why PAT-as-OIDC-token (and not real Keycloak login)?
 
-- The Playwright runner exchanges email+password for an OIDC access token via the
-  `arguslog-seed` Keycloak client (Direct Access Grants flow). That access token
-  is seeded into `localStorage` before the dashboard boots, so the SPA thinks the
-  user is signed in and never bounces through the KC redirect.
-- The runner PAT (a separate credential) is used for setup/teardown API calls
-  (create org, delete org, etc.) from Node-side fixtures. We don't reuse the
-  short-lived OIDC access token for setup because each test would need to re-mint
-  it; the PAT is long-lived and convenient.
-- Both credentials authenticate the same identity (the E2E user). The PAT inherits
-  the user's permissions; the OIDC token does the same. No backend test-mode flag
-  needed — staging itself is the isolation.
+- The dashboard's API client (`apps/web/src/api/client.ts`) just reads
+  `useAuthStore.accessToken` and sends it as `Authorization: Bearer …`.
+- The backend's `SecurityConfig` has a PAT-aware bearer resolver that handles
+  `Bearer arglog_pat_*` strings as Personal Access Tokens, alongside regular
+  OIDC JWTs. So a PAT in the access_token slot Just Works.
+- `oidc-client-ts`'s `WebStorageStateStore` only reads the user blob — it
+  doesn't re-validate the access_token signature on every load. As long as
+  `expires_at` is in the future, the user is "valid".
+- Therefore: seed an OIDC user blob with `access_token = <PAT>` +
+  `expires_at = far_future`, and the dashboard treats the user as signed in
+  with no Keycloak roundtrip. The PAT is the E2E test user's identity for
+  every request the dashboard makes.
+
+Net effect: a single PAT secret replaces what would otherwise be a Keycloak
+seed client + a test user + an OIDC password-grant flow + token-refresh
+plumbing.
 
 ---
 
