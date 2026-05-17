@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 
 import { getConnectionStatus } from '../../../shared/domain/connection';
 import { createRelease, getRelease, listReleases } from '../../../shared/domain/releases';
+import { useFeatureAvailability } from '../../../shared/hooks/useFeatureAvailability';
 import { ConfirmDialog } from '../../../shared/ui/components/ConfirmDialog';
 import { DashboardLink } from '../../../shared/ui/components/DashboardLink';
 import {
@@ -15,6 +16,7 @@ import {
   Textarea,
 } from '../../../shared/ui/components/primitives';
 import { buildReleaseUrl, getDashboardBaseUrl } from '../../../shared/utils/dashboard-url';
+import { formatMissingTools } from '../../../shared/utils/format-missing-tools';
 
 export function ReleasesScreen() {
   const queryClient = useQueryClient();
@@ -24,6 +26,8 @@ export function ReleasesScreen() {
   const dashboardBase = statusQuery.data
     ? getDashboardBaseUrl(statusQuery.data.settings.endpoint)
     : undefined;
+  const releasesWrite = useFeatureAvailability('releasesWrite');
+  const releasesWriteTooltip = formatMissingTools(releasesWrite.missingTools);
 
   const [selectedReleaseId, setSelectedReleaseId] = useState<number | undefined>();
   const [form, setForm] = useState({ version: '', environment: '', commit: '' });
@@ -103,7 +107,11 @@ export function ReleasesScreen() {
           />
         </div>
         <div className="mt-3 flex justify-end">
-          <Button disabled={!form.version} onClick={() => setConfirmOpen(true)}>
+          <Button
+            disabled={!form.version || !releasesWrite.available}
+            onClick={() => setConfirmOpen(true)}
+            title={releasesWriteTooltip ?? undefined}
+          >
             Create release
           </Button>
         </div>

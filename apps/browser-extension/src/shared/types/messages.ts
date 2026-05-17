@@ -53,6 +53,8 @@ export const BackgroundRequestSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('diagnostics/export') }),
   z.object({ type: z.literal('sidepanel/open') }),
+  z.object({ type: z.literal('execution-history/get') }),
+  z.object({ type: z.literal('execution-history/clear') }),
 ]);
 
 export type BackgroundRequest = z.infer<typeof BackgroundRequestSchema>;

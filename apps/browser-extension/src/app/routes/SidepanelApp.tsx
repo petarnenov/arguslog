@@ -5,6 +5,7 @@ import { getConnectionStatus } from '../../shared/domain/connection';
 import { Badge } from '../../shared/ui/components/primitives';
 import { getAccountLabel } from '../../shared/utils/account';
 import { ConnectScreen } from '../features/connection/ConnectScreen';
+import { HistoryScreen } from '../features/history/HistoryScreen';
 import { IssuesScreen } from '../features/issues/IssuesScreen';
 import { PlaybooksScreen } from '../features/playbooks/PlaybooksScreen';
 import { ReleasesScreen } from '../features/releases/ReleasesScreen';
@@ -20,6 +21,7 @@ const navItems = [
   ['/releases', 'Releases'],
   ['/workflows', 'Workflows'],
   ['/tools', 'Tools'],
+  ['/history', 'History'],
   ['/playbooks', 'Playbooks'],
   ['/settings', 'Settings'],
 ] as const;
@@ -72,6 +74,7 @@ export function SidepanelApp() {
             <Route path="/releases" element={<ReleasesScreen />} />
             <Route path="/workflows" element={<WorkflowsScreen />} />
             <Route path="/tools" element={<ToolsScreen />} />
+            <Route path="/history" element={<HistoryScreen />} />
             <Route path="/playbooks" element={<PlaybooksScreen />} />
             <Route path="/settings" element={<SettingsScreen />} />
           </Routes>

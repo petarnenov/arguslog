@@ -12,6 +12,7 @@ import {
   runTriageLoopWorkflow,
   type WorkflowResult,
 } from '../../../shared/domain/workflows';
+import { useFeatureAvailability } from '../../../shared/hooks/useFeatureAvailability';
 import {
   Badge,
   Button,
@@ -21,6 +22,7 @@ import {
   Page,
 } from '../../../shared/ui/components/primitives';
 import { copyText, downloadFile } from '../../../shared/utils/export';
+import { formatMissingTools } from '../../../shared/utils/format-missing-tools';
 
 function WorkflowResultCard(props: { result: WorkflowResult | undefined }) {
   const result = props.result;
@@ -70,6 +72,11 @@ export function WorkflowsScreen() {
   const projectId = statusQuery.data?.workspaceSelection.projectId;
   const issueId = statusQuery.data?.workspaceSelection.issueId;
 
+  const investigateCaps = useFeatureAvailability(WORKFLOW_IDS.INVESTIGATE_ISSUE);
+  const regressionCaps = useFeatureAvailability(WORKFLOW_IDS.REGRESSION_CHECK);
+  const postmortemCaps = useFeatureAvailability(WORKFLOW_IDS.RELEASE_POSTMORTEM);
+  const triageCaps = useFeatureAvailability(WORKFLOW_IDS.TRIAGE_LOOP);
+
   const [investigateIssueId, setInvestigateIssueId] = useState(issueId ? String(issueId) : '');
   const [currentVersion, setCurrentVersion] = useState('');
   const [previousVersion, setPreviousVersion] = useState('');
@@ -113,8 +120,9 @@ export function WorkflowsScreen() {
                 placeholder="Issue ID"
               />
               <Button
-                disabled={!projectId || !investigateIssueId}
+                disabled={!projectId || !investigateIssueId || !investigateCaps.available}
                 onClick={() => runMutation.mutate(WORKFLOW_IDS.INVESTIGATE_ISSUE)}
+                title={formatMissingTools(investigateCaps.missingTools) ?? undefined}
               >
                 Run investigate
               </Button>
@@ -134,8 +142,14 @@ export function WorkflowsScreen() {
                 placeholder="Previous version"
               />
               <Button
-                disabled={!projectId || !currentVersion || !previousVersion}
+                disabled={
+                  !projectId ||
+                  !currentVersion ||
+                  !previousVersion ||
+                  !regressionCaps.available
+                }
                 onClick={() => runMutation.mutate(WORKFLOW_IDS.REGRESSION_CHECK)}
+                title={formatMissingTools(regressionCaps.missingTools) ?? undefined}
               >
                 Run regression check
               </Button>
@@ -150,8 +164,9 @@ export function WorkflowsScreen() {
                 placeholder="Release version"
               />
               <Button
-                disabled={!projectId || !postmortemVersion}
+                disabled={!projectId || !postmortemVersion || !postmortemCaps.available}
                 onClick={() => runMutation.mutate(WORKFLOW_IDS.RELEASE_POSTMORTEM)}
+                title={formatMissingTools(postmortemCaps.missingTools) ?? undefined}
               >
                 Build postmortem
               </Button>
@@ -166,8 +181,9 @@ export function WorkflowsScreen() {
                 placeholder="Batch size"
               />
               <Button
-                disabled={!projectId}
+                disabled={!projectId || !triageCaps.available}
                 onClick={() => runMutation.mutate(WORKFLOW_IDS.TRIAGE_LOOP)}
+                title={formatMissingTools(triageCaps.missingTools) ?? undefined}
               >
                 Load triage batch
               </Button>

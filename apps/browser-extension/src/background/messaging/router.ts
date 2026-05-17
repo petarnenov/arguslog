@@ -3,6 +3,10 @@ import {
   setCapabilitySnapshot,
   clearCapabilitySnapshot,
 } from '../../shared/storage/capability-cache';
+import {
+  clearExecutionHistory,
+  getExecutionHistory,
+} from '../../shared/storage/execution-history';
 import { getSettings, updateSettings } from '../../shared/storage/settings-store';
 import {
   getPageContext,
@@ -188,6 +192,11 @@ export async function handleBackgroundRequest(rawMessage: unknown): Promise<unkn
         await chrome.sidePanel.open({ windowId: tab.windowId });
         return ok({ success: true });
       }
+      case 'execution-history/get':
+        return ok(await getExecutionHistory());
+      case 'execution-history/clear':
+        await clearExecutionHistory();
+        return ok({ cleared: true });
       default:
         throw createAppError('VALIDATION_ERROR', 'Unsupported background message.');
     }

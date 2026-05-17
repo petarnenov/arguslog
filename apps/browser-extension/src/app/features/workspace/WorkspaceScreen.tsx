@@ -19,6 +19,8 @@ import {
   Select,
 } from '../../../shared/ui/components/primitives';
 
+import { CreateProjectCard } from './CreateProjectCard';
+
 function buildRecents(selection: {
   orgSlug?: string | undefined;
   orgId?: number | undefined;
@@ -252,6 +254,8 @@ export function WorkspaceScreen() {
           </div>
         ) : null}
       </Card>
+
+      <CreateProjectCard orgId={orgId} orgSlug={orgSlug} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title={`Members${selectedOrg ? ` · ${selectedOrg.name}` : ''}`}>

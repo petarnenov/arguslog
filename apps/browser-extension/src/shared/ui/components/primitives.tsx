@@ -55,6 +55,12 @@ export function Button(
     type?: 'button' | 'submit';
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
     disabled?: boolean;
+    /** Native tooltip via the `title` attribute — used by capability-gated buttons to
+     *  explain why they're disabled. Falsy values omit the attribute entirely.
+     */
+    title?: string;
+    /** Accessible label override — defaults to the button's text content. */
+    'aria-label'?: string;
     className?: string;
   }>,
 ) {
@@ -64,6 +70,8 @@ export function Button(
       type={props.type ?? 'button'}
       onClick={props.onClick}
       disabled={props.disabled}
+      title={props.title}
+      aria-label={props['aria-label']}
       className={clsx(
         'inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium transition',
         variant === 'primary' &&

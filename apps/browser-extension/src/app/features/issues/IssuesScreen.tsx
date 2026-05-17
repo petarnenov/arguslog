@@ -10,6 +10,7 @@ import {
   triageIssue,
 } from '../../../shared/domain/issues';
 import { listMembers } from '../../../shared/domain/workspace';
+import { useFeatureAvailability } from '../../../shared/hooks/useFeatureAvailability';
 import { ConfirmDialog } from '../../../shared/ui/components/ConfirmDialog';
 import { DashboardLink } from '../../../shared/ui/components/DashboardLink';
 import {
@@ -24,6 +25,7 @@ import {
 } from '../../../shared/ui/components/primitives';
 import { buildIssueUrl, getDashboardBaseUrl } from '../../../shared/utils/dashboard-url';
 import { copyText } from '../../../shared/utils/export';
+import { formatMissingTools } from '../../../shared/utils/format-missing-tools';
 
 export function IssuesScreen() {
   const queryClient = useQueryClient();
@@ -34,6 +36,8 @@ export function IssuesScreen() {
   const dashboardBase = statusQuery.data
     ? getDashboardBaseUrl(statusQuery.data.settings.endpoint)
     : undefined;
+  const issueActions = useFeatureAvailability('issueActions');
+  const issueActionsTooltip = formatMissingTools(issueActions.missingTools);
 
   const [filters, setFilters] = useState({ status: 'unresolved', level: '', q: '' });
   const [selectedIssueId, setSelectedIssueId] = useState<number | undefined>(
@@ -241,7 +245,12 @@ export function IssuesScreen() {
                     <option value="ignored">Ignored</option>
                     <option value="unresolved">Unresolved</option>
                   </Select>
-                  <Button variant="secondary" onClick={() => setConfirmAction('triage')}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setConfirmAction('triage')}
+                    disabled={!issueActions.available}
+                    title={issueActionsTooltip ?? undefined}
+                  >
                     Triage issue
                   </Button>
                 </div>
@@ -265,7 +274,12 @@ export function IssuesScreen() {
                       </option>
                     ))}
                   </Select>
-                  <Button variant="secondary" onClick={() => setConfirmAction('assign')}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setConfirmAction('assign')}
+                    disabled={!issueActions.available}
+                    title={issueActionsTooltip ?? undefined}
+                  >
                     Assign issue
                   </Button>
                 </div>

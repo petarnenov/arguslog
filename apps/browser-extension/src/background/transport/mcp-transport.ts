@@ -24,6 +24,7 @@ import {
 } from '../../shared/validation/models';
 import { recordConnectionError, recordConnectionSuccess } from '../auth/pat-vault';
 import { appendDiagnosticLog } from '../diagnostics/log-buffer';
+import { appendExecution } from '../../shared/storage/execution-history';
 
 /**
  * Error codes that signal connection/auth health (vs. e.g. a 404 from a missing issue,
@@ -282,16 +283,39 @@ export async function callTool(
 ): Promise<unknown> {
   const execute = () =>
     withClient(config, `tool/call:${name}`, async (client) => {
-      const response = McpToolCallResultSchema.parse(
-        await client.callTool({ name, arguments: args }),
-      );
+      const startedAt = Date.now();
+      try {
+        const response = McpToolCallResultSchema.parse(
+          await client.callTool({ name, arguments: args }),
+        );
 
-      if (response.isError) {
-        const text = response.content[0]?.text ?? `Tool "${name}" failed.`;
-        throw mapToolError(name, text);
+        if (response.isError) {
+          const text = response.content[0]?.text ?? `Tool "${name}" failed.`;
+          throw mapToolError(name, text);
+        }
+
+        const result = normalizeToolData(response);
+        // Best-effort history recording — never break the operator-initiated call.
+        await appendExecution({
+          toolName: name,
+          args,
+          outcome: 'ok',
+          durationMs: Date.now() - startedAt,
+          result,
+        }).catch(() => undefined);
+        return result;
+      } catch (err) {
+        const appErr = err as AppError;
+        await appendExecution({
+          toolName: name,
+          args,
+          outcome: 'error',
+          durationMs: Date.now() - startedAt,
+          errorBucket: appErr.bucket,
+          errorMessage: appErr.message,
+        }).catch(() => undefined);
+        throw err;
       }
-
-      return normalizeToolData(response);
     });
 
   if (isMutation) {

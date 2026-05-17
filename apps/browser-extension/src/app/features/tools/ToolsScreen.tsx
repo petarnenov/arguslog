@@ -1,9 +1,10 @@
 import { MUTATING_TOOLS } from '@arguslog/mcp-server/contract';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 
 import { callRawTool, listCatalogTools } from '../../../shared/domain/catalog';
+import { getConnectionStatus } from '../../../shared/domain/connection';
 import { ConfirmDialog } from '../../../shared/ui/components/ConfirmDialog';
 import {
   Badge,
@@ -113,15 +114,54 @@ export function ToolsScreen() {
     queryKey: ['catalog-tools'],
     queryFn: listCatalogTools,
   });
+  const statusQuery = useQuery({
+    queryKey: ['connection-status'],
+    queryFn: getConnectionStatus,
+  });
+  /**
+   * Set of tool names the connected server actually advertises. The catalog query
+   * returns the FULL @arguslog/mcp-server tool inventory (63 tools), but the live
+   * server might not expose all of them — older Arguslog builds, restricted scopes,
+   * self-hosted with feature flags off. We render every catalog entry but lock the
+   * ones absent from `capabilitySnapshot.toolNames`.
+   */
+  const advertisedTools = useMemo(
+    () => new Set(statusQuery.data?.capabilitySnapshot?.toolNames ?? []),
+    [statusQuery.data?.capabilitySnapshot?.toolNames],
+  );
+  const isUnavailable = (toolName: string) =>
+    statusQuery.data !== undefined &&
+    statusQuery.data.capabilitySnapshot !== undefined &&
+    !advertisedTools.has(toolName);
+
   const [selectedToolName, setSelectedToolName] = useState<string | undefined>();
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!selectedToolName && toolsQuery.data?.[0]) {
       setSelectedToolName(toolsQuery.data[0].name);
     }
   }, [selectedToolName, toolsQuery.data]);
+
+  /**
+   * Rerun prefill: the History screen drops the (toolName, args) of a past run into the
+   * `['tools-prefill']` React Query cache before navigating here. We consume + clear on
+   * mount so a page refresh doesn't re-apply.
+   */
+  useEffect(() => {
+    const prefill = queryClient.getQueryData<{
+      toolName: string;
+      args: Record<string, unknown>;
+    }>(['tools-prefill']);
+    if (prefill) {
+      setSelectedToolName(prefill.toolName);
+      setFormData(prefill.args);
+      queryClient.removeQueries({ queryKey: ['tools-prefill'] });
+    }
+  }, [queryClient]);
 
   const selectedTool = useMemo(
     () => toolsQuery.data?.find((tool) => tool.name === selectedToolName),
@@ -146,39 +186,49 @@ export function ToolsScreen() {
       <div className="grid gap-4 lg:grid-cols-[0.8fr,1.2fr]">
         <Card title="Tool catalog">
           <div className="space-y-2">
-            {toolsQuery.data?.map((tool) => (
-              <button
-                key={tool.name}
-                type="button"
-                onClick={() => {
-                  setSelectedToolName(tool.name);
-                  setFormData({});
-                }}
-                className={`w-full rounded-xl border p-3 text-left ${
-                  selectedToolName === tool.name
-                    ? 'border-blue-400 bg-blue-500/10'
-                    : 'border-slate-800 bg-slate-950/50'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-white">{tool.title ?? tool.name}</p>
-                    <p className="mt-1 text-sm text-slate-400">{tool.description}</p>
+            {toolsQuery.data?.map((tool) => {
+              const locked = isUnavailable(tool.name);
+              return (
+                <button
+                  key={tool.name}
+                  type="button"
+                  onClick={() => {
+                    setSelectedToolName(tool.name);
+                    setFormData({});
+                  }}
+                  aria-disabled={locked || undefined}
+                  title={
+                    locked ? 'This tool is not advertised by the connected server.' : undefined
+                  }
+                  className={`w-full rounded-xl border p-3 text-left ${
+                    selectedToolName === tool.name
+                      ? 'border-blue-400 bg-blue-500/10'
+                      : 'border-slate-800 bg-slate-950/50'
+                  } ${locked ? 'opacity-50' : ''}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-white">
+                        {locked ? '🔒 ' : ''}
+                        {tool.title ?? tool.name}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-400">{tool.description}</p>
+                    </div>
+                    <Badge
+                      tone={
+                        MUTATING_TOOLS.includes(tool.name as (typeof MUTATING_TOOLS)[number])
+                          ? 'danger'
+                          : 'success'
+                      }
+                    >
+                      {MUTATING_TOOLS.includes(tool.name as (typeof MUTATING_TOOLS)[number])
+                        ? 'write'
+                        : 'read'}
+                    </Badge>
                   </div>
-                  <Badge
-                    tone={
-                      MUTATING_TOOLS.includes(tool.name as (typeof MUTATING_TOOLS)[number])
-                        ? 'danger'
-                        : 'success'
-                    }
-                  >
-                    {MUTATING_TOOLS.includes(tool.name as (typeof MUTATING_TOOLS)[number])
-                      ? 'write'
-                      : 'read'}
-                  </Badge>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </Card>
 
@@ -187,6 +237,12 @@ export function ToolsScreen() {
           actions={
             selectedTool ? (
               <Button
+                disabled={isUnavailable(selectedTool.name)}
+                title={
+                  isUnavailable(selectedTool.name)
+                    ? 'This tool is not advertised by the connected server.'
+                    : undefined
+                }
                 onClick={() => {
                   if (
                     MUTATING_TOOLS.includes(selectedTool.name as (typeof MUTATING_TOOLS)[number])
