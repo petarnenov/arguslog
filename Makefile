@@ -141,6 +141,26 @@ python-test: ## Run python-sdk tests (uv + pytest)
 python-lint: ## Run ruff over python-sdk
 	@cd python-sdk && uv run ruff check . && uv run ruff format --check .
 
+preflight: ## Mirror CI's must-pass gates: prettier + eslint + tsc (read-only; non-zero on drift)
+	@# Runs the exact three checks the `PR` workflow's `JS — lint, typecheck, test`
+	@# job runs first. Read-only by design: if `format:check` fails, run the printed
+	@# `make preflight-fix` to auto-rewrite, then re-run `make preflight` to confirm.
+	@echo "▶ Prettier (format:check)…"
+	@$(PNPM) format:check || { echo "✗ Prettier drift. Run: make preflight-fix"; exit 1; }
+	@echo "▶ ESLint…"
+	@$(PNPM) lint
+	@echo "▶ TypeScript (typecheck)…"
+	@$(PNPM) typecheck
+	@echo "✓ Preflight green — CI's JS job should pass."
+
+preflight-fix: ## Auto-fix what `preflight` would flag: prettier --write, then re-run preflight
+	@# Prettier is the only auto-fixable gate. ESLint warnings are typically intentional
+	@# (e.g. `no-console` in SDKs that legitimately need it); we don't auto-`--fix` them
+	@# here so the dev sees what the rule wants before silently mutating their code.
+	@echo "▶ Prettier --write…"
+	@$(PNPM) format
+	@$(MAKE) preflight
+
 e2e: ## Run Playwright e2e suite
 	@$(PNPM) e2e
 
