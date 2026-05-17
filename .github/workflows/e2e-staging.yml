@@ -1,0 +1,88 @@
+name: E2E (staging)
+
+# Runs the Playwright happy-path suite against the live staging environment after
+# every successful deploy, plus a nightly cron to catch drift (config rot, expired
+# tokens, Cloudflare config issues, …) and a manual dispatch for ad-hoc runs.
+#
+# Required secrets (configure once in repo settings → Actions → Secrets):
+#   E2E_TEST_USER_EMAIL    — Keycloak user dedicated to E2E (e.g. `e2e@arguslog.local`)
+#   E2E_TEST_USER_PASSWORD — that user's password
+#   E2E_RUNNER_PAT         — long-lived PAT minted for that user with full CRUD scopes
+#                            (orgs/projects/keys/releases/alerts/members/tokens write)
+#
+# Required Keycloak setup (one-time, documented in e2e/README.md):
+#   - `arguslog-seed` client exists in the `arguslog` realm with Direct Access Grants
+#     enabled and an audience mapper that includes `arguslog-web`.
+#   - The E2E user exists with the password above.
+
+on:
+  workflow_run:
+    workflows: ['Deploy to staging']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      grep:
+        description: 'Optional --grep pattern to filter tests (e.g. "landing" or "connect")'
+        required: false
+        type: string
+  schedule:
+    # 04:00 UTC — quiet hours, staging is idle, catches overnight drift.
+    - cron: '0 4 * * *'
+
+concurrency:
+  group: e2e-staging
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: Playwright happy-path
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # workflow_run fires for any conclusion — only run when staging actually shipped.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+    env:
+      ARGUSLOG_E2E_BASE_URL: https://app.arguslog.org
+      ARGUSLOG_E2E_LANDING_URL: https://arguslog.org
+      ARGUSLOG_E2E_API_URL: https://arguslog.org
+      ARGUSLOG_E2E_KEYCLOAK_URL: https://arguslog-keycloak-staging.up.railway.app
+      ARGUSLOG_E2E_KEYCLOAK_REALM: arguslog
+      ARGUSLOG_E2E_KEYCLOAK_CLIENT_ID: arguslog-seed
+      ARGUSLOG_E2E_DASHBOARD_CLIENT_ID: arguslog-web
+      ARGUSLOG_E2E_TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER_EMAIL }}
+      ARGUSLOG_E2E_TEST_USER_PASSWORD: ${{ secrets.E2E_TEST_USER_PASSWORD }}
+      ARGUSLOG_E2E_RUNNER_PAT: ${{ secrets.E2E_RUNNER_PAT }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.10.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm --filter @arguslog/e2e exec playwright install --with-deps chromium
+      - name: Run Playwright suite
+        run: |
+          if [ -n "${{ inputs.grep }}" ]; then
+            pnpm --filter @arguslog/e2e exec playwright test --grep "${{ inputs.grep }}"
+          else
+            pnpm --filter @arguslog/e2e exec playwright test
+          fi
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-traces
+          path: e2e/test-results/
+          retention-days: 7

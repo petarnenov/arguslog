@@ -9,7 +9,9 @@
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed",
     "e2e:ui": "playwright test --ui",
-    "lint": "eslint tests",
+    "test:staging": "ARGUSLOG_E2E_BASE_URL=https://app.arguslog.org ARGUSLOG_E2E_LANDING_URL=https://arguslog.org ARGUSLOG_E2E_API_URL=https://arguslog.org playwright test",
+    "test:local": "ARGUSLOG_E2E_BASE_URL=http://localhost:5173 ARGUSLOG_E2E_LANDING_URL=http://localhost:5174 ARGUSLOG_E2E_API_URL=http://localhost:8081 ARGUSLOG_E2E_KEYCLOAK_URL=http://localhost:8180 playwright test",
+    "lint": "eslint tests fixtures pages lib",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf playwright-report test-results .turbo"
   },

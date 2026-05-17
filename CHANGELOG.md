@@ -2,6 +2,50 @@
 
 ## Unreleased
 
+### Added — E2E happy-path suite against staging
+
+First end-to-end coverage for the dashboard (`app.arguslog.org`) and landing
+page (`arguslog.org`). 20 specs total — 5 landing, 1 auth-flow, 14 dashboard
+— each focused on a single user-visible happy path. Runs against the live
+staging environment on every successful merge to `main` via the new
+`.github/workflows/e2e-staging.yml` workflow, plus nightly at 04:00 UTC and
+on-demand via `workflow_dispatch`.
+
+The dashboard suite uses programmatic OIDC password-grant auth against a
+dedicated `arguslog-seed` Keycloak client; the access token is seeded into
+the page's `localStorage` so the SPA boots already-signed-in without
+scripting the KC redirect dance. Test data is isolated per-spec — every
+authenticated test creates a fresh `e2e-<run-id>-<hash>` org via the runner
+PAT, runs against that, and `DELETE`s the org on teardown (cascades to
+projects, DSNs, alerts, releases, members).
+
+New surfaces:
+
+- `e2e/fixtures/auth.ts` — programmatic login (OIDC password grant +
+  localStorage seed).
+- `e2e/fixtures/testData.ts` — per-spec org/project/DSN provisioning with
+  auto-cleanup; helpers to ingest synthetic events for issue-list specs.
+- `e2e/fixtures/index.ts` — composed Playwright `test.extend` with three
+  opt-in levels: `authedPage`, `seededOrg`, `seededProject`, `seededDsn`.
+- `e2e/pages/{LandingPage,DashboardPages}.ts` — Page Object Model so the
+  20 specs don't grow brittle selectors.
+- `e2e/playwright.config.ts` — bumped timeout to 60s for Railway cold-start
+  on idle staging; three named projects (dashboard / landing / auth) so
+  each origin gets its own `baseURL`.
+- `e2e/README.md` — setup, run instructions, one-time staging-side Keycloak
+  client + user + PAT requirements, orphan-cleanup recipe.
+- `.github/workflows/e2e-staging.yml` — `workflow_run` on `Deploy to staging`
+  - nightly cron + manual dispatch. Uploads HTML report + traces as
+    artifacts on failure (7-day retention).
+
+Required repo secrets (one-time): `E2E_TEST_USER_EMAIL`,
+`E2E_TEST_USER_PASSWORD`, `E2E_RUNNER_PAT`. Staging-side setup (KC seed
+client + user + PAT) documented in `e2e/README.md`.
+
+Happy paths only — error / validation / permission-denied coverage stays in
+the unit suite under `apps/web/src/__tests__/`. Cross-browser + mobile +
+visual-regression deliberately out of scope this round.
+
 ### Added — browser-extension 1.0.0, Chrome MV3 best-practices sync
 
 Bumps the sidepanel extension from a pre-release `0.1.0` to a Web Store
