@@ -61,6 +61,10 @@ export function Button(
     title?: string;
     /** Accessible label override — defaults to the button's text content. */
     'aria-label'?: string;
+    /** Forwarded so callers can target the button from RTL `findByTestId` and from
+     *  e2e selectors without depending on the visible label (which changes with
+     *  i18n / copy edits). */
+    'data-testid'?: string;
     className?: string;
   }>,
 ) {
@@ -72,6 +76,7 @@ export function Button(
       disabled={props.disabled}
       title={props.title}
       aria-label={props['aria-label']}
+      data-testid={props['data-testid']}
       className={clsx(
         'inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium transition',
         variant === 'primary' &&

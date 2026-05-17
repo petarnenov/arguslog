@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { getConnectionStatus } from '../../../shared/domain/connection';
 import {
@@ -29,6 +30,7 @@ import { formatMissingTools } from '../../../shared/utils/format-missing-tools';
 
 export function IssuesScreen() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const statusQuery = useQuery({ queryKey: ['connection-status'], queryFn: getConnectionStatus });
   const projectId = statusQuery.data?.workspaceSelection.projectId;
   const orgId = statusQuery.data?.workspaceSelection.orgId;
@@ -126,6 +128,11 @@ export function IssuesScreen() {
           title="No project selected"
           description="Issue browsing and triage depend on the active project context."
         />
+        <div className="mt-3 flex justify-center">
+          <Button onClick={() => navigate('/workspace')} data-testid="issues-pick-project-cta">
+            Pick a project
+          </Button>
+        </div>
       </Page>
     );
   }
@@ -167,6 +174,23 @@ export function IssuesScreen() {
 
       <div className="grid gap-4 lg:grid-cols-[1.1fr,0.9fr]">
         <Card title="Issue list">
+          {issuesQuery.error ? (
+            // An empty list under the "Issue list" card silently swallows the most common
+            // failure mode (401 from an expired/revoked PAT) — surface the error so the
+            // operator can act instead of squinting at a blank panel.
+            <div
+              className="mb-3 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200"
+              data-testid="issues-error-banner"
+              role="alert"
+            >
+              <p className="font-medium">Couldn&apos;t load issues</p>
+              <p className="mt-1 text-rose-300/90">
+                {issuesQuery.error instanceof Error
+                  ? issuesQuery.error.message
+                  : 'Unknown error — see Settings → Diagnostics for details.'}
+              </p>
+            </div>
+          ) : null}
           <div className="space-y-2">
             {issuesQuery.data?.map((issue) => (
               <button

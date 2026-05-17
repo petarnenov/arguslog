@@ -14,8 +14,12 @@ import { ToolsScreen } from '../features/tools/ToolsScreen';
 import { WorkflowsScreen } from '../features/workflows/WorkflowsScreen';
 import { WorkspaceScreen } from '../features/workspace/WorkspaceScreen';
 
+// `/connect` is deliberately absent: it duplicates the PAT-entry form already
+// owned by `/settings`, and unauthenticated operators reach it automatically
+// through the `startPath` redirect below. Once a PAT exists, Settings is the
+// single management surface — adding `/connect` to the sidebar again would
+// resurrect the duplication report the operator filed against the sidepanel.
 const navItems = [
-  ['/connect', 'Connect'],
   ['/workspace', 'Workspace'],
   ['/issues', 'Issues'],
   ['/releases', 'Releases'],
