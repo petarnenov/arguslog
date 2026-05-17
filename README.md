@@ -81,6 +81,7 @@ subscriptions. Tier elevation is admin-grant only.
 ```
 apps/web/                      # React/Vite dashboard
 apps/landing/                  # Vite + Mantine marketing site (live SDK catalog)
+apps/browser-extension/        # Chromium MV3 operator console for Arguslog MCP
 services/api/                  # public REST + admin endpoints
 services/ingest/               # public event endpoint
 services/worker/               # Redis Streams consumer + cron jobs
