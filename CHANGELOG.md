@@ -2,6 +2,80 @@
 
 ## Unreleased
 
+### Added — per-project Git link drives the release branch dropdown
+
+Projects gained an optional `(git_provider, git_repo)` pair (V41 migration). The
+"Create release" form, when a project has a Git link configured, replaces the
+manual Git ref / Git SHA text inputs with a branch dropdown fed by the provider's
+public branches API. Picking a branch auto-fills the SHA — no more pasting from
+`git log`.
+
+- **Providers**: `github` (`owner/repo`) and `gitlab` (`group/project`, including
+  nested groups like `group/sub/project`). Public hosts only — self-hosted
+  GitLab CE / GitHub Enterprise is a separate piece of work.
+- **Wire shape**: `gitProvider` + `gitRepo` on `Project`, both fields are either
+  set together or both null (CHECK-constrained).
+- **New endpoint**: `GET /api/v1/orgs/{orgId}/projects/{projectId}/git/branches`
+  proxies unauthenticated GETs to the relevant provider (`api.github.com` /
+  `gitlab.com/api/v4`) with a 60-second in-memory cache. Returns
+  `[{name, sha}]` — provider-agnostic shape; GitLab's `commit.id` is normalised
+  to `sha` server-side. Errors map to ProblemDetail types
+  (`git-repo-missing` = 422, `git-repo-not-found` = 404,
+  `git-rate-limited` = 429 with `resetAt` extension, `git-upstream` = 502).
+- **API ergonomics**: `PATCH /api/v1/orgs/{orgId}/projects/{projectId}` is now a
+  partial update — `name` and the Git link are independently optional. The old
+  `rename_project` MCP tool stays as a thin wrapper; new callers should use the
+  new `update_project` tool which can touch either field in one call.
+- **Paste-friendly normalisation**: full URLs (`https://github.com/owner/repo`,
+  trailing `/`, `.git` suffix) and SSH clone strings (`git@github.com:owner/repo`)
+  are accepted on the wire — the server reduces them to canonical form. Mixed
+  hints (e.g. `gitProvider=github` + `gitRepo=https://gitlab.com/…`) are
+  rejected with 400.
+- **Release modal UX**: graceful fallback — if the provider responds 4xx/5xx or
+  the project has no Git link, the user gets the original free-form text inputs
+  back with a "Type a branch name manually" button, so the form is never blocked
+  by upstream flakiness.
+
+### Fixed — GitHub Issue auto-triage now actually assigns Copilot
+
+`POST /repos/{owner}/{repo}/issues` validates its `assignees` array against the
+human-collaborator list and rejects bot/app identities — including
+`copilot-swe-agent`, which is the handle backing GitHub Copilot's Cloud Agent —
+with HTTP 422 (`"copilot-swe-agent cannot be assigned to this issue"`). The
+dispatcher was emitting a single POST and silently logging the 422, leaving
+issues uncreated and auto-triage non-functional.
+
+The fix splits dispatch into two calls:
+
+1. `POST /issues` — create the issue with title + body + labels but **no
+   assignees** (this endpoint succeeds for any well-formed token).
+2. `POST /issues/{n}/assignees` — assign the configured handle via the
+   sub-resource, which accepts bot/app logins that the create endpoint rejects.
+
+The flow is uniform regardless of whether the configured assignee is a human or
+a bot. Step-2 failure leaves the issue created — we log a WARN noting the
+assignee call failed so the operator can pick it up manually rather than
+attempting a roll-back that could mask the upstream issue.
+
+Companion UX touch: the **Assignee** field on the alert-destination create form
+is now pre-populated with `copilot-swe-agent` so the common case doesn't depend
+on hand-typing the handle from docs. The edit form zeros it back to blank
+(blank-on-edit = "keep the stored value", consistent with secret rotation
+semantics).
+
+See `docs/auto-triage.md` for the updated architecture diagram and operator
+walkthrough.
+
+### Changed — `make demo` grants the seeded demo user platform-admin
+
+Local-only convenience: the `demo` Make target now sets
+`ARGUSLOG_PLATFORM_ADMINS=demo@arguslog.local` for the recursive `$(MAKE)`
+invocation, so the auto-seeded Keycloak user (`demo@arguslog.local`) lands on a
+stack that surfaces the Admin sidebar item without manual env-var wrangling.
+Plain `make` / `make dev` are untouched. Override-friendly — a developer's
+shell or `.env.local` wins, since `dev` sources `.env.local` after this var is
+set on the recursive call.
+
 ### Added — Read · Eval · Triage · Loop workflows (mcp-server 2.4.0)
 
 The landing slogan finally has a concrete deliverable. The MCP server now

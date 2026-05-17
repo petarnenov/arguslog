@@ -302,6 +302,43 @@ Example (clear link): \`{ "orgId": 42, "projectId": 7, "body": { "gitProvider": 
     hasBody: true,
   },
 
+  project_list_git_branches: {
+    name: 'project_list_git_branches',
+    description: `List branches from the project's linked Git repo via the provider's public API.
+
+Use this when the user is creating or editing a release and needs the head SHA for a
+specific branch — picking from this list avoids \`git log\` copy-paste and a typo'd
+gitSha column on the release row. The wire shape is provider-agnostic
+(\`[{name, sha}]\`); GitHub's \`commit.sha\` and GitLab's \`commit.id\` are both
+normalised to \`sha\` server-side so the caller doesn't need to branch on provider.
+
+Prereq: the project must have \`gitProvider\` + \`gitRepo\` set (see \`update_project\`).
+Public repos only. Public host rate limits apply (60 req/h/IP for github.com, ~300
+req/min for gitlab.com); the api caches branch lists for 60 s, so calling this
+repeatedly during one workflow run is cheap.
+
+Method: GET /api/v1/orgs/{orgId}/projects/{projectId}/git/branches
+
+Required: \`orgId\`, \`projectId\`.
+
+Error responses you may see:
+- \`422 git-repo-missing\` — no Git link on the project; prompt the user to set one.
+- \`404 git-repo-not-found\` — the host doesn't recognise the repo (typo or private).
+- \`429 git-rate-limited\` — back off; the body's \`resetAt\` extension says when.
+- \`502 git-upstream\` — provider transport failure; safe to retry once.
+
+Example: \`{ "orgId": 42, "projectId": 7 }\`
+Response shape: \`[{ "name": "main", "sha": "abc1234…" }, { "name": "dev", "sha": "…" }]\``,
+    method: 'GET',
+    path: '/api/v1/orgs/{orgId}/projects/{projectId}/git/branches',
+    pathParams: [
+      { name: 'orgId', required: true, type: 'integer' },
+      { name: 'projectId', required: true, type: 'integer' },
+    ],
+    queryParams: [],
+    hasBody: false,
+  },
+
   send_test_event: {
     name: 'send_test_event',
     description: `Send a synthetic event through ingest to verify the project's wire path

@@ -12,20 +12,27 @@ subscription is the entire runtime.
 ## Architecture
 
 ```
-┌──────────────┐  new error  ┌──────────────┐  POST /issues  ┌──────────────────┐
-│ ingest       │ ──────────► │ worker rule  │ ─────────────► │ GitHub API       │
-│ pipeline     │             │ engine       │                │ creates issue +  │
-└──────────────┘             └──────────────┘                │ assigns Copilot  │
-                                                              └────────┬─────────┘
-                                                                       │ Copilot
-                                                                       │ coding agent
-                                                                       ▼
-                                                              ┌──────────────────┐
-                                                              │ Draft PR against │
-                                                              │ `main` with the  │
-                                                              │ proposed fix     │
-                                                              └──────────────────┘
+┌──────────────┐  new error  ┌──────────────┐  ① POST /issues       ┌──────────────────┐
+│ ingest       │ ──────────► │ worker rule  │ ────────────────────► │ GitHub API       │
+│ pipeline     │             │ engine       │  ② POST /issues/{n}/  │ creates issue,   │
+└──────────────┘             └──────────────┘     assignees         │ then assigns     │
+                                                                     │ Copilot agent    │
+                                                                     └────────┬─────────┘
+                                                                              │ Copilot
+                                                                              │ coding agent
+                                                                              ▼
+                                                                     ┌──────────────────┐
+                                                                     │ Draft PR against │
+                                                                     │ `main` with the  │
+                                                                     │ proposed fix     │
+                                                                     └──────────────────┘
 ```
+
+The dispatch is **two** GitHub API calls, not one: ① create the issue without
+assignees (the create endpoint validates `assignees` against the human-collaborator
+list and rejects bot/app identities like `copilot-swe-agent` with HTTP 422); ②
+assign via the sub-resource which accepts those handles. If step ② fails, the
+issue still exists — the operator can assign manually from the GitHub UI.
 
 ## Prereqs
 
@@ -52,14 +59,20 @@ subscription is the entire runtime.
 In the dashboard: **Settings → Alerts → Destinations → New**, pick kind
 **„GitHub Issue (auto-triage)"**, fill in:
 
-| Field            | Value                                              |
-| ---------------- | -------------------------------------------------- |
-| Name             | Anything memorable (e.g. „auto-triage → acme/web") |
-| Owner            | GitHub username / org (e.g. `acme`)                |
-| Repo             | Repository name only (e.g. `web`)                  |
-| Fine-grained PAT | The token from the prereqs section                 |
-| Assignee         | Leave blank for the default `copilot-swe-agent`    |
-| Labels           | Leave blank for the default `arguslog-auto-triage` |
+| Field            | Value                                                                      |
+| ---------------- | -------------------------------------------------------------------------- |
+| Name             | Anything memorable (e.g. „auto-triage → acme/web")                         |
+| Owner            | GitHub username / org (e.g. `acme`)                                        |
+| Repo             | Repository name only (e.g. `web`)                                          |
+| Fine-grained PAT | The token from the prereqs section                                         |
+| Assignee         | Pre-filled with `copilot-swe-agent` — overwrite to assign a human instead |
+| Labels           | Leave blank for the default `arguslog-auto-triage`                         |
+
+> The Assignee field on the **create** form is pre-filled with `copilot-swe-agent` so
+> auto-triage works out of the box without retyping a fiddle-prone handle from docs.
+> Clear it (or overwrite with a different login) before saving if you don't want
+> Copilot specifically. The **edit** form leaves the field blank — blank-on-edit means
+> "keep the stored value", consistent with the rest of the destination secrets.
 
 Or via API:
 
@@ -117,7 +130,8 @@ Flip it back on after.
 
 ## Costs
 
-- **Arguslog side**: free. The dispatcher is a single HTTP POST per fired rule.
+- **Arguslog side**: free. The dispatcher makes two HTTP POSTs per fired rule (create
+  the issue, then assign Copilot — see the Architecture section).
 - **GitHub Copilot side**: billed against your existing Copilot subscription. Use a tight
   alert-rule condition (level + occurrence threshold) and a sensible throttle if your
   Copilot quota is finite.
@@ -130,9 +144,12 @@ Flip it back on after.
   Arguslog issue card requires the operator to set up a separate `pull_request: opened`
   GitHub webhook → Arguslog endpoint that parses the PR body for the Arguslog issue link
   and PATCH-es `attach_ai_analysis`. Future iteration.
-- **GitLab equivalent**. The architecture is identical: a `gitlab_issue` destination kind
-  hitting `https://gitlab.com/api/v4/projects/:id/issues` with `assignee_ids: [<duo-bot>]`.
-  Add when there's demand.
+- **GitLab equivalent alert destination**. The architecture is identical: a
+  `gitlab_issue` destination kind hitting `https://gitlab.com/api/v4/projects/:id/issues`
+  with `assignee_ids: [<duo-bot>]`. Add when there's demand. _Partially related_: the
+  per-project Git link added in `f904bd6` already speaks both `github` and `gitlab` for
+  the "Create release" branch dropdown — extending the alert path to reuse that same
+  provider abstraction is the natural follow-up.
 - **GitHub Actions + `anthropics/claude-code-action` path**. Considered and dropped — it
   cost the operator a workflow file and an `ANTHROPIC_API_KEY` secret with no offsetting
   benefit. The Copilot path is simpler.

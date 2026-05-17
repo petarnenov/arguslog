@@ -1240,7 +1240,10 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         platform: {
           type: 'string',
         },
-        githubRepo: {
+        gitProvider: {
+          type: 'string',
+        },
+        gitRepo: {
           type: 'string',
         },
       },
@@ -2220,7 +2223,10 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         platform: {
           type: 'string',
         },
-        githubRepo: {
+        gitProvider: {
+          type: 'string',
+        },
+        gitRepo: {
           type: 'string',
         },
         createdAt: {
@@ -2305,7 +2311,10 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         name: {
           type: 'string',
         },
-        githubRepo: {
+        gitProvider: {
+          type: 'string',
+        },
+        gitRepo: {
           type: 'string',
         },
       },
@@ -2330,7 +2339,10 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         platform: {
           type: 'string',
         },
-        githubRepo: {
+        gitProvider: {
+          type: 'string',
+        },
+        gitRepo: {
           type: 'string',
         },
         createdAt: {
@@ -2885,12 +2897,12 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
   },
   {
-    name: 'project_list_github_branches',
-    title: 'Project list github branches',
+    name: 'project_list_git_branches',
+    title: 'Project list git branches',
     description:
-      'GET /api/v1/orgs/{orgId}/projects/{projectId}/github/branches\n\nMethod: GET /api/v1/orgs/{orgId}/projects/{projectId}/github/branches',
+      'GET /api/v1/orgs/{orgId}/projects/{projectId}/git/branches\n\nMethod: GET /api/v1/orgs/{orgId}/projects/{projectId}/git/branches',
     method: 'GET',
-    path: '/api/v1/orgs/{orgId}/projects/{projectId}/github/branches',
+    path: '/api/v1/orgs/{orgId}/projects/{projectId}/git/branches',
     pathParams: [
       {
         name: 'orgId',
@@ -2913,7 +2925,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
         result: {
           type: 'array',
           items: {
-            $ref: '#/components/schemas/GithubBranchResponse',
+            $ref: '#/components/schemas/GitBranchResponse',
           },
         },
       },
@@ -2921,7 +2933,7 @@ export const OPENAPI_TOOLS: OpenApiTool[] = [
     },
     outputResultWrapped: true,
     annotations: {
-      title: 'GET /api/v1/orgs/{orgId}/projects/{projectId}/github/branches',
+      title: 'GET /api/v1/orgs/{orgId}/projects/{projectId}/git/branches',
       readOnlyHint: true,
       idempotentHint: true,
       destructiveHint: false,
