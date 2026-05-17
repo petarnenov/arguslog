@@ -2,7 +2,6 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { getAdminStats, listAdminAudit, listAdminOrgs, listAdminUsers } from './admin';
 import { listAlertDestinations, listAlertRules } from './alerts';
-import { getMe } from './me';
 import {
   getIssue,
   listIssueEvents,
@@ -11,6 +10,7 @@ import {
   type ListIssuesParams,
 } from './issues';
 import { listDsns } from './keys';
+import { getMe } from './me';
 import { listOrgMembers } from './members';
 import { listMyOrgs } from './orgs';
 import { listPlatforms } from './platforms';

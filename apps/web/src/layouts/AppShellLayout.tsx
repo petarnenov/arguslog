@@ -45,8 +45,8 @@ import { Link, Outlet, useNavigate, useParams } from 'react-router';
 import { ApiError } from '../api/client';
 import { deleteOrg, renameOrg } from '../api/orgs';
 import { queryKeys, useMe, useMyOrgs, useProjects } from '../api/queries';
-import { BonusBanner } from '../components/BonusBanner';
 import { useAuth } from '../auth/useAuth';
+import { BonusBanner } from '../components/BonusBanner';
 import { DevErrorMenu } from '../components/DevErrorMenu';
 import { ThemeMenuSection } from '../components/ThemeMenuSection';
 

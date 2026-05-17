@@ -19,10 +19,11 @@ describe('buildSnippets', () => {
     const ids = all.map((s) => s.id);
 
     // Agent: 6, Workflow: 4 (triage / postmortem / regression / investigate),
-    // SDK: 5, MCP: 4, CLI: 2.
+    // SDK: 6 (vue added in Phase B for the workflow-first onboarding flow),
+    // MCP: 4, CLI: 2.
     expect(all.filter((s) => s.group === 'agent')).toHaveLength(6);
     expect(all.filter((s) => s.group === 'workflow')).toHaveLength(4);
-    expect(all.filter((s) => s.group === 'sdk')).toHaveLength(5);
+    expect(all.filter((s) => s.group === 'sdk')).toHaveLength(6);
     expect(all.filter((s) => s.group === 'mcp')).toHaveLength(4);
     expect(all.filter((s) => s.group === 'cli')).toHaveLength(2);
     expect(ids).toEqual([
@@ -38,6 +39,7 @@ describe('buildSnippets', () => {
       'workflow-investigate-issue',
       'sdk-javascript',
       'sdk-react',
+      'sdk-vue',
       'sdk-node',
       'sdk-python',
       'sdk-java',

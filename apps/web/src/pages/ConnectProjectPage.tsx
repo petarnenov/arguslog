@@ -1,3 +1,4 @@
+import { buildSyntheticEvent, parseDsn } from '@arguslog/sdk-react';
 import {
   Alert,
   Badge,
@@ -25,12 +26,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 
-import { buildSyntheticEvent, parseDsn } from '@arguslog/sdk-react';
-
 import { ApiError } from '../api/client';
 import { createDsn, type Dsn, type DsnSummary } from '../api/keys';
 import { queryKeys, useDsns, useMyOrgs, useMyTokens, useProjects } from '../api/queries';
 import { createMyToken, type PersonalAccessToken } from '../api/tokens';
+import { VueOnboardingFlow } from '../components/connect/VueOnboardingFlow';
 import { env } from '../env';
 import { buildSnippets, type ConnectSnippet, type SnippetGroup } from '../lib/connectSnippets';
 
@@ -473,7 +473,21 @@ export function ConnectProjectPage() {
             </Stack>
           </Tabs.Panel>
           <Tabs.Panel value="sdk" pt="md">
-            <SnippetSubTabs items={grouped.sdk} />
+            <SnippetSubTabs
+              items={grouped.sdk}
+              renderItem={(snippet) =>
+                snippet.id === 'sdk-vue' ? (
+                  <VueOnboardingFlow
+                    dsn={dsnString}
+                    pingState={{
+                      onPing: () => pingMutation.mutate(),
+                      isPending: pingMutation.isPending,
+                      result: pingResult,
+                    }}
+                  />
+                ) : null
+              }
+            />
           </Tabs.Panel>
           <Tabs.Panel value="mcp" pt="md">
             <SnippetSubTabs items={grouped.mcp} />
@@ -491,14 +505,23 @@ export function ConnectProjectPage() {
 
 interface SnippetSubTabsProps {
   items: ConnectSnippet[];
+  /**
+   * Optional override that renders custom content for a specific snippet id. Returns
+   * `null` to fall back to the default code-block layout. Used by the SDK tab to
+   * special-case the Vue workflow-first onboarding flow without forking the whole
+   * component — every other SDK keeps the simple copy-paste shape.
+   */
+  renderItem?: (snippet: ConnectSnippet) => React.ReactNode | null;
 }
 
-function SnippetSubTabs({ items }: SnippetSubTabsProps) {
+function SnippetSubTabs({ items, renderItem }: SnippetSubTabsProps) {
   const { t } = useTranslation();
   const [active, setActive] = useState<string | null>(items[0]?.id ?? null);
   const current = items.find((s) => s.id === active) ?? items[0];
 
   if (!current) return null;
+
+  const custom = renderItem?.(current) ?? null;
 
   return (
     <Stack gap="sm">
@@ -512,32 +535,36 @@ function SnippetSubTabs({ items }: SnippetSubTabsProps) {
         </Tabs.List>
       </Tabs>
 
-      <Group gap="xs" align="center">
-        <Badge size="sm" variant="outline">
-          {current.language}
-        </Badge>
-        <Text size="xs" c="dimmed" style={{ flex: 1 }}>
-          {current.description}
-        </Text>
-        <CopyButton value={current.code}>
-          {({ copied, copy }) => (
-            <Button
-              size="xs"
-              variant={copied ? 'filled' : 'light'}
-              color={copied ? 'teal' : 'gray'}
-              onClick={copy}
-              leftSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-              data-testid={`connect-snippet-copy-${current.id}`}
-            >
-              {copied ? t('connect.copied') : t('connect.copy')}
-            </Button>
-          )}
-        </CopyButton>
-      </Group>
+      {custom ?? (
+        <>
+          <Group gap="xs" align="center">
+            <Badge size="sm" variant="outline">
+              {current.language}
+            </Badge>
+            <Text size="xs" c="dimmed" style={{ flex: 1 }}>
+              {current.description}
+            </Text>
+            <CopyButton value={current.code}>
+              {({ copied, copy }) => (
+                <Button
+                  size="xs"
+                  variant={copied ? 'filled' : 'light'}
+                  color={copied ? 'teal' : 'gray'}
+                  onClick={copy}
+                  leftSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                  data-testid={`connect-snippet-copy-${current.id}`}
+                >
+                  {copied ? t('connect.copied') : t('connect.copy')}
+                </Button>
+              )}
+            </CopyButton>
+          </Group>
 
-      <Code block style={{ whiteSpace: 'pre', overflowX: 'auto', fontSize: 13 }}>
-        {current.code}
-      </Code>
+          <Code block style={{ whiteSpace: 'pre', overflowX: 'auto', fontSize: 13 }}>
+            {current.code}
+          </Code>
+        </>
+      )}
     </Stack>
   );
 }

@@ -1,3 +1,4 @@
+import { LineChart } from '@mantine/charts';
 import {
   ActionIcon,
   Alert,
@@ -23,7 +24,6 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-import { LineChart } from '@mantine/charts';
 import { useForm } from '@mantine/form';
 import {
   IconArchive,

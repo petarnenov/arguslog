@@ -271,6 +271,67 @@ const errorFallback = ({ error, reset }: { error: Error; reset: () => void }) =>
     h('button', { onClick: reset }, 'Try again'),
   ]);
 </script>`,
+    // Workflow-first onboarding extras (Phase B). Optional content the Connect screen surfaces
+    // alongside the install snippets — a recommended telemetry-service shape and a post-install
+    // verification checklist. Lives on the Vue entry only; other SDKs may grow this later.
+    extras: {
+      recommendedArchitecture: {
+        description:
+          'The best Vue onboarding moment is not "the app crashed" — it is "I can see telemetry around a real user action." Wrap your domain calls in a tiny telemetry service so a single workflow lights up attempt → success → validation/unexpected failure paths in Arguslog. Useful operationally, not just technically.',
+        files: [
+          {
+            path: 'src/services/telemetry.ts',
+            lang: 'ts',
+            contents: `import { useArguslog } from '@arguslog/sdk-vue';
+
+/**
+ * One named breadcrumb / event per workflow phase. Instrument a single real action
+ * (checkout, create todo, save form) end-to-end so the next dashboard visit shows
+ * the user journey, not just stack traces.
+ */
+export const telemetry = {
+  attempt: (action: string) =>
+    useArguslog().addBreadcrumb({
+      category: 'workflow',
+      message: \`\${action}:attempt\`,
+      level: 'info',
+    }),
+  success: (action: string) =>
+    useArguslog().addBreadcrumb({
+      category: 'workflow',
+      message: \`\${action}:success\`,
+      level: 'info',
+    }),
+  validation: (action: string, err: Error) =>
+    useArguslog().captureMessage(
+      \`\${action} validation failed: \${err.message}\`,
+      'warning',
+    ),
+  unexpected: (action: string, err: Error) =>
+    useArguslog().captureException(err, { tags: { action } }),
+};`,
+          },
+        ],
+      },
+      verificationChecklist: [
+        { id: 'package', label: 'SDK installed (`@arguslog/sdk-vue` in dependencies)' },
+        {
+          id: 'env',
+          label: '`VITE_ARGUSLOG_DSN` set in `.env.local` (or your env injector)',
+        },
+        { id: 'installer', label: '`installArguslog(app)` wired in `src/main.ts`' },
+        {
+          id: 'boundary',
+          label: 'Optional: `ArguslogErrorBoundary` placed at the app shell',
+        },
+        { id: 'workflow', label: 'One real user workflow instrumented with `telemetry.*`' },
+        { id: 'event', label: 'Test event received in the dashboard (verify step below)' },
+        {
+          id: 'failure',
+          label: 'One controlled failure path exercised (validation or unexpected)',
+        },
+      ],
+    },
   },
   {
     slug: 'nextjs',
@@ -924,6 +985,28 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </ArguslogErrorBoundary>,
 );`,
+    },
+    {
+      // Vue is special-cased in the UI: ConnectProjectPage renders <VueOnboardingFlow /> when
+      // this sub-tab is active, walking the operator through the env-driven installer + a
+      // post-install verification checklist + a workflow-first telemetry example. The
+      // `code` field here is the same multi-file content the agent prompt sees — it stays as
+      // a fallback for any consumer that renders ConnectSnippet.code directly (and for the
+      // copy-button which still gets full text). For the UI flow itself the component reads
+      // from SDK_CATALOG directly so it can label each file separately.
+      id: 'sdk-vue',
+      group: 'sdk',
+      client: 'Vue',
+      language: 'ts',
+      description:
+        'Vue 3 + Vite. Env-driven installer with a no-op fallback for local dev. Walk the 7 steps below — the install plus one instrumented workflow gives you trustworthy onboarding.',
+      code: (() => {
+        const vueEntry = SDK_CATALOG.find((p) => p.slug === 'vue');
+        if (!vueEntry || !('initFiles' in vueEntry) || !vueEntry.initFiles) return '';
+        return vueEntry.initFiles
+          .map((f) => `// === ${f.path} ===\n${f.contents.replace(/<DSN>/g, dsn)}`)
+          .join('\n\n');
+      })(),
     },
     {
       id: 'sdk-node',

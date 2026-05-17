@@ -2,8 +2,8 @@ import { Alert, Center, Loader, Stack } from '@mantine/core';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router';
 
-import { getUserManager } from './userManager';
 import { useAuthStore } from './useAuthStore';
+import { getUserManager } from './userManager';
 
 /**
  * Route guard. Rendered on every protected route — when the auth store says we're
