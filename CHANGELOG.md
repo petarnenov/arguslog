@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Fixed — Vue Connect onboarding ships an env-driven installer
+
+Resolves [`arguslog-sdks#2`](https://github.com/petarnenov/arguslog-sdks/issues/2)
+(integration UX feedback). The Vue magic-prompt + `SDK_CATALOG` entry now ship a
+3-file production-realistic install shape — `.env.local` (DSN via
+`VITE_ARGUSLOG_DSN`), `src/arguslog.ts` (a named `installArguslog(app)` module
+that no-ops when DSN is missing), and `src/main.ts` (calls the installer). The
+ErrorBoundary docs + wrap snippet now use the required `:fallback` prop (the
+runtime contract; `<template #fallback>` slot syntax was silently broken).
+Phase A of the rework — Phase B (workflow-first Connect UI restructure) lands
+separately.
+
 ### Added — per-project Git link drives the release branch dropdown
 
 Projects gained an optional `(git_provider, git_repo)` pair (V41 migration). The

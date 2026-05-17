@@ -21,7 +21,54 @@ npm install @arguslog/sdk-vue
 yarn add @arguslog/sdk-vue
 ```
 
-## Quick start
+## Quick start (env-driven, recommended)
+
+For a Vite SPA, keep the DSN out of app code. Put it in `.env.local` and let a tiny
+installer module mount Arguslog at boot. The installer no-ops cleanly when the DSN is
+missing — useful for local dev without keys.
+
+```bash
+# .env.local — DO NOT commit a real DSN
+VITE_ARGUSLOG_DSN=arguslog://<key>@<host>/api/<projectId>
+VITE_APP_RELEASE=1.0.0
+```
+
+```ts
+// src/arguslog.ts
+import type { App as VueApp } from 'vue';
+import { createArguslog } from '@arguslog/sdk-vue';
+
+export function installArguslog(app: VueApp): void {
+  const dsn = import.meta.env.VITE_ARGUSLOG_DSN;
+  if (!dsn) return; // no-op when DSN is missing — safe for local dev
+
+  app.use(
+    createArguslog({
+      dsn,
+      environment: import.meta.env.MODE,
+      release: import.meta.env.VITE_APP_RELEASE,
+      integrations: ['globalHandlers', 'autoBreadcrumbs'],
+    }),
+  );
+}
+```
+
+```ts
+// src/main.ts
+import { createApp } from 'vue';
+
+import App from './App.vue';
+import { installArguslog } from './arguslog';
+
+const app = createApp(App);
+installArguslog(app);
+app.mount('#app');
+```
+
+### Inline (single-file alternative)
+
+If you must wire everything inline — e.g. a one-off demo or a tutorial step — the plugin
+factory accepts the same options directly:
 
 ```ts
 import { createApp } from 'vue';
@@ -133,31 +180,33 @@ app.config.errorHandler = (err, instance, info) => {
 ## ErrorBoundary component
 
 For UI surfaces where you want to **render a fallback** instead of letting the error
-propagate, `ArguslogErrorBoundary` captures and recovers:
+propagate, `ArguslogErrorBoundary` captures and recovers. The `fallback` is a **required
+prop** — either a render function `({ error, reset }) => VNode` or a static VNode/string:
 
 ```vue
 <script setup lang="ts">
+import { h } from 'vue';
 import { ArguslogErrorBoundary } from '@arguslog/sdk-vue';
 import RiskyWidget from './RiskyWidget.vue';
+
+const errorFallback = ({ error, reset }: { error: Error; reset: () => void }) =>
+  h('div', { class: 'error-state' }, [
+    h('p', `Something went wrong: ${error.message}`),
+    h('button', { onClick: reset }, 'Try again'),
+  ]);
 </script>
 
 <template>
-  <ArguslogErrorBoundary>
-    <template #default>
-      <RiskyWidget />
-    </template>
-    <template #fallback="{ error, reset }">
-      <div class="error-state">
-        <p>Something went wrong. We've been notified.</p>
-        <button @click="reset">Try again</button>
-      </div>
-    </template>
+  <ArguslogErrorBoundary :fallback="errorFallback">
+    <RiskyWidget />
   </ArguslogErrorBoundary>
 </template>
 ```
 
 The error is captured before the fallback renders. `reset()` re-mounts the default slot,
-so transient failures (a flapping API) recover without a full page reload.
+so transient failures (a flapping API) recover without a full page reload. The fallback
+is a render-function prop rather than a `#fallback` slot so it has direct access to the
+captured `error` + `reset` callback without slot scoping ceremony.
 
 ## Router breadcrumbs
 

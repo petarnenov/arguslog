@@ -200,30 +200,76 @@ export const appConfig: ApplicationConfig = {
     version: '2.0.0',
     installCmd: 'npm install @arguslog/sdk-vue@^2',
     detect: 'package.json contains "vue" (>= 3.x)',
-    entryFile: 'src/main.ts (app.use(createArguslog({...})))',
+    entryFile: 'src/main.ts + src/arguslog.ts + .env.local (env-driven installer)',
     lang: 'ts',
-    initSnippet: `import { createApp } from 'vue';
+    // Vue is the only SDK that ships a multi-file install shape: env vars for the DSN, an
+    // installer module that no-ops when DSN is missing, and a tiny main.ts that wires it in.
+    // The agent renders each as a labelled fenced block; `initSnippet` is kept as a one-line
+    // pointer so legacy single-file consumers still see something meaningful.
+    initSnippet: '// See `initFiles` below — Vue ships a 3-file env-driven installer shape.',
+    initFiles: [
+      {
+        path: '.env.local',
+        lang: 'bash',
+        contents: `# Vite picks this up automatically; do NOT commit a real DSN here.
+VITE_ARGUSLOG_DSN=<DSN>
+VITE_APP_RELEASE=1.0.0`,
+      },
+      {
+        path: 'src/arguslog.ts',
+        lang: 'ts',
+        contents: `import type { App as VueApp } from 'vue';
 import { createArguslog } from '@arguslog/sdk-vue';
+
+/**
+ * Install Arguslog into the Vue app. Reads the DSN from VITE_ARGUSLOG_DSN at build
+ * time. If the variable is missing (local dev without keys), the installer is a
+ * deliberate no-op so the app boots cleanly without Arguslog mounted.
+ */
+export function installArguslog(app: VueApp): void {
+  const dsn = import.meta.env.VITE_ARGUSLOG_DSN;
+  if (!dsn) return;
+
+  app.use(
+    createArguslog({
+      dsn,
+      environment: import.meta.env.MODE,
+      release: import.meta.env.VITE_APP_RELEASE,
+      integrations: ['globalHandlers', 'autoBreadcrumbs'],
+    }),
+  );
+}`,
+      },
+      {
+        path: 'src/main.ts',
+        lang: 'ts',
+        contents: `import { createApp } from 'vue';
+
 import App from './App.vue';
+import { installArguslog } from './arguslog';
 
 const app = createApp(App);
-app.use(
-  createArguslog({
-    dsn: '<DSN>',
-    environment: 'production',
-    integrations: ['globalHandlers', 'autoBreadcrumbs'],
-  }),
-);
+installArguslog(app);
 app.mount('#app');`,
-    wrapSnippet: `<!-- In your root template (e.g. App.vue), wrap routed content: -->
+      },
+    ],
+    wrapSnippet: `<!-- Optional: wrap routed content to render a friendly fallback on render errors.
+     ArguslogErrorBoundary requires the \`fallback\` prop (a VNode or render fn). -->
 <template>
-  <ArguslogErrorBoundary>
+  <ArguslogErrorBoundary :fallback="errorFallback">
     <RouterView />
   </ArguslogErrorBoundary>
 </template>
 
 <script setup lang="ts">
+import { h } from 'vue';
 import { ArguslogErrorBoundary } from '@arguslog/sdk-vue';
+
+const errorFallback = ({ error, reset }: { error: Error; reset: () => void }) =>
+  h('div', { class: 'error-state' }, [
+    h('p', \`Something went wrong: \${error.message}\`),
+    h('button', { onClick: reset }, 'Try again'),
+  ]);
 </script>`,
   },
   {
@@ -507,15 +553,24 @@ function agentSdkInstallTable(): string {
   // Per-platform init + wrap templates. Each block is what the agent should paste verbatim
   // once it picks the slug matching its stack-detection. `<DSN>` stays literal here — the
   // credentials block at the end of the prompt carries the real value the agent substitutes.
+  //
+  // Multi-file SDKs (currently only Vue) ship `initFiles[]` — env vars + an installer module
+  // + the mount file. We render each as its own labelled fenced block so the agent writes the
+  // exact file path. The credentials block instructs DSN substitution in the env file rather
+  // than in app code, matching the production-realistic env-driven shape we recommend.
   const templates = SDK_CATALOG.map((p) => {
     const wrap = p.wrapSnippet
       ? `\n\nThen wire the framework wrap / boundary as well:\n\n\`\`\`${p.lang}\n${p.wrapSnippet}\n\`\`\``
       : '';
+    const initBlock =
+      'initFiles' in p && p.initFiles
+        ? p.initFiles
+            .map((f) => `**\`${f.path}\`**:\n\n\`\`\`${f.lang ?? p.lang}\n${f.contents}\n\`\`\``)
+            .join('\n\n')
+        : `\`\`\`${p.lang}\n${p.initSnippet}\n\`\`\``;
     return `#### \`${p.slug}\` — full template
 
-\`\`\`${p.lang}
-${p.initSnippet}
-\`\`\`${wrap}`;
+${initBlock}${wrap}`;
   }).join('\n\n');
 
   return `## Step 2 — install the SDK and wire init()
