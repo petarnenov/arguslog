@@ -428,30 +428,84 @@ export const telemetry = {
     version: '2.0.0',
     installCmd: 'npm install @arguslog/sdk-nextjs@^2',
     detect: 'package.json contains "next"',
-    entryFile: 'instrumentation.ts at repo root (Next 13+ instrumentation hook)',
+    entryFile: 'instrumentation.ts (server) + app/layout.tsx (client) + .env.local',
     lang: 'ts',
-    initSnippet: `// instrumentation.ts (repo root, or src/instrumentation.ts when using src/)
+    // Next.js is dual-path: `instrumentation.ts` boots the Node SDK on the server, and
+    // `app/layout.tsx` initialises the React/browser SDK + wraps the tree in the error
+    // boundary on the client. We split these into 4 files so the agent (and a copy-pasting
+    // operator) writes them at the correct paths instead of trying to cram both into one
+    // file with a runtime guard.
+    initSnippet:
+      '// See `initFiles` below — Next.js ships a 4-file env-driven dual-path install shape.',
+    initFiles: [
+      {
+        path: '.env.local',
+        lang: 'bash',
+        contents: `# Next.js auto-loads this; do NOT commit a real DSN here.
+# Client-side bundle reads NEXT_PUBLIC_* at build time.
+NEXT_PUBLIC_ARGUSLOG_DSN=<DSN>
+# Server-side runtime reads bare process.env (Node SDK picks up ARGUSLOG_DSN
+# natively when init({dsn}) is omitted).
+ARGUSLOG_DSN=<DSN>
+NEXT_PUBLIC_APP_RELEASE=1.0.0`,
+      },
+      {
+        path: 'instrumentation.ts',
+        lang: 'ts',
+        contents: `// Next 13+ server instrumentation hook — runs once per server process boot.
+// The runtime guard keeps the Node SDK off the Edge runtime (where it doesn't run).
 export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { init } = await import('@arguslog/sdk-nextjs/server');
-    init({
-      dsn: '<DSN>',
-      environment: process.env.NODE_ENV,
-      integrations: ['processHandlers', 'http'],
-    });
-  }
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+  const dsn = process.env.ARGUSLOG_DSN;
+  if (!dsn) return; // no-op when DSN is missing — safe for local dev without keys
+
+  const { init } = await import('@arguslog/sdk-nextjs/server');
+  init({
+    dsn,
+    environment: process.env.NODE_ENV,
+    release: process.env.NEXT_PUBLIC_APP_RELEASE,
+    integrations: ['processHandlers', 'http'],
+  });
 }
 
+// Re-export so Next.js can wire the App Router error hook automatically.
 export { onRequestError } from '@arguslog/sdk-nextjs/server';`,
-    wrapSnippet: `// app/layout.tsx — wrap your root layout with the client boundary AND init the client SDK.
-'use client';
-import { init, ArguslogErrorBoundary } from '@arguslog/sdk-nextjs/client';
+      },
+      {
+        path: 'app/arguslog.client.ts',
+        lang: 'ts',
+        contents: `'use client';
 
-init({
-  dsn: '<DSN>',
-  environment: process.env.NODE_ENV,
-  integrations: ['globalHandlers', 'autoBreadcrumbs'],
-});
+import { init } from '@arguslog/sdk-nextjs/client';
+
+let installed = false;
+
+/**
+ * Install Arguslog in the browser bundle. Reads NEXT_PUBLIC_ARGUSLOG_DSN at
+ * build time and no-ops when missing — safe for local dev without keys.
+ */
+export function installArguslog(): void {
+  if (installed) return;
+  const dsn = process.env.NEXT_PUBLIC_ARGUSLOG_DSN;
+  if (!dsn) return;
+
+  init({
+    dsn,
+    environment: process.env.NODE_ENV,
+    release: process.env.NEXT_PUBLIC_APP_RELEASE,
+    integrations: ['globalHandlers', 'autoBreadcrumbs'],
+  });
+  installed = true;
+}`,
+      },
+      {
+        path: 'app/layout.tsx',
+        lang: 'tsx',
+        contents: `import { ArguslogErrorBoundary } from '@arguslog/sdk-nextjs/client';
+
+import { installArguslog } from './arguslog.client';
+
+installArguslog();
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -464,6 +518,61 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }`,
+      },
+    ],
+    wrapSnippet: null,
+    extras: {
+      recommendedArchitecture: {
+        description:
+          'Next.js gives you two halves to instrument: server-side data fetching / Route Handlers (use the @arguslog/sdk-nextjs/server captureException) and client-side interactions (use the same telemetry shape via the /client subpath). One shared service keeps the call sites consistent across both runtimes.',
+        files: [
+          {
+            path: 'lib/telemetry.ts',
+            lang: 'ts',
+            contents: `// Works in both server and client runtimes — Next.js bundles the matching subpath
+// based on the import context. The functions are no-ops if init() didn't run.
+import {
+  addBreadcrumb,
+  captureException,
+  captureMessage,
+} from '@arguslog/sdk-nextjs/client';
+
+export const telemetry = {
+  attempt: (action: string) =>
+    addBreadcrumb({ category: 'workflow', message: \`\${action}:attempt\`, level: 'info' }),
+  success: (action: string) =>
+    addBreadcrumb({ category: 'workflow', message: \`\${action}:success\`, level: 'info' }),
+  validation: (action: string, err: Error) =>
+    captureMessage(\`\${action} validation failed: \${err.message}\`, 'warning'),
+  unexpected: (action: string, err: Error) =>
+    captureException(err, { tags: { action } }),
+};`,
+          },
+        ],
+      },
+      verificationChecklist: [
+        { id: 'package', label: 'SDK installed (`@arguslog/sdk-nextjs` in dependencies)' },
+        {
+          id: 'env',
+          label: '`NEXT_PUBLIC_ARGUSLOG_DSN` + `ARGUSLOG_DSN` set in `.env.local`',
+        },
+        {
+          id: 'server',
+          label: 'Server `instrumentation.ts` wired at repo root with the runtime guard',
+        },
+        { id: 'installer', label: 'Client `installArguslog()` wired in `app/layout.tsx`' },
+        {
+          id: 'boundary',
+          label: '`<ArguslogErrorBoundary fallback={...}>` wraps the root layout',
+        },
+        { id: 'workflow', label: 'One real user workflow instrumented with `telemetry.*`' },
+        { id: 'event', label: 'Test event received in the dashboard (verify step below)' },
+        {
+          id: 'failure',
+          label: 'One controlled failure path exercised (validation or unexpected)',
+        },
+      ],
+    },
   },
   {
     slug: 'web3',
@@ -1090,6 +1199,24 @@ init({
         const vueEntry = SDK_CATALOG.find((p) => p.slug === 'vue');
         if (!vueEntry || !('initFiles' in vueEntry) || !vueEntry.initFiles) return '';
         return vueEntry.initFiles
+          .map((f) => `// === ${f.path} ===\n${f.contents.replace(/<DSN>/g, dsn)}`)
+          .join('\n\n');
+      })(),
+    },
+    {
+      // Next.js dual-path workflow-first flow: ConnectProjectPage special-cases this slug
+      // and renders <OnboardingFlow slug="nextjs" />. The `code` here is the concatenated
+      // 4-file dual-path install for the legacy copy-button consumers.
+      id: 'sdk-nextjs',
+      group: 'sdk',
+      client: 'Next.js',
+      language: 'ts',
+      description:
+        'Next.js 13+. Env-driven dual-path install (server `instrumentation.ts` + client `app/layout.tsx`) with a no-op fallback for local dev. Walk the 8 steps below — the install plus one instrumented workflow gives you trustworthy onboarding across both runtimes.',
+      code: (() => {
+        const nextEntry = SDK_CATALOG.find((p) => p.slug === 'nextjs');
+        if (!nextEntry || !('initFiles' in nextEntry) || !nextEntry.initFiles) return '';
+        return nextEntry.initFiles
           .map((f) => `// === ${f.path} ===\n${f.contents.replace(/<DSN>/g, dsn)}`)
           .join('\n\n');
       })(),

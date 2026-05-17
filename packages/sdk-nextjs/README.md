@@ -29,6 +29,87 @@ The package exposes two import paths:
 
 There is no default export — pick the one that matches the file you're editing.
 
+## Quick start (env-driven, recommended)
+
+Next.js is dual-runtime: the server boots once via `instrumentation.ts`, the client
+boots once per request via `app/layout.tsx`. The recommended shape splits both halves
+into named files that read the DSN from environment variables and no-op cleanly when
+the variables are missing — safe for local dev without keys.
+
+```bash
+# .env.local — DO NOT commit a real DSN
+# Client-side bundle reads NEXT_PUBLIC_* at build time.
+NEXT_PUBLIC_ARGUSLOG_DSN=arguslog://<publicKey>@<ingestHost>/api/<projectId>
+# Server-side runtime reads bare process.env.
+ARGUSLOG_DSN=arguslog://<publicKey>@<ingestHost>/api/<projectId>
+NEXT_PUBLIC_APP_RELEASE=1.0.0
+```
+
+```ts
+// instrumentation.ts (repo root, or src/instrumentation.ts when using src/)
+export async function register() {
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+  const dsn = process.env.ARGUSLOG_DSN;
+  if (!dsn) return; // no-op when DSN is missing — safe for local dev
+
+  const { init } = await import('@arguslog/sdk-nextjs/server');
+  init({
+    dsn,
+    environment: process.env.NODE_ENV,
+    release: process.env.NEXT_PUBLIC_APP_RELEASE,
+    integrations: ['processHandlers', 'http'],
+  });
+}
+
+export { onRequestError } from '@arguslog/sdk-nextjs/server';
+```
+
+```ts
+// app/arguslog.client.ts
+'use client';
+import { init } from '@arguslog/sdk-nextjs/client';
+
+let installed = false;
+
+export function installArguslog(): void {
+  if (installed) return;
+  const dsn = process.env.NEXT_PUBLIC_ARGUSLOG_DSN;
+  if (!dsn) return;
+
+  init({
+    dsn,
+    environment: process.env.NODE_ENV,
+    release: process.env.NEXT_PUBLIC_APP_RELEASE,
+    integrations: ['globalHandlers', 'autoBreadcrumbs'],
+  });
+  installed = true;
+}
+```
+
+```tsx
+// app/layout.tsx
+import { ArguslogErrorBoundary } from '@arguslog/sdk-nextjs/client';
+
+import { installArguslog } from './arguslog.client';
+
+installArguslog();
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        <ArguslogErrorBoundary fallback={<p>Something went wrong.</p>}>
+          {children}
+        </ArguslogErrorBoundary>
+      </body>
+    </html>
+  );
+}
+```
+
+The sections below cover each piece in depth — the route-handler / server-action
+wrappers, the Pages Router fallback, sourcemap upload, etc.
+
 ## Server: `instrumentation.ts` (recommended)
 
 Next.js 15 introduced the `instrumentation.ts` file conventions. Create

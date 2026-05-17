@@ -49,6 +49,23 @@ Store. The remaining publish blockers are the operator-owned creative
 deliverables (screenshots, promo tiles, listing copy) documented in
 `store-assets/README.md`.
 
+### Changed — Next.js Connect onboarding ships the env-driven dual-path installer
+
+Phase 2 of the cross-SDK onboarding rework. The Next.js `SDK_CATALOG` entry migrated
+to a 4-file `initFiles[]` shape that splits the server and client halves cleanly
+into named files: `.env.local` (`NEXT_PUBLIC_ARGUSLOG_DSN` for client +
+`ARGUSLOG_DSN` for server — Node SDK picks up the latter natively),
+`instrumentation.ts` (server boot with the runtime guard + no-op when DSN is
+missing), `app/arguslog.client.ts` (client installer module), and `app/layout.tsx`
+(calls the installer + wraps with `<ArguslogErrorBoundary>`). The Connect screen
+renders the same workflow-first 8-step flow Vue and React use, plus an extra
+verification checklist item for the server-side instrumentation hook.
+
+Existing route-handler / server-action / Pages-Router wrappers (`wrapRouteHandler`,
+`wrapServerAction`, `wrapApiHandler`) are unchanged — the rework only touches the
+init/install shape that lives upstream of them. SDK README updated to lead with
+the env-driven Quick Start; in-depth sections preserved.
+
 ### Changed — React Connect onboarding ships the env-driven installer shape
 
 Phase 1 of the cross-SDK onboarding rework. The React `SDK_CATALOG` entry migrated
