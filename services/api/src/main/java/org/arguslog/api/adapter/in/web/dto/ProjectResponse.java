@@ -9,8 +9,8 @@ import org.arguslog.api.domain.Project;
  * renders a project-card with counts + sparkline) and left {@code null} on the single-project
  * lookup paths that don't need to pay the aggregation cost.
  *
- * <p>{@code gitProvider} is the short slug ({@code "github"} | {@code "gitlab"}) — both Git
- * fields are either both populated or both {@code null}.
+ * <p>{@code gitProvider} is the short slug ({@code "github"} | {@code "gitlab"}) — both Git fields
+ * are either both populated or both {@code null}.
  */
 public record ProjectResponse(
     long id,

@@ -53,8 +53,7 @@ class ProjectServiceTest {
 
   @Test
   void createDerivesSlugAndPassesPlatform() {
-    Project expected =
-        project(7L, "my-app", "My App", "javascript", null, null);
+    Project expected = project(7L, "my-app", "My App", "javascript", null, null);
     when(projects.create(
             eq(1L),
             eq("my-app"),
@@ -75,7 +74,12 @@ class ProjectServiceTest {
     Project expected =
         project(8L, "acme", "Acme", "javascript", GitProvider.GITHUB, "acme/widgets");
     when(projects.create(
-            eq(1L), eq("acme"), eq("Acme"), eq("javascript"), eq(GitProvider.GITHUB), eq("acme/widgets")))
+            eq(1L),
+            eq("acme"),
+            eq("Acme"),
+            eq("javascript"),
+            eq(GitProvider.GITHUB),
+            eq("acme/widgets")))
         .thenReturn(expected);
 
     Project out =
@@ -91,12 +95,16 @@ class ProjectServiceTest {
     Project expected =
         project(9L, "acme", "Acme", "javascript", GitProvider.GITLAB, "group/sub/widgets");
     when(projects.create(
-            anyLong(), anyString(), anyString(), anyString(), eq(GitProvider.GITLAB), eq("group/sub/widgets")))
+            anyLong(),
+            anyString(),
+            anyString(),
+            anyString(),
+            eq(GitProvider.GITLAB),
+            eq("group/sub/widgets")))
         .thenReturn(expected);
 
     Project out =
-        service.create(
-            1L, "Acme", "javascript", null, "https://gitlab.com/group/sub/widgets");
+        service.create(1L, "Acme", "javascript", null, "https://gitlab.com/group/sub/widgets");
 
     assertThat(out.gitProvider()).isEqualTo(GitProvider.GITLAB);
     assertThat(out.gitRepo()).isEqualTo("group/sub/widgets");
@@ -210,7 +218,8 @@ class ProjectServiceTest {
   @Test
   void updateGitRepoNormalizesAndPersists() {
     UUID actor = UUID.fromString("88888888-8888-8888-8888-888888888888");
-    Project updated = project(7L, "my-app", "My App", "javascript", GitProvider.GITHUB, "acme/widgets");
+    Project updated =
+        project(7L, "my-app", "My App", "javascript", GitProvider.GITHUB, "acme/widgets");
     when(memberships.userRoleInOrg(actor, 1L)).thenReturn(Optional.of("owner"));
     when(projects.updateGitRepo(1L, 7L, GitProvider.GITHUB, "acme/widgets"))
         .thenReturn(Optional.of(updated));
@@ -317,8 +326,7 @@ class ProjectServiceTest {
     assertThatThrownBy(() -> ProjectService.normalizeGitRef(GitProvider.GITHUB, ".dotstart/repo"))
         .isInstanceOf(InvalidProjectException.class);
     // GitHub allows exactly one slash; nested paths belong to GitLab.
-    assertThatThrownBy(
-            () -> ProjectService.normalizeGitRef(GitProvider.GITHUB, "owner/sub/repo"))
+    assertThatThrownBy(() -> ProjectService.normalizeGitRef(GitProvider.GITHUB, "owner/sub/repo"))
         .isInstanceOf(InvalidProjectException.class);
     // Provider hint missing AND no URL prefix → can't derive
     assertThatThrownBy(() -> ProjectService.normalizeGitRef(null, "acme/widgets"))
@@ -327,8 +335,7 @@ class ProjectServiceTest {
     // Provider hint conflicts with URL host
     assertThatThrownBy(
             () ->
-                ProjectService.normalizeGitRef(
-                    GitProvider.GITHUB, "https://gitlab.com/group/proj"))
+                ProjectService.normalizeGitRef(GitProvider.GITHUB, "https://gitlab.com/group/proj"))
         .isInstanceOf(InvalidProjectException.class)
         .hasMessageContaining("gitProvider is github");
   }

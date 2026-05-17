@@ -37,9 +37,9 @@ public class ProjectService implements ProjectUseCase {
       Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._-]{0,38}/[A-Za-z0-9][A-Za-z0-9._-]{0,99}$");
 
   /**
-   * GitLab: at least one slash, supports nested groups ({@code group/sub/project}). Each segment
-   * is up to 255 chars per GitLab's path rules; cap depth at 12 segments to keep the row size
-   * under the column limit and reject obviously bogus paste shapes.
+   * GitLab: at least one slash, supports nested groups ({@code group/sub/project}). Each segment is
+   * up to 255 chars per GitLab's path rules; cap depth at 12 segments to keep the row size under
+   * the column limit and reject obviously bogus paste shapes.
    */
   private static final Pattern GITLAB_REPO_PATTERN =
       Pattern.compile(
@@ -140,8 +140,7 @@ public class ProjectService implements ProjectUseCase {
             .userRoleInOrg(actorId, orgId)
             .orElseThrow(
                 () ->
-                    new ProjectAccessDeniedException(
-                        "You are not a member of this organization."));
+                    new ProjectAccessDeniedException("You are not a member of this organization."));
     if (!RENAME_ROLES.contains(role)) {
       throw new ProjectAccessDeniedException("Only org owners and admins can rename projects.");
     }
@@ -183,14 +182,14 @@ public class ProjectService implements ProjectUseCase {
   }
 
   /**
-   * Validates the {@code (provider, repo)} pair and returns the canonical form, or {@code null}
-   * if the caller asked to clear (both null/blank).
+   * Validates the {@code (provider, repo)} pair and returns the canonical form, or {@code null} if
+   * the caller asked to clear (both null/blank).
    *
-   * <p>Accepts paste convenience shapes — full URLs ({@code https://github.com/...},
-   * {@code https://gitlab.com/...}), SSH clone strings, and trailing {@code .git} / {@code /} —
-   * so users don't have to scrub before submitting. When the {@code repo} field is a URL, the
-   * provider is auto-detected from the host; if both a provider hint and a URL are given, they
-   * must agree or this throws.
+   * <p>Accepts paste convenience shapes — full URLs ({@code https://github.com/...}, {@code
+   * https://gitlab.com/...}), SSH clone strings, and trailing {@code .git} / {@code /} — so users
+   * don't have to scrub before submitting. When the {@code repo} field is a URL, the provider is
+   * auto-detected from the host; if both a provider hint and a URL are given, they must agree or
+   * this throws.
    */
   static GitRef normalizeGitRef(GitProvider providerHint, String rawRepo) {
     boolean repoBlank = rawRepo == null || rawRepo.isBlank();
@@ -215,7 +214,11 @@ public class ProjectService implements ProjectUseCase {
     } else {
       if (providerHint == null) {
         throw new InvalidProjectException(
-            "gitProvider is required (one of: " + GitProvider.GITHUB.dbValue() + ", " + GitProvider.GITLAB.dbValue() + ")");
+            "gitProvider is required (one of: "
+                + GitProvider.GITHUB.dbValue()
+                + ", "
+                + GitProvider.GITLAB.dbValue()
+                + ")");
       }
       provider = providerHint;
     }
@@ -226,7 +229,9 @@ public class ProjectService implements ProjectUseCase {
     Pattern expected = provider == GitProvider.GITHUB ? GITHUB_REPO_PATTERN : GITLAB_REPO_PATTERN;
     if (!expected.matcher(s).matches()) {
       String example =
-          provider == GitProvider.GITHUB ? "acme/widgets" : "acme-group/widgets (or group/sub/project)";
+          provider == GitProvider.GITHUB
+              ? "acme/widgets"
+              : "acme-group/widgets (or group/sub/project)";
       throw new InvalidProjectException(
           "gitRepo must look like \""
               + example
@@ -262,7 +267,8 @@ public class ProjectService implements ProjectUseCase {
   private static String stripHostPrefix(String s, GitProvider provider) {
     String host = provider == GitProvider.GITHUB ? "github.com" : "gitlab.com";
     if (s.startsWith("git@" + host + ":")) return s.substring(("git@" + host + ":").length());
-    if (s.startsWith("https://" + host + "/")) return s.substring(("https://" + host + "/").length());
+    if (s.startsWith("https://" + host + "/"))
+      return s.substring(("https://" + host + "/").length());
     if (s.startsWith("http://" + host + "/")) return s.substring(("http://" + host + "/").length());
     if (s.startsWith(host + "/")) return s.substring((host + "/").length());
     return s;

@@ -21,10 +21,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * Unauthenticated public-API client for the Git hosts that drive the "Create release" branch
- * dropdown. One class with provider-aware dispatch instead of a strategy interface — at exactly
- * two providers the dispatch is a switch, and the JSON shapes differ enough that a shared abstract
- * base would be more obfuscating than illuminating. When a third provider arrives, this is the
- * right time to extract.
+ * dropdown. One class with provider-aware dispatch instead of a strategy interface — at exactly two
+ * providers the dispatch is a switch, and the JSON shapes differ enough that a shared abstract base
+ * would be more obfuscating than illuminating. When a third provider arrives, this is the right
+ * time to extract.
  *
  * <p>Trust posture: GET-only, no Authorization header, no SDK. Cache hits avoid the unauthenticated
  * rate budget (60 req/h/IP on GitHub, ~300 req/min on GitLab) when a whole team has the release
@@ -68,8 +68,7 @@ public class GitPublicClient {
   }
 
   /** Test ctor — caller supplies a WireMock-backed HttpClient and a fixed clock. */
-  GitPublicClient(
-      GitPublicProperties props, ObjectMapper mapper, HttpClient http, Clock clock) {
+  GitPublicClient(GitPublicProperties props, ObjectMapper mapper, HttpClient http, Clock clock) {
     this.props = props;
     this.mapper = mapper;
     this.http = http;
@@ -80,8 +79,8 @@ public class GitPublicClient {
    * Fetches branches for {@code repo} on {@code provider}. {@code repo} is the canonical path
    * stored in {@code projects.git_repo} ({@code owner/repo} for GitHub, {@code group/project} or
    * nested {@code group/sub/project} for GitLab). Results are cached in-memory per process for
-   * {@link GitPublicProperties#cacheTtl()}; rate-limit and transport errors are intentionally
-   * NOT cached so the next click can retry.
+   * {@link GitPublicProperties#cacheTtl()}; rate-limit and transport errors are intentionally NOT
+   * cached so the next click can retry.
    */
   public BranchListResult listBranches(GitProvider provider, String repo) {
     CacheKey key = new CacheKey(provider, repo);
@@ -110,10 +109,7 @@ public class GitPublicClient {
                       + "/repository/branches?per_page=100");
         };
     HttpRequest.Builder b =
-        HttpRequest.newBuilder(url)
-            .timeout(props.timeout())
-            .header("User-Agent", "arguslog")
-            .GET();
+        HttpRequest.newBuilder(url).timeout(props.timeout()).header("User-Agent", "arguslog").GET();
     if (provider == GitProvider.GITHUB) {
       b.header("Accept", "application/vnd.github+json")
           .header("X-GitHub-Api-Version", "2022-11-28");
@@ -156,7 +152,8 @@ public class GitPublicClient {
     for (JsonNode node : array) {
       String name = node.path("name").asText(null);
       // GitHub: commit.sha. GitLab: commit.id. Both are 40-char hex SHAs.
-      String sha = node.path("commit").path(provider == GitProvider.GITHUB ? "sha" : "id").asText(null);
+      String sha =
+          node.path("commit").path(provider == GitProvider.GITHUB ? "sha" : "id").asText(null);
       if (name != null && sha != null) branches.add(new Branch(name, sha));
     }
     return new BranchListResult.Ok(branches);

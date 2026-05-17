@@ -13,8 +13,8 @@ public interface ProjectWriteRepository {
   /**
    * Inserts a new project under {@code orgId} with a unique slug derived from {@code baseSlug}.
    * {@code gitProvider} + {@code gitRepo} are optional but must be both null or both non-null —
-   * callers are expected to have validated that pair already (the DB CHECK constraint is a
-   * safety net, not the primary gate).
+   * callers are expected to have validated that pair already (the DB CHECK constraint is a safety
+   * net, not the primary gate).
    */
   Project create(
       long orgId,
@@ -38,12 +38,11 @@ public interface ProjectWriteRepository {
   Optional<Project> rename(long orgId, long projectId, String name);
 
   /**
-   * Sets or clears the Git repo reference on a live project. Pass both {@code provider} and
-   * {@code repo} non-null to link, or both null to clear. Returns the refreshed project, or empty
-   * if it does not exist or is already archived.
+   * Sets or clears the Git repo reference on a live project. Pass both {@code provider} and {@code
+   * repo} non-null to link, or both null to clear. Returns the refreshed project, or empty if it
+   * does not exist or is already archived.
    */
-  Optional<Project> updateGitRepo(
-      long orgId, long projectId, GitProvider provider, String repo);
+  Optional<Project> updateGitRepo(long orgId, long projectId, GitProvider provider, String repo);
 
   /**
    * Returns per-project activity stats for every live project in the org, keyed by project id.

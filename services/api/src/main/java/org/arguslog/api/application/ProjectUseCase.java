@@ -10,11 +10,10 @@ import org.arguslog.api.domain.Project;
 public interface ProjectUseCase {
 
   /**
-   * Creates a project. {@code gitProvider} + {@code gitRepo} are optional; pass {@code null}
-   * for both to skip the Git link, or both non-null to set it. Mixing is a client error.
+   * Creates a project. {@code gitProvider} + {@code gitRepo} are optional; pass {@code null} for
+   * both to skip the Git link, or both non-null to set it. Mixing is a client error.
    */
-  Project create(
-      long orgId, String name, String platform, GitProvider gitProvider, String gitRepo);
+  Project create(long orgId, String name, String platform, GitProvider gitProvider, String gitRepo);
 
   List<Project> list(long orgId);
 
@@ -41,9 +40,9 @@ public interface ProjectUseCase {
   Optional<Project> rename(java.util.UUID actorId, long orgId, long projectId, String name);
 
   /**
-   * Sets or clears the project's Git repo reference. Pass both {@code provider} and {@code repo}
-   * to link, or both null to clear. Caller must be {@code owner} or {@code admin}. Returns the
-   * updated project, or empty if it does not exist (or is archived).
+   * Sets or clears the project's Git repo reference. Pass both {@code provider} and {@code repo} to
+   * link, or both null to clear. Caller must be {@code owner} or {@code admin}. Returns the updated
+   * project, or empty if it does not exist (or is archived).
    */
   Optional<Project> updateGitRepo(
       java.util.UUID actorId, long orgId, long projectId, GitProvider provider, String repo);

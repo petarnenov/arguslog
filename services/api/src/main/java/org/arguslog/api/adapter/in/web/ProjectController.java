@@ -98,9 +98,9 @@ public class ProjectController {
   }
 
   /**
-   * Partial update: changes the display name and/or the Git repo link. Each field is optional —
-   * a {@code null} JSON value means "leave unchanged"; sending {@code gitProvider} and
-   * {@code gitRepo} both as empty strings clears the link. Slug is preserved. Owner/admin only.
+   * Partial update: changes the display name and/or the Git repo link. Each field is optional — a
+   * {@code null} JSON value means "leave unchanged"; sending {@code gitProvider} and {@code
+   * gitRepo} both as empty strings clears the link. Slug is preserved. Owner/admin only.
    */
   @PatchMapping(value = "/{projectId}", consumes = MediaType.APPLICATION_JSON_VALUE)
   public ProjectResponse update(
@@ -129,17 +129,18 @@ public class ProjectController {
     if (current == null) {
       // No-op PATCH (all fields null): return the current state rather than 400 so clients can
       // use this endpoint as a fetch-and-touch without special-casing empty bodies.
-      current = useCase.get(orgId, projectId).orElseThrow(() -> AccessException.notFound(projectId));
+      current =
+          useCase.get(orgId, projectId).orElseThrow(() -> AccessException.notFound(projectId));
     }
     return ProjectResponse.from(current);
   }
 
   /**
-   * Proxies the configured Git provider's public branches API for this project. Used by the
-   * "Create release" modal to populate a branch dropdown and auto-fill the head SHA on select.
-   * Returns 422 if the project has no Git repo configured; 404 if the provider reports the repo
-   * as missing (private or typo); 429 if we (or the user behind the same IP) blew the
-   * unauthenticated rate budget; 502 for any other upstream / transport failure.
+   * Proxies the configured Git provider's public branches API for this project. Used by the "Create
+   * release" modal to populate a branch dropdown and auto-fill the head SHA on select. Returns 422
+   * if the project has no Git repo configured; 404 if the provider reports the repo as missing
+   * (private or typo); 429 if we (or the user behind the same IP) blew the unauthenticated rate
+   * budget; 502 for any other upstream / transport failure.
    *
    * <p>No auth is sent — public repos only. Self-hosted / private-repo support is a separate
    * feature; the wire shape here stays the same so the UI can grow into it without changes.
@@ -158,9 +159,7 @@ public class ProjectController {
     }
     BranchListResult result = git.listBranches(provider, repo);
     if (result instanceof BranchListResult.Ok ok) {
-      return ok.branches().stream()
-          .map(b -> new GitBranchResponse(b.name(), b.sha()))
-          .toList();
+      return ok.branches().stream().map(b -> new GitBranchResponse(b.name(), b.sha())).toList();
     }
     if (result instanceof BranchListResult.NotFound) {
       throw new GitRepoNotFoundException(
@@ -243,8 +242,8 @@ public class ProjectController {
   }
 
   /**
-   * Parses the wire-level {@code gitProvider} string. Empty string is treated as {@code null}
-   * (no provider — caller is clearing). Any other unknown value is rejected with a 400.
+   * Parses the wire-level {@code gitProvider} string. Empty string is treated as {@code null} (no
+   * provider — caller is clearing). Any other unknown value is rejected with a 400.
    */
   private static GitProvider parseProvider(String raw) {
     if (raw == null || raw.isBlank()) return null;

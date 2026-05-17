@@ -152,10 +152,7 @@ class GitPublicClientTest {
     wm.stubFor(
         get(urlPathEqualTo("/projects/acme%2Fwidgets/repository/branches"))
             .willReturn(
-                aResponse()
-                    .withStatus(429)
-                    .withHeader("Retry-After", "30")
-                    .withBody("{}")));
+                aResponse().withStatus(429).withHeader("Retry-After", "30").withBody("{}")));
 
     BranchListResult r = client.listBranches(GitProvider.GITLAB, "acme/widgets");
 

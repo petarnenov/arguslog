@@ -269,8 +269,7 @@ class SlackCommandDispatcherTest {
   @Test
   void setProjectSwitchesDefaultProjectAndBroadcastsInChannel() {
     primeWorkspace();
-    Project apiProject =
-        new Project(202L, 1L, "api", "Api", "java", Instant.now(), null, null);
+    Project apiProject = new Project(202L, 1L, "api", "Api", "java", Instant.now(), null, null);
     when(projects.listForOrg(1L)).thenReturn(List.of(apiProject));
 
     SlackCommandResponse r = dispatcher.dispatch(payload("T123", "set-project api"));
