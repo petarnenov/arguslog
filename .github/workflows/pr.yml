@@ -33,7 +33,7 @@ jobs:
       openapi: ${{ steps.filter.outputs.openapi }}
     steps:
       - uses: actions/checkout@v5
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           # Each job below runs only when its filter matches. `services/**` belongs to
@@ -179,25 +179,45 @@ jobs:
     name: Security — gitleaks + trivy
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # gitleaks-action calls GET /repos/{owner}/{repo}/pulls/{n}/commits to scope its scan to
-    # the PR's commits — that requires pull-requests:read, which the default GITHUB_TOKEN
-    # doesn't grant. Without this block the action fails with "Resource not accessible by
-    # integration" (HTTP 403) on every PR.
+    # We run the gitleaks binary directly instead of `gitleaks/gitleaks-action`. The wrapper
+    # action adds: PR commit-range computation, GitHub annotations, optional SARIF upload —
+    # none of which are load-bearing for our flow (the binary's stdout/stderr is already in
+    # the job log, and a non-zero exit fails the build). Dropping the wrapper:
+    #   1. Removes a Node.js JS action from our supply chain (we no longer hand GITHUB_TOKEN
+    #      to third-party JS code on every PR).
+    #   2. Decouples us from the action's runtime — the wrapper still ships Node 20 with no
+    #      v3 release in sight; the Go binary doesn't care.
     permissions:
       contents: read
-      pull-requests: read
     steps:
       - uses: actions/checkout@v5
         with:
-          # gitleaks-action computes the commit range to scan as <oldest_pr_commit>^..<head>;
-          # the default shallow clone (depth=1) doesn't have the parent commit, so the git
-          # rev-parse fails with "unknown revision or path not in the working tree". Full
-          # history is required.
+          # For PR scans we diff `base..HEAD`; for push scans we use `before..HEAD`. Both need
+          # the merge-base / previous SHA reachable from the local clone, which the default
+          # shallow checkout (depth=1) doesn't have. Full history is the simplest correct
+          # answer for a job that runs at most once per PR.
           fetch-depth: 0
-      - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
+      - name: Install gitleaks
+        run: |
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+      - name: gitleaks scan
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # On PRs we scan only the diff between the PR base and HEAD — keeps the run fast
+          # and the failure pointed at the offending commit. On push (e.g. merge to main)
+          # we scan the diff since `before`, falling back to the full tree when `before` is
+          # the all-zero SHA (initial push to a new branch).
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ -n "${BASE_SHA:-}" ] && [ "${BASE_SHA}" != "0000000000000000000000000000000000000000" ]; then
+            echo "▶ Scanning commits ${BASE_SHA}..HEAD"
+            gitleaks git --log-opts="${BASE_SHA}..HEAD" --redact --verbose --exit-code 1
+          else
+            echo "▶ Scanning full working tree (no base SHA available)"
+            gitleaks detect --source . --redact --verbose --exit-code 1
+          fi
       - name: Trivy filesystem scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
