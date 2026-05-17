@@ -1,0 +1,22 @@
+# Mirror CI's must-pass JS gates locally before the push reaches GitHub. Avoids
+# the push → CI red → follow-up commit → push cycle that we hit three times in
+# a single afternoon when prettier / unused-import drift slipped past local dev.
+#
+# Hook contents intentionally trivial: one Make target so the dev workflow stays
+# `make preflight` whether you run it manually or through this hook. Same target,
+# same gates, same output format — no surprises.
+#
+# Escape hatch: `git push --no-verify` skips this hook (git built-in, husky
+# respects it). Use only when the hook itself is broken — never to bypass a real
+# format/lint/typecheck failure, because CI will reject the push anyway and you
+# just spent the same minutes you would have spent fixing it locally.
+
+set -e
+
+if ! command -v make >/dev/null 2>&1; then
+  echo "✗ pre-push: 'make' not found on PATH — install GNU make and re-try, or" >&2
+  echo "  push with --no-verify if you've validated the JS gates by hand." >&2
+  exit 1
+fi
+
+make preflight

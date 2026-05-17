@@ -25,10 +25,12 @@
     "e2e:install": "pnpm --filter @arguslog/e2e exec playwright install --with-deps chromium",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "husky": "^9.1.7",
     "prettier": "^3.4.0",
     "turbo": "^2.3.0",
     "typescript": "^5.8.3"

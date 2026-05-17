@@ -41,6 +41,30 @@ CI green — write tests instead. The Java side uses Testcontainers
 (Postgres+Timescale), so the first `./gradlew check` after a fresh clone
 will pull the image (~few minutes); subsequent runs reuse the cached image.
 
+### Pre-push hook (auto-enforced)
+
+The repository ships a `pre-push` git hook (via [Husky](https://typicode.github.io/husky/))
+that runs the JS quality gates locally before the push leaves your machine.
+Activated automatically — `pnpm install` after a fresh clone wires
+`core.hooksPath=.husky/_` for you. No manual setup.
+
+What the hook runs (= `make preflight`):
+
+```
+pnpm format:check    # Prettier
+pnpm lint            # ESLint
+pnpm typecheck       # tsc
+```
+
+If any gate fails the push is aborted with the failing tool's output. Auto-fix
+the prettier-only category with `make preflight-fix` (= `pnpm format` + re-run);
+lint / typecheck failures need a human read because the rule usually wants
+attention (e.g. unused imports, `no-console` in SDKs).
+
+Skip the hook with `git push --no-verify` only when the hook itself is broken
+(e.g. `make` missing on the box) — never as a shortcut around a real failure,
+because CI runs the same gates and will reject the push anyway.
+
 ## Coding conventions
 
 - **Comments**: default to none. Only add one when the _why_ is non-obvious
