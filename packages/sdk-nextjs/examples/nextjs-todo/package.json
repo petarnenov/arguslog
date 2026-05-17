@@ -1,0 +1,24 @@
+{
+  "name": "@arguslog/example-nextjs-todo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal Next.js 15 App Router TODO app demonstrating the standard @arguslog/sdk-nextjs integration: instrumentation.ts, client init, ArguslogErrorBoundary, and a wrapRouteHandler-wrapped API route.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@arguslog/sdk-nextjs": "workspace:*",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.2"
+  }
+}

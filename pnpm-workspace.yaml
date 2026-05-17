@@ -2,6 +2,7 @@ packages:
   - 'apps/*'
   - 'packages/*'
   - 'packages/sdk-react/examples/*'
+  - 'packages/sdk-nextjs/examples/*'
   - 'cli'
   - 'e2e'
   - 'scripts'

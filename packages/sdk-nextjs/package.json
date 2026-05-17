@@ -14,6 +14,8 @@
     },
     "./server": {
       "types": "./dist/server.d.ts",
+      "edge-light": "./dist/server.edge.js",
+      "workerd": "./dist/server.edge.js",
       "import": "./dist/server.js"
     }
   },

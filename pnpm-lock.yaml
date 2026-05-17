@@ -566,6 +566,34 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.17)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.32.0)(msw@2.14.3(@types/node@22.19.17)(typescript@5.9.3))(terser@5.47.1)(yaml@2.8.4)
 
+  packages/sdk-nextjs/examples/nextjs-todo:
+    dependencies:
+      '@arguslog/sdk-nextjs':
+        specifier: workspace:*
+        version: link:../..
+      next:
+        specifier: ^15.0.0
+        version: 15.5.18(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.5
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.5(react@19.2.5)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.17
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.14)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/sdk-node:
     dependencies:
       '@arguslog/sdk-core':
