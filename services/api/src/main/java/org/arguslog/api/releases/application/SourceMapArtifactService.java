@@ -98,8 +98,7 @@ public class SourceMapArtifactService implements SourceMapArtifactUseCase {
 
     // Pull the row before the DELETE so we have its r2_key for the blob removal. If the artifact
     // is missing the controller will translate the false return into a 404.
-    SourceMapArtifact existing =
-        artifacts.findUnderRelease(release.id(), artifactId).orElse(null);
+    SourceMapArtifact existing = artifacts.findUnderRelease(release.id(), artifactId).orElse(null);
     if (existing == null) return false;
 
     boolean removedRow = artifactWrites.delete(release.id(), artifactId);

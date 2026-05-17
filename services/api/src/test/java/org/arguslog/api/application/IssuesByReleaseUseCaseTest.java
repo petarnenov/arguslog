@@ -78,7 +78,6 @@ class IssuesByReleaseUseCaseTest {
         .isInstanceOf(IssuesByReleaseUseCase.ReleaseNotFoundException.class)
         .hasMessageContaining("9999")
         .hasMessageContaining("101");
-    verify(issues, never())
-        .listIntroducedInRelease(101L, 9999L, IssuesByReleaseUseCase.LIMIT);
+    verify(issues, never()).listIntroducedInRelease(101L, 9999L, IssuesByReleaseUseCase.LIMIT);
   }
 }

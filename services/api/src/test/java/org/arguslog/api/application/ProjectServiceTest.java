@@ -128,7 +128,8 @@ class ProjectServiceTest {
   void renameAllowsOwnersAndAdmins() {
     UUID actor = UUID.fromString("44444444-4444-4444-4444-444444444444");
     Project renamed =
-        new Project(7L, 1L, "my-app", "Renamed", "javascript", Instant.parse("2026-05-13T00:00:00Z"));
+        new Project(
+            7L, 1L, "my-app", "Renamed", "javascript", Instant.parse("2026-05-13T00:00:00Z"));
     when(memberships.userRoleInOrg(actor, 1L)).thenReturn(Optional.of("admin"));
     when(projects.rename(1L, 7L, "Renamed")).thenReturn(Optional.of(renamed));
 

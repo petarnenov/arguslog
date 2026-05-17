@@ -99,9 +99,8 @@ public class AlertRuleService implements AlertRuleUseCase {
   }
 
   /**
-   * Surface-level shape check on the typed record. Deeper semantic evaluation happens in the
-   * worker — keeping it out of the api means worker-only DSL extensions don't need an api PR
-   * every time.
+   * Surface-level shape check on the typed record. Deeper semantic evaluation happens in the worker
+   * — keeping it out of the api means worker-only DSL extensions don't need an api PR every time.
    */
   static void validateConditions(AlertRuleConditions conditions) {
     if (conditions == null) {

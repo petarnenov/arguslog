@@ -118,8 +118,7 @@ class IssueTriageServiceTest {
 
   @Test
   void attachAiAnalysisRejectsBlankModel() {
-    assertThatThrownBy(
-            () -> service.attachAiAnalysis(ORG_ID, PROJECT_ID, ISSUE_ID, "analysis", ""))
+    assertThatThrownBy(() -> service.attachAiAnalysis(ORG_ID, PROJECT_ID, ISSUE_ID, "analysis", ""))
         .isInstanceOf(InvalidAiAnalysisException.class)
         .hasMessageContaining("model");
   }

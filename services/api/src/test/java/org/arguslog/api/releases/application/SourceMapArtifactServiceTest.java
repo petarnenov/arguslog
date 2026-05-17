@@ -184,7 +184,8 @@ class SourceMapArtifactServiceTest {
     when(releases.find(101L, 7L))
         .thenReturn(Optional.of(new Release(7L, 101L, "1.2.3", FIXED_NOW)));
     SourceMapArtifact existing =
-        new SourceMapArtifact(42L, 7L, "1/101/7/dist/a.js.map", "dist/a.js", VALID_SHA, 10L, FIXED_NOW);
+        new SourceMapArtifact(
+            42L, 7L, "1/101/7/dist/a.js.map", "dist/a.js", VALID_SHA, 10L, FIXED_NOW);
     when(artifacts.findUnderRelease(7L, 42L)).thenReturn(Optional.of(existing));
     when(artifactWrites.delete(7L, 42L)).thenReturn(true);
 

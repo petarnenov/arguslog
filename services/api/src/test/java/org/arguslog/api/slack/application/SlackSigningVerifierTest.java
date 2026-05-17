@@ -11,8 +11,8 @@ import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
 
 /**
- * Slack signing-secret verifier — the only thing standing between a forged HTTP POST and the
- * triage commands. Replay window + constant-time compare + fail-closed when secret is unset.
+ * Slack signing-secret verifier — the only thing standing between a forged HTTP POST and the triage
+ * commands. Replay window + constant-time compare + fail-closed when secret is unset.
  */
 class SlackSigningVerifierTest {
 
@@ -48,8 +48,7 @@ class SlackSigningVerifierTest {
     String sig =
         "v0="
             + hexHmacSha256(
-                "different-secret".getBytes(StandardCharsets.UTF_8),
-                "v0:" + ts + ":" + body);
+                "different-secret".getBytes(StandardCharsets.UTF_8), "v0:" + ts + ":" + body);
 
     assertThat(verifier.verify(String.valueOf(ts), body, sig)).isFalse();
   }
@@ -118,8 +117,7 @@ class SlackSigningVerifierTest {
 
   private static String sign(long timestamp, String body) {
     return "v0="
-        + hexHmacSha256(
-            SECRET.getBytes(StandardCharsets.UTF_8), "v0:" + timestamp + ":" + body);
+        + hexHmacSha256(SECRET.getBytes(StandardCharsets.UTF_8), "v0:" + timestamp + ":" + body);
   }
 
   private static String hexHmacSha256(byte[] key, String message) {

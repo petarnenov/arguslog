@@ -17,9 +17,9 @@ public record AlertRuleResponse(
     @JsonProperty("createdAt") Instant createdAt) {
 
   /**
-   * Converts the domain row (which keeps {@code JsonNode} for forward-compat — the worker reads
-   * the same shape) into the typed wire DTO. {@code @JsonIgnoreProperties(ignoreUnknown=true)} on
-   * the records means rows carrying clauses the api hasn't typed yet still deserialize cleanly.
+   * Converts the domain row (which keeps {@code JsonNode} for forward-compat — the worker reads the
+   * same shape) into the typed wire DTO. {@code @JsonIgnoreProperties(ignoreUnknown=true)} on the
+   * records means rows carrying clauses the api hasn't typed yet still deserialize cleanly.
    */
   public static AlertRuleResponse from(AlertRule r, ObjectMapper mapper) {
     return new AlertRuleResponse(

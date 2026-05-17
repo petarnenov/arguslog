@@ -5,9 +5,9 @@ import org.arguslog.api.application.dto.ProjectStats;
 import org.arguslog.api.domain.Project;
 
 /**
- * Wire shape for one project. {@code stats} is populated on the list endpoint (where the
- * dashboard renders a project-card with counts + sparkline) and left {@code null} on the
- * single-project lookup paths that don't need to pay the aggregation cost.
+ * Wire shape for one project. {@code stats} is populated on the list endpoint (where the dashboard
+ * renders a project-card with counts + sparkline) and left {@code null} on the single-project
+ * lookup paths that don't need to pay the aggregation cost.
  */
 public record ProjectResponse(
     long id,
@@ -19,10 +19,12 @@ public record ProjectResponse(
     ProjectStats stats) {
 
   public static ProjectResponse from(Project p) {
-    return new ProjectResponse(p.id(), p.orgId(), p.slug(), p.name(), p.platform(), p.createdAt(), null);
+    return new ProjectResponse(
+        p.id(), p.orgId(), p.slug(), p.name(), p.platform(), p.createdAt(), null);
   }
 
   public static ProjectResponse from(Project p, ProjectStats stats) {
-    return new ProjectResponse(p.id(), p.orgId(), p.slug(), p.name(), p.platform(), p.createdAt(), stats);
+    return new ProjectResponse(
+        p.id(), p.orgId(), p.slug(), p.name(), p.platform(), p.createdAt(), stats);
   }
 }

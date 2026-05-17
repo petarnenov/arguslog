@@ -45,9 +45,9 @@ class JdbcSlackWorkspaceRepositoryTest {
   private static SlackWorkspaceWriteRepository writes;
 
   /**
-   * Identity cipher — test-only; the real implementation lives in lib/crypto-aes-gcm. Using a
-   * stub keeps the test focused on the SQL + plaintext-roundtrip contract; the cipher's own
-   * tests cover the AES-GCM correctness.
+   * Identity cipher — test-only; the real implementation lives in lib/crypto-aes-gcm. Using a stub
+   * keeps the test focused on the SQL + plaintext-roundtrip contract; the cipher's own tests cover
+   * the AES-GCM correctness.
    */
   private static final SecretCipher IDENTITY_CIPHER =
       new SecretCipher() {
@@ -73,7 +73,8 @@ class JdbcSlackWorkspaceRepositoryTest {
     seed(dataSource);
 
     TransactionTemplate tx = new TransactionTemplate(new JdbcTransactionManager(dataSource));
-    JdbcSlackWorkspaceRepository raw = new JdbcSlackWorkspaceRepository(dataSource, IDENTITY_CIPHER);
+    JdbcSlackWorkspaceRepository raw =
+        new JdbcSlackWorkspaceRepository(dataSource, IDENTITY_CIPHER);
     reads =
         new SlackWorkspaceRepository() {
           @Override
@@ -172,8 +173,7 @@ class JdbcSlackWorkspaceRepositoryTest {
 
   @Test
   void upsertOnConflictRotatesTheTokenAndReactivates() {
-    SlackWorkspace first =
-        writes.upsert("T123", "Acme", "xoxb-old", 1L, null, null, null, null);
+    SlackWorkspace first = writes.upsert("T123", "Acme", "xoxb-old", 1L, null, null, null, null);
     writes.deactivate(first.id());
 
     SlackWorkspace reinstall =

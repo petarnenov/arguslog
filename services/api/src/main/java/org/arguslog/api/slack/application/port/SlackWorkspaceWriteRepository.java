@@ -4,16 +4,16 @@ import java.util.UUID;
 import org.arguslog.api.slack.domain.SlackWorkspace;
 
 /**
- * Write port for slack_workspaces. {@link #upsert} runs at OAuth-callback time; the
- * (slack_team_id) unique index makes this idempotent — re-installing the app on the same
- * Slack team rotates the token without producing a duplicate row.
+ * Write port for slack_workspaces. {@link #upsert} runs at OAuth-callback time; the (slack_team_id)
+ * unique index makes this idempotent — re-installing the app on the same Slack team rotates the
+ * token without producing a duplicate row.
  */
 public interface SlackWorkspaceWriteRepository {
 
   /**
-   * Inserts the workspace install, or updates an existing one (same {@code slackTeamId}) with
-   * a fresh token + new {@code orgId} mapping. Existing {@code deactivatedAt} is cleared on
-   * conflict so a reinstall after uninstall produces a live row.
+   * Inserts the workspace install, or updates an existing one (same {@code slackTeamId}) with a
+   * fresh token + new {@code orgId} mapping. Existing {@code deactivatedAt} is cleared on conflict
+   * so a reinstall after uninstall produces a live row.
    */
   SlackWorkspace upsert(
       String slackTeamId,
@@ -26,8 +26,8 @@ public interface SlackWorkspaceWriteRepository {
       String webhookChannel);
 
   /**
-   * Marks the workspace as uninstalled. The row stays for audit; future slash-command lookups
-   * for this team will miss the active filter.
+   * Marks the workspace as uninstalled. The row stays for audit; future slash-command lookups for
+   * this team will miss the active filter.
    */
   void deactivate(long workspaceId);
 

@@ -13,9 +13,9 @@ public interface SourceMapArtifactRepository {
   List<SourceMapArtifact> listForRelease(long releaseId);
 
   /**
-   * Looks up a single artifact scoped to its parent release. Returns empty if no row matches —
-   * used by the delete path to surface a 404 without leaking which other releases the artifact id
-   * might exist under.
+   * Looks up a single artifact scoped to its parent release. Returns empty if no row matches — used
+   * by the delete path to surface a 404 without leaking which other releases the artifact id might
+   * exist under.
    */
   Optional<SourceMapArtifact> findUnderRelease(long releaseId, long artifactId);
 }

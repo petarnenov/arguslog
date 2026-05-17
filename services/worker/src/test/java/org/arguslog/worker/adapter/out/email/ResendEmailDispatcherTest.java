@@ -49,10 +49,7 @@ class ResendEmailDispatcherTest {
     dispatcher =
         new ResendEmailDispatcher(
             new EmailProperties(
-                wm.baseUrl(),
-                "re_test_key",
-                "alerts@arguslog.example",
-                Duration.ofSeconds(2)),
+                wm.baseUrl(), "re_test_key", "alerts@arguslog.example", Duration.ofSeconds(2)),
             new AlertsProperties("https://arguslog.example"),
             mapper);
   }
@@ -138,11 +135,7 @@ class ResendEmailDispatcherTest {
   void emptyApiKeyDropsTheMessageWithoutCallingResend() {
     ResendEmailDispatcher unconfigured =
         new ResendEmailDispatcher(
-            new EmailProperties(
-                wm.baseUrl(),
-                "",
-                "alerts@arguslog.example",
-                Duration.ofSeconds(2)),
+            new EmailProperties(wm.baseUrl(), "", "alerts@arguslog.example", Duration.ofSeconds(2)),
             new AlertsProperties("https://arguslog.example"),
             mapper);
     unconfigured.dispatch(alert, emailDestination("{\"to\":\"ops@example.com\"}"));

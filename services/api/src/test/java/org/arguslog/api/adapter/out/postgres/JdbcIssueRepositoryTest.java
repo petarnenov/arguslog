@@ -133,7 +133,14 @@ class JdbcIssueRepositoryTest {
     insertIssue("c", "error", "unresolved", Instant.parse("2026-05-05T11:00:00Z"));
 
     List<Issue> page =
-        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 10);
+        repository.page(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            10);
     assertThat(page).extracting(Issue::fingerprint).containsExactly("b", "c", "a");
   }
 
@@ -143,7 +150,14 @@ class JdbcIssueRepositoryTest {
     insertIssue("other", "error", "unresolved", Instant.now(), 102L);
 
     List<Issue> page =
-        repository.page(101L, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 10);
+        repository.page(
+            101L,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            10);
     assertThat(page).extracting(Issue::fingerprint).containsExactly("acme");
   }
 
@@ -300,8 +314,7 @@ class JdbcIssueRepositoryTest {
             Optional.empty(),
             Optional.empty(),
             Optional.empty(),
-            Optional.of(
-                org.arguslog.api.application.ListIssuesUseCase.AssigneeFilter.UNASSIGNED),
+            Optional.of(org.arguslog.api.application.ListIssuesUseCase.AssigneeFilter.UNASSIGNED),
             Optional.empty(),
             10);
     assertThat(unassigned).extracting(Issue::fingerprint).containsExactly("ownerless");
@@ -316,31 +329,19 @@ class JdbcIssueRepositoryTest {
   @Test
   void listIntroducedInReleaseReturnsOnlyMatchingRows() {
     insertIssueWithReleaseId(
-        "in-500-a",
+        "in-500-a", "error", "unresolved", Instant.parse("2026-05-05T10:00:00Z"), 101L, "A", 500L);
+    insertIssueWithReleaseId(
+        "in-500-b", "error", "unresolved", Instant.parse("2026-05-05T12:00:00Z"), 101L, "B", 500L);
+    insertIssueWithReleaseId(
+        "in-501", "error", "unresolved", Instant.parse("2026-05-05T11:00:00Z"), 101L, "C", 501L);
+    insertIssueWithReleaseId(
+        "no-release",
         "error",
         "unresolved",
-        Instant.parse("2026-05-05T10:00:00Z"),
+        Instant.parse("2026-05-05T13:00:00Z"),
         101L,
-        "A",
-        500L);
-    insertIssueWithReleaseId(
-        "in-500-b",
-        "error",
-        "unresolved",
-        Instant.parse("2026-05-05T12:00:00Z"),
-        101L,
-        "B",
-        500L);
-    insertIssueWithReleaseId(
-        "in-501",
-        "error",
-        "unresolved",
-        Instant.parse("2026-05-05T11:00:00Z"),
-        101L,
-        "C",
-        501L);
-    insertIssueWithReleaseId(
-        "no-release", "error", "unresolved", Instant.parse("2026-05-05T13:00:00Z"), 101L, "D", null);
+        "D",
+        null);
 
     List<Issue> in500 = repository.listIntroducedInRelease(101L, 500L, 50);
     assertThat(in500).extracting(Issue::fingerprint).containsExactly("in-500-b", "in-500-a");
@@ -483,12 +484,8 @@ class JdbcIssueRepositoryTest {
           conn,
           "INSERT INTO projects (id, org_id, slug, name, platform) VALUES (102, 2, 'web', 'Web', 'javascript')");
       // Two releases for the introduced-in-release test below.
-      exec(
-          conn,
-          "INSERT INTO releases (id, project_id, version) VALUES (500, 101, 'v1.0.0')");
-      exec(
-          conn,
-          "INSERT INTO releases (id, project_id, version) VALUES (501, 101, 'v1.0.1')");
+      exec(conn, "INSERT INTO releases (id, project_id, version) VALUES (500, 101, 'v1.0.0')");
+      exec(conn, "INSERT INTO releases (id, project_id, version) VALUES (501, 101, 'v1.0.1')");
     }
   }
 

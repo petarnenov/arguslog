@@ -40,18 +40,36 @@ class ListIssuesServiceTest {
 
   @Test
   void emptyResultMeansNoNextCursor() {
-    when(repository.page(eq(101L), any(), any(), any(), any(), any(), anyInt())).thenReturn(List.of());
+    when(repository.page(eq(101L), any(), any(), any(), any(), any(), anyInt()))
+        .thenReturn(List.of());
     Page page =
-        service.list(new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 50));
+        service.list(
+            new Query(
+                101L,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                50));
     assertThat(page.issues()).isEmpty();
     assertThat(page.nextCursor()).isEmpty();
   }
 
   @Test
   void resultsBelowLimitMeanNoNextCursor() {
-    when(repository.page(anyLong(), any(), any(), any(), any(), any(), anyInt())).thenReturn(issues(3));
+    when(repository.page(anyLong(), any(), any(), any(), any(), any(), anyInt()))
+        .thenReturn(issues(3));
     Page page =
-        service.list(new Query(101L, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), 50));
+        service.list(
+            new Query(
+                101L,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                50));
     assertThat(page.issues()).hasSize(3);
     assertThat(page.nextCursor()).isEmpty();
   }
@@ -59,17 +77,18 @@ class ListIssuesServiceTest {
   @Test
   void resultsExceedingLimitTrimAndEmitNextCursor() {
     // limit=2 → service requests 3, gets 3 → trim to 2 + emit cursor for the 2nd
-    when(repository.page(anyLong(), any(), any(), any(), any(), any(), anyInt())).thenReturn(issues(3));
+    when(repository.page(anyLong(), any(), any(), any(), any(), any(), anyInt()))
+        .thenReturn(issues(3));
     Page page =
         service.list(
-        new Query(
-            101L,
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
-            2));
+            new Query(
+                101L,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                2));
     assertThat(page.issues()).hasSize(2);
     assertThat(page.nextCursor()).isPresent();
     LongCursor decoded = CursorCodec.decodeLong(page.nextCursor().orElseThrow());
@@ -80,7 +99,8 @@ class ListIssuesServiceTest {
   void cursorIsDecodedAndForwardedToRepository() {
     LongCursor cursor = new LongCursor(Instant.parse("2026-05-05T12:00:00Z"), 42L);
     String encoded = CursorCodec.encodeLong(cursor.instant(), cursor.id());
-    when(repository.page(anyLong(), any(), any(), any(), any(), any(), anyInt())).thenReturn(List.of());
+    when(repository.page(anyLong(), any(), any(), any(), any(), any(), anyInt()))
+        .thenReturn(List.of());
 
     service.list(
         new Query(

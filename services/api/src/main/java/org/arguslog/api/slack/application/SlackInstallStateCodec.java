@@ -20,18 +20,18 @@ import org.springframework.stereotype.Component;
  * Encodes / decodes the {@code state} parameter that round-trips through Slack's authorize URL.
  *
  * <p>Wire format: {@code base64url(payloadJson) + "." + base64url(hmac-sha256(payloadJson))}.
- * Payload is a tiny JSON object — {@code orgId}, {@code userId}, a per-install {@code nonce},
- * and an absolute {@code exp} (epoch seconds). The HMAC key is {@code arguslog.slack.oauth
- * .state-secret} — kept distinct from the slash-command signing secret so leaking one doesn't
- * let an attacker forge the other.
+ * Payload is a tiny JSON object — {@code orgId}, {@code userId}, a per-install {@code nonce}, and
+ * an absolute {@code exp} (epoch seconds). The HMAC key is {@code arguslog.slack.oauth
+ * .state-secret} — kept distinct from the slash-command signing secret so leaking one doesn't let
+ * an attacker forge the other.
  *
- * <p>Why not a real JWT library: state is short-lived (≤5min), single-issuer, single-audience —
- * a bespoke HMAC token is simpler, has no JOSE dependency, and matches what {@link
+ * <p>Why not a real JWT library: state is short-lived (≤5min), single-issuer, single-audience — a
+ * bespoke HMAC token is simpler, has no JOSE dependency, and matches what {@link
  * SlackSigningVerifier} already does for inbound Slack traffic.
  *
- * <p>Returns a typed {@link Result} variant instead of throwing because the callback path
- * routes all four failure modes (bad format / bad signature / expired / unparseable) to the
- * same 401 with a sanitized log line.
+ * <p>Returns a typed {@link Result} variant instead of throwing because the callback path routes
+ * all four failure modes (bad format / bad signature / expired / unparseable) to the same 401 with
+ * a sanitized log line.
  */
 @Component
 @ConditionalOnProperty(name = "arguslog.slack.enabled", havingValue = "true", matchIfMissing = true)
@@ -50,9 +50,9 @@ public class SlackInstallStateCodec {
   }
 
   /** Test ctor — pins clock + random so encode/decode round-trips are deterministic. */
-  SlackInstallStateCodec(String stateSecret, Clock clock, ObjectMapper mapper, SecureRandom random) {
-    this.key =
-        stateSecret == null ? new byte[0] : stateSecret.getBytes(StandardCharsets.UTF_8);
+  SlackInstallStateCodec(
+      String stateSecret, Clock clock, ObjectMapper mapper, SecureRandom random) {
+    this.key = stateSecret == null ? new byte[0] : stateSecret.getBytes(StandardCharsets.UTF_8);
     this.clock = clock;
     this.mapper = mapper;
     this.random = random;

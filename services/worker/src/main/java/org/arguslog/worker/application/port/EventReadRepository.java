@@ -4,14 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Optional;
 
 /**
- * Read-only port for pulling the most recent event payload of an issue. Used by the
- * {@code GithubIssueAlertDispatcher} so it can include a real stack trace + breadcrumbs in the
- * GitHub issue body it creates for Copilot's coding agent — without that, Copilot has nothing
- * concrete to grep for.
+ * Read-only port for pulling the most recent event payload of an issue. Used by the {@code
+ * GithubIssueAlertDispatcher} so it can include a real stack trace + breadcrumbs in the GitHub
+ * issue body it creates for Copilot's coding agent — without that, Copilot has nothing concrete to
+ * grep for.
  *
- * <p>Worker's other event paths are write-only ({@code EventStore}). This is a one-method read
- * port so the dispatcher doesn't have to round-trip through the api service or hold an
- * {@code EventStore} reference for read concerns.
+ * <p>Worker's other event paths are write-only ({@code EventStore}). This is a one-method read port
+ * so the dispatcher doesn't have to round-trip through the api service or hold an {@code
+ * EventStore} reference for read concerns.
  */
 public interface EventReadRepository {
 

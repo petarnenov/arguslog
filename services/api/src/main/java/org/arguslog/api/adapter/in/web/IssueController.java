@@ -156,11 +156,11 @@ public class IssueController {
 
   /**
    * Auto-triage agent's write-back. The hosted Claude agent (Managed Agent or equivalent) is
-   * triggered by an Arguslog webhook alert, fetches the issue + recent events via MCP,
-   * generates a root-cause analysis, and PATCH-es the markdown body back here. Status and
-   * assignee are intentionally untouched — the human still owns the triage decision; this is a
-   * suggestion field only. PAT-driven callers need {@link PatScope#ISSUES_WRITE} (the agent's
-   * own PAT, scoped to one or more projects).
+   * triggered by an Arguslog webhook alert, fetches the issue + recent events via MCP, generates a
+   * root-cause analysis, and PATCH-es the markdown body back here. Status and assignee are
+   * intentionally untouched — the human still owns the triage decision; this is a suggestion field
+   * only. PAT-driven callers need {@link PatScope#ISSUES_WRITE} (the agent's own PAT, scoped to one
+   * or more projects).
    */
   @PatchMapping(value = "/{issueId}/ai-analysis", consumes = MediaType.APPLICATION_JSON_VALUE)
   public IssueResponse attachAiAnalysis(
@@ -180,7 +180,8 @@ public class IssueController {
 
   private static Issue.Status parseRequiredStatus(String raw) {
     if (raw == null || raw.isBlank()) {
-      throw new BadFilterException("status", "(empty)", "must be one of: unresolved, resolved, ignored");
+      throw new BadFilterException(
+          "status", "(empty)", "must be one of: unresolved, resolved, ignored");
     }
     try {
       return Issue.Status.fromString(raw);
@@ -199,11 +200,9 @@ public class IssueController {
   }
 
   /**
-   * Decode the {@code ?assignee=} query param. Accepts three shapes:
-   *   {@code none} → unassigned-only;
-   *   {@code me} → the caller's user id (handy for "my issues");
-   *   {@code <uuid>} → exact match on that user.
-   * Empty/missing → no assignee constraint.
+   * Decode the {@code ?assignee=} query param. Accepts three shapes: {@code none} →
+   * unassigned-only; {@code me} → the caller's user id (handy for "my issues"); {@code <uuid>} →
+   * exact match on that user. Empty/missing → no assignee constraint.
    */
   private static Optional<AssigneeFilter> parseAssignee(String raw) {
     if (raw == null) return Optional.empty();
@@ -218,7 +217,8 @@ public class IssueController {
     try {
       return Optional.of(new AssigneeFilter.User(UUID.fromString(value)));
     } catch (IllegalArgumentException e) {
-      throw new BadFilterException("assignee", raw, "must be a user UUID, 'me', 'none', or omitted");
+      throw new BadFilterException(
+          "assignee", raw, "must be a user UUID, 'me', 'none', or omitted");
     }
   }
 

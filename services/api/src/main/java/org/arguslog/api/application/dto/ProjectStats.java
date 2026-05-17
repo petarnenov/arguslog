@@ -7,15 +7,15 @@ import java.util.List;
 /**
  * Aggregated activity snapshot for one project, fed to the dashboard project-card.
  *
- * <p>Computed in a single batched pass per org (see {@code
- * ProjectWriteRepository#statsForOrg}); the dashboard caller never asks for a single
- * project's stats in isolation, so there's no per-project hot path to optimize.
+ * <p>Computed in a single batched pass per org (see {@code ProjectWriteRepository#statsForOrg});
+ * the dashboard caller never asks for a single project's stats in isolation, so there's no
+ * per-project hot path to optimize.
  *
- * <p>{@code lastEventAt} is {@code null} for projects that have never received an event —
- * the frontend renders "No events yet" rather than "Last event 56 years ago".
+ * <p>{@code lastEventAt} is {@code null} for projects that have never received an event — the
+ * frontend renders "No events yet" rather than "Last event 56 years ago".
  *
- * <p>{@code eventsByDay} is always exactly 14 entries (oldest → newest, today inclusive)
- * with zero-fill for quiet days so the sparkline never has to guess at gaps.
+ * <p>{@code eventsByDay} is always exactly 14 entries (oldest → newest, today inclusive) with
+ * zero-fill for quiet days so the sparkline never has to guess at gaps.
  */
 public record ProjectStats(
     int unresolvedIssueCount,

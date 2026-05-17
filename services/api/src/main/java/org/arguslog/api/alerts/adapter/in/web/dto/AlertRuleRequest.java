@@ -2,8 +2,8 @@ package org.arguslog.api.alerts.adapter.in.web.dto;
 
 /**
  * Wire format for create + update. {@code conditions} and {@code actions} are typed (no longer
- * opaque {@code JsonNode}) so OpenAPI emits a real schema and MCP / CLI clients can build
- * payloads without guessing field names.
+ * opaque {@code JsonNode}) so OpenAPI emits a real schema and MCP / CLI clients can build payloads
+ * without guessing field names.
  */
 public record AlertRuleRequest(
     String name,

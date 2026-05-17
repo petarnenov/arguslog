@@ -18,11 +18,11 @@ public class JdbcEventStore implements EventStore {
    * CONFLICT DO UPDATE so concurrent worker replicas can't race; the xmax trick reports whether a
    * row was actually inserted (vs. updated).
    *
-   * <p>Auto-regression: when an event arrives on an issue that was previously {@code resolved},
-   * we flip status back to {@code unresolved}. This is the "the bug came back" signal — the
-   * triage UI sorts/filters on status, so the issue reappears in the unresolved queue without
-   * losing its history. {@code ignored} is intentionally NOT flipped — ignoring is "I never want
-   * to hear about this again", whereas resolved is "I fixed it and want to know if it returns".
+   * <p>Auto-regression: when an event arrives on an issue that was previously {@code resolved}, we
+   * flip status back to {@code unresolved}. This is the "the bug came back" signal — the triage UI
+   * sorts/filters on status, so the issue reappears in the unresolved queue without losing its
+   * history. {@code ignored} is intentionally NOT flipped — ignoring is "I never want to hear about
+   * this again", whereas resolved is "I fixed it and want to know if it returns".
    */
   // first_seen_release_id is resolved by an in-SQL sub-select against `releases` so we don't
   // need a parallel repository port. The sub-select returns NULL when (project_id, version)
@@ -66,7 +66,8 @@ public class JdbcEventStore implements EventStore {
 
   @Override
   @Transactional
-  public PersistResult persist(IncomingEvent event, Fingerprint fingerprint, String releaseVersion) {
+  public PersistResult persist(
+      IncomingEvent event, Fingerprint fingerprint, String releaseVersion) {
     PersistResult row = upsertIssue(event, fingerprint, releaseVersion);
     insertEvent(event, row.issueId());
     return row;

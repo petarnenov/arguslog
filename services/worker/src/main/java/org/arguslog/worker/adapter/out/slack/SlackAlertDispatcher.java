@@ -109,8 +109,8 @@ public class SlackAlertDispatcher implements AlertDispatcher {
 
   /**
    * Block Kit message with action buttons. The action_id format is {@code <op>:<issueId>}; the
-   * api-side interactivity handler routes by op and resolves the org/project from the Slack
-   * team_id carried in the payload, so the button payload itself stays minimal.
+   * api-side interactivity handler routes by op and resolves the org/project from the Slack team_id
+   * carried in the payload, so the button payload itself stays minimal.
    */
   private ArrayNode renderBlocks(Alert a) {
     ArrayNode blocks = mapper.createArrayNode();

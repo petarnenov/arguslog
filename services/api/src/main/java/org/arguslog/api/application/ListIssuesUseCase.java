@@ -14,9 +14,9 @@ public interface ListIssuesUseCase {
    * Pagination is encoded as an opaque base64 cursor — callers MUST NOT crack it open. Limit is
    * clamped server-side; sane default is 50, cap is 200.
    *
-   * <p>{@code searchText} is a free-text ILIKE substring matched against title + culprit.
-   * {@code assignee} restricts the result to issues owned by a specific user or to unassigned
-   * rows; absent means "any assignee state".
+   * <p>{@code searchText} is a free-text ILIKE substring matched against title + culprit. {@code
+   * assignee} restricts the result to issues owned by a specific user or to unassigned rows; absent
+   * means "any assignee state".
    */
   record Query(
       long projectId,

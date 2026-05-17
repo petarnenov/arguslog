@@ -64,7 +64,12 @@ class AlertRuleServiceTest {
     assertThatThrownBy(
             () ->
                 service.create(
-                    101L, "  ", new AlertRuleConditions(null, null, null, null), actions, 300, true))
+                    101L,
+                    "  ",
+                    new AlertRuleConditions(null, null, null, null),
+                    actions,
+                    300,
+                    true))
         .isInstanceOf(InvalidAlertRuleException.class)
         .hasMessageContaining("name");
   }
@@ -136,12 +141,7 @@ class AlertRuleServiceTest {
     assertThatThrownBy(
             () ->
                 service.create(
-                    101L,
-                    "x",
-                    new AlertRuleConditions(null, null, null, null),
-                    actions,
-                    300,
-                    true))
+                    101L, "x", new AlertRuleConditions(null, null, null, null), actions, 300, true))
         .isInstanceOf(InvalidAlertRuleException.class)
         .hasMessageContaining("destinationIds");
   }
@@ -156,12 +156,7 @@ class AlertRuleServiceTest {
     assertThatThrownBy(
             () ->
                 service.create(
-                    101L,
-                    "x",
-                    new AlertRuleConditions(null, null, null, null),
-                    actions,
-                    300,
-                    true))
+                    101L, "x", new AlertRuleConditions(null, null, null, null), actions, 300, true))
         .isInstanceOf(InvalidAlertRuleException.class)
         .hasMessageContaining("capped");
   }

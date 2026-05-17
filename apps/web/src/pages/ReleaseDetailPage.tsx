@@ -34,8 +34,9 @@ import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
 
 import { ApiError } from '../api/client';
-import { queryKeys, useRelease, useReleaseIssues, useSourceMaps } from '../api/queries';
 import type { Issue } from '../api/issues';
+import { queryKeys, useRelease, useReleaseIssues, useSourceMaps } from '../api/queries';
+import type { Release } from '../api/releases';
 import {
   createSourceMapUpload,
   deleteSourceMap,
@@ -319,7 +320,7 @@ function ReleaseMetadataCard({
   release,
   formatter,
 }: {
-  release: import('../api/releases').Release;
+  release: Release;
   formatter: Intl.DateTimeFormat;
 }) {
   const { t } = useTranslation();

@@ -12,19 +12,19 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * Verifies Slack signed-request payloads. Slack signs every slash-command POST with
- * {@code v0=hex(HMAC-SHA256(signing_secret, "v0:" + timestamp + ":" + raw_body))} and the
- * timestamp itself comes in via the {@code X-Slack-Request-Timestamp} header — see the official
- * spec at https://docs.slack.dev/authentication/verifying-requests-from-slack.
+ * Verifies Slack signed-request payloads. Slack signs every slash-command POST with {@code
+ * v0=hex(HMAC-SHA256(signing_secret, "v0:" + timestamp + ":" + raw_body))} and the timestamp itself
+ * comes in via the {@code X-Slack-Request-Timestamp} header — see the official spec at
+ * https://docs.slack.dev/authentication/verifying-requests-from-slack.
  *
  * <p>This class is intentionally a pure function over (timestamp, body, signature) — the HTTP
- * filter that wires it (Phase 3) reads the headers + body buffer; we don't take a dependency
- * on servlets here so the verifier can be unit-tested without the controller stack.
+ * filter that wires it (Phase 3) reads the headers + body buffer; we don't take a dependency on
+ * servlets here so the verifier can be unit-tested without the controller stack.
  *
- * <p>Replay protection: signatures older than {@link #REPLAY_WINDOW} are rejected even if the
- * MAC matches. Slack's own guidance is ±5 minutes; we pick exactly 5 minutes both directions
- * to match. A short tolerance for future-skew is included (≤30s) so a slightly fast Slack
- * load-balancer clock doesn't blacklist real traffic.
+ * <p>Replay protection: signatures older than {@link #REPLAY_WINDOW} are rejected even if the MAC
+ * matches. Slack's own guidance is ±5 minutes; we pick exactly 5 minutes both directions to match.
+ * A short tolerance for future-skew is included (≤30s) so a slightly fast Slack load-balancer clock
+ * doesn't blacklist real traffic.
  */
 @Component
 public class SlackSigningVerifier {
@@ -43,9 +43,7 @@ public class SlackSigningVerifier {
   /** Test-only ctor that swaps in a deterministic clock so replay-window tests stay sane. */
   SlackSigningVerifier(String signingSecret, Clock clock) {
     this.signingSecret =
-        signingSecret == null
-            ? new byte[0]
-            : signingSecret.getBytes(StandardCharsets.UTF_8);
+        signingSecret == null ? new byte[0] : signingSecret.getBytes(StandardCharsets.UTF_8);
     this.clock = clock;
   }
 
@@ -60,8 +58,8 @@ public class SlackSigningVerifier {
    *       compare.
    * </ol>
    *
-   * Caller is expected to log {@code false} returns at info level — these are the only signal
-   * that something is wrong on the boundary.
+   * Caller is expected to log {@code false} returns at info level — these are the only signal that
+   * something is wrong on the boundary.
    */
   public boolean verify(String timestampHeader, String body, String signatureHeader) {
     if (signingSecret.length == 0) return false;

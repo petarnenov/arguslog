@@ -55,8 +55,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Dashboard CRUD on Slack workspaces. The test reuses the SlackControllerTest pattern (slack
- * enabled + mock wall) because the @{@code Profile("!test")} guards on real DataSource etc.
- * skip in this profile.
+ * enabled + mock wall) because the @{@code Profile("!test")} guards on real DataSource etc. skip in
+ * this profile.
  *
  * <p>Critical assertion across these tests: the response NEVER contains the {@code installToken}
  * field. Leaking the bot token through a list response would be a serious security regression.
@@ -157,8 +157,7 @@ class IntegrationsSlackControllerTest {
   @Test
   void deleteOnOwnedWorkspaceDeactivatesAndReturns204() throws Exception {
     when(slackWorkspaceRepository.listForOrg(1L))
-        .thenReturn(
-            List.of(workspace(7L, /* deactivated */ false)));
+        .thenReturn(List.of(workspace(7L, /* deactivated */ false)));
 
     mvc.perform(delete("/api/v1/orgs/1/integrations/slack/workspaces/7"))
         .andExpect(status().isNoContent());
@@ -195,7 +194,8 @@ class IntegrationsSlackControllerTest {
     when(projectRepository.findOrgIdForProject(202L)).thenReturn(OptionalLong.of(1L));
     when(slackWorkspaceWriteRepository.setDefaultProject(7L, 202L))
         .thenReturn(
-            new SlackWorkspace(7L, "T123", "Acme", "tok", 1L, 202L, USER, INSTALLED_AT, null, null, null));
+            new SlackWorkspace(
+                7L, "T123", "Acme", "tok", 1L, 202L, USER, INSTALLED_AT, null, null, null));
 
     mvc.perform(
             patch("/api/v1/orgs/1/integrations/slack/workspaces/7")
@@ -213,7 +213,8 @@ class IntegrationsSlackControllerTest {
     when(slackWorkspaceRepository.listForOrg(1L)).thenReturn(List.of(workspace(7L, false)));
     when(slackWorkspaceWriteRepository.setDefaultProject(7L, null))
         .thenReturn(
-            new SlackWorkspace(7L, "T123", "Acme", "tok", 1L, null, USER, INSTALLED_AT, null, null, null));
+            new SlackWorkspace(
+                7L, "T123", "Acme", "tok", 1L, null, USER, INSTALLED_AT, null, null, null));
 
     mvc.perform(
             patch("/api/v1/orgs/1/integrations/slack/workspaces/7")

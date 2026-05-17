@@ -29,19 +29,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Handles Block Kit "interactivity" callbacks — every button click in an alert message Slack
- * sent on our behalf round-trips through here. Slack POSTs {@code application/x-www-form-
- * urlencoded} with a single {@code payload=<json>} field, signs the whole body with the same
- * HMAC as slash commands, and expects a 200 within 3 seconds (anything else surfaces an
- * "app didn't respond" toast to the user).
+ * Handles Block Kit "interactivity" callbacks — every button click in an alert message Slack sent
+ * on our behalf round-trips through here. Slack POSTs {@code application/x-www-form- urlencoded}
+ * with a single {@code payload=<json>} field, signs the whole body with the same HMAC as slash
+ * commands, and expects a 200 within 3 seconds (anything else surfaces an "app didn't respond"
+ * toast to the user).
  *
- * <p>Action_id format produced by {@code SlackAlertDispatcher} (worker side):
- * {@code <op>:<issueId>}. The org / project are resolved from the Slack {@code team.id}
- * carried in the payload — same workspace lookup as slash commands.
+ * <p>Action_id format produced by {@code SlackAlertDispatcher} (worker side): {@code
+ * <op>:<issueId>}. The org / project are resolved from the Slack {@code team.id} carried in the
+ * payload — same workspace lookup as slash commands.
  *
- * <p>We acknowledge the click with an inline 200 carrying an ephemeral text block; the user
- * sees the confirmation under the alert message. The original alert stays so the team has
- * the audit trail without us having to chase response-url updates.
+ * <p>We acknowledge the click with an inline 200 carrying an ephemeral text block; the user sees
+ * the confirmation under the alert message. The original alert stays so the team has the audit
+ * trail without us having to chase response-url updates.
  */
 @RestController
 @ConditionalOnProperty(name = "arguslog.slack.enabled", havingValue = "true", matchIfMissing = true)
@@ -137,14 +137,17 @@ public class SlackInteractivityController {
 
     Long projectId = workspace.defaultProjectId();
     if (projectId == null) {
-      return Result.text("⚠️ No default project set for this workspace — pick one in the dashboard.");
+      return Result.text(
+          "⚠️ No default project set for this workspace — pick one in the dashboard.");
     }
 
     OrgContext.set(workspace.orgId());
     try {
       return switch (op) {
-        case "resolve" -> applyStatus(workspace, projectId, issueId, Issue.Status.RESOLVED, "✅ Resolved");
-        case "ignore" -> applyStatus(workspace, projectId, issueId, Issue.Status.IGNORED, "🔕 Ignored");
+        case "resolve" ->
+            applyStatus(workspace, projectId, issueId, Issue.Status.RESOLVED, "✅ Resolved");
+        case "ignore" ->
+            applyStatus(workspace, projectId, issueId, Issue.Status.IGNORED, "🔕 Ignored");
         case "open" -> Result.skip(); // url-button — Slack handles navigation client-side
         default -> Result.text("Unknown action `" + op + "`.");
       };
@@ -163,9 +166,10 @@ public class SlackInteractivityController {
   }
 
   private void sendEphemeral(String responseUrl, String text) {
-    String body = "{\"response_type\":\"ephemeral\",\"replace_original\":false,\"text\":"
-        + mapper.valueToTree(text)
-        + "}";
+    String body =
+        "{\"response_type\":\"ephemeral\",\"replace_original\":false,\"text\":"
+            + mapper.valueToTree(text)
+            + "}";
     HttpRequest req =
         HttpRequest.newBuilder(URI.create(responseUrl))
             .header("Content-Type", "application/json")

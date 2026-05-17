@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import type { Issue } from './issues';
 
 export interface Release {
   id: number;
@@ -68,8 +69,6 @@ export function deleteRelease(projectId: number, id: number): Promise<void> {
 export function listIssuesIntroducedInRelease(
   projectId: number,
   releaseId: number,
-): Promise<import('./issues').Issue[]> {
-  return apiFetch<import('./issues').Issue[]>(
-    `/api/v1/projects/${projectId}/releases/${releaseId}/issues`,
-  );
+): Promise<Issue[]> {
+  return apiFetch<Issue[]>(`/api/v1/projects/${projectId}/releases/${releaseId}/issues`);
 }

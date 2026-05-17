@@ -1,8 +1,8 @@
 package org.arguslog.api.slack.adapter.in.web.dto;
 
 /**
- * Subset of the form-encoded fields Slack POSTs to the slash-command endpoint. The full
- * payload has ~20 fields; we only care about these. See
+ * Subset of the form-encoded fields Slack POSTs to the slash-command endpoint. The full payload has
+ * ~20 fields; we only care about these. See
  * https://docs.slack.dev/interactivity/implementing-slash-commands.
  *
  * <p>{@code text} is everything after the slash-command name — the dispatcher splits it on

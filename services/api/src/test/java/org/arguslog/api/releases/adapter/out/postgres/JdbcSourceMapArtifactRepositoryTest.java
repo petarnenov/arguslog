@@ -141,8 +141,7 @@ class JdbcSourceMapArtifactRepositoryTest {
 
   @Test
   void findUnderReleaseReturnsTheArtifact() {
-    SourceMapArtifact created =
-        writes.upsert(777L, "k.map", "dist/app.js", "a".repeat(64), 100L);
+    SourceMapArtifact created = writes.upsert(777L, "k.map", "dist/app.js", "a".repeat(64), 100L);
 
     assertThat(repository.findUnderRelease(777L, created.id())).contains(created);
     assertThat(repository.findUnderRelease(777L, created.id() + 9999)).isEmpty();
@@ -152,8 +151,7 @@ class JdbcSourceMapArtifactRepositoryTest {
 
   @Test
   void deleteReturnsTrueWhenRowExists() {
-    SourceMapArtifact created =
-        writes.upsert(777L, "k.map", "dist/app.js", "a".repeat(64), 100L);
+    SourceMapArtifact created = writes.upsert(777L, "k.map", "dist/app.js", "a".repeat(64), 100L);
 
     assertThat(writes.delete(777L, created.id())).isTrue();
     assertThat(repository.findUnderRelease(777L, created.id())).isEmpty();
@@ -163,8 +161,7 @@ class JdbcSourceMapArtifactRepositoryTest {
 
   @Test
   void deleteIsReleaseScoped() {
-    SourceMapArtifact created =
-        writes.upsert(777L, "k.map", "dist/app.js", "a".repeat(64), 100L);
+    SourceMapArtifact created = writes.upsert(777L, "k.map", "dist/app.js", "a".repeat(64), 100L);
 
     // Wrong release id leaves the row in place.
     assertThat(writes.delete(778L, created.id())).isFalse();

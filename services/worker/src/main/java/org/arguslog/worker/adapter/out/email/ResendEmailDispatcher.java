@@ -25,9 +25,8 @@ import org.springframework.stereotype.Component;
 /**
  * Sends alert emails via the Resend HTTP API (no SDK — keeps worker dep-free). Plain-text body to
  * stay well under spam-filter thresholds. Per-destination config accepts {@code {to: "x@y"}} or
- * {@code {to: ["a@y", "b@y"]}} (UI emits the array form, legacy single-string is kept for
- * backward compat); {@code from} is global so a single Arguslog install can verify one sender
- * domain.
+ * {@code {to: ["a@y", "b@y"]}} (UI emits the array form, legacy single-string is kept for backward
+ * compat); {@code from} is global so a single Arguslog install can verify one sender domain.
  */
 @Component
 @EnableConfigurationProperties({EmailProperties.class, AlertsProperties.class})

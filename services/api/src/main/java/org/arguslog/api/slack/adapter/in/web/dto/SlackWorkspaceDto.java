@@ -6,11 +6,11 @@ import java.util.UUID;
 import org.arguslog.api.slack.domain.SlackWorkspace;
 
 /**
- * Dashboard-facing view of one Slack workspace install. Excludes {@code installToken} and
- * {@code webhookUrl} on purpose — bot token + webhook URL are both bearer-style secrets that
- * never leave the api process. The dashboard only needs to know <em>that</em> a webhook is
- * available (so the "Create alert destination" button can render) and which channel it lands
- * in (so the user knows where alerts will appear).
+ * Dashboard-facing view of one Slack workspace install. Excludes {@code installToken} and {@code
+ * webhookUrl} on purpose — bot token + webhook URL are both bearer-style secrets that never leave
+ * the api process. The dashboard only needs to know <em>that</em> a webhook is available (so the
+ * "Create alert destination" button can render) and which channel it lands in (so the user knows
+ * where alerts will appear).
  */
 public record SlackWorkspaceDto(
     @JsonProperty("id") long id,
