@@ -157,8 +157,8 @@ importers:
         specifier: ^5.66.8
         version: 5.100.9(react@19.2.5)
       i18next:
-        specifier: ^24.2.0
-        version: 24.2.3(typescript@5.9.3)
+        specifier: ^26.2.0
+        version: 26.2.0(typescript@5.9.3)
       i18next-browser-languagedetector:
         specifier: ^8.0.0
         version: 8.2.1
@@ -170,7 +170,7 @@ importers:
         version: 19.2.5(react@19.2.5)
       react-i18next:
         specifier: ^15.4.0
-        version: 15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3)
+        version: 15.7.4(i18next@26.2.0(typescript@5.9.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3)
       zod:
         specifier: ^3.24.2
         version: 3.25.76
@@ -242,8 +242,8 @@ importers:
         specifier: ^5.66.8
         version: 5.100.9(react@19.2.5)
       i18next:
-        specifier: ^24.2.0
-        version: 24.2.3(typescript@5.9.3)
+        specifier: ^26.2.0
+        version: 26.2.0(typescript@5.9.3)
       i18next-browser-languagedetector:
         specifier: ^8.0.0
         version: 8.2.1
@@ -258,7 +258,7 @@ importers:
         version: 19.2.5(react@19.2.5)
       react-i18next:
         specifier: ^15.4.0
-        version: 15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3)
+        version: 15.7.4(i18next@26.2.0(typescript@5.9.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3)
       react-router:
         specifier: ^7.1.0
         version: 7.15.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -1761,6 +1761,7 @@ packages:
   '@pact-foundation/pact-core@15.2.1':
     resolution: {integrity: sha512-IhWwc026bqffjHAVjOfVnDzmhRlr7FBVrLeg/pKjhrcIi0Z/bWahU0u3LEKKctnMkICSH4nAVTYZEg3kUNTxag==}
     engines: {node: '>=16'}
+    cpu: [x64, ia32, arm64]
     os: [darwin, linux, win32]
 
   '@pact-foundation/pact@13.2.0':
@@ -3972,10 +3973,10 @@ packages:
   i18next-browser-languagedetector@8.2.1:
     resolution: {integrity: sha512-bZg8+4bdmaOiApD7N7BPT9W8MLZG+nPTOFlLiJiT8uzKXFjhxw4v2ierCXOwB5sFDMtuA5G4kgYZ0AznZxQ/cw==}
 
-  i18next@24.2.3:
-    resolution: {integrity: sha512-lfbf80OzkocvX7nmZtu7nSTNbrTYR52sLWxPtlXX1zAhVw8WEnFk4puUkCR4B1dNQwbSpEHHHemcZu//7EcB7A==}
+  i18next@26.2.0:
+    resolution: {integrity: sha512-zwBHldHdTmwN7r6UNc7lC6GWNN+YYg3DrRSeHR5PRRBf5QnJZcYHrQc0uaU26qZeYxR7iFZD+Y315dPnKP47wA==}
     peerDependencies:
-      typescript: ^5
+      typescript: ^5 || ^6
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -10051,9 +10052,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.2
 
-  i18next@24.2.3(typescript@5.9.3):
-    dependencies:
-      '@babel/runtime': 7.29.2
+  i18next@26.2.0(typescript@5.9.3):
     optionalDependencies:
       typescript: 5.9.3
 
@@ -11866,11 +11865,11 @@ snapshots:
     dependencies:
       react: 19.2.5
 
-  react-i18next@15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3):
+  react-i18next@15.7.4(i18next@26.2.0(typescript@5.9.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3):
     dependencies:
       '@babel/runtime': 7.29.2
       html-parse-stringify: 3.0.1
-      i18next: 24.2.3(typescript@5.9.3)
+      i18next: 26.2.0(typescript@5.9.3)
       react: 19.2.5
     optionalDependencies:
       react-dom: 19.2.5(react@19.2.5)
