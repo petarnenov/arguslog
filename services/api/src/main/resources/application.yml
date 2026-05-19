@@ -54,7 +54,9 @@ arguslog:
     # unset) so a phone or second laptop loading the dashboard at http://192.168.x.y:5173 isn't
     # blocked by CORS. CORS_ORIGINS, when set, replaces the whole list — used in prod to lock
     # down to app.arguslog.org only.
-    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://${DEV_HOST:localhost}:5173}
+    # Default also allows :5174 (landing app) so a local dev stack with both Vite servers running
+    # doesn't need a CORS_ORIGINS override to make the landing's /api/v1/platforms fetch work.
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:5174,http://${DEV_HOST:localhost}:5173,http://${DEV_HOST:localhost}:5174}
   ingest:
     # Used to render DSN strings in /projects/{id}/keys responses. The DSN points clients at the
     # ingest service, not the api — set INGEST_PUBLIC_HOST in production to your ingest hostname.

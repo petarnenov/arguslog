@@ -9,8 +9,10 @@
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed",
     "e2e:ui": "playwright test --ui",
-    "test:staging": "ARGUSLOG_E2E_BASE_URL=https://arguslog-web-staging.up.railway.app ARGUSLOG_E2E_LANDING_URL=https://arguslog.org ARGUSLOG_E2E_API_URL=https://arguslog-api-staging.up.railway.app ARGUSLOG_E2E_INGEST_URL=https://arguslog-ingest-staging.up.railway.app ARGUSLOG_E2E_KEYCLOAK_URL=https://arguslog-keycloak-staging.up.railway.app playwright test",
+    "test:staging": "E2E_SLOWMO=5000 ARGUSLOG_E2E_BASE_URL=https://arguslog-web-staging.up.railway.app ARGUSLOG_E2E_LANDING_URL=https://arguslog.org ARGUSLOG_E2E_API_URL=https://arguslog-api-staging.up.railway.app ARGUSLOG_E2E_INGEST_URL=https://arguslog-ingest-staging.up.railway.app ARGUSLOG_E2E_KEYCLOAK_URL=https://arguslog-keycloak-staging.up.railway.app playwright test --headed",
+    "test:staging-headless": "bash scripts/run-staging.sh",
     "test:local": "ARGUSLOG_E2E_BASE_URL=http://localhost:5173 ARGUSLOG_E2E_LANDING_URL=http://localhost:5174 ARGUSLOG_E2E_API_URL=http://localhost:8081 ARGUSLOG_E2E_INGEST_URL=http://localhost:8080 ARGUSLOG_E2E_KEYCLOAK_URL=http://localhost:8180 playwright test",
+    "test:dev": "bash scripts/run-local.sh",
     "lint": "eslint tests fixtures pages lib",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf playwright-report test-results .turbo"

@@ -60,6 +60,28 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
+# ── 1b. local-only: relax master-realm sslRequired ───────────────────────
+# Docker bridge networking makes host→localhost:8180 requests look "external"
+# to Keycloak, so admin auth on the master realm (default sslRequired=external)
+# gets a 426 "HTTPS required" before any password is ever evaluated. We patch
+# master to sslRequired=NONE via `docker exec` — that originates from the
+# container's loopback interface, which is always exempt regardless of the
+# master realm's current setting.
+#
+# Strictly gated on KEYCLOAK_URL starting with http:// — staging and prod KC
+# instances are hit over HTTPS and their master realm MUST keep `external`.
+# The `docker exec` provides a second layer: it silently fails on machines
+# where `arguslog-keycloak` is not a local container (i.e. anyone running this
+# script against a remote KC).
+if [[ "$KEYCLOAK_URL" == http://* ]]; then
+  if docker exec arguslog-keycloak /opt/keycloak/bin/kcadm.sh config credentials \
+       --server http://localhost:8180 --realm master \
+       --user "${KC_ADMIN_USER}" --password "${KC_ADMIN_PASS}" >/dev/null 2>&1; then
+    docker exec arguslog-keycloak /opt/keycloak/bin/kcadm.sh \
+      update realms/master -s sslRequired=NONE >/dev/null 2>&1 || true
+  fi
+fi
+
 # ── 2. keycloak admin token ──────────────────────────────────────────────
 step "Authenticating against Keycloak ($KEYCLOAK_URL)"
 KC_ADMIN_TOKEN_RAW="$(curl -sS -X POST \
@@ -247,6 +269,62 @@ if [ -n "$DSN_PUBLIC" ]; then
     fi
   done
   ok "${sent}/${SYNTHETIC_EVENT_COUNT} events accepted by ingest"
+fi
+
+# ── 7c. local-only: mint runner PAT and persist plaintext for e2e ────────
+# `pnpm test:dev` reads this file to authenticate the test runner. We rotate it
+# on every seed so the file content is always fresh — same scheme-gate as 1b/7b.
+if [[ "$KEYCLOAK_URL" == http://* ]]; then
+  step "Minting e2e runner PAT (local-only)"
+  RUNNER_PAT_NAME="${RUNNER_PAT_NAME:-e2e-runner-local}"
+  # Delete any prior PAT with this name so the token list doesn't accumulate
+  # one extra row per seed run. 404 is fine — first run has nothing to clean.
+  EXISTING_PAT_IDS="$(curl -fsS "${API_URL}/api/v1/me/tokens" \
+    -H "Authorization: Bearer ${USER_TOKEN}" \
+    | jq -r --arg n "$RUNNER_PAT_NAME" 'map(select(.name == $n)) | .[].id' || true)"
+  for tid in $EXISTING_PAT_IDS; do
+    curl -fsS -X DELETE "${API_URL}/api/v1/me/tokens/${tid}" \
+      -H "Authorization: Bearer ${USER_TOKEN}" >/dev/null 2>&1 || true
+  done
+  # The mint endpoint returns the plaintext under `.token` (the only call that ever
+  # surfaces it — subsequent reads only see the prefix).
+  RUNNER_PAT_PLAINTEXT="$(curl -fsS -X POST "${API_URL}/api/v1/me/tokens" \
+    -H "Authorization: Bearer ${USER_TOKEN}" \
+    -H 'Content-Type: application/json' \
+    -d "$(jq -n --arg n "$RUNNER_PAT_NAME" '{name: $n}')" \
+    | jq -r '.token // empty')"
+  if [ -n "$RUNNER_PAT_PLAINTEXT" ]; then
+    # Resolve repo root so this works regardless of caller CWD. The script lives
+    # in scripts/ — go one level up.
+    REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+    PAT_FILE="${REPO_ROOT}/e2e/.local-runner-pat"
+    printf '%s' "$RUNNER_PAT_PLAINTEXT" > "$PAT_FILE"
+    chmod 600 "$PAT_FILE"
+    ok "PAT written to e2e/.local-runner-pat"
+  else
+    warn "could not mint runner PAT — e2e suite will need ARGUSLOG_E2E_RUNNER_PAT set manually"
+  fi
+fi
+
+# ── 7b. local-only: grant demo user platinum tier ───────────────────────
+# The regular tier caps users at 1 organization — which is enough for the seeded
+# Demo Org, but the e2e suite (`pnpm test:dev`) creates many `e2e-*` orgs in
+# parallel and would hit 402 PaymentRequired on every second org. Promoting the
+# demo user to platinum (effectively no cap) lets the suite run unchanged.
+#
+# Same scheme-gate as step 1b: only apply when KEYCLOAK_URL is http://, which is
+# our shorthand for "running against a local Docker stack". Staging/prod tiers
+# are managed manually by a platform admin — we never want this script to
+# silently elevate privileges on a remote env.
+if [[ "$KEYCLOAK_URL" == http://* ]]; then
+  step "Granting platinum tier to demo user (local-only, idempotent)"
+  if docker exec arguslog-postgres bash -c \
+       "psql -U \$POSTGRES_USER -d \$POSTGRES_DB -tAc \"UPDATE users SET tier='platinum' WHERE email='${DEMO_EMAIL}' AND tier != 'platinum'\"" \
+       >/dev/null 2>&1; then
+    ok "demo user is platinum"
+  else
+    warn "could not grant platinum (postgres container missing?); e2e suite may hit org caps"
+  fi
 fi
 
 # ── 8. banner ────────────────────────────────────────────────────────────

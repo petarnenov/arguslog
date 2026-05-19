@@ -57,6 +57,10 @@ Thumbs.db
 *.pem
 *.key
 secrets/
+# Local-only PAT plaintext written by scripts/seed-demo.sh — read by `pnpm test:dev`.
+e2e/.local-runner-pat
+# Staging PAT plaintext — read by `pnpm test:staging-headless` / `make e2e-staging`.
+e2e/.staging-runner-pat
 
 # Docker volumes (local dev)
 infra/docker/volumes/

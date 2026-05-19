@@ -25,8 +25,10 @@ test.describe('issue detail', () => {
     await expect(authedPage).toHaveURL(/\/issues\/\d+$/);
 
     const detail = new IssueDetailPage(authedPage);
-    // The error message + class should appear in the detail body.
-    await expect(authedPage.getByText(/E2EFixtureError/i)).toBeVisible({ timeout: 15_000 });
+    // The error message + class should appear in the detail body. Locally the JSON
+    // payload also includes the exception type as a substring (worker pretty-prints the
+    // raw event), so `getByText` matches 2 elements — use `.first()` to take the heading.
+    await expect(authedPage.getByText(/E2EFixtureError/i).first()).toBeVisible({ timeout: 15_000 });
 
     // Resolve flow: button visible → click → status flips. If the test environment
     // doesn't render the button (RBAC strip, etc.) we tolerate skip.

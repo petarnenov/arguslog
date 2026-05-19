@@ -345,6 +345,12 @@ doctor: ## Verify required tools are installed; exit non-zero on misses with OS-
 seed: ## Seed a demo Keycloak user + org + project + 8-12 synthetic events. Run after `make` is up.
 	@bash scripts/seed-demo.sh
 
+e2e-local: ## Run e2e suite against local stack (reads PAT from e2e/.local-runner-pat; auto-set by `make seed`).
+	@pnpm --filter @arguslog/e2e test:dev
+
+e2e-staging: ## Run e2e suite against staging (reads PAT from e2e/.staging-runner-pat; --workers=1 for regular-tier org cap).
+	@pnpm --filter @arguslog/e2e test:staging-headless
+
 demo: ## Full reset → fresh infra → start dev stack → auto-seed demo data
 	@$(MAKE) reset
 	@$(MAKE) fresh

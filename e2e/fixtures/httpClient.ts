@@ -77,12 +77,17 @@ export async function apiRequest<T = unknown>(path: string, opts: RequestOptions
     } catch (err) {
       lastError = err;
       // Network-level failure (DNS, TCP reset, etc.) — retry on the same schedule.
-      if (attempt < RETRY_DELAYS_MS.length && !(err instanceof Error && err.message.includes(' → '))) {
+      if (
+        attempt < RETRY_DELAYS_MS.length &&
+        !(err instanceof Error && err.message.includes(' → '))
+      ) {
         await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
         continue;
       }
       throw err;
     }
   }
-  throw lastError instanceof Error ? lastError : new Error(`apiRequest exhausted retries for ${path}`);
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`apiRequest exhausted retries for ${path}`);
 }

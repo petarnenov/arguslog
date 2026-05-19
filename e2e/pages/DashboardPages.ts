@@ -51,10 +51,14 @@ export class IssuesPage {
     return this.page.getByTestId('issues-row');
   }
   levelFilter() {
-    return this.page.getByRole('combobox', { name: /level/i });
+    // Mantine `Select` renders its `placeholder` prop on the underlying <input>'s
+    // placeholder attribute — NOT as aria-label — so getByRole('combobox', { name:… })
+    // doesn't match. Anchor on the placeholder text itself ("Level" — i18n key
+    // issues.levelFilter). Same for statusFilter.
+    return this.page.getByPlaceholder('Level');
   }
   statusFilter() {
-    return this.page.getByRole('combobox', { name: /status/i });
+    return this.page.getByPlaceholder('Status');
   }
   openIssue(issueId: number) {
     return this.page.getByTestId(`issue-link-${issueId}`).click();
