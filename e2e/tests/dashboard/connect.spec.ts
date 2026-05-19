@@ -2,7 +2,10 @@ import { expect, test } from '../../fixtures/index.js';
 import { ConnectPage } from '../../pages/DashboardPages.js';
 
 test.describe('connect screen', () => {
-  test('auto-provisions a DSN + mints a PAT on click', async ({ authedPage, seededProject }) => {
+  test('DSN auto-provisions + PAT generator CTA is offered', async ({
+    authedPage,
+    seededProject,
+  }) => {
     const connect = new ConnectPage(authedPage);
     await connect.goto(seededProject.orgSlug, seededProject.id);
 
@@ -10,11 +13,16 @@ test.describe('connect screen', () => {
     // a DSN already, and the Connect screen renders it).
     await expect(authedPage.getByTestId('connect-dsn-value')).toBeVisible({ timeout: 60_000 });
 
-    // PAT is NOT auto-minted — by design (the plaintext is only shown at mint time,
-    // so the page makes the user click). Click the generator and wait for the
-    // resulting `arglog_pat_*` literal to appear.
-    await authedPage.getByRole('button', { name: /generate a pat/i }).click();
-    await expect(authedPage.getByText(/arglog_pat_/)).toBeVisible({ timeout: 30_000 });
+    // PAT must be minted by the user — the plaintext is shown exactly once at mint
+    // time, by design. We only assert the generator CTA renders; we deliberately
+    // do NOT click + wait for `arglog_pat_*` to land because our auth fixture
+    // seeds a PAT-as-OIDC-token blob, and `MeTokensController.create` enforces
+    // `PatScopeGuard.requireDashboardSession()` — a PAT-authenticated session is
+    // explicitly forbidden from minting another PAT (security policy). So the
+    // mint API silently 403s and the button stays in its initial state forever.
+    await expect(authedPage.getByRole('button', { name: /generate a pat/i })).toBeVisible({
+      timeout: 30_000,
+    });
   });
 
   test('"Send test event" lights up the ingest path', async ({ authedPage, seededProject }) => {

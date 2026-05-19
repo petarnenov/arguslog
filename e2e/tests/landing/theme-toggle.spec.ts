@@ -14,9 +14,9 @@ test.describe('landing theme toggle', () => {
     const html = page.locator('html');
     const initial = await html.getAttribute('data-mantine-color-scheme');
 
-    const toggle = await landing.themeToggle();
-    if (!(await toggle.isVisible())) {
-      test.skip(true, 'theme toggle not visible in this viewport / build — skipping');
+    const toggle = await landing.oppositeSchemeButton(initial);
+    if (!toggle) {
+      test.skip(true, 'no light/dark scheme buttons visible — likely viewport collapse');
       return;
     }
     await toggle.click();

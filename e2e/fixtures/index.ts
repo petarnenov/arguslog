@@ -20,7 +20,7 @@ import { test as base, expect, type Page } from '@playwright/test';
 
 import { ensureSlowModePatched } from '../lib/slowMode.js';
 
-import { loginAsTestUser } from './auth.js';
+import { loginAsRealUser, loginAsTestUser } from './auth.js';
 import {
   createDsn,
   createOrg,
@@ -34,6 +34,13 @@ import {
 interface ArguslogFixtures {
   /** Pre-authenticated page. Navigate freely; OIDC user blob is seeded before page boot. */
   authedPage: Page;
+  /**
+   * Like `authedPage` but logged in with a REAL Keycloak JWT instead of a PAT-as-OIDC blob.
+   * Required for specs that exercise endpoints which reject PAT auth (e.g. `POST /me/tokens`).
+   * Gated by `isRealKcAvailable()`: on environments without a DAG-enabled KC client this
+   * fixture throws — specs using it should `test.skip(!isRealKcAvailable(), …)`.
+   */
+  realAuthedPage: Page;
   /** Fresh empty org. Cleaned up after test. */
   seededOrg: SeededOrg;
   /** Fresh org + project. Project parent org is cleaned up after test (cascades). */
@@ -53,6 +60,11 @@ export const test = base.extend<ArguslogFixtures>({
 
   authedPage: async ({ page }, use) => {
     await loginAsTestUser(page);
+    await use(page);
+  },
+
+  realAuthedPage: async ({ page }, use) => {
+    await loginAsRealUser(page);
     await use(page);
   },
 

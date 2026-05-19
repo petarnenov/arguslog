@@ -35,7 +35,9 @@ async function deleteE2eOrgs(): Promise<void> {
     console.warn('[globalSetup] no orphan e2e-* orgs to sweep');
     return;
   }
-  console.warn(`[globalSetup] sweeping ${e2eOrgs.length} orphan e2e-* org(s): ${e2eOrgs.map((o) => o.slug).join(', ')}`);
+  console.warn(
+    `[globalSetup] sweeping ${e2eOrgs.length} orphan e2e-* org(s): ${e2eOrgs.map((o) => o.slug).join(', ')}`,
+  );
   await Promise.all(
     e2eOrgs.map(async (o) => {
       try {

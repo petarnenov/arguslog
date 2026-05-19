@@ -17,6 +17,18 @@ import { defineConfig, devices } from '@playwright/test';
 const baseURL = process.env.ARGUSLOG_E2E_BASE_URL ?? 'http://localhost:5173';
 const landingURL = process.env.ARGUSLOG_E2E_LANDING_URL ?? 'http://localhost:5174';
 const isCI = Boolean(process.env.CI);
+// `devices['Desktop Chrome']` ships viewport 1280×720, which on the landing's Mantine
+// header is right at the breakpoint where the theme-toggle ActionIcon collapses into a
+// burger — `theme-toggle.spec.ts` then skips itself with "toggle not visible in this
+// viewport". Pin to 1440×900 (well above every Mantine `lg`/`xl` breakpoint we care
+// about) so the toggle, the platforms grid, and the agent-install row all render in
+// their full desktop layout regardless of headless vs headed.
+const VIEWPORT = { width: 1440, height: 900 } as const;
+// When the visual-debug slowdown is on (see lib/slowMode.ts), every
+// page/locator action gets a pre-action pause — so the 60s per-test budget
+// no longer covers a typical 5–10 action spec. Bump generously when slow.
+const slowMoMs = Number(process.env.E2E_SLOWMO ?? 0);
+const testTimeout = slowMoMs > 0 ? 600_000 : 60_000;
 
 export default defineConfig({
   testDir: './tests',
@@ -25,8 +37,9 @@ export default defineConfig({
   // missed teardowns from earlier runs is enough to make every `createOrg` fail 402.
   globalSetup: './lib/globalSetup.ts',
   // 60s accommodates Railway cold-start on idle staging services plus the
-  // programmatic-OIDC token roundtrip + initial dashboard render.
-  timeout: 60_000,
+  // programmatic-OIDC token roundtrip + initial dashboard render. Bumped to
+  // 10min when E2E_SLOWMO is set so the per-action pauses don't blow the budget.
+  timeout: testTimeout,
   expect: { timeout: 10_000 },
   fullyParallel: true,
   forbidOnly: isCI,
@@ -45,17 +58,19 @@ export default defineConfig({
     {
       name: 'dashboard',
       testDir: './tests/dashboard',
-      use: { ...devices['Desktop Chrome'], baseURL },
+      // Viewport override MUST come after the device spread — `devices['Desktop Chrome']`
+      // includes its own `viewport: { width: 1280, height: 720 }` which would otherwise win.
+      use: { ...devices['Desktop Chrome'], baseURL, viewport: VIEWPORT },
     },
     {
       name: 'landing',
       testDir: './tests/landing',
-      use: { ...devices['Desktop Chrome'], baseURL: landingURL },
+      use: { ...devices['Desktop Chrome'], baseURL: landingURL, viewport: VIEWPORT },
     },
     {
       name: 'auth',
       testDir: './tests/auth',
-      use: { ...devices['Desktop Chrome'], baseURL },
+      use: { ...devices['Desktop Chrome'], baseURL, viewport: VIEWPORT },
     },
   ],
 });
@@ -73,7 +88,8 @@ export const e2eConfig = {
   // Ingest is a separate Railway service from `api` — DSN-authed event POSTs land
   // on `/api/{projectId}/events` exposed by the ingest service, NOT the dashboard
   // API. Mixing them up returns 401 because the api service has no such route.
-  ingestURL: process.env.ARGUSLOG_E2E_INGEST_URL ?? 'https://arguslog-ingest-staging.up.railway.app',
+  ingestURL:
+    process.env.ARGUSLOG_E2E_INGEST_URL ?? 'https://arguslog-ingest-staging.up.railway.app',
   keycloakURL:
     process.env.ARGUSLOG_E2E_KEYCLOAK_URL ?? 'https://arguslog-keycloak-staging.up.railway.app',
   keycloakRealm: process.env.ARGUSLOG_E2E_KEYCLOAK_REALM ?? 'arguslog',
