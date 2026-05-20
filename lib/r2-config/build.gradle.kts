@@ -19,5 +19,5 @@ tasks.withType<JavaCompile> {
 dependencies {
     // Carries Spring Boot's @ConfigurationProperties annotation. compileOnly is enough — consuming
     // services already have spring-boot on their classpath.
-    compileOnly("org.springframework.boot:spring-boot:3.3.5")
+    compileOnly("org.springframework.boot:spring-boot:4.0.6")
 }
